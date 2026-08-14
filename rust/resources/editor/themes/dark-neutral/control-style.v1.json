@@ -1,0 +1,262 @@
+{
+  "schemaVersion": "editor-style-sheet.v1",
+  "sheetId": "aife-dark-neutral-controls-v1",
+  "generation": 1,
+  "tokens": {
+    "control.normal": "#333333ff",
+    "control.hover": "#4a4f56ff",
+    "control.active": "#37658fff",
+    "control.selected": "#374f66ff",
+    "control.disabled": "#1e1e1eff",
+    "control.border": "#121212ff",
+    "control.focus": "#4289c9ff",
+    "text.primary": "#e0e0e0ff",
+    "text.disabled": "#666666ff",
+    "white": "#ffffffff"
+  },
+  "rules": [
+    {
+      "selector": { "role": "Button", "classes": ["toolbar-control"] },
+      "declarations": {
+        "background": { "kind": "solid", "colorToken": "control.normal" },
+        "borderColorToken": "control.border",
+        "borderWidth": 1.0,
+        "cornerRadius": 3.0,
+        "foregroundToken": "text.primary"
+      }
+    },
+    {
+      "selector": { "role": "Button", "classes": ["toolbar-control"], "pseudo": ["hover"] },
+      "declarations": { "background": { "kind": "solid", "colorToken": "control.hover" } }
+    },
+    {
+      "selector": { "role": "Button", "classes": ["toolbar-control"], "pseudo": ["active"] },
+      "declarations": {
+        "background": { "kind": "solid", "colorToken": "control.active" },
+        "contentOffset": { "x": 0.0, "y": 1.0 }
+      }
+    },
+    {
+      "selector": { "role": "Button", "classes": ["toolbar-control"], "pseudo": ["disabled"] },
+      "declarations": {
+        "background": { "kind": "solid", "colorToken": "control.disabled" },
+        "foregroundToken": "text.disabled",
+        "opacity": 0.72
+      }
+    },
+    {
+      "selector": { "role": "Button", "classes": ["toolbar-control"], "pseudo": ["focusVisible"] },
+      "declarations": { "borderColorToken": "control.focus", "borderWidth": 1.0 }
+    },
+    {
+      "selector": { "role": "Tab", "classes": ["workspace-tab"] },
+      "declarations": {
+        "background": { "kind": "solid", "colorToken": "control.disabled" },
+        "borderColorToken": "control.border",
+        "borderWidth": 1.0,
+        "cornerRadius": 0.0,
+        "foregroundToken": "text.primary"
+      }
+    },
+    {
+      "selector": { "role": "Tab", "classes": ["workspace-tab"], "pseudo": ["hover"] },
+      "declarations": {
+        "background": {
+          "kind": "nineSlice",
+          "textureId": "editor-control-tab-hover",
+          "fallbackColorToken": "control.hover",
+          "tintToken": "white",
+          "slice": { "left": 4.0, "top": 4.0, "right": 4.0, "bottom": 4.0 }
+        }
+      }
+    },
+    {
+      "selector": { "role": "Tab", "classes": ["workspace-tab"], "pseudo": ["active"] },
+      "declarations": {
+        "background": {
+          "kind": "nineSlice",
+          "textureId": "editor-control-tab-active",
+          "fallbackColorToken": "control.active",
+          "tintToken": "white",
+          "slice": { "left": 4.0, "top": 4.0, "right": 4.0, "bottom": 4.0 }
+        },
+        "contentOffset": { "x": 0.0, "y": 1.0 }
+      }
+    },
+    {
+      "selector": { "role": "Tab", "classes": ["workspace-tab"], "pseudo": ["selected"] },
+      "declarations": {
+        "background": {
+          "kind": "nineSlice",
+          "textureId": "editor-control-tab-selected",
+          "fallbackColorToken": "control.selected",
+          "tintToken": "white",
+          "slice": { "left": 4.0, "top": 4.0, "right": 4.0, "bottom": 4.0 }
+        }
+      }
+    },
+    {
+      "selector": { "role": "Tab", "classes": ["workspace-tab"], "pseudo": ["selected", "hover"] },
+      "declarations": {
+        "background": {
+          "kind": "nineSlice",
+          "textureId": "editor-control-tab-selected-hover",
+          "fallbackColorToken": "control.active",
+          "tintToken": "white",
+          "slice": { "left": 4.0, "top": 4.0, "right": 4.0, "bottom": 4.0 }
+        }
+      }
+    },
+    {
+      "selector": { "role": "Button", "classes": ["panel-chrome-control"] },
+      "declarations": {
+        "background": { "kind": "solid", "colorToken": "control.normal" },
+        "borderColorToken": "control.border",
+        "foregroundToken": "text.primary"
+      }
+    },
+    {
+      "selector": { "role": "Button", "classes": ["panel-chrome-control"], "pseudo": ["hover"] },
+      "declarations": { "background": { "kind": "solid", "colorToken": "control.hover" } }
+    },
+    {
+      "selector": { "role": "Button", "classes": ["panel-chrome-control"], "pseudo": ["active"] },
+      "declarations": { "background": { "kind": "solid", "colorToken": "control.active" } }
+    },
+    {
+      "selector": { "role": "Button", "classes": ["launcher-control"] },
+      "declarations": {
+        "background": { "kind": "solid", "colorToken": "control.normal" },
+        "borderColorToken": "control.border",
+        "cornerRadius": 4.0,
+        "foregroundToken": "text.primary"
+      }
+    },
+    {
+      "selector": { "role": "Button", "classes": ["launcher-control"], "pseudo": ["hover"] },
+      "declarations": { "background": { "kind": "solid", "colorToken": "control.hover" } }
+    },
+    {
+      "selector": { "role": "Button", "classes": ["launcher-control"], "pseudo": ["active"] },
+      "declarations": {
+        "background": { "kind": "solid", "colorToken": "control.active" },
+        "contentOffset": { "x": 0.0, "y": 1.0 }
+      }
+    },
+    {
+      "selector": { "role": "Button", "classes": ["launcher-control"], "pseudo": ["disabled"] },
+      "declarations": {
+        "background": { "kind": "solid", "colorToken": "control.disabled" },
+        "foregroundToken": "text.disabled",
+        "opacity": 0.72
+      }
+    },
+    {
+      "selector": { "role": "Button", "classes": ["decision-control"] },
+      "declarations": {
+        "background": { "kind": "solid", "colorToken": "control.normal" },
+        "borderColorToken": "control.border",
+        "cornerRadius": 4.0,
+        "foregroundToken": "text.primary"
+      }
+    },
+    {
+      "selector": { "role": "Button", "classes": ["decision-control"], "pseudo": ["hover"] },
+      "declarations": { "background": { "kind": "solid", "colorToken": "control.hover" } }
+    },
+    {
+      "selector": { "role": "Button", "classes": ["decision-control"], "pseudo": ["active"] },
+      "declarations": { "background": { "kind": "solid", "colorToken": "control.active" } }
+    },
+    {
+      "selector": { "role": "Toggle", "classes": ["toggle-control"] },
+      "declarations": {
+        "background": { "kind": "solid", "colorToken": "control.normal" },
+        "borderColorToken": "control.border"
+      }
+    },
+    {
+      "selector": { "role": "Toggle", "classes": ["toggle-control"], "pseudo": ["checked"] },
+      "declarations": { "background": { "kind": "solid", "colorToken": "control.selected" } }
+    },
+    {
+      "selector": { "role": "IconButton", "classes": ["toolbar-control"] },
+      "declarations": {
+        "background": { "kind": "solid", "colorToken": "control.normal" },
+        "borderColorToken": "control.border",
+        "borderWidth": 1.0,
+        "cornerRadius": 3.0,
+        "foregroundToken": "text.primary",
+        "iconTintToken": "text.primary"
+      }
+    },
+    {
+      "selector": { "role": "IconButton", "classes": ["toolbar-control"], "pseudo": ["hover"] },
+      "declarations": { "background": { "kind": "solid", "colorToken": "control.hover" } }
+    },
+    {
+      "selector": { "role": "IconButton", "classes": ["toolbar-control"], "pseudo": ["active"] },
+      "declarations": {
+        "background": { "kind": "solid", "colorToken": "control.active" },
+        "contentOffset": { "x": 0.0, "y": 1.0 }
+      }
+    },
+    {
+      "selector": { "role": "IconButton", "classes": ["toolbar-control"], "pseudo": ["disabled"] },
+      "declarations": {
+        "background": { "kind": "solid", "colorToken": "control.disabled" },
+        "foregroundToken": "text.disabled",
+        "iconTintToken": "text.disabled",
+        "opacity": 0.72
+      }
+    },
+    {
+      "selector": { "role": "IconButton", "classes": ["toolbar-control"], "pseudo": ["focusVisible"] },
+      "declarations": { "borderColorToken": "control.focus", "borderWidth": 1.0 }
+    },
+    {
+      "selector": { "role": "Tab", "classes": ["workspace-tab"], "pseudo": ["disabled"] },
+      "declarations": { "foregroundToken": "text.disabled", "opacity": 0.72 }
+    },
+    {
+      "selector": { "role": "Tab", "classes": ["workspace-tab"], "pseudo": ["focusVisible"] },
+      "declarations": { "borderColorToken": "control.focus", "borderWidth": 1.0 }
+    },
+    {
+      "selector": { "role": "Button", "classes": ["panel-chrome-control"], "pseudo": ["selected"] },
+      "declarations": { "background": { "kind": "solid", "colorToken": "control.selected" } }
+    },
+    {
+      "selector": { "role": "Button", "classes": ["panel-chrome-control"], "pseudo": ["disabled"] },
+      "declarations": { "foregroundToken": "text.disabled", "opacity": 0.72 }
+    },
+    {
+      "selector": { "role": "Button", "classes": ["launcher-control"], "pseudo": ["selected"] },
+      "declarations": { "background": { "kind": "solid", "colorToken": "control.selected" } }
+    },
+    {
+      "selector": { "role": "Button", "classes": ["decision-control"], "pseudo": ["selected"] },
+      "declarations": { "background": { "kind": "solid", "colorToken": "control.selected" } }
+    },
+    {
+      "selector": { "role": "Button", "classes": ["decision-control"], "pseudo": ["disabled"] },
+      "declarations": { "foregroundToken": "text.disabled", "opacity": 0.72 }
+    },
+    {
+      "selector": { "role": "Toggle", "classes": ["toggle-control"], "pseudo": ["hover"] },
+      "declarations": { "background": { "kind": "solid", "colorToken": "control.hover" } }
+    },
+    {
+      "selector": { "role": "Toggle", "classes": ["toggle-control"], "pseudo": ["active"] },
+      "declarations": { "background": { "kind": "solid", "colorToken": "control.active" } }
+    },
+    {
+      "selector": { "role": "Toggle", "classes": ["toggle-control"], "pseudo": ["disabled"] },
+      "declarations": { "foregroundToken": "text.disabled", "opacity": 0.72 }
+    },
+    {
+      "selector": { "role": "Toggle", "classes": ["toggle-control"], "pseudo": ["focusVisible"] },
+      "declarations": { "borderColorToken": "control.focus", "borderWidth": 1.0 }
+    }
+  ]
+}

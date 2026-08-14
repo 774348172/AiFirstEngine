@@ -1,0 +1,42 @@
+{
+  "schemaVersion": "editor-theme-texture-manifest.v1",
+  "themeId": "dark-neutral",
+  "textures": [
+    {
+      "textureId": "editor-control-tab-hover",
+      "path": "tab-hover.png",
+      "width": 12,
+      "height": 12,
+      "sha256": "16f233e5bbb781558567f55afd0c7ef84a9399635629e1682e261ff9cd3144c7",
+      "slice": { "left": 4.0, "top": 4.0, "right": 4.0, "bottom": 4.0 },
+      "fallbackColor": "#4a4f56ff"
+    },
+    {
+      "textureId": "editor-control-tab-active",
+      "path": "tab-active.png",
+      "width": 12,
+      "height": 12,
+      "sha256": "f298971e3bc0e3fc80dcf5651c74e6a907afdeae6bbf0ddee4d9429be8ce0e3d",
+      "slice": { "left": 4.0, "top": 4.0, "right": 4.0, "bottom": 4.0 },
+      "fallbackColor": "#37658fff"
+    },
+    {
+      "textureId": "editor-control-tab-selected",
+      "path": "tab-selected.png",
+      "width": 12,
+      "height": 12,
+      "sha256": "0de636b1aa78aa30ac59268ab27a427eaf06adea76dfd01d5dd586d2804ef32f",
+      "slice": { "left": 4.0, "top": 4.0, "right": 4.0, "bottom": 4.0 },
+      "fallbackColor": "#374f66ff"
+    },
+    {
+      "textureId": "editor-control-tab-selected-hover",
+      "path": "tab-selected-hover.png",
+      "width": 12,
+      "height": 12,
+      "sha256": "02cd9e0975f7c2a7b2ce69f352ed53fb3fd69c3cae11ad36cc28bfa61be02fbf",
+      "slice": { "left": 4.0, "top": 4.0, "right": 4.0, "bottom": 4.0 },
+      "fallbackColor": "#37658fff"
+    }
+  ]
+}

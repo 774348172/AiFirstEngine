@@ -1,0 +1,33 @@
+[package]
+name = "editor_host"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[[bin]]
+name = "editor_host"
+path = "src/main.rs"
+
+[dependencies]
+ai_tool_gateway = { path = "../ai_tool_gateway" }
+editor_core = { path = "../editor_core" }
+editor_input = { path = "../editor_input" }
+editor_ui_backend_egui = { path = "../editor_ui_backend_egui" }
+editor_ui_model = { path = "../editor_ui_model" }
+editor_ui_renderer = { path = "../editor_ui_renderer" }
+editor_window_winit = { path = "../editor_window_winit" }
+engine_runtime = { path = "../engine_runtime" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.59", features = ["Win32_Storage_FileSystem"] }
+
+[features]
+default = []
+real-window = ["editor_window_winit/real-window"]
+real-wgpu-surface = ["editor_window_winit/real-wgpu-surface"]

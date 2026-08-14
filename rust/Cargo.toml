@@ -1,0 +1,30 @@
+[workspace]
+members = [
+  "crates/engine_input",
+  "crates/engine_runtime",
+  "crates/editor_ui_model",
+  "crates/editor_core",
+  "crates/ai_tool_gateway",
+  "crates/editor_ui_backend_egui",
+  "crates/editor_ui_renderer",
+  "crates/editor_wgpu_renderer",
+  "crates/editor_input",
+  "crates/editor_window_winit",
+  "crates/editor_host",
+  "crates/runtime_cli",
+  "crates/runtime_player_winit",
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.0.1"
+edition = "2021"
+license = "UNLICENSED"
+publish = false
+
+[workspace.lints.rust]
+warnings = "warn"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+correctness = { level = "deny", priority = 0 }

@@ -1,0 +1,38 @@
+[package]
+name = "runtime_cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "ai_engine_runtime_cli"
+path = "src/main.rs"
+
+[dependencies]
+engine_runtime = { path = "../engine_runtime" }
+runtime_player_winit = { path = "../runtime_player_winit" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[features]
+default = []
+real-window = ["runtime_player_winit/real-window"]
+
+[dev-dependencies]
+engine_input = { path = "../engine_input" }
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.59", features = [
+    "Win32_Foundation",
+    "Win32_Security",
+    "Win32_System_Diagnostics_ToolHelp",
+    "Win32_System_JobObjects",
+    "Win32_System_Threading",
+] }

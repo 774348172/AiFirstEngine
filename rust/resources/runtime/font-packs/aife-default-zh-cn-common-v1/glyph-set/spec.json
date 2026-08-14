@@ -1,0 +1,21 @@
+{
+  "schemaVersion": "engine-default-glyph-set-spec.v1",
+  "glyphSetId": "aife-zh-cn-common-v1",
+  "locale": "zh-CN",
+  "includeAsciiPrintable": true,
+  "punctuation": "，。！？；：、（）【】《》“”‘’…—·￥",
+  "uiSymbols": "+-*/%=#@&<>[]{}_|~^℃★☆◆◇●○■□▲△▼▽→←↑↓",
+  "replacementCodepoint": "U+FFFD",
+  "rankedCorpusPath": "glyph-set/zh-cn-common-ranked.tsv",
+  "rankedHanLimit": 1200,
+  "catalogs": [
+    {
+      "sourceTag": "engineZhCnCatalog",
+      "path": "../../../../crates/editor_ui_model/resources/localization/zh-CN.editor.json"
+    }
+  ],
+  "minimumHanCodepoints": 1200,
+  "maximumHanCodepoints": 1500,
+  "maximumTotalCodepoints": 1800,
+  "maximumRawBundleBytes": 41943040
+}

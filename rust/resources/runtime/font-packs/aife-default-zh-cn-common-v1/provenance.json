@@ -1,0 +1,42 @@
+{
+  "schemaVersion": "engine-font-source-provenance.v1",
+  "packId": "aife-default-zh-cn-common-v1",
+  "fontSource": {
+    "sourceId": "noto-sans-sc-regular",
+    "upstreamArchiveName": "Noto_Sans_SC.zip",
+    "archiveByteLength": 112760167,
+    "archiveSha256": "sha256:dcac0c089cda7e6b0ba3cddbd89321f2c440842ddeabec743abaadcd8874d13d6",
+    "entryPath": "static/NotoSansSC-Regular.ttf",
+    "fontByteLength": 10559284,
+    "fontBytesSha256": "sha256:d45f67f0a7c0ca3f256950777ce6a61cc7ce5f9696d02900cbbaac25f8aa7d16",
+    "faceIndex": 0,
+    "family": "Noto Sans SC",
+    "style": "normal",
+    "weight": 400,
+    "copyright": "Copyright 2014-2021 Adobe",
+    "licenseId": "OFL-1.1",
+    "licensePath": "LICENSE-OFL-1.1.txt",
+    "reservedNames": ["Source"]
+  },
+  "frequencyCorpus": {
+    "sourceId": "jieba-rs-dict",
+    "repository": "https://github.com/messense/jieba-rs",
+    "commit": "c62e0df1f9dcc2cc1e014711c5aa4561ae260538",
+    "sourcePath": "jieba/src/data/dict.txt",
+    "gitBlobSha": "8a9837551ef4f0833835565b5ca654bd6d786a42",
+    "sourceByteLength": 5071843,
+    "sourceSha256": "sha256:139519822fe8ab9e10d9d07e68ea0451045380aedaf54ecc51e2a28c6b42a13f",
+    "rankedCorpusPath": "glyph-set/zh-cn-common-ranked.tsv",
+    "rankedCorpusSha256": "sha256:ebdabacd0ab45267885b2e25075f92d748c9176ea700495054d05519fac14808",
+    "algorithm": "Sum each dictionary word frequency for every Han scalar occurrence, sort by score descending and codepoint ascending, take 1200.",
+    "licenseId": "MIT",
+    "licensePath": "LICENSE-FREQUENCY-CORPUS-MIT.txt"
+  },
+  "catalogs": [
+    {
+      "sourceTag": "engineZhCnCatalog",
+      "path": "rust/crates/editor_ui_model/resources/localization/zh-CN.editor.json",
+      "sha256": "sha256:d6050a7bcb2e87ec3a86552223d78ca50dda95ab26a3633e0226aaf84b554a98"
+    }
+  ]
+}

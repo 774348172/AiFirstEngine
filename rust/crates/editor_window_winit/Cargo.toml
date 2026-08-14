@@ -1,0 +1,54 @@
+[package]
+name = "editor_window_winit"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+ai_tool_gateway = { path = "../ai_tool_gateway" }
+engine_runtime = { path = "../engine_runtime" }
+editor_core = { path = "../editor_core" }
+editor_input = { path = "../editor_input" }
+editor_ui_model = { path = "../editor_ui_model" }
+editor_ui_renderer = { path = "../editor_ui_renderer" }
+editor_wgpu_renderer = { path = "../editor_wgpu_renderer" }
+engine_input = { path = "../engine_input" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+winit = { version = "0.30", optional = true }
+wgpu = { version = "26", optional = true }
+pollster = { version = "0.4", optional = true }
+rfd = { version = "0.15", optional = true }
+png = "0.17"
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.59", features = [
+    "Win32_Foundation",
+    "Win32_Graphics_Gdi",
+    "Win32_UI_Input_KeyboardAndMouse",
+    "Win32_UI_WindowsAndMessaging",
+] }
+windows = { version = "0.58", optional = true, features = [
+    "Win32_Foundation",
+    "Win32_System_Com",
+    "Win32_UI_Shell",
+    "Win32_UI_WindowsAndMessaging",
+] }
+
+[features]
+default = []
+real-window = [
+    "dep:winit",
+    "dep:wgpu",
+    "dep:rfd",
+    "dep:windows",
+    "editor_wgpu_renderer/real-wgpu",
+]
+real-wgpu-surface = ["real-window", "dep:pollster", "engine_runtime/real-wgpu"]

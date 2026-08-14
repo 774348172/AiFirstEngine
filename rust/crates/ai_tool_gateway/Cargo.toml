@@ -1,0 +1,33 @@
+[package]
+name = "ai_tool_gateway"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+editor_core = { path = "../editor_core" }
+engine_runtime = { path = "../engine_runtime" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml_edit = "0.22"
+
+[dev-dependencies]
+editor_ui_model = { path = "../editor_ui_model" }
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.59", features = [
+    "Win32_Foundation",
+    "Win32_Security",
+    "Win32_Security_Authorization",
+    "Win32_Storage_FileSystem",
+    "Win32_System_IO",
+    "Win32_System_Pipes",
+    "Win32_System_Threading",
+] }

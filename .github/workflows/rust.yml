@@ -1,0 +1,32 @@
+name: Rust
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  engine:
+    runs-on: windows-latest
+    timeout-minutes: 90
+    defaults:
+      run:
+        working-directory: rust
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve pinned toolchain
+        run: rustup show active-toolchain
+
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
+      - name: Check engine workspace
+        run: cargo check --locked --workspace --all-features
+
+      - name: Test engine foundations
+        run: cargo test --locked -p engine_input -p engine_runtime -p editor_ui_model
+

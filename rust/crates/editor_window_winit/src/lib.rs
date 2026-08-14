@@ -1,0 +1,71 @@
+mod application;
+mod command_system;
+mod composer;
+mod config;
+pub mod continuous_runtime_window;
+mod dialog;
+mod editor_frame_publication;
+mod editor_preferences;
+mod focus;
+mod gate_report;
+mod headless_app;
+mod headless_window;
+mod input_route;
+mod interaction_gate;
+mod linked_project_runtimes;
+#[cfg(test)]
+mod native_workspace_window_host;
+mod production_authority;
+mod project_editor_composition_production;
+mod project_editor_composition_qualification;
+mod project_manager;
+mod reachability_gate;
+mod real_window_interaction_gate;
+mod runtime_render;
+mod surface;
+mod transaction;
+mod viewport;
+mod visual_regression_gate;
+mod window_plan;
+pub mod windowed_runtime_present;
+#[cfg(all(feature = "real-window", target_os = "windows"))]
+mod windows_authority_input;
+mod workspace_persistence;
+pub use application::*;
+pub use command_system::*;
+pub use composer::*;
+pub use config::*;
+pub use continuous_runtime_window::*;
+pub use dialog::*;
+pub use editor_frame_publication::*;
+pub use editor_preferences::*;
+pub use focus::*;
+pub use gate_report::*;
+pub use headless_app::*;
+pub use headless_window::*;
+pub use input_route::*;
+pub use interaction_gate::*;
+pub use linked_project_runtimes::*;
+pub use production_authority::*;
+pub use project_editor_composition_production::*;
+pub use project_editor_composition_qualification::*;
+pub use project_manager::*;
+pub use reachability_gate::*;
+pub use real_window_interaction_gate::*;
+pub use runtime_render::*;
+pub use surface::*;
+pub use transaction::*;
+pub use viewport::*;
+pub use visual_regression_gate::*;
+pub use window_plan::*;
+pub use windowed_runtime_present::*;
+#[cfg(all(feature = "real-window", target_os = "windows"))]
+pub use windows_authority_input::*;
+pub use workspace_persistence::*;
+
+mod real_window;
+pub use editor_core::ProjectEditorCompositionIdentity;
+pub use real_window::*;
+
+#[cfg(test)]
+mod tests;

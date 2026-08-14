@@ -1,0 +1,14 @@
+/rust/target/
+/.tmp/
+/.artifacts/
+/evidence/
+/exports/
+/release/
+/test-results/
+*.log
+*.pdb
+*.ilk
+*.dmp
+.DS_Store
+Thumbs.db
+

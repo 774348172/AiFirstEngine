@@ -1,0 +1,28 @@
+[package]
+name = "editor_wgpu_renderer"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+editor_ui_renderer = { path = "../editor_ui_renderer" }
+ab_glyph = "0.2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+png = "0.17"
+sha2 = "0.10"
+wgpu = { version = "26", optional = true }
+winit = { version = "0.30", optional = true }
+bytemuck = { version = "1", features = ["derive"], optional = true }
+pollster = { version = "0.4", optional = true }
+
+[features]
+default = []
+real-wgpu = ["dep:wgpu", "dep:winit", "dep:bytemuck", "dep:pollster"]
