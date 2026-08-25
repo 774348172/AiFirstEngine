@@ -13,6 +13,8 @@ path = "src/lib.rs"
 
 [dependencies]
 engine_input = { path = "../engine_input" }
+project_runtime_abi = { path = "../project_runtime_abi" }
+project_runtime_sdk = { path = "../project_runtime_sdk" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 sha2 = "0.10"

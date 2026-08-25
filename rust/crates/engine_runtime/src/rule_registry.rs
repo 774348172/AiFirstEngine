@@ -26,19 +26,45 @@ impl RuleModuleRegistry {
     pub fn register_generated_rule(
         &mut self,
         rule_id: impl Into<String>,
-        rule: RustAotRule,
+        rule: impl for<'a> Fn(
+                &mut crate::logic_executor::LogicContext<'a>,
+            ) -> crate::logic_executor::LogicResult
+            + Send
+            + Sync
+            + 'static,
     ) -> &mut Self {
         self.rules.insert(
             rule_id.into(),
             RegisteredRule {
                 artifact_id: None,
-                rule,
+                rule: RustAotRule::new(rule),
             },
         );
         self
     }
 
     pub fn register_generated_rule_artifact(
+        &mut self,
+        rule_id: impl Into<String>,
+        artifact_id: impl Into<String>,
+        rule: impl for<'a> Fn(
+                &mut crate::logic_executor::LogicContext<'a>,
+            ) -> crate::logic_executor::LogicResult
+            + Send
+            + Sync
+            + 'static,
+    ) -> &mut Self {
+        self.rules.insert(
+            rule_id.into(),
+            RegisteredRule {
+                artifact_id: Some(artifact_id.into()),
+                rule: RustAotRule::new(rule),
+            },
+        );
+        self
+    }
+
+    pub(crate) fn register_generated_rule_artifact_value(
         &mut self,
         rule_id: impl Into<String>,
         artifact_id: impl Into<String>,
@@ -67,7 +93,9 @@ impl RuleModuleRegistry {
     }
 
     pub fn rule(&self, rule_id: &str) -> Option<RustAotRule> {
-        self.rules.get(rule_id).map(|registered| registered.rule)
+        self.rules
+            .get(rule_id)
+            .map(|registered| registered.rule.clone())
     }
 
     pub fn build_runner(
@@ -163,7 +191,7 @@ impl RuleModuleRegistry {
         }
         let mut runner = ProjectLogicRunner::new(plan);
         for (rule_id, registered) in &self.rules {
-            runner.register_rust_aot_rule(rule_id.clone(), registered.rule);
+            runner.register_rust_aot_rule_value(rule_id.clone(), registered.rule.clone());
         }
         Ok(runner)
     }

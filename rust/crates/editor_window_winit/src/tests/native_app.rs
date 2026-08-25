@@ -60,6 +60,204 @@ impl EditorPlayPreparationAdapter for BlockingEditorPlayPreparationAdapter {
     }
 }
 
+struct BlockingProjectRuntimePreparationAdapter {
+    started: std::sync::Arc<std::sync::atomic::AtomicBool>,
+    release: std::sync::Arc<std::sync::atomic::AtomicBool>,
+}
+
+struct FixtureLoadedProjectRuntime {
+    descriptor: engine_runtime::project_runtime_module::ProjectRuntimeModuleDescriptor,
+}
+
+impl engine_runtime::project_runtime_module::ProjectRuntimeModule for FixtureLoadedProjectRuntime {
+    fn descriptor(
+        &self,
+    ) -> &engine_runtime::project_runtime_module::ProjectRuntimeModuleDescriptor {
+        &self.descriptor
+    }
+
+    fn install(
+        &self,
+        _registration: &mut engine_runtime::project_runtime_module::ProjectRuntimeRegistration,
+    ) -> Result<(), engine_runtime::project_runtime_module::ProjectRuntimeError> {
+        Ok(())
+    }
+}
+
+impl ProjectRuntimePreparationAdapter for BlockingProjectRuntimePreparationAdapter {
+    fn prepare(
+        &self,
+        approved: ApprovedProjectRuntimeTrustRequest,
+        control: editor_core::ProjectRuntimeNativeModuleBuildControl,
+        progress: &mut dyn FnMut(ProjectRuntimePreparationPhase),
+    ) -> Result<PreparedProjectRuntime, editor_core::ProjectRuntimeNativeModuleDiagnostic> {
+        use std::sync::atomic::Ordering;
+        progress(ProjectRuntimePreparationPhase::PreparingArtifact);
+        self.started.store(true, Ordering::Release);
+        while !self.release.load(Ordering::Acquire) {
+            if control.is_cancelled() {
+                return Err(editor_core::ProjectRuntimeNativeModuleDiagnostic {
+                    code: "project_runtime.cancelled".to_string(),
+                    stage: "prepare".to_string(),
+                    message: "Fixture preparation was cancelled.".to_string(),
+                    path: None,
+                    next_action: "Open the current project again.".to_string(),
+                });
+            }
+            std::thread::yield_now();
+        }
+        let manifest: editor_core::ProjectManifest = serde_json::from_slice(
+            &std::fs::read(approved.project_root.join("project.aife.json")).unwrap(),
+        )
+        .unwrap();
+        let digest = |value: char| format!("sha256:{}", value.to_string().repeat(64));
+        let identity = editor_core::ProjectNativeModuleIdentity {
+            schema_version: editor_core::PROJECT_RUNTIME_NATIVE_MODULE_IDENTITY_SCHEMA_VERSION
+                .to_string(),
+            project_runtime_abi_digest: digest('1'),
+            project_runtime_sdk_digest: digest('2'),
+            project_id: approved.trust_request.project_id,
+            module_id: manifest.runtime_module.module_id.clone(),
+            logical_interface_version: manifest.runtime_module.interface_version.clone(),
+            aot_content_digest: digest('3'),
+            normalized_manifest_digest: approved.trust_request.normalized_manifest_digest,
+            normalized_dependency_digest: approved.trust_request.normalized_dependency_digest,
+            dependency_lock_digest: digest('4'),
+            toolchain_identity: "rustc-test".to_string(),
+            target_triple: "host".to_string(),
+            profile: "release".to_string(),
+            features: Vec::new(),
+            builder_schema_version:
+                editor_core::PROJECT_RUNTIME_NATIVE_MODULE_BUILDER_SCHEMA_VERSION.to_string(),
+        };
+        let linked = engine_runtime::project_runtime_module::LinkedProjectRuntimeSet::singleton(
+            std::sync::Arc::new(FixtureLoadedProjectRuntime {
+                descriptor:
+                    engine_runtime::project_runtime_module::ProjectRuntimeModuleDescriptor::new(
+                        manifest.runtime_module.module_id,
+                        identity.aot_content_digest.clone(),
+                    ),
+            }),
+        )
+        .unwrap();
+        progress(ProjectRuntimePreparationPhase::LoadingModule);
+        Ok(PreparedProjectRuntime {
+            identity,
+            linked_project_runtimes: std::sync::Arc::new(linked),
+        })
+    }
+}
+
+fn trusted_runtime_preparation_app(
+    project_root: &std::path::Path,
+    started: std::sync::Arc<std::sync::atomic::AtomicBool>,
+    release: std::sync::Arc<std::sync::atomic::AtomicBool>,
+) -> NativeEditorApplication {
+    let rust_root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .and_then(std::path::Path::parent)
+        .unwrap()
+        .to_path_buf();
+    let trust_identity = format!(
+        "sha256:{}",
+        project_runtime_abi::project_runtime_abi_digest_hex()
+    );
+    let inspection = editor_core::ProjectRuntimeTrustInspection::inspect(
+        project_root,
+        &rust_root,
+        trust_identity.clone(),
+    )
+    .unwrap();
+    let trust_root = project_root.parent().unwrap().join(format!(
+        "{}-trust",
+        project_root.file_name().unwrap().to_string_lossy()
+    ));
+    let trust = editor_core::ProjectRuntimeTrustModule::open(&trust_root).unwrap();
+    trust
+        .record_explicit(
+            &inspection.request,
+            editor_core::ProjectRuntimeTrustDecisionKind::Trusted,
+            1,
+        )
+        .unwrap();
+    let mut app = NativeEditorApplication::new(NativeEditorWindowConfig::default());
+    app.install_project_runtime_trust_environment(ProjectRuntimeTrustEnvironment {
+        trust_module: trust,
+        engine_sdk_root: rust_root,
+        editor_build_identity: trust_identity,
+    });
+    app.install_project_runtime_preparer(std::sync::Arc::new(
+        BlockingProjectRuntimePreparationAdapter { started, release },
+    ));
+    app
+}
+
+fn write_project_rust_fixture_for_preparation() -> std::path::PathBuf {
+    let root = write_editor_project_fixture_for_shell();
+    let rust_root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .and_then(std::path::Path::parent)
+        .unwrap();
+    let runtime_root = root.join("RuntimeModule");
+    std::fs::create_dir_all(runtime_root.join("src")).unwrap();
+    let abi = rust_root
+        .join("crates/project_runtime_abi")
+        .display()
+        .to_string()
+        .replace('\\', "/");
+    let sdk = rust_root
+        .join("crates/project_runtime_sdk")
+        .display()
+        .to_string()
+        .replace('\\', "/");
+    std::fs::write(
+        runtime_root.join("Cargo.toml"),
+        format!(
+            r#"[package]
+name = "fixture_project_runtime"
+version = "0.0.2"
+edition = "2021"
+publish = false
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+project_runtime_abi = {{ path = "{abi}" }}
+project_runtime_sdk = {{ path = "{sdk}" }}
+serde = {{ version = "1", features = ["derive"] }}
+"#
+        ),
+    )
+    .unwrap();
+    let fixture_root = rust_root.join("fixtures/project_runtime_native_module_minimal");
+    let lock = std::fs::read_to_string(fixture_root.join("Cargo.lock"))
+        .unwrap()
+        .replace(
+            "project_runtime_native_module_minimal",
+            "fixture_project_runtime",
+        );
+    std::fs::write(runtime_root.join("Cargo.lock"), lock).unwrap();
+    std::fs::copy(
+        fixture_root.join("src/lib.rs"),
+        runtime_root.join("src/lib.rs"),
+    )
+    .unwrap();
+    let manifest_path = root.join("project.aife.json");
+    let mut manifest: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(&manifest_path).unwrap()).unwrap();
+    manifest["runtimeModule"] = serde_json::json!({
+        "sourceKind": "projectRust",
+        "moduleId": "fixture.native.runtime",
+        "interfaceVersion": "project-runtime-module.v2",
+        "cargoManifest": "RuntimeModule/Cargo.toml",
+        "cargoPackage": "fixture_project_runtime",
+        "playerBinary": "fixture_project_player"
+    });
+    std::fs::write(manifest_path, serde_json::to_vec_pretty(&manifest).unwrap()).unwrap();
+    root
+}
+
 #[test]
 fn headless_native_editor_window_app_builds_frame_report() {
     let model = fixture_model();
@@ -197,6 +395,153 @@ fn launcher_project_open_prepares_off_thread_rejects_duplicate_and_commits_once(
 
     drop(app);
     std::fs::remove_dir_all(project_root).unwrap();
+}
+
+#[test]
+fn stable_editor_project_runtime_cutover_project_open_authoring_remains_responsive_while_native_module_builds(
+) {
+    use std::sync::atomic::{AtomicBool, Ordering};
+    let project_root = write_project_rust_fixture_for_preparation();
+    let trust_root = project_root.parent().unwrap().join(format!(
+        "{}-trust",
+        project_root.file_name().unwrap().to_string_lossy()
+    ));
+    let started = std::sync::Arc::new(AtomicBool::new(false));
+    let release = std::sync::Arc::new(AtomicBool::new(false));
+    let mut app = trusted_runtime_preparation_app(&project_root, started.clone(), release.clone());
+    let payload = UiCommandPayload::OpenProject {
+        path: project_root.display().to_string(),
+    };
+    assert!(app
+        .dispatch_project_launcher_command_or_dispatch(UiCommand {
+            command_id: editor_ui_model::ui_command_id_for_payload(&payload).to_string(),
+            source: UiCommandSource::ProjectLauncher,
+            request_id: "authoring-first-runtime".to_string(),
+            payload,
+        })
+        .is_none());
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
+    while std::time::Instant::now() < deadline {
+        app.frame(1280.0, 720.0);
+        if started.load(Ordering::Acquire)
+            && app.latest_model().mode == EditorUiMode::AuthoringWorkspace
+        {
+            break;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(1));
+    }
+    assert!(
+        started.load(Ordering::Acquire),
+        "mode={:?} preparation={:?} trust_prompt={:?} activity={:?} feedback={:?}",
+        app.latest_model().mode,
+        app.session().project_runtime_preparation_state(),
+        app.latest_model().project_runtime_trust_prompt,
+        app.latest_model().project_launcher.activity,
+        app.report().last_feedback,
+    );
+    assert_eq!(app.latest_model().mode, EditorUiMode::AuthoringWorkspace);
+    let frame_before = app.report().frame_index;
+    for _ in 0..8 {
+        app.frame(1280.0, 720.0);
+    }
+    assert_eq!(app.report().frame_index, frame_before + 8);
+    let play = app
+        .latest_model()
+        .toolbar
+        .commands
+        .iter()
+        .find(|command| command.command_id == "play")
+        .unwrap();
+    assert!(!play.enabled);
+    assert_eq!(
+        play.reason_disabled.as_deref(),
+        Some("project_runtime.preparation_pending")
+    );
+    let rejected = app.dispatch_command(editor_core::command_for_test(UiCommandPayload::Play));
+    assert_eq!(rejected.status, CommandStatus::Rejected);
+    assert_eq!(
+        rejected.diagnostics[0].code,
+        "project_runtime.preparation_pending"
+    );
+
+    release.store(true, Ordering::Release);
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
+    while std::time::Instant::now() < deadline {
+        app.frame(1280.0, 720.0);
+        if matches!(
+            app.session().project_runtime_preparation_state(),
+            editor_core::ProjectRuntimePreparationState::Ready { .. }
+        ) {
+            break;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(1));
+    }
+    assert!(matches!(
+        app.session().project_runtime_preparation_state(),
+        editor_core::ProjectRuntimePreparationState::Ready { .. }
+    ));
+    app.frame(1280.0, 720.0);
+    assert!(
+        app.latest_model()
+            .toolbar
+            .commands
+            .iter()
+            .find(|command| command.command_id == "play")
+            .unwrap()
+            .enabled
+    );
+    drop(app);
+    std::fs::remove_dir_all(project_root).unwrap();
+    std::fs::remove_dir_all(trust_root).unwrap();
+}
+
+#[test]
+fn project_runtime_preparation_cancel_joins_owned_worker() {
+    use std::sync::atomic::{AtomicBool, Ordering};
+    let project_root = write_project_rust_fixture_for_preparation();
+    let trust_root = project_root.parent().unwrap().join(format!(
+        "{}-trust",
+        project_root.file_name().unwrap().to_string_lossy()
+    ));
+    let started = std::sync::Arc::new(AtomicBool::new(false));
+    let release = std::sync::Arc::new(AtomicBool::new(false));
+    let mut app = trusted_runtime_preparation_app(&project_root, started.clone(), release);
+    let payload = UiCommandPayload::OpenProject {
+        path: project_root.display().to_string(),
+    };
+    assert!(app
+        .dispatch_project_launcher_command_or_dispatch(UiCommand {
+            command_id: editor_ui_model::ui_command_id_for_payload(&payload).to_string(),
+            source: UiCommandSource::ProjectLauncher,
+            request_id: "cancel-runtime-preparation".to_string(),
+            payload,
+        })
+        .is_none());
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
+    while std::time::Instant::now() < deadline {
+        app.frame(1280.0, 720.0);
+        if started.load(Ordering::Acquire) {
+            break;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(1));
+    }
+    assert!(
+        started.load(Ordering::Acquire),
+        "mode={:?} preparation={:?} trust_prompt={:?} activity={:?} feedback={:?}",
+        app.latest_model().mode,
+        app.session().project_runtime_preparation_state(),
+        app.latest_model().project_runtime_trust_prompt,
+        app.latest_model().project_launcher.activity,
+        app.report().last_feedback,
+    );
+    app.cancel_project_runtime_preparation();
+    assert!(matches!(
+        app.session().project_runtime_preparation_state(),
+        editor_core::ProjectRuntimePreparationState::Inactive
+    ));
+    drop(app);
+    std::fs::remove_dir_all(project_root).unwrap();
+    std::fs::remove_dir_all(trust_root).unwrap();
 }
 
 #[test]
@@ -1373,7 +1718,7 @@ fn native_editor_application_loads_recent_projects_from_store() {
         editor_ui_model::RecentProjectEntry {
             name: "StoredProject".to_string(),
             path: project_root.display().to_string(),
-            engine_version: "0.0.1".to_string(),
+            engine_version: "0.0.2".to_string(),
             last_opened_at: Some("1".to_string()),
             last_modified_at: Some("1".to_string()),
             valid: true,
@@ -1411,7 +1756,7 @@ fn native_editor_migrates_duplicate_windows_recent_project_paths_once() {
     let entry = |path: String, last_opened_at: &str| editor_ui_model::RecentProjectEntry {
         name: "StoredProject".to_string(),
         path,
-        engine_version: "0.0.1".to_string(),
+        engine_version: "0.0.2".to_string(),
         last_opened_at: Some(last_opened_at.to_string()),
         last_modified_at: Some("1".to_string()),
         valid: true,

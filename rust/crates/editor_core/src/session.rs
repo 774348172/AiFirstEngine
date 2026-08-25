@@ -93,6 +93,8 @@ pub struct EditorSession {
     pub(crate) play_session_controller: PlaySessionController,
     pub(crate) linked_project_runtimes: Arc<LinkedProjectRuntimeSet>,
     pub(crate) project_editor_composition_identity: Option<crate::ProjectEditorCompositionIdentity>,
+    pub(crate) project_runtime_preparation: crate::ProjectRuntimePreparationModule,
+    pub(crate) project_runtime_native_module_identity: Option<crate::ProjectNativeModuleIdentity>,
     pub(crate) last_play_session_report: Option<PlaySessionReport>,
     pub(crate) last_editor_preview_package_report: Option<EditorPlayPreviewPackageReport>,
     pub(crate) prepared_editor_play_report: Option<EditorPlayPreviewPackageReport>,
@@ -172,6 +174,8 @@ impl Default for EditorSession {
             play_session_controller: PlaySessionController::new(),
             linked_project_runtimes: Arc::new(LinkedProjectRuntimeSet::explicit_empty()),
             project_editor_composition_identity: None,
+            project_runtime_preparation: crate::ProjectRuntimePreparationModule::default(),
+            project_runtime_native_module_identity: None,
             last_play_session_report: None,
             last_editor_preview_package_report: None,
             prepared_editor_play_report: None,
@@ -285,6 +289,84 @@ impl EditorSession {
         &self,
     ) -> Option<&crate::ProjectEditorCompositionIdentity> {
         self.project_editor_composition_identity.as_ref()
+    }
+
+    pub fn project_runtime_preparation_state(&self) -> &crate::ProjectRuntimePreparationState {
+        self.project_runtime_preparation.state()
+    }
+
+    pub fn await_project_runtime_trust(
+        &mut self,
+        project_id: impl Into<String>,
+        module_id: impl Into<String>,
+        interface_version: impl Into<String>,
+    ) -> crate::ProjectRuntimePreparationTicket {
+        self.linked_project_runtimes = Arc::new(LinkedProjectRuntimeSet::explicit_empty());
+        self.project_runtime_native_module_identity = None;
+        self.project_runtime_preparation
+            .await_trust(project_id, module_id, interface_version)
+    }
+
+    pub fn begin_project_runtime_preparation(
+        &mut self,
+        project_id: impl Into<String>,
+        module_id: impl Into<String>,
+        interface_version: impl Into<String>,
+    ) -> crate::ProjectRuntimePreparationTicket {
+        self.linked_project_runtimes = Arc::new(LinkedProjectRuntimeSet::explicit_empty());
+        self.project_runtime_native_module_identity = None;
+        self.project_runtime_preparation
+            .begin(project_id, module_id, interface_version)
+    }
+
+    pub fn install_prepared_project_runtime(
+        &mut self,
+        ticket: &crate::ProjectRuntimePreparationTicket,
+        identity: crate::ProjectNativeModuleIdentity,
+        linked_project_runtimes: Arc<LinkedProjectRuntimeSet>,
+    ) -> bool {
+        let descriptor_matches =
+            linked_project_runtimes
+                .only_descriptor()
+                .is_ok_and(|descriptor| {
+                    descriptor.module_id == ticket.module_id
+                        && descriptor.interface_version == ticket.interface_version
+                        && descriptor.aot_content_digest == identity.aot_content_digest
+                });
+        if !descriptor_matches || !self.project_runtime_preparation.complete(ticket, &identity) {
+            return false;
+        }
+        self.linked_project_runtimes = linked_project_runtimes;
+        self.project_runtime_native_module_identity = Some(identity);
+        self.project_editor_composition_identity = None;
+        true
+    }
+
+    pub fn fail_project_runtime_preparation(
+        &mut self,
+        ticket: &crate::ProjectRuntimePreparationTicket,
+        diagnostic: crate::ProjectRuntimeNativeModuleDiagnostic,
+    ) -> bool {
+        self.project_runtime_preparation.fail(ticket, diagnostic)
+    }
+
+    pub fn cancel_project_runtime_preparation(&mut self) {
+        self.project_runtime_preparation.cancel();
+        self.project_runtime_native_module_identity = None;
+        self.linked_project_runtimes = Arc::new(LinkedProjectRuntimeSet::explicit_empty());
+    }
+
+    pub fn project_runtime_play_blocker(&self) -> Option<crate::ProjectRuntimePreparationBlocker> {
+        let project = self.active_project_session.as_ref()?;
+        let requested = &project.manifest.runtime_module;
+        if requested.resolved_source_kind() != crate::ProjectRuntimeSourceKind::ProjectRust {
+            return None;
+        }
+        self.project_runtime_preparation.play_blocker(
+            &project.manifest.project_id,
+            &requested.module_id,
+            &requested.interface_version,
+        )
     }
 
     pub fn install_prepared_project_open(&mut self, prepared: crate::PreparedProjectOpen) {
@@ -1684,8 +1766,15 @@ impl EditorSession {
     pub fn tick_active_game_view_runtime_descriptor_frame(
         &mut self,
     ) -> Option<GameViewPresentReport> {
+        self.tick_active_game_view_runtime_descriptor_frame_with_fixed_steps(1)
+    }
+
+    pub fn tick_active_game_view_runtime_descriptor_frame_with_fixed_steps(
+        &mut self,
+        fixed_step_count: usize,
+    ) -> Option<GameViewPresentReport> {
         let instance = self.editor_runtime_play_instance.as_mut()?;
-        let report = instance.tick_next_descriptor_frame();
+        let report = instance.tick_next_descriptor_frame_with_fixed_steps(fixed_step_count);
         self.last_game_view_runtime_frame = report.last_frame.clone();
         self.sync_animator2d_play_observations();
         self.last_game_view_present_report = Some(report.clone());

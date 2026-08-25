@@ -947,7 +947,7 @@ mod tests {
 
     fn create_project_with_scene(name: &str) -> PathBuf {
         let root = unique_temp_dir(name);
-        let mut launcher = ProjectLauncherState::new("0.0.1");
+        let mut launcher = ProjectLauncherState::new("0.0.2");
         launcher.create_project(&root, "ExportGame").unwrap();
         fs::write(root.join("Scenes").join("Main.scene.json"), scene_json()).unwrap();
         root

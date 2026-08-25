@@ -48,6 +48,7 @@ fn runtime_viewport_texture_flows_into_ui_draw_slot() {
         aui_composition: None,
         sprite_texture_bindings: None,
         runtime_texture_bindings: None,
+        game_view_presentation: None,
         quality_profile: QualityProfile::default(),
         render_target: RenderTarget::viewport_texture("viewport-scene", 640, 360),
     });
@@ -153,6 +154,7 @@ fn minimal_runtime_to_editor_viewport_loop_outputs_traceable_texture_slot() {
         aui_composition: None,
         sprite_texture_bindings: None,
         runtime_texture_bindings: None,
+        game_view_presentation: None,
         quality_profile: QualityProfile::default(),
         render_target: RenderTarget::viewport_texture("viewport-scene", 640, 360),
     });

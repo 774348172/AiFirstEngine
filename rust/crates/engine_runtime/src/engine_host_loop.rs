@@ -6,7 +6,7 @@ use crate::components::ComponentTypeId;
 use crate::frame_loop::{
     FrameLoop, ProjectRuntimeFrameSession, RuntimeFrameContext, RuntimeFrameOutput,
 };
-use crate::game_view_presentation::GameViewTargetSpec;
+use crate::game_view_presentation::{GameViewTargetSpec, ResolvedGameViewPresentation};
 use crate::input_action::{ActionSnapshot, InputTraceSummary};
 use crate::minimal_renderer::{MinimalRenderer, MinimalRendererFrame};
 use crate::project_observation::{
@@ -37,6 +37,7 @@ use crate::runtime_trace::RuntimeTrace;
 use crate::sprite2d_render_pipeline::Sprite2DTextureBindingContext;
 use crate::world::World;
 use std::fmt;
+use std::sync::Arc;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum EngineHostMode {
@@ -57,6 +58,7 @@ pub struct EngineFrameInput {
     pub aui_interaction: Option<AuiInteractionResult>,
     pub runtime_texture_bindings: Option<RuntimeTextureBindingContext>,
     pub unscaled_delta_time: f32,
+    pub fixed_step_count: usize,
 }
 
 impl EngineFrameInput {
@@ -70,6 +72,7 @@ impl EngineFrameInput {
             aui_interaction: None,
             runtime_texture_bindings: None,
             unscaled_delta_time: DEFAULT_FIXED_DELTA_TIME,
+            fixed_step_count: 1,
         }
     }
 
@@ -105,6 +108,11 @@ impl EngineFrameInput {
 
     pub fn with_unscaled_delta_time(mut self, unscaled_delta_time: f32) -> Self {
         self.unscaled_delta_time = unscaled_delta_time;
+        self
+    }
+
+    pub fn with_fixed_step_count(mut self, fixed_step_count: usize) -> Self {
+        self.fixed_step_count = fixed_step_count;
         self
     }
 }
@@ -432,6 +440,25 @@ impl EngineHostLoop {
         sprite_texture_bindings: Option<&Sprite2DTextureBindingContext>,
         runtime_texture_bindings: Option<&RuntimeTextureBindingContext>,
     ) -> RenderThreadFrameOutput {
+        self.render_thread_for_target_with_runtime_resources_and_presentation(
+            render_target,
+            aui_overlay,
+            aui_composition,
+            sprite_texture_bindings,
+            runtime_texture_bindings,
+            None,
+        )
+    }
+
+    pub fn render_thread_for_target_with_runtime_resources_and_presentation(
+        &mut self,
+        render_target: RenderTarget,
+        aui_overlay: Option<&AuiOverlayFrame>,
+        aui_composition: Option<&AuiCompositionFrame>,
+        sprite_texture_bindings: Option<&Sprite2DTextureBindingContext>,
+        runtime_texture_bindings: Option<&RuntimeTextureBindingContext>,
+        game_view_presentation: Option<Arc<ResolvedGameViewPresentation>>,
+    ) -> RenderThreadFrameOutput {
         let (ticket, immediate) = self
             .render_dispatcher
             .submit_frame_output(RenderFramePacket {
@@ -444,6 +471,7 @@ impl EngineHostLoop {
                 aui_composition: aui_composition.cloned(),
                 sprite_texture_bindings: sprite_texture_bindings.cloned(),
                 runtime_texture_bindings: runtime_texture_bindings.cloned(),
+                game_view_presentation,
                 view_id: None,
                 quality_profile: QualityProfile::default(),
                 render_target,
@@ -582,7 +610,7 @@ impl EngineHostLoop {
             .unwrap_or(&[]);
         let runtime_frame = self
             .frame_loop
-            .tick_runtime_frame_with_project_session_and_delta(
+            .tick_runtime_frame_with_project_session_delta_and_fixed_steps(
                 world,
                 &mut self.render_scene,
                 &mut self.extract,
@@ -596,6 +624,7 @@ impl EngineHostLoop {
                     report_level: self.project_runtime_session_report_level,
                     observation_contract: self.project_observation_contract.as_ref(),
                 },
+                input.fixed_step_count,
             );
         let runtime_frame = match runtime_frame {
             Ok(frame) => frame,
@@ -708,6 +737,7 @@ impl EngineHostLoop {
                         aui_composition,
                         sprite_texture_bindings,
                         runtime_texture_bindings,
+                        game_view_presentation: None,
                         view_id: None,
                         quality_profile: QualityProfile::default(),
                         render_target: RenderTarget::viewport_texture(
@@ -1189,7 +1219,7 @@ mod tests {
         let mut input = RuntimePackageBuildInput::new(RuntimeProjectInfo::explicit_empty(
             "project-observation-test",
             "Observation Test",
-            "0.0.1",
+            "0.0.2",
         ));
         input.scenes.push(RuntimeScene {
             schema_version: RUNTIME_SCENE_SCHEMA_VERSION.to_string(),

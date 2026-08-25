@@ -112,7 +112,19 @@ impl ProjectLogicRunner {
         &self.time_context
     }
 
-    pub fn register_rust_aot_rule(&mut self, rule_id: impl Into<String>, rule: RustAotRule) {
+    pub fn register_rust_aot_rule(
+        &mut self,
+        rule_id: impl Into<String>,
+        rule: impl for<'a> Fn(&mut LogicContext<'a>) -> LogicResult + Send + Sync + 'static,
+    ) {
+        self.rust_aot.register_rule(rule_id, RustAotRule::new(rule));
+    }
+
+    pub(crate) fn register_rust_aot_rule_value(
+        &mut self,
+        rule_id: impl Into<String>,
+        rule: RustAotRule,
+    ) {
         self.rust_aot.register_rule(rule_id, rule);
     }
 
@@ -1009,7 +1021,7 @@ mod tests {
             manifest: RuntimePackageManifest {
                 schema_version: RUNTIME_PACKAGE_SCHEMA_VERSION.to_string(),
                 package_mode: RUNTIME_PACKAGE_MODE.to_string(),
-                project: RuntimeProjectInfo::explicit_empty("project-fixture", "Fixture", "0.0.1"),
+                project: RuntimeProjectInfo::explicit_empty("project-fixture", "Fixture", "0.0.2"),
                 active_scene_id: "scene-main".to_string(),
                 scenes: vec![RuntimeSceneManifestEntry {
                     id: "scene-main".to_string(),

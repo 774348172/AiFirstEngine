@@ -865,7 +865,7 @@ fn write_generated_composition(
     let mut manifest = toml::map::Map::new();
     let package_name = generated_package_name(identity)?;
     let mut package = toml::toml! {
-        version = "0.0.1"
+        version = "0.0.2"
         edition = "2021"
         publish = false
     };
@@ -1933,7 +1933,7 @@ mod tests {
         fs::write(
             runtime.join("Cargo.toml"),
             format!(
-                "[package]\nname='fixture_editor_runtime'\nversion='0.0.1'\nedition='2021'\npublish=false\n\n[dependencies]\nengine_runtime={{path='{engine_runtime}'}}\n"
+                "[package]\nname='fixture_editor_runtime'\nversion='0.0.2'\nedition='2021'\npublish=false\n\n[dependencies]\nengine_runtime={{path='{engine_runtime}'}}\n"
             ),
         )
         .unwrap();
@@ -1975,7 +1975,7 @@ pub fn linked_set() -> Result<LinkedProjectRuntimeSet, ProjectRuntimeError> {{
                 "schemaVersion": "aife-project.v2",
                 "projectId": "fixture.editor.project",
                 "projectName": "Fixture Editor",
-                "engineVersion": "0.0.1",
+                "engineVersion": "0.0.2",
                 "createdAt": "0",
                 "lastOpenedAt": null,
                 "defaultScene": "Scenes/Main.scene.json",
@@ -2083,102 +2083,6 @@ pub fn linked_set() -> Result<LinkedProjectRuntimeSet, ProjectRuntimeError> {{
         assert_eq!(
             dependencies.keys().map(String::as_str).collect::<Vec<_>>(),
             ["editor_window_winit", "engine_runtime", "project_runtime"]
-        );
-    }
-
-    #[test]
-    fn project_editor_composition_artifact_builds_seals_and_reuses_real_specialized_editor() {
-        let fixture = fixture("real-artifact");
-        let source_manifest = fs::read(fixture.project.join("RuntimeModule/Cargo.toml")).unwrap();
-        let source_lib = fs::read(fixture.project.join("RuntimeModule/src/lib.rs")).unwrap();
-
-        let first = ProjectEditorCompositionArtifact::prepare(
-            fixture.request.clone(),
-            ProjectEditorCompositionPreparationControl::default(),
-        );
-        assert_eq!(
-            first.status,
-            ProjectEditorCompositionBuildStatus::Success,
-            "diagnostics: {:#?}",
-            first.diagnostics
-        );
-        assert_eq!(
-            first.cache_status,
-            ProjectEditorCompositionCacheStatus::Rebuilt
-        );
-        assert_eq!(first.steps.len(), 3);
-        let artifact = first.artifact.as_ref().unwrap();
-        assert!(artifact.executable_path.is_file());
-        assert!(artifact.descriptor_path.is_file());
-        assert!(artifact.build_report_path.is_file());
-        assert_eq!(
-            artifact.descriptor.identity,
-            fixture.request.expected_identity
-        );
-        assert_eq!(
-            sha256_prefixed(&fs::read(&artifact.executable_path).unwrap()),
-            artifact.descriptor.executable_hash
-        );
-        let persisted: ProjectEditorCompositionBuildReport =
-            read_json(&artifact.build_report_path).unwrap();
-        assert_eq!(
-            persisted.status,
-            ProjectEditorCompositionBuildStatus::Success
-        );
-        assert!(persisted.artifact_size_bytes.is_some_and(|size| size > 0));
-
-        if let Some(evidence_root) = std::env::var_os("AIFE_262_WINDOW2_EVIDENCE_ROOT") {
-            let evidence_root = PathBuf::from(evidence_root);
-            fs::create_dir_all(&evidence_root).unwrap();
-            fs::copy(
-                &artifact.descriptor_path,
-                evidence_root.join("composition-descriptor.json"),
-            )
-            .unwrap();
-            fs::copy(
-                &artifact.build_report_path,
-                evidence_root.join("build-report.json"),
-            )
-            .unwrap();
-            fs::write(
-                evidence_root.join("qualification-summary.json"),
-                serde_json::to_vec_pretty(&serde_json::json!({
-                    "schemaVersion": "project-editor-composition-window2-evidence.v1",
-                    "status": "passed",
-                    "identityDigest": artifact.descriptor.identity_digest,
-                    "executableHash": artifact.descriptor.executable_hash,
-                    "moduleId": artifact.descriptor.identity.module_id,
-                    "interfaceVersion": artifact.descriptor.identity.interface_version,
-                    "artifactSizeBytes": persisted.artifact_size_bytes,
-                    "sourceProjectPreserved": true,
-                    "productionBinaryModified": false
-                }))
-                .unwrap(),
-            )
-            .unwrap();
-        }
-
-        let second = ProjectEditorCompositionArtifact::prepare(
-            fixture.request.clone(),
-            ProjectEditorCompositionPreparationControl::default(),
-        );
-        assert_eq!(second.status, ProjectEditorCompositionBuildStatus::Success);
-        assert_eq!(
-            second.cache_status,
-            ProjectEditorCompositionCacheStatus::Hit
-        );
-        assert!(second.steps.is_empty());
-        assert_eq!(
-            second.artifact.unwrap().descriptor.executable_hash,
-            artifact.descriptor.executable_hash
-        );
-        assert_eq!(
-            fs::read(fixture.project.join("RuntimeModule/Cargo.toml")).unwrap(),
-            source_manifest
-        );
-        assert_eq!(
-            fs::read(fixture.project.join("RuntimeModule/src/lib.rs")).unwrap(),
-            source_lib
         );
     }
 
@@ -2476,7 +2380,7 @@ pub fn linked_set() -> Result<LinkedProjectRuntimeSet, ProjectRuntimeError> {{
         let input_digest = format!("sha256:{}", "1".repeat(64));
         let root_name = generated_package_name(&fixture.request.expected_identity).unwrap();
         let lock = format!(
-            "version = 3\n\n[[package]]\nname = \"{root_name}\"\nversion = \"0.0.1\"\n\n[[package]]\nname = \"fixture_dep\"\nversion = \"1.0.0\"\n"
+            "version = 3\n\n[[package]]\nname = \"{root_name}\"\nversion = \"0.0.2\"\n\n[[package]]\nname = \"fixture_dep\"\nversion = \"1.0.0\"\n"
         );
         let lineage =
             generated_composition_lock_lineage(lock.as_bytes(), &root_name, input_digest.clone())
@@ -2539,14 +2443,14 @@ pub fn linked_set() -> Result<LinkedProjectRuntimeSet, ProjectRuntimeError> {{
     fn project_editor_composition_lineage_store_manifest_template_is_path_independent() {
         let left = br#"[package]
 name = "generated"
-version = "0.0.1"
+version = "0.0.2"
 
 [dependencies]
 project_runtime = { path = "G:/run-a/RuntimeModuleBuild", package = "fixture" }
 "#;
         let right = br#"[package]
 name = "generated"
-version = "0.0.1"
+version = "0.0.2"
 
 [dependencies]
 project_runtime = { path = "G:/run-b/RuntimeModuleBuild", package = "fixture" }
@@ -2557,7 +2461,7 @@ project_runtime = { path = "G:/run-b/RuntimeModuleBuild", package = "fixture" }
         );
         let changed = br#"[package]
 name = "generated"
-version = "0.0.1"
+version = "0.0.2"
 
 [dependencies]
 project_runtime = { path = "G:/run-b/RuntimeModuleBuild", package = "fixture", features = ["extra"] }

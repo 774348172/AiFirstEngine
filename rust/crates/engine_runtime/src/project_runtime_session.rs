@@ -950,10 +950,14 @@ impl fmt::Display for ProjectRuntimeSessionFactoryError {
 
 impl std::error::Error for ProjectRuntimeSessionFactoryError {}
 
-pub type ProjectRuntimeSessionFactory =
-    for<'a> fn(
-        ProjectRuntimeSessionCreateContext<'a>,
-    ) -> Result<Box<dyn ProjectRuntimeSession>, ProjectRuntimeSessionFactoryError>;
+pub type ProjectRuntimeSessionFactory = std::sync::Arc<
+    dyn for<'a> Fn(
+            ProjectRuntimeSessionCreateContext<'a>,
+        )
+            -> Result<Box<dyn ProjectRuntimeSession>, ProjectRuntimeSessionFactoryError>
+        + Send
+        + Sync,
+>;
 
 #[derive(Default)]
 pub struct EmptyProjectRuntimeSession;

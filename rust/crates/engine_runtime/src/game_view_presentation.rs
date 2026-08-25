@@ -368,6 +368,14 @@ impl ResolvedGameViewPresentation {
             .map(|(_, transform)| transform.destination_rect)
     }
 
+    pub fn canvas_reference_to_target_scale(&self, canvas_id: &str) -> Option<f32> {
+        self.canvas_to_target.get(canvas_id).map(|(_, transform)| {
+            let x = transform.destination_rect.width / transform.source_rect.width;
+            let y = transform.destination_rect.height / transform.source_rect.height;
+            x.min(y)
+        })
+    }
+
     pub fn reference_to_target(
         &self,
         canvas_id: &str,

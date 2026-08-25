@@ -235,7 +235,7 @@ pub(super) fn write_runtime_package_fixture_for_shell(
   "project": {
     "projectId": "runtime-shell-test",
     "name": "Runtime Shell Test",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "runtimeModule": {
       "moduleId": "engine.empty.runtime",
       "interfaceVersion": "project-runtime-module.v2",

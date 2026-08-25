@@ -13,6 +13,8 @@ use crate::runtime_package::RuntimeAssetRef;
 use crate::runtime_time::TimeContext;
 use crate::world_api::{WorldApiError, WorldWriteApi, WorldWriteRecord};
 use std::collections::BTreeMap;
+use std::fmt;
+use std::sync::Arc;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RulePhase {
@@ -380,7 +382,30 @@ pub trait LogicExecutor {
     fn run(&self, rule_id: &str, context: &mut LogicContext<'_>) -> LogicResult;
 }
 
-pub type RustAotRule = fn(&mut LogicContext<'_>) -> LogicResult;
+#[derive(Clone)]
+pub struct RustAotRule {
+    callback: Arc<dyn for<'a> Fn(&mut LogicContext<'a>) -> LogicResult + Send + Sync>,
+}
+
+impl RustAotRule {
+    pub fn new(
+        callback: impl for<'a> Fn(&mut LogicContext<'a>) -> LogicResult + Send + Sync + 'static,
+    ) -> Self {
+        Self {
+            callback: Arc::new(callback),
+        }
+    }
+
+    fn run(&self, context: &mut LogicContext<'_>) -> LogicResult {
+        (self.callback)(context)
+    }
+}
+
+impl fmt::Debug for RustAotRule {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter.write_str("RustAotRule(..)")
+    }
+}
 
 #[derive(Clone, Default, Debug)]
 pub struct RustAotExecutor {
@@ -411,7 +436,7 @@ impl LogicExecutor for RustAotExecutor {
                 "Rust AOT rule is not registered",
             );
         };
-        rule(context)
+        rule.run(context)
     }
 }
 

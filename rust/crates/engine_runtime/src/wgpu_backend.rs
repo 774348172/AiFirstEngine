@@ -263,6 +263,7 @@ impl EngineRhiBackend for WgpuBackend {
 pub mod real {
     use super::*;
     use crate::font_bundle::{FontBundleRenderMode, RuntimeLoadedFontBundle};
+    use crate::game_view_presentation::GameViewRect;
     use crate::render_resource::{RenderResourceHandle, RenderResourceKind};
     use crate::rhi_command_plan::{RhiCommand, RhiDrawKind};
     use crate::runtime_renderer::font_bundle_page_generation_render_handle;
@@ -298,6 +299,34 @@ pub mod real {
         bind_group: wgpu::BindGroup,
         _width: u32,
         _height: u32,
+    }
+
+    fn surface_content_scissor(rect: GameViewRect) -> Result<[u32; 4], String> {
+        let right = rect.x + rect.width;
+        let bottom = rect.y + rect.height;
+        if !rect.x.is_finite()
+            || !rect.y.is_finite()
+            || !rect.width.is_finite()
+            || !rect.height.is_finite()
+            || rect.x < 0.0
+            || rect.y < 0.0
+            || rect.width <= 0.0
+            || rect.height <= 0.0
+            || !right.is_finite()
+            || !bottom.is_finite()
+        {
+            return Err("wgpu.surface_content_rect_invalid".to_string());
+        }
+        let x = rect.x.floor() as u32;
+        let y = rect.y.floor() as u32;
+        let scissor_right = right.ceil() as u32;
+        let scissor_bottom = bottom.ceil() as u32;
+        let width = scissor_right.saturating_sub(x);
+        let height = scissor_bottom.saturating_sub(y);
+        if width == 0 || height == 0 {
+            return Err("wgpu.surface_content_rect_empty".to_string());
+        }
+        Ok([x, y, width, height])
     }
 
     pub struct RealWgpuBackend {
@@ -764,6 +793,24 @@ pub mod real {
             plan: &RhiCommandPlan,
             view: &wgpu::TextureView,
         ) -> RhiBackendReport {
+            self.execute_plan_to_surface_view_with_rect(plan, view, None)
+        }
+
+        pub fn execute_plan_to_surface_view_in_rect(
+            &mut self,
+            plan: &RhiCommandPlan,
+            view: &wgpu::TextureView,
+            display_content_rect: GameViewRect,
+        ) -> RhiBackendReport {
+            self.execute_plan_to_surface_view_with_rect(plan, view, Some(display_content_rect))
+        }
+
+        fn execute_plan_to_surface_view_with_rect(
+            &mut self,
+            plan: &RhiCommandPlan,
+            view: &wgpu::TextureView,
+            display_content_rect: Option<GameViewRect>,
+        ) -> RhiBackendReport {
             if let Err(error) = self.validate_plan_texture_residency(plan) {
                 self.state.diagnostics.push(RhiBackendDiagnostic::error(
                     "wgpu.texture_binding_missing",
@@ -793,7 +840,7 @@ pub mod real {
                     RhiCommand::Present { target } => self.present(target),
                 }
             }
-            if let Err(error) = self.render_to_view(plan, view) {
+            if let Err(error) = self.render_to_view(plan, view, display_content_rect) {
                 self.state.diagnostics.push(RhiBackendDiagnostic::error(
                     "wgpu.render_surface_failed",
                     error,
@@ -824,6 +871,16 @@ pub mod real {
             width: u32,
             height: u32,
         ) -> Result<Vec<u8>, String> {
+            self.render_plan_to_rgba_bytes_with_rect(plan, width, height, None)
+        }
+
+        fn render_plan_to_rgba_bytes_with_rect(
+            &mut self,
+            plan: &RhiCommandPlan,
+            width: u32,
+            height: u32,
+            display_content_rect: Option<GameViewRect>,
+        ) -> Result<Vec<u8>, String> {
             if width == 0 || height == 0 {
                 return Err("wgpu.readback_zero_sized_target".to_string());
             }
@@ -847,7 +904,7 @@ pub mod real {
                 view_formats: &[],
             });
             let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
-            self.render_to_view(plan, &view)?;
+            self.render_to_view(plan, &view, display_content_rect)?;
             let output_buffer = self.device.create_buffer(&wgpu::BufferDescriptor {
                 label: Some("runtime-wgpu-screenshot-readback"),
                 size: output_buffer_size,
@@ -917,6 +974,7 @@ pub mod real {
             &mut self,
             plan: &RhiCommandPlan,
             view: &wgpu::TextureView,
+            display_content_rect: Option<GameViewRect>,
         ) -> Result<(), String> {
             if let Err(error) = self.validate_plan_texture_residency(plan) {
                 self.state.diagnostics.push(RhiBackendDiagnostic::error(
@@ -925,6 +983,9 @@ pub mod real {
                 ));
                 return Err(error);
             }
+            let content_viewport = display_content_rect
+                .map(|rect| surface_content_scissor(rect).map(|scissor| (rect, scissor)))
+                .transpose()?;
             let mut encoder = self
                 .device
                 .create_command_encoder(&wgpu::CommandEncoderDescriptor {
@@ -955,6 +1016,10 @@ pub mod real {
                     timestamp_writes: None,
                     occlusion_query_set: None,
                 });
+                if let Some((rect, [x, y, width, height])) = content_viewport {
+                    pass.set_viewport(rect.x, rect.y, rect.width, rect.height, 0.0, 1.0);
+                    pass.set_scissor_rect(x, y, width, height);
+                }
                 for command in &plan.commands {
                     if let RhiCommand::Draw {
                         draw_kind,
@@ -1941,6 +2006,86 @@ fn vs_main(
 
             assert!(rgba[0] > rgba[2], "first pixel was {:?}", &rgba[..4]);
             assert!(rgba[0] > 150, "first pixel was {:?}", &rgba[..4]);
+        }
+
+        #[test]
+        fn direct_surface_content_rect_keeps_contain_gutters_clear() {
+            let mut backend = match RealWgpuBackend::new_offscreen(12, 20) {
+                Ok(backend) => backend,
+                Err(_) => return,
+            };
+            let target = "portrait-surface".to_string();
+            let mut graph = RenderGraph::new("graph-content-rect", 1);
+            graph.output_target = Some(target.clone());
+            graph
+                .resources
+                .push(RenderResource::surface_backbuffer(target.clone(), 12, 20));
+            graph.passes.push(RenderPass {
+                pass_id: "draw-content".to_string(),
+                pass_name: "Draw Content".to_string(),
+                pass_kind: RenderPassKind::DrawUiComposition,
+                view_id: "view-1".to_string(),
+                reads: Vec::new(),
+                writes: vec![target.clone()],
+                color_targets: vec![target.clone()],
+                depth_target: None,
+                commands: vec![
+                    RenderPassCommand::Clear {
+                        target: target.clone(),
+                        color: color([0.0, 0.0, 0.0, 1.0]),
+                    },
+                    RenderPassCommand::DrawUiComposition {
+                        target,
+                        stage: "screen_overlay".to_string(),
+                        item_count: 1,
+                        text_count: 0,
+                        image_count: 0,
+                        glyph_count: 0,
+                        font_atlas_id: None,
+                        text_pass_inserted: false,
+                        debug_label: "target-space-full-quad".to_string(),
+                        texture: None,
+                        font_render_mode: None,
+                        font_page_index: None,
+                        vertices: full_quad_vertices_for_test(),
+                    },
+                ],
+                debug_source: None,
+            });
+            let plan = compile_render_graph_to_rhi_plan(&graph);
+
+            let rgba = backend
+                .render_plan_to_rgba_bytes_with_rect(
+                    &plan,
+                    12,
+                    20,
+                    Some(GameViewRect::new(0.0, 2.0, 12.0, 16.0)),
+                )
+                .unwrap();
+            let pixel = |x: usize, y: usize| &rgba[(y * 12 + x) * 4..(y * 12 + x + 1) * 4];
+
+            assert_eq!(pixel(6, 0), &[0, 0, 0, 255]);
+            assert!(
+                pixel(6, 10)[1] > 200,
+                "content pixel was {:?}",
+                pixel(6, 10)
+            );
+            assert_eq!(pixel(6, 19), &[0, 0, 0, 255]);
+        }
+
+        fn full_quad_vertices_for_test() -> Vec<RenderDrawVertex> {
+            let corners = [
+                ([-1.0, -1.0], [0.0, 1.0]),
+                ([1.0, -1.0], [1.0, 1.0]),
+                ([1.0, 1.0], [1.0, 0.0]),
+                ([-1.0, 1.0], [0.0, 0.0]),
+            ];
+            [0usize, 1, 2, 0, 2, 3]
+                .into_iter()
+                .map(|index| {
+                    RenderDrawVertex::new(corners[index].0, [0.0, 1.0, 0.0, 1.0], corners[index].1)
+                })
+                .collect()
         }
 
         fn quad_vertices_for_test() -> Vec<RenderDrawVertex> {

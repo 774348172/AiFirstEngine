@@ -8,8 +8,13 @@ use std::path::{Path, PathBuf};
 
 const PROJECT_MANIFEST_PATH: &str = "project.aife.json";
 const RUNTIME_MANIFEST_PATH: &str = "RuntimeModule/Cargo.toml";
-const CONTROLLED_THIRD_PARTY_DEPENDENCIES: &[&str] = &["serde", "serde_json"];
-const TRUSTED_ENGINE_DEPENDENCIES: &[&str] = &["engine_input", "engine_runtime"];
+const CONTROLLED_THIRD_PARTY_DEPENDENCIES: &[&str] = &["serde", "serde_json", "sha2"];
+const TRUSTED_ENGINE_DEPENDENCIES: &[&str] = &[
+    "engine_input",
+    "engine_runtime",
+    "project_runtime_abi",
+    "project_runtime_sdk",
+];
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -220,10 +225,13 @@ pub(crate) fn plan_project_runtime_player_staging(
             ));
         }
     }
-    if !dependencies.contains_key("engine_runtime") {
+    let has_legacy_runtime = dependencies.contains_key("engine_runtime");
+    let has_native_runtime = dependencies.contains_key("project_runtime_abi")
+        && dependencies.contains_key("project_runtime_sdk");
+    if !has_legacy_runtime && !has_native_runtime {
         return Err(ProjectRuntimePlayerStagingError::new(
             "project_runtime.player_artifact_staging_manifest_policy_rejected",
-            "RuntimeModule dependency engine_runtime is required.",
+            "RuntimeModule requires either legacy engine_runtime or project_runtime_abi + project_runtime_sdk.",
         ));
     }
     normalized_identities.sort_by(|left, right| left.name.cmp(&right.name));
@@ -996,7 +1004,7 @@ mod tests {
         let cargo = format!(
             r#"[package]
 name = "fixture_production_runtime"
-version = "0.0.1"
+version = "0.0.2"
 edition = "2021"
 publish = false
 
@@ -1013,7 +1021,7 @@ serde_json = "1"
             "schemaVersion": "aife-project.v2",
             "projectId": "fixture.production.staging",
             "projectName": "Fixture",
-            "engineVersion": "0.0.1",
+            "engineVersion": "0.0.2",
             "createdAt": "0",
             "lastOpenedAt": null,
             "defaultScene": "Scenes/Main.scene.json",
@@ -1138,7 +1146,7 @@ pub struct Fixture { pub value: serde_json::Value }
         fs::write(
             runtime.join("Cargo.toml"),
             format!(
-                "[package]\nname='fixture_reject_runtime'\nversion='0.0.1'\nedition='2021'\n\
+                "[package]\nname='fixture_reject_runtime'\nversion='0.0.2'\nedition='2021'\n\
                  [dependencies]\nengine_runtime={{path='{}'}}\nreqwest='0.12'\n",
                 sdk.join("crates/engine_runtime")
                     .canonicalize()
@@ -1156,7 +1164,7 @@ pub struct Fixture { pub value: serde_json::Value }
                 "schemaVersion": "aife-project.v2",
                 "projectId": "fixture.production.reject",
                 "projectName": "Fixture",
-                "engineVersion": "0.0.1",
+                "engineVersion": "0.0.2",
                 "createdAt": "0",
                 "lastOpenedAt": null,
                 "defaultScene": "Scenes/Main.scene.json",
@@ -1190,7 +1198,7 @@ pub struct Fixture { pub value: serde_json::Value }
             .replace('\\', "/");
         let manifest_with = |extra_package: &str, extra_root: &str, dependency: &str| {
             format!(
-                "[package]\nname='fixture_reject_runtime'\nversion='0.0.1'\nedition='2021'\n{extra_package}\n\
+                "[package]\nname='fixture_reject_runtime'\nversion='0.0.2'\nedition='2021'\n{extra_package}\n\
                  [dependencies]\nengine_runtime={{path='{engine_runtime}'}}\n{dependency}\n{extra_root}\n"
             )
         };
@@ -1241,19 +1249,24 @@ pub struct Fixture { pub value: serde_json::Value }
             .canonicalize()
             .unwrap();
         let source_manifest = fs::read_to_string(project.join(RUNTIME_MANIFEST_PATH)).unwrap();
-        assert!(source_manifest.contains("../../../rust/crates/engine_runtime"));
+        assert!(source_manifest.contains("../../../rust/crates/project_runtime_abi"));
+        assert!(source_manifest.contains("../../../rust/crates/project_runtime_sdk"));
+        assert!(!source_manifest.contains("../../../rust/crates/engine_runtime"));
 
         let staged = temp_root("production-staging-relative-sdk");
         let plan = plan_project_runtime_player_staging(&project, &sdk).unwrap();
         stage_project_runtime_player_source(&project, &staged, &plan).unwrap();
         let normalized = fs::read_to_string(staged.join("RuntimeModuleBuild/Cargo.toml")).unwrap();
-        assert!(normalized.contains(
-            &sdk.join("crates/engine_runtime")
-                .canonicalize()
-                .unwrap()
-                .display()
-                .to_string()
-        ));
+        for dependency in ["project_runtime_abi", "project_runtime_sdk"] {
+            assert!(normalized.contains(
+                &sdk.join("crates")
+                    .join(dependency)
+                    .canonicalize()
+                    .unwrap()
+                    .display()
+                    .to_string()
+            ));
+        }
 
         let cargo = std::env::var_os("CARGO").unwrap_or_else(|| "cargo".into());
         let output = Command::new(cargo)

@@ -1125,17 +1125,19 @@ fn raster_msdf_variants(
                 ),
             ));
         }
-        let rgba8 = image
-            .pixels()
-            .flat_map(|pixel| {
-                [
+        // Font outlines are Y-up while cooked texture rows use a top-left origin.
+        let mut rgba8 = Vec::with_capacity((width * height * 4) as usize);
+        for y in (0..height).rev() {
+            for x in 0..width {
+                let pixel = image.get_pixel(x, y);
+                rgba8.extend_from_slice(&[
                     quantize_msdf(pixel[0]),
                     quantize_msdf(pixel[1]),
                     quantize_msdf(pixel[2]),
                     255,
-                ]
-            })
-            .collect::<Vec<_>>();
+                ]);
+            }
+        }
         variants.push(ProjectFontMsdfGlyphVariant {
             font_face_id: asset.asset_id.clone(),
             glyph_id: glyph.0,
@@ -1672,6 +1674,61 @@ mod tests {
             .rgba8
             .chunks_exact(4)
             .any(|pixel| pixel[0] != pixel[1] || pixel[1] != pixel[2]));
+    }
+
+    #[test]
+    fn project_font_msdf_orientation_matches_bitmap_asymmetric_a() {
+        let output = ProjectFontCookModule::cook(request("A")).expect("hybrid A cook");
+        let bitmap = output
+            .hinted_variants
+            .iter()
+            .find(|variant| variant.codepoint == u32::from('A'))
+            .expect("bitmap A");
+        let msdf = output
+            .msdf_variants
+            .iter()
+            .find(|variant| variant.codepoint == u32::from('A'))
+            .expect("MSDF A");
+
+        let bitmap_top = bitmap
+            .alpha_r8
+            .chunks_exact(bitmap.stride as usize)
+            .take(bitmap.height as usize / 2)
+            .flatten()
+            .filter(|alpha| **alpha > 32)
+            .count();
+        let bitmap_bottom = bitmap
+            .alpha_r8
+            .chunks_exact(bitmap.stride as usize)
+            .skip(bitmap.height as usize / 2)
+            .flatten()
+            .filter(|alpha| **alpha > 32)
+            .count();
+        assert_ne!(
+            bitmap_top, bitmap_bottom,
+            "fixture A must be vertically asymmetric"
+        );
+
+        let filled_per_row = msdf
+            .rgba8
+            .chunks_exact(msdf.stride as usize)
+            .map(|row| {
+                row.chunks_exact(4)
+                    .filter(|pixel| {
+                        let mut channels = [pixel[0], pixel[1], pixel[2]];
+                        channels.sort_unstable();
+                        channels[1] > 128
+                    })
+                    .count()
+            })
+            .collect::<Vec<_>>();
+        let msdf_top: usize = filled_per_row.iter().take(msdf.height as usize / 2).sum();
+        let msdf_bottom: usize = filled_per_row.iter().skip(msdf.height as usize / 2).sum();
+        assert_eq!(
+            msdf_top.cmp(&msdf_bottom),
+            bitmap_top.cmp(&bitmap_bottom),
+            "MSDF A must use the same top-left row orientation as bitmap A: bitmap={bitmap_top}/{bitmap_bottom}, msdf={msdf_top}/{msdf_bottom}"
+        );
     }
 
     #[test]

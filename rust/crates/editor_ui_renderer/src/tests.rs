@@ -996,7 +996,7 @@ fn launcher_project_open_activity_is_localized_opaque_bounded_and_disables_open_
             .push(RecentProjectEntry {
                 name: "Tower Defense".to_string(),
                 path: "G:/gameEngin/samples/tower_defense_project".to_string(),
-                engine_version: "0.0.1".to_string(),
+                engine_version: "0.0.2".to_string(),
                 last_opened_at: None,
                 last_modified_at: None,
                 valid: true,
@@ -1152,7 +1152,7 @@ fn renderer_outputs_recent_project_hit_region() {
         .push(RecentProjectEntry {
             name: "PlaneGame".to_string(),
             path: "D:/Projects/PlaneGame".to_string(),
-            engine_version: "0.0.1".to_string(),
+            engine_version: "0.0.2".to_string(),
             last_opened_at: None,
             last_modified_at: Some("today".to_string()),
             valid: true,
@@ -1182,7 +1182,7 @@ fn launcher_formats_recent_project_epoch_as_unpadded_date() {
         .push(RecentProjectEntry {
             name: "Tower Defense".to_string(),
             path: "G:/gameEngin/samples/tower_defense_project".to_string(),
-            engine_version: "0.0.1".to_string(),
+            engine_version: "0.0.2".to_string(),
             last_opened_at: None,
             last_modified_at: Some("223776000".to_string()),
             valid: true,

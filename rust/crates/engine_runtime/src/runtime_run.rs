@@ -264,7 +264,7 @@ pub mod tests_support {
   "project": {
     "projectId": "project-runtime-cli-test",
     "name": "Runtime CLI Test",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "runtimeModule": {
       "moduleId": "engine.empty.runtime",
       "interfaceVersion": "project-runtime-module.v2",

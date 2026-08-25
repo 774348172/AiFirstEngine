@@ -44,9 +44,29 @@ fn authority_main() -> Result<(), String> {
         wheel_delta: (args.input_kind == "wheel").then_some(-120),
         drag_target_widget_id: args.drag_target_widget_id.clone(),
         drag_delta: args.drag_delta,
-        scenario_path: None,
+        scenario_path: args.production_authority_scenario.clone(),
     });
     let mut diagnostics = Vec::new();
+    if args.production_authority_scenario.is_some() {
+        match outcome.production_authority_report.as_ref() {
+            Some(report) if report.status == "passed" => {}
+            Some(report) => diagnostics.push(authority_error(
+                "authority.production_scenario_failed",
+                format!(
+                    "Production authority scenario finished with status {}.",
+                    report.status
+                ),
+                "production_authority",
+                "Inspect the production authority report and its first failed step.",
+            )),
+            None => diagnostics.push(authority_error(
+                "authority.production_scenario_report_missing",
+                "Production authority scenario did not produce a terminal report.",
+                "production_authority",
+                "Inspect the authority event-loop termination path.",
+            )),
+        }
+    }
     if (outcome.scale_factor - args.expected_scale).abs() > 0.01 {
         diagnostics.push(authority_error(
             "authority.scale_factor_mismatch",
@@ -241,7 +261,11 @@ fn authority_main() -> Result<(), String> {
         input_replay: outcome.input_replay,
         diagnostics,
     };
-    let report_path = scenario_dir.join("report.json");
+    let report_path = scenario_dir.join(if args.production_authority_scenario.is_some() {
+        "shell-report.json"
+    } else {
+        "report.json"
+    });
     let report_bytes = serde_json::to_vec_pretty(&report)
         .map_err(|error| format!("authority.serialize_report_failed:{error}"))?;
     std::fs::write(&report_path, report_bytes)
@@ -317,6 +341,7 @@ struct AuthorityArgs {
     input_kind: String,
     drag_target_widget_id: Option<String>,
     drag_delta: Option<(i32, i32)>,
+    production_authority_scenario: Option<std::path::PathBuf>,
     source_commit: String,
 }
 
@@ -386,6 +411,8 @@ impl AuthorityArgs {
             input_kind,
             drag_target_widget_id,
             drag_delta,
+            production_authority_scenario: optional_value("--production-authority-scenario")
+                .map(std::path::PathBuf::from),
             source_commit: value("--source-commit")?,
         })
     }

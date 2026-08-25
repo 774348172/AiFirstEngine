@@ -175,7 +175,7 @@ mod tests {
               "schemaVersion":"aife-project.v2",
               "projectId":"project-open-fixture",
               "projectName":"Fixture",
-              "engineVersion":"0.0.1",
+              "engineVersion":"0.0.2",
               "createdAt":"2026-08-03T00:00:00Z",
               "lastOpenedAt":null,
               "defaultScene":"Scenes/Main.scene.json",

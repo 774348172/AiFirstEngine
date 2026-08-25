@@ -1,8 +1,10 @@
 use std::collections::VecDeque;
+use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
 
 use crate::aui::{AuiCompositionFrame, AuiOverlayFrame};
+use crate::game_view_presentation::ResolvedGameViewPresentation;
 use crate::gpu_texture_lifetime::{
     GpuTextureDescriptor, GpuTextureLifetimeReport, RuntimeGpuTextureRegistry,
 };
@@ -86,6 +88,7 @@ pub struct RenderFramePacket {
     pub aui_composition: Option<AuiCompositionFrame>,
     pub sprite_texture_bindings: Option<Sprite2DTextureBindingContext>,
     pub runtime_texture_bindings: Option<RuntimeTextureBindingContext>,
+    pub game_view_presentation: Option<Arc<ResolvedGameViewPresentation>>,
     pub view_id: Option<RenderViewId>,
     pub quality_profile: QualityProfile,
     pub render_target: RenderTarget,
@@ -103,6 +106,7 @@ impl RenderFramePacket {
             aui_composition: input.aui_composition.cloned(),
             sprite_texture_bindings: input.sprite_texture_bindings.cloned(),
             runtime_texture_bindings: input.runtime_texture_bindings.cloned(),
+            game_view_presentation: None,
             view_id: input.view_id,
             quality_profile: input.quality_profile,
             render_target: input.render_target,
@@ -378,6 +382,7 @@ impl RenderThread {
             aui_composition: packet.aui_composition.as_ref(),
             sprite_texture_bindings: packet.sprite_texture_bindings.as_ref(),
             runtime_texture_bindings: packet.runtime_texture_bindings.as_ref(),
+            game_view_presentation: packet.game_view_presentation.as_deref(),
             quality_profile: packet.quality_profile,
             render_target: packet.render_target.clone(),
         });

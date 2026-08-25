@@ -3,6 +3,8 @@ use engine_runtime::release_package_manifest::{
     validate_release_package_manifest, ReleasePackageFileRole, ReleasePackageManifest,
     RELEASE_PACKAGE_MANIFEST_FILE_NAME,
 };
+#[cfg(feature = "real-window")]
+use engine_runtime::runtime_package::load_runtime_package;
 use engine_runtime::runtime_package_path::safe_join_runtime_package;
 use engine_runtime::runtime_run::{RuntimeRunDiagnostic, RuntimeRunMode, RuntimeRunReport};
 use engine_runtime::windowed_player::{
@@ -180,6 +182,22 @@ pub struct PackagedEntrypoint {
     pub user_frame_limit: Option<u64>,
 }
 
+const DESKTOP_PACKAGE_MANIFEST_SCHEMA_VERSION: &str = "desktop-package-manifest.v1";
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct PackagedManifestSchemaProbe {
+    schema_version: String,
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct DesktopDevPackageManifest {
+    schema_version: String,
+    target: String,
+    profile: String,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PackagedEntrypointError {
     pub code: &'static str,
@@ -223,6 +241,21 @@ pub fn resolve_packaged_entrypoint(
             error.to_string(),
         )
     })?;
+    let schema: PackagedManifestSchemaProbe = serde_json::from_str(&text).map_err(|error| {
+        packaged_error(
+            "release_manifest_invalid",
+            &manifest_path,
+            error.to_string(),
+        )
+    })?;
+    if schema.schema_version == DESKTOP_PACKAGE_MANIFEST_SCHEMA_VERSION {
+        return resolve_desktop_dev_packaged_entrypoint(
+            executable,
+            package_root,
+            &manifest_path,
+            &text,
+        );
+    }
     let manifest: ReleasePackageManifest = serde_json::from_str(&text).map_err(|error| {
         packaged_error(
             "release_manifest_invalid",
@@ -283,6 +316,45 @@ pub fn resolve_packaged_entrypoint(
         entrypoint,
         runtime_package,
         user_frame_limit: manifest.launch.user_frame_limit,
+    })
+}
+
+fn resolve_desktop_dev_packaged_entrypoint(
+    executable: &Path,
+    package_root: PathBuf,
+    manifest_path: &Path,
+    text: &str,
+) -> Result<PackagedEntrypoint, PackagedEntrypointError> {
+    let manifest: DesktopDevPackageManifest = serde_json::from_str(text).map_err(|error| {
+        packaged_error("release_manifest_invalid", manifest_path, error.to_string())
+    })?;
+    if manifest.schema_version != DESKTOP_PACKAGE_MANIFEST_SCHEMA_VERSION
+        || manifest.target != "windows"
+        || manifest.profile != "dev"
+    {
+        return Err(packaged_error(
+            "release_manifest_invalid",
+            manifest_path,
+            "desktop package manifest must target windows/dev",
+        ));
+    }
+    fs::canonicalize(executable).map_err(|error| {
+        packaged_error("release_entrypoint_missing", executable, error.to_string())
+    })?;
+    let runtime_package = safe_join_runtime_package(&package_root, "data/runtime_package")
+        .map_err(|error| packaged_error("release_path_escape", manifest_path, error.to_string()))?;
+    if !runtime_package.join("manifest.json").is_file() {
+        return Err(packaged_error(
+            "release_runtime_package_load_failed",
+            &runtime_package,
+            "desktop package has no data/runtime_package/manifest.json",
+        ));
+    }
+    Ok(PackagedEntrypoint {
+        package_root,
+        entrypoint: executable.to_path_buf(),
+        runtime_package,
+        user_frame_limit: None,
     })
 }
 
@@ -415,6 +487,12 @@ fn run_windowed_native_player_with_real_host(
     linked_modules: Arc<LinkedProjectRuntimeSet>,
 ) -> WindowedPlayerRunReport {
     let mut request = NativePlayerWindowRunRequest::windowed(package);
+    if let Some(target) = load_runtime_package(package)
+        .value
+        .and_then(|runtime_package| runtime_package.manifest.project.game_view_target)
+    {
+        request = request.with_game_view_target(target);
+    }
     request.frame_limit = frames;
     configure_native_evidence_request(&mut request, cli);
     if let Some(path) = screenshot_path {
@@ -906,6 +984,37 @@ mod tests {
     }
 
     #[test]
+    fn packaged_entrypoint_resolves_desktop_dev_manifest_from_package_layout() {
+        let root = temp_root("packaged-entrypoint-desktop-dev");
+        fs::create_dir_all(&root).unwrap();
+        let executable = root.join("Game.exe");
+        fs::write(&executable, b"test-entrypoint").unwrap();
+        let runtime_package = write_minimal_runtime_package(&root.join("data"), "runtime_package");
+        fs::write(
+            root.join(RELEASE_PACKAGE_MANIFEST_FILE_NAME),
+            serde_json::to_vec_pretty(&serde_json::json!({
+                "schemaVersion": "desktop-package-manifest.v1",
+                "target": "windows",
+                "profile": "dev",
+                "packageDir": "C:\\machine-bound\\export",
+                "runtimePackageDir": "C:\\machine-bound\\export\\data\\runtime_package",
+                "reportsDir": "C:\\machine-bound\\export\\reports",
+                "playerExecutable": "C:\\machine-bound\\export\\Game.exe",
+                "playerExecutableStatus": "copied"
+            }))
+            .unwrap(),
+        )
+        .unwrap();
+
+        let packaged = resolve_packaged_entrypoint(&executable).unwrap();
+
+        assert_eq!(packaged.package_root, root);
+        assert_eq!(packaged.entrypoint, executable);
+        assert_eq!(packaged.runtime_package, runtime_package);
+        assert_eq!(packaged.user_frame_limit, None);
+    }
+
+    #[test]
     fn packaged_entrypoint_rejects_manifest_entrypoint_that_is_not_current_exe() {
         let root = temp_root("packaged-entrypoint-mismatch");
         let executable = write_packaged_entrypoint_fixture(&root, None);
@@ -1128,7 +1237,7 @@ mod tests {
   "project": {
     "projectId": "project-runtime-cli-test",
     "name": "Runtime CLI Test",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "runtimeModule": {
       "moduleId": "engine.empty.runtime",
       "interfaceVersion": "project-runtime-module.v2",

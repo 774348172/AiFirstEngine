@@ -245,13 +245,13 @@ impl EditorSession {
             };
             let runtime_package_path = PathBuf::from(runtime_package_dir);
             if let Err((code, message)) =
-                self.validate_project_editor_composition_for_play(&runtime_package_path)
+                self.validate_project_runtime_for_play(&runtime_package_path)
             {
                 self.push_error(
                     transaction,
-                    code,
+                    &code,
                     message,
-                    Some("Prepare and hand off to an Editor composition matching the RuntimePackage."),
+                    Some("Wait for the native project runtime module to become ready, then retry Play."),
                 );
                 return self.finish_transaction(transaction.clone(), CommandStatus::Rejected);
             }
@@ -697,22 +697,95 @@ impl EditorSession {
         self.selected_trace_entry_id = None;
     }
 
-    fn validate_project_editor_composition_for_play(
+    fn validate_project_runtime_for_play(
         &self,
         runtime_package_path: &PathBuf,
-    ) -> Result<(), (&'static str, String)> {
+    ) -> Result<(), (String, String)> {
         let load = load_runtime_package(runtime_package_path);
         let package = load.value.ok_or_else(|| {
             (
-                "project_editor_composition.runtime_package_invalid",
-                "Prepared RuntimePackage could not be loaded for composition validation."
+                "project_runtime.runtime_package_invalid".to_string(),
+                "Prepared RuntimePackage could not be loaded for runtime module validation."
                     .to_string(),
             )
         })?;
-        self.validate_project_editor_composition_identity(
+        self.validate_project_runtime_identity(
             &package.manifest.project.project_id,
             &package.manifest.project.runtime_module,
         )
+    }
+
+    fn validate_project_runtime_identity(
+        &self,
+        project_id: &str,
+        requested: &engine_runtime::runtime_package::RuntimeProjectModuleRef,
+    ) -> Result<(), (String, String)> {
+        if self.project_editor_composition_identity.is_some() {
+            return self
+                .validate_project_editor_composition_identity(project_id, requested)
+                .map_err(|(code, message)| (code.to_string(), message));
+        }
+        if requested.module_id
+            == engine_runtime::project_runtime_module::EMPTY_PROJECT_RUNTIME_MODULE_ID
+        {
+            let linked = self
+                .linked_project_runtimes
+                .only_descriptor()
+                .map_err(|error| (error.code.to_string(), error.message))?;
+            return if linked.module_id == requested.module_id
+                && linked.interface_version == requested.interface_version
+                && linked.aot_content_digest == requested.aot_content_digest
+            {
+                Ok(())
+            } else {
+                Err((
+                    "project_runtime.empty_module_identity_mismatch".to_string(),
+                    "The RuntimePackage does not match the linked built-in empty runtime."
+                        .to_string(),
+                ))
+            };
+        }
+        if let Some(blocker) = self.project_runtime_preparation.play_blocker(
+            project_id,
+            &requested.module_id,
+            &requested.interface_version,
+        ) {
+            return Err((blocker.code, blocker.message));
+        }
+        let linked = self
+            .linked_project_runtimes
+            .only_descriptor()
+            .map_err(|error| {
+                (
+                    "project_runtime.native_module_not_loaded".to_string(),
+                    error.message,
+                )
+            })?;
+        let identity = self
+            .project_runtime_native_module_identity
+            .as_ref()
+            .ok_or_else(|| {
+                (
+                    "project_runtime.preparation_unavailable".to_string(),
+                    "The active project has no qualified native runtime module identity."
+                        .to_string(),
+                )
+            })?;
+        if identity.project_id != project_id
+            || identity.module_id != requested.module_id
+            || identity.logical_interface_version != requested.interface_version
+            || identity.aot_content_digest != requested.aot_content_digest
+            || linked.module_id != requested.module_id
+            || linked.interface_version != requested.interface_version
+            || linked.aot_content_digest != requested.aot_content_digest
+        {
+            return Err((
+                "project_runtime.native_module_identity_mismatch".to_string(),
+                "The prepared RuntimePackage identity does not exactly match the loaded native project module."
+                    .to_string(),
+            ));
+        }
+        Ok(())
     }
 
     fn validate_project_editor_composition_identity(
@@ -729,28 +802,23 @@ impl EditorSession {
                     error.message,
                 )
             })?;
-        if let Some(identity) = &self.project_editor_composition_identity {
-            if identity.project_id != project_id
-                || identity.module_id != requested.module_id
-                || identity.interface_version != requested.interface_version
-                || identity.aot_content_digest != requested.aot_content_digest
-                || linked.module_id != identity.module_id
-                || linked.interface_version != identity.interface_version
-                || linked.aot_content_digest != identity.aot_content_digest
-            {
-                return Err((
-                    "project_editor_composition.handoff_required",
-                    "The prepared RuntimePackage identity does not exactly match the running Editor composition."
-                        .to_string(),
-                ));
-            }
-        } else if linked.module_id != requested.module_id
-            || linked.interface_version != requested.interface_version
-            || linked.aot_content_digest != requested.aot_content_digest
+        let Some(identity) = &self.project_editor_composition_identity else {
+            return Err((
+                "project_editor_composition.handoff_required",
+                "The running Editor has no project-specific composition identity.".to_string(),
+            ));
+        };
+        if identity.project_id != project_id
+            || identity.module_id != requested.module_id
+            || identity.interface_version != requested.interface_version
+            || identity.aot_content_digest != requested.aot_content_digest
+            || linked.module_id != identity.module_id
+            || linked.interface_version != identity.interface_version
+            || linked.aot_content_digest != identity.aot_content_digest
         {
             return Err((
                 "project_editor_composition.handoff_required",
-                "The prepared RuntimePackage module is not linked into the running Editor."
+                "The prepared RuntimePackage identity does not exactly match the running Editor composition."
                     .to_string(),
             ));
         }

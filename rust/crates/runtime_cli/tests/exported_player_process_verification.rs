@@ -88,6 +88,23 @@ fn exported_game_exe_verify_entry_spawns_child_player_and_writes_parent_report()
 
 #[cfg(not(feature = "real-window"))]
 #[test]
+fn desktop_dev_game_exe_zero_arg_entrypoint_passes_manifest_resolution() {
+    let root = temp_root("desktop-dev-zero-arg-entrypoint");
+    let exported = root.join("Build").join("Windows").join("dev");
+    stage_exported_package(&exported);
+    let game_exe = exported.join(if cfg!(windows) { "Game.exe" } else { "Game" });
+    fs::copy(env!("CARGO_BIN_EXE_ai_engine_runtime_cli"), &game_exe).unwrap();
+
+    let output = Command::new(&game_exe).current_dir(&root).output().unwrap();
+
+    assert_eq!(output.status.code(), Some(1));
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(!stderr.contains("packaged entrypoint unavailable"));
+    assert!(!stderr.contains("release_manifest_invalid"));
+}
+
+#[cfg(not(feature = "real-window"))]
+#[test]
 fn exported_game_exe_windowed_screenshot_reports_feature_disabled_without_faking_pass() {
     let root = temp_root("game-exe-windowed-screenshot-feature-disabled");
     let exported = root.join("Build").join("Windows").join("dev");
@@ -166,21 +183,17 @@ fn stage_exported_package(exported: &Path) {
     fs::create_dir_all(exported.join("reports")).unwrap();
     fs::write(
         exported.join("package-manifest.json"),
-        format!(
-            r#"{{
-  "schemaVersion": "desktop-package-manifest.v1",
-  "target": "windows",
-  "profile": "dev",
-  "packageDir": "{}",
-  "runtimePackageDir": "{}",
-  "reportsDir": "{}",
-  "playerExecutable": null,
-  "playerExecutableStatus": "test-staged"
-}}"#,
-            exported.display(),
-            package.display(),
-            exported.join("reports").display()
-        ),
+        serde_json::to_vec_pretty(&serde_json::json!({
+            "schemaVersion": "desktop-package-manifest.v1",
+            "target": "windows",
+            "profile": "dev",
+            "packageDir": exported.display().to_string(),
+            "runtimePackageDir": package.display().to_string(),
+            "reportsDir": exported.join("reports").display().to_string(),
+            "playerExecutable": null,
+            "playerExecutableStatus": "test-staged"
+        }))
+        .unwrap(),
     )
     .unwrap();
     fs::write(
@@ -191,7 +204,7 @@ fn stage_exported_package(exported: &Path) {
   "project": {
     "projectId": "project-exported-player-process-test",
     "name": "Exported Player Process Test",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "runtimeModule": {
       "moduleId": "engine.empty.runtime",
       "interfaceVersion": "project-runtime-module.v2",

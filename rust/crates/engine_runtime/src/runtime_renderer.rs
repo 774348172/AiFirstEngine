@@ -140,6 +140,7 @@ pub struct RuntimeRendererInput<'a> {
     pub aui_composition: Option<&'a AuiCompositionFrame>,
     pub sprite_texture_bindings: Option<&'a Sprite2DTextureBindingContext>,
     pub runtime_texture_bindings: Option<&'a RuntimeTextureBindingContext>,
+    pub game_view_presentation: Option<&'a ResolvedGameViewPresentation>,
     pub quality_profile: QualityProfile,
     pub render_target: RenderTarget,
 }
@@ -452,6 +453,7 @@ impl RuntimeRenderer {
             &view_id,
             input.render_target.presentation_scale_policy,
             input.runtime_texture_bindings,
+            input.game_view_presentation,
         );
 
         for (index, draw_item) in feature_frame
@@ -540,6 +542,7 @@ impl RuntimeRenderer {
             &view_id,
             input.render_target.presentation_scale_policy,
             input.runtime_texture_bindings,
+            input.game_view_presentation,
         );
         self.push_ui_composition_pass(
             &mut graph,
@@ -549,6 +552,7 @@ impl RuntimeRenderer {
             &view_id,
             input.render_target.presentation_scale_policy,
             input.runtime_texture_bindings,
+            input.game_view_presentation,
         );
 
         graph.passes.push(RenderPass {
@@ -576,6 +580,7 @@ impl RuntimeRenderer {
         view_id: &str,
         scale_policy: GameViewScalePolicy,
         texture_bindings: Option<&RuntimeTextureBindingContext>,
+        shared_presentation: Option<&ResolvedGameViewPresentation>,
     ) {
         let Some(composition) = composition else {
             return;
@@ -586,28 +591,30 @@ impl RuntimeRenderer {
         if stage_frame.is_empty() {
             return;
         }
-        let presentation = match resolve_ui_presentation(
-            composition,
-            stage_frame,
-            input_extent_from_graph(graph),
-            target_id,
-            scale_policy,
-        ) {
-            Ok(presentation) => presentation,
-            Err(code) => {
-                graph.diagnostics.push(RenderGraphDiagnostic::error(
-                    code,
-                    "AUI composition presentation could not be resolved.",
-                ));
-                return;
-            }
+        let resolved_presentation;
+        let presentation = if let Some(presentation) = shared_presentation {
+            presentation
+        } else {
+            resolved_presentation = match resolve_ui_presentation(
+                composition,
+                stage_frame,
+                input_extent_from_graph(graph),
+                target_id,
+                scale_policy,
+            ) {
+                Ok(presentation) => presentation,
+                Err(code) => {
+                    graph.diagnostics.push(RenderGraphDiagnostic::error(
+                        code,
+                        "AUI composition presentation could not be resolved.",
+                    ));
+                    return;
+                }
+            };
+            &resolved_presentation
         };
-        let projected = ui_projection_ordered_batches(
-            composition,
-            stage_frame,
-            &presentation,
-            texture_bindings,
-        );
+        let projected =
+            ui_projection_ordered_batches(composition, stage_frame, presentation, texture_bindings);
         for diagnostic in projected.diagnostics {
             graph.diagnostics.push(diagnostic);
         }
@@ -1395,6 +1402,7 @@ mod tests {
             aui_composition: None,
             sprite_texture_bindings: None,
             runtime_texture_bindings: None,
+            game_view_presentation: None,
             quality_profile: QualityProfile::default(),
             render_target: target(),
         }
@@ -1412,6 +1420,7 @@ mod tests {
             aui_composition: None,
             sprite_texture_bindings: None,
             runtime_texture_bindings: None,
+            game_view_presentation: None,
             quality_profile: QualityProfile::default(),
             render_target: viewport_target(),
         }
@@ -1429,6 +1438,7 @@ mod tests {
             aui_composition: None,
             sprite_texture_bindings: None,
             runtime_texture_bindings: None,
+            game_view_presentation: None,
             quality_profile: QualityProfile::default(),
             render_target: surface_target(),
         }
@@ -2150,6 +2160,7 @@ mod tests {
             aui_composition: None,
             sprite_texture_bindings: None,
             runtime_texture_bindings: None,
+            game_view_presentation: None,
             quality_profile: QualityProfile::default(),
             render_target: target(),
         };
@@ -2234,6 +2245,7 @@ mod tests {
             aui_composition: Some(&composition),
             sprite_texture_bindings: None,
             runtime_texture_bindings: None,
+            game_view_presentation: None,
             quality_profile: QualityProfile::default(),
             render_target: target(),
         };

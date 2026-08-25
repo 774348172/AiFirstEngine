@@ -2167,7 +2167,7 @@ mod tests {
                 "workspace = \"../..\"",
                 "[target.'cfg(windows)'.dependencies]",
                 "serde = \"=1.0.0\"",
-                "engine_runtime = { version = \"=0.0.1\", path = \"../engine\" }",
+                "engine_runtime = { version = \"=0.0.2\", path = \"../engine\" }",
                 "crate-type = [\"dylib\"]",
             ] {
                 let (root, store) = fixture_project("cargo-policy");
@@ -2194,7 +2194,7 @@ mod tests {
                 } else if forbidden.starts_with('[') {
                     cargo.push('\n');
                     cargo.push_str(forbidden);
-                    cargo.push_str("\nengine_runtime = \"=0.0.1\"\n");
+                    cargo.push_str("\nengine_runtime = \"=0.0.2\"\n");
                 } else {
                     cargo.push_str(forbidden);
                     cargo.push('\n');
@@ -2597,7 +2597,7 @@ mod tests {
             "schemaVersion": PROJECT_MANIFEST_SCHEMA_VERSION,
             "projectId": "project-test",
             "projectName": "Test Project",
-            "engineVersion": "0.0.1",
+            "engineVersion": "0.0.2",
             "createdAt": "2026-07-14T00:00:00Z",
             "lastOpenedAt": null,
             "defaultScene": "Scenes/Main.scene.json",
@@ -2631,7 +2631,7 @@ mod tests {
         let mut operations = vec![
             ControlledSourcePatchOperation::CreateOrReplace {
                 path: CARGO_MANIFEST_PATH.to_string(),
-                text: "[package]\nname = \"test_project_runtime\"\nversion = \"0.0.1\"\nedition = \"2021\"\n\n[dependencies]\nengine_runtime = \"=0.0.1\"\n".to_string(),
+                text: "[package]\nname = \"test_project_runtime\"\nversion = \"0.0.2\"\nedition = \"2021\"\n\n[dependencies]\nengine_runtime = \"=0.0.2\"\n".to_string(),
             },
             ControlledSourcePatchOperation::CreateOrReplace {
                 path: RUNTIME_LIB_PATH.to_string(),
@@ -2677,7 +2677,7 @@ mod tests {
             fs::create_dir_all(crate_root.join("src")).unwrap();
             fs::write(
                 crate_root.join("Cargo.toml"),
-                format!("[package]\nname = \"{name}\"\nversion = \"0.0.1\"\nedition = \"2021\"\n"),
+                format!("[package]\nname = \"{name}\"\nversion = \"0.0.2\"\nedition = \"2021\"\n"),
             )
             .unwrap();
             fs::write(crate_root.join("src/lib.rs"), "pub fn marker() {}\n").unwrap();

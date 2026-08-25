@@ -1,273 +1,177 @@
 use crate::{
-    ApprovedProjectRuntimeTrustRequest, NativeEditorApplication,
-    ProjectEditorCompositionPreparationAdapter, ProjectRuntimeTrustEnvironment,
-    PROJECT_EDITOR_HANDOFF_TICKET_ARGUMENT,
+    ApprovedProjectRuntimeTrustRequest, NativeEditorApplication, PreparedProjectRuntime,
+    ProjectRuntimePreparationAdapter, ProjectRuntimePreparationPhase,
+    ProjectRuntimeTrustEnvironment,
+};
+#[cfg(test)]
+use editor_core::{
+    ProjectEditorCompositionDiagnostic, ProjectEditorCompositionIdentity,
+    PROJECT_EDITOR_COMPOSITION_IDENTITY_SCHEMA_VERSION,
 };
 use editor_core::{
-    EditorCompositionCandidateProcessState, EditorCompositionClock, EditorCompositionExitAdapter,
-    EditorCompositionProcessAdapter, EditorCompositionWorkspaceAdapter,
-    ProjectEditorCompositionArtifact, ProjectEditorCompositionBuildRequest,
-    ProjectEditorCompositionBuildStatus, ProjectEditorCompositionCachePolicy,
-    ProjectEditorCompositionDiagnostic, ProjectEditorCompositionIdentity, ProjectManifest,
-    ProjectRuntimeTrustInspection, ProjectRuntimeTrustModule,
-    PROJECT_EDITOR_COMPOSITION_BUILD_REQUEST_SCHEMA_VERSION,
-    PROJECT_EDITOR_COMPOSITION_IDENTITY_SCHEMA_VERSION,
+    ProjectManifest, ProjectNativeModuleIdentity, ProjectRuntimeNativeModuleBuildControl,
+    ProjectRuntimeNativeModuleBuildRequest, ProjectRuntimeNativeModuleBuildStatus,
+    ProjectRuntimeNativeModuleBuilder, ProjectRuntimeNativeModuleDiagnostic,
+    ProjectRuntimeNativeModuleLoader, ProjectRuntimeTrustInspection, ProjectRuntimeTrustModule,
+    PROJECT_RUNTIME_NATIVE_MODULE_BUILDER_SCHEMA_VERSION,
+    PROJECT_RUNTIME_NATIVE_MODULE_IDENTITY_SCHEMA_VERSION,
 };
 use engine_runtime::canonical_digest::sha256_prefixed;
 use engine_runtime::project_runtime_module::{
     project_runtime_aot_digest, ProjectRuntimeAotDigestSource,
 };
-use std::collections::BTreeMap;
 use std::ffi::OsString;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::process::{Child, Command};
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex};
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::process::Command;
+use std::sync::Arc;
 
 pub const PROJECT_EDITOR_COMPOSITION_STATE_ROOT_ENV: &str =
     "AIFE_PROJECT_EDITOR_COMPOSITION_STATE_ROOT";
 
-pub struct NativeProjectEditorCompositionPreparer {
+pub struct NativeProjectRuntimePreparer {
     engine_sdk_root: PathBuf,
     build_root: PathBuf,
-    editor_build_identity: String,
+    trust_host_identity: String,
 }
 
-impl NativeProjectEditorCompositionPreparer {
-    pub fn new(
-        engine_sdk_root: PathBuf,
-        build_root: PathBuf,
-        editor_build_identity: String,
-    ) -> Self {
+impl NativeProjectRuntimePreparer {
+    pub fn new(engine_sdk_root: PathBuf, build_root: PathBuf, trust_host_identity: String) -> Self {
         Self {
             engine_sdk_root,
             build_root,
-            editor_build_identity,
+            trust_host_identity,
         }
     }
 }
 
-impl ProjectEditorCompositionPreparationAdapter for NativeProjectEditorCompositionPreparer {
+impl ProjectRuntimePreparationAdapter for NativeProjectRuntimePreparer {
     fn prepare(
         &self,
         approved: ApprovedProjectRuntimeTrustRequest,
-        control: editor_core::ProjectEditorCompositionPreparationControl,
-        progress: &mut dyn FnMut(editor_core::ProjectEditorCompositionPreparationPhase),
-    ) -> Result<ProjectEditorCompositionArtifact, ProjectEditorCompositionDiagnostic> {
+        control: ProjectRuntimeNativeModuleBuildControl,
+        progress: &mut dyn FnMut(ProjectRuntimePreparationPhase),
+    ) -> Result<PreparedProjectRuntime, ProjectRuntimeNativeModuleDiagnostic> {
+        progress(ProjectRuntimePreparationPhase::RevalidatingTrust);
         let inspection = ProjectRuntimeTrustInspection::inspect(
             &approved.project_root,
             &self.engine_sdk_root,
-            self.editor_build_identity.clone(),
+            self.trust_host_identity.clone(),
         )
-        .map_err(|error| diagnostic(error.code, "trust_revalidate", error.message))?;
+        .map_err(|error| native_diagnostic(error.code, "trust_revalidate", error.message, None))?;
         if inspection.request != approved.trust_request {
-            return Err(diagnostic(
-                "project_editor_composition.trust_stale",
+            return Err(native_diagnostic(
+                "project_runtime.trust_stale",
                 "trust_revalidate",
-                "Project Runtime identity changed after approval and before composition preparation.",
+                "Project Runtime identity changed after approval and before native module preparation.",
+                Some(&approved.project_root),
             ));
         }
-        let identity = composition_identity(
-            &approved.project_root,
-            &self.engine_sdk_root,
-            &inspection,
-            &self.editor_build_identity,
-        )?;
-        let report = ProjectEditorCompositionArtifact::prepare_with_progress(
-            ProjectEditorCompositionBuildRequest {
-                schema_version: PROJECT_EDITOR_COMPOSITION_BUILD_REQUEST_SCHEMA_VERSION.to_string(),
-                project_root: approved.project_root,
+        let identity = native_module_identity(&approved.project_root, &inspection)?;
+        let manifest: ProjectManifest = serde_json::from_slice(
+            &fs::read(approved.project_root.join("project.aife.json")).map_err(|error| {
+                native_diagnostic(
+                    "project_runtime.manifest_read_failed",
+                    "identity",
+                    error.to_string(),
+                    Some(&approved.project_root),
+                )
+            })?,
+        )
+        .map_err(|error| {
+            native_diagnostic(
+                "project_runtime.manifest_invalid",
+                "identity",
+                error.to_string(),
+                Some(&approved.project_root),
+            )
+        })?;
+        let manifest_path = approved
+            .project_root
+            .join(&manifest.runtime_module.cargo_manifest);
+        let source_crate_root = manifest_path.parent().ok_or_else(|| {
+            native_diagnostic(
+                "project_runtime.cargo_manifest_parent_missing",
+                "identity",
+                "RuntimeModule Cargo manifest has no parent directory.",
+                Some(&manifest_path),
+            )
+        })?;
+        progress(ProjectRuntimePreparationPhase::PreparingArtifact);
+        let report = ProjectRuntimeNativeModuleBuilder::prepare_cancellable(
+            &ProjectRuntimeNativeModuleBuildRequest {
+                source_crate_root: source_crate_root.to_path_buf(),
                 engine_sdk_root: self.engine_sdk_root.clone(),
                 build_root: self.build_root.clone(),
-                expected_identity: identity,
-                cache_policy: ProjectEditorCompositionCachePolicy::default(),
-                qos_policy: editor_core::ProjectEditorCompositionBuildQosPolicy::default(),
-                deadline_policy: editor_core::ProjectEditorCompositionBuildDeadlinePolicy::default(
-                ),
+                identity: identity.clone(),
                 cargo_executable: None,
-                cargo_identity: cargo_identity()?,
-                capture_limit_bytes: 256 * 1024,
+                metadata_hard_deadline_ms: 120_000,
+                build_hard_deadline_ms: 1_200_000,
+                capture_limit_bytes: 1024 * 1024,
             },
             control,
-            progress,
         );
-        if report.status != ProjectEditorCompositionBuildStatus::Success {
+        if report.status != ProjectRuntimeNativeModuleBuildStatus::Success {
             return Err(report.diagnostics.into_iter().next().unwrap_or_else(|| {
-                diagnostic(
-                    "project_editor_composition.build_failed",
+                native_diagnostic(
+                    "project_runtime.native_module_build_failed",
                     "prepare",
-                    "Composition artifact preparation failed without a diagnostic.",
+                    "Native project runtime build failed without a diagnostic.",
+                    Some(source_crate_root),
                 )
             }));
         }
-        report.artifact.ok_or_else(|| {
-            diagnostic(
-                "project_editor_composition.artifact_missing",
+        let artifact = report.artifact.ok_or_else(|| {
+            native_diagnostic(
+                "project_runtime.native_module_artifact_missing",
                 "prepare",
-                "Successful composition preparation returned no artifact.",
+                "Successful native project runtime build returned no artifact.",
+                Some(source_crate_root),
             )
+        })?;
+        progress(ProjectRuntimePreparationPhase::LoadingModule);
+        let loaded = ProjectRuntimeNativeModuleLoader::load(&artifact)?;
+        let linked = engine_runtime::project_runtime_module::LinkedProjectRuntimeSet::singleton(
+            Arc::new(loaded),
+        )
+        .map_err(|error| {
+            native_diagnostic(
+                error.code,
+                "link_module",
+                error.message,
+                Some(&artifact.dll_path),
+            )
+        })?;
+        Ok(PreparedProjectRuntime {
+            identity,
+            linked_project_runtimes: Arc::new(linked),
         })
     }
 }
 
-pub struct NativeEditorCompositionClock;
-
-impl EditorCompositionClock for NativeEditorCompositionClock {
-    fn now_epoch_ms(&self) -> u64 {
-        SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .map(|duration| duration.as_millis() as u64)
-            .unwrap_or(0)
-    }
-}
-
-pub struct NativeEditorCompositionWorkspaceAdapter {
-    state_path: PathBuf,
-}
-
-impl NativeEditorCompositionWorkspaceAdapter {
-    pub fn new(state_path: PathBuf) -> Self {
-        Self { state_path }
-    }
-}
-
-impl EditorCompositionWorkspaceAdapter for NativeEditorCompositionWorkspaceAdapter {
-    fn save_recoverable_state(&self, project_root: &Path) -> Result<String, String> {
-        let parent = self
-            .state_path
-            .parent()
-            .ok_or_else(|| "workspace handoff state has no parent".to_string())?;
-        fs::create_dir_all(parent).map_err(|error| error.to_string())?;
-        let temporary = self.state_path.with_extension("json.tmp");
-        let payload = serde_json::json!({
-            "schemaVersion": "project-editor-workspace-handoff-state.v1",
-            "projectRoot": fs::canonicalize(project_root)
-                .map_err(|error| error.to_string())?,
-        });
-        fs::write(&temporary, serde_json::to_vec_pretty(&payload).unwrap())
-            .map_err(|error| error.to_string())?;
-        fs::rename(&temporary, &self.state_path).map_err(|error| error.to_string())?;
-        Ok(self.state_path.display().to_string())
-    }
-}
-
-#[derive(Default)]
-pub struct NativeEditorCompositionProcessAdapter {
-    children: Mutex<BTreeMap<u32, Child>>,
-}
-
-impl EditorCompositionProcessAdapter for NativeEditorCompositionProcessAdapter {
-    fn launch_candidate(&self, executable: &Path, ticket_path: &Path) -> Result<u32, String> {
-        let child = Command::new(executable)
-            .arg(PROJECT_EDITOR_HANDOFF_TICKET_ARGUMENT)
-            .arg(ticket_path)
-            .current_dir(
-                executable
-                    .parent()
-                    .ok_or_else(|| "candidate executable has no parent".to_string())?,
-            )
-            .spawn()
-            .map_err(|error| error.to_string())?;
-        let process_id = child.id();
-        self.children
-            .lock()
-            .map_err(|_| "candidate process registry is poisoned".to_string())?
-            .insert(process_id, child);
-        Ok(process_id)
-    }
-
-    fn candidate_state(
-        &self,
-        process_id: u32,
-    ) -> Result<EditorCompositionCandidateProcessState, String> {
-        let mut children = self
-            .children
-            .lock()
-            .map_err(|_| "candidate process registry is poisoned".to_string())?;
-        let child = children
-            .get_mut(&process_id)
-            .ok_or_else(|| "candidate process is not owned by this launcher".to_string())?;
-        match child.try_wait().map_err(|error| error.to_string())? {
-            Some(status) => {
-                let exit_code = status.code().unwrap_or(-1);
-                children.remove(&process_id);
-                Ok(EditorCompositionCandidateProcessState::Exited(exit_code))
-            }
-            None => Ok(EditorCompositionCandidateProcessState::Running),
-        }
-    }
-
-    fn terminate_owned_candidate(&self, process_id: u32) -> Result<(), String> {
-        let mut child = self
-            .children
-            .lock()
-            .map_err(|_| "candidate process registry is poisoned".to_string())?
-            .remove(&process_id)
-            .ok_or_else(|| "candidate process is not owned by this launcher".to_string())?;
-        child.kill().map_err(|error| error.to_string())?;
-        child.wait().map_err(|error| error.to_string())?;
-        Ok(())
-    }
-}
-
-pub struct NativeEditorCompositionExitAdapter {
-    requested: Arc<AtomicBool>,
-}
-
-impl NativeEditorCompositionExitAdapter {
-    pub fn new(requested: Arc<AtomicBool>) -> Self {
-        Self { requested }
-    }
-}
-
-impl EditorCompositionExitAdapter for NativeEditorCompositionExitAdapter {
-    fn request_graceful_exit(&self) -> Result<(), String> {
-        self.requested.store(true, Ordering::Release);
-        Ok(())
-    }
-}
-
-pub fn install_project_editor_composition_production_services(
+pub fn install_project_runtime_production_services(
     app: &mut NativeEditorApplication,
     state_root: &Path,
     engine_sdk_root: PathBuf,
-    editor_build_identity: String,
-    graceful_exit_requested: Arc<AtomicBool>,
 ) -> Result<(), String> {
     let trust_root = state_root.join("project-runtime-trust");
     let build_root = state_root.to_path_buf();
-    let handoff_root = state_root.join("project-editor-handoff");
     fs::create_dir_all(&build_root).map_err(|error| error.to_string())?;
-    fs::create_dir_all(&handoff_root).map_err(|error| error.to_string())?;
     let trust_module =
         ProjectRuntimeTrustModule::open(&trust_root).map_err(|error| error.to_string())?;
+    let trust_host_identity = project_runtime_abi_identity();
     app.install_project_runtime_trust_environment(ProjectRuntimeTrustEnvironment {
         trust_module,
         engine_sdk_root: engine_sdk_root.clone(),
-        editor_build_identity: editor_build_identity.clone(),
+        // The v1 receipt field retains its serialized name, but 292 binds it to the stable ABI
+        // identity so Editor implementation-only updates do not invalidate project trust.
+        editor_build_identity: trust_host_identity.clone(),
     });
-    app.install_project_editor_composition_preparer(
-        Arc::new(NativeProjectEditorCompositionPreparer::new(
-            engine_sdk_root,
-            build_root,
-            editor_build_identity,
-        )),
-        handoff_root.clone(),
-    );
-    app.install_project_editor_composition_launcher(
-        editor_core::EditorProjectCompositionLauncher::new(
-            Arc::new(NativeEditorCompositionClock),
-            Arc::new(NativeEditorCompositionWorkspaceAdapter::new(
-                handoff_root.join("workspace-state.json"),
-            )),
-            Arc::new(NativeEditorCompositionProcessAdapter::default()),
-            Arc::new(NativeEditorCompositionExitAdapter::new(
-                graceful_exit_requested,
-            )),
-        ),
-    );
+    app.install_project_runtime_preparer(Arc::new(NativeProjectRuntimePreparer::new(
+        engine_sdk_root,
+        build_root,
+        trust_host_identity,
+    )));
     Ok(())
 }
 
@@ -316,6 +220,233 @@ pub fn current_editor_build_identity() -> Result<String, String> {
         .map_err(|error| error.to_string())
 }
 
+fn project_runtime_abi_identity() -> String {
+    format!(
+        "sha256:{}",
+        project_runtime_abi::project_runtime_abi_digest_hex()
+    )
+}
+
+fn native_module_identity(
+    project_root: &Path,
+    inspection: &ProjectRuntimeTrustInspection,
+) -> Result<ProjectNativeModuleIdentity, ProjectRuntimeNativeModuleDiagnostic> {
+    let manifest_path = project_root.join("project.aife.json");
+    let manifest: ProjectManifest =
+        serde_json::from_slice(&fs::read(&manifest_path).map_err(|error| {
+            native_diagnostic(
+                "project_runtime.manifest_read_failed",
+                "identity",
+                error.to_string(),
+                Some(&manifest_path),
+            )
+        })?)
+        .map_err(|error| {
+            native_diagnostic(
+                "project_runtime.manifest_invalid",
+                "identity",
+                error.to_string(),
+                Some(&manifest_path),
+            )
+        })?;
+    let cargo_manifest_path = project_root.join(&manifest.runtime_module.cargo_manifest);
+    let module_root = cargo_manifest_path
+        .parent()
+        .map(Path::to_path_buf)
+        .ok_or_else(|| {
+            native_diagnostic(
+                "project_runtime.cargo_manifest_parent_missing",
+                "identity",
+                "RuntimeModule Cargo manifest has no parent directory.",
+                Some(&cargo_manifest_path),
+            )
+        })?;
+    let lock_path = module_root.join("Cargo.lock");
+    let lock_bytes = fs::read(&lock_path).map_err(|error| {
+        native_diagnostic(
+            "project_runtime.lock_read_failed",
+            "identity",
+            error.to_string(),
+            Some(&lock_path),
+        )
+    })?;
+    let mut sources = vec![cargo_manifest_path, lock_path.clone()];
+    collect_native_rust_sources(project_root, &module_root.join("src"), &mut sources)?;
+    sources.sort();
+    sources.dedup();
+    let source_bytes = sources
+        .into_iter()
+        .map(|path| {
+            let relative = path.strip_prefix(project_root).map_err(|_| {
+                native_diagnostic(
+                    "project_runtime.source_outside_project",
+                    "identity",
+                    "RuntimeModule source escaped the project root.",
+                    Some(&path),
+                )
+            })?;
+            let bytes = fs::read(&path).map_err(|error| {
+                native_diagnostic(
+                    "project_runtime.source_read_failed",
+                    "identity",
+                    error.to_string(),
+                    Some(&path),
+                )
+            })?;
+            Ok((relative.to_string_lossy().replace('\\', "/"), bytes))
+        })
+        .collect::<Result<Vec<_>, ProjectRuntimeNativeModuleDiagnostic>>()?;
+    let aot_content_digest = project_runtime_aot_digest(
+        &manifest.runtime_module.module_id,
+        &manifest.runtime_module.interface_version,
+        &manifest.runtime_module.cargo_manifest,
+        &manifest.runtime_module.cargo_package,
+        &manifest.runtime_module.player_binary,
+        source_bytes
+            .iter()
+            .map(|(relative_path, bytes)| ProjectRuntimeAotDigestSource {
+                relative_path,
+                bytes,
+            }),
+    )
+    .map_err(|error| {
+        native_diagnostic(
+            "project_runtime.aot_identity_failed",
+            "identity",
+            error.to_string(),
+            Some(project_root),
+        )
+    })?;
+    Ok(ProjectNativeModuleIdentity {
+        schema_version: PROJECT_RUNTIME_NATIVE_MODULE_IDENTITY_SCHEMA_VERSION.to_string(),
+        project_runtime_abi_digest: project_runtime_abi_identity(),
+        project_runtime_sdk_digest: format!(
+            "sha256:{}",
+            project_runtime_sdk::project_runtime_contract_digest_hex()
+        ),
+        project_id: manifest.project_id,
+        module_id: manifest.runtime_module.module_id,
+        logical_interface_version: manifest.runtime_module.interface_version,
+        aot_content_digest,
+        normalized_manifest_digest: inspection.request.normalized_manifest_digest.clone(),
+        normalized_dependency_digest: inspection.request.normalized_dependency_digest.clone(),
+        dependency_lock_digest: sha256_prefixed(&lock_bytes),
+        toolchain_identity: native_rustc_identity()?,
+        target_triple: "host".to_string(),
+        profile: "release".to_string(),
+        features: Vec::new(),
+        builder_schema_version: PROJECT_RUNTIME_NATIVE_MODULE_BUILDER_SCHEMA_VERSION.to_string(),
+    })
+}
+
+fn collect_native_rust_sources(
+    project_root: &Path,
+    directory: &Path,
+    output: &mut Vec<PathBuf>,
+) -> Result<(), ProjectRuntimeNativeModuleDiagnostic> {
+    let mut entries = fs::read_dir(directory)
+        .map_err(|error| {
+            native_diagnostic(
+                "project_runtime.source_read_failed",
+                "identity",
+                error.to_string(),
+                Some(directory),
+            )
+        })?
+        .map(|entry| entry.map(|entry| entry.path()))
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|error| {
+            native_diagnostic(
+                "project_runtime.source_read_failed",
+                "identity",
+                error.to_string(),
+                Some(directory),
+            )
+        })?;
+    entries.sort();
+    for path in entries {
+        let metadata = fs::symlink_metadata(&path).map_err(|error| {
+            native_diagnostic(
+                "project_runtime.source_read_failed",
+                "identity",
+                error.to_string(),
+                Some(&path),
+            )
+        })?;
+        if metadata.file_type().is_symlink() {
+            return Err(native_diagnostic(
+                "project_runtime.source_link_rejected",
+                "identity",
+                "RuntimeModule source links are not allowed.",
+                Some(&path),
+            ));
+        }
+        if metadata.is_dir() {
+            collect_native_rust_sources(project_root, &path, output)?;
+        } else if path.extension().is_some_and(|extension| extension == "rs") {
+            path.strip_prefix(project_root).map_err(|_| {
+                native_diagnostic(
+                    "project_runtime.source_outside_project",
+                    "identity",
+                    "RuntimeModule source escaped the project root.",
+                    Some(&path),
+                )
+            })?;
+            output.push(path);
+        }
+    }
+    Ok(())
+}
+
+fn native_rustc_identity() -> Result<String, ProjectRuntimeNativeModuleDiagnostic> {
+    let output = Command::new("rustc")
+        .args(["--version", "--verbose"])
+        .output()
+        .map_err(|error| {
+            native_diagnostic(
+                "project_runtime.toolchain_unavailable",
+                "identity",
+                error.to_string(),
+                None,
+            )
+        })?;
+    if !output.status.success() {
+        return Err(native_diagnostic(
+            "project_runtime.toolchain_unavailable",
+            "identity",
+            "rustc --version --verbose failed.",
+            None,
+        ));
+    }
+    String::from_utf8(output.stdout)
+        .map(|value| value.trim().to_string())
+        .map_err(|error| {
+            native_diagnostic(
+                "project_runtime.toolchain_unavailable",
+                "identity",
+                error.to_string(),
+                None,
+            )
+        })
+}
+
+fn native_diagnostic(
+    code: impl Into<String>,
+    stage: impl Into<String>,
+    message: impl Into<String>,
+    path: Option<&Path>,
+) -> ProjectRuntimeNativeModuleDiagnostic {
+    ProjectRuntimeNativeModuleDiagnostic {
+        code: code.into(),
+        stage: stage.into(),
+        message: message.into(),
+        path: path.map(|value| value.display().to_string()),
+        next_action: "Keep authoring available and repair the reported ProjectRuntime input."
+            .to_string(),
+    }
+}
+
+#[cfg(test)]
 pub(crate) fn composition_identity(
     project_root: &Path,
     engine_sdk_root: &Path,
@@ -412,6 +543,7 @@ pub(crate) fn composition_identity(
     })
 }
 
+#[cfg(test)]
 fn collect_rust_sources(
     project_root: &Path,
     directory: &Path,
@@ -462,6 +594,7 @@ fn collect_rust_sources(
     Ok(())
 }
 
+#[cfg(test)]
 fn rustc_identity() -> Result<String, ProjectEditorCompositionDiagnostic> {
     let output = Command::new("rustc")
         .args(["--version", "--verbose"])
@@ -491,35 +624,7 @@ fn rustc_identity() -> Result<String, ProjectEditorCompositionDiagnostic> {
         })
 }
 
-fn cargo_identity() -> Result<String, ProjectEditorCompositionDiagnostic> {
-    let output = Command::new("cargo")
-        .args(["--version", "--verbose"])
-        .output()
-        .map_err(|error| {
-            diagnostic(
-                "project_editor_composition.cargo_unavailable",
-                "identity",
-                error.to_string(),
-            )
-        })?;
-    if !output.status.success() {
-        return Err(diagnostic(
-            "project_editor_composition.cargo_unavailable",
-            "identity",
-            "cargo --version --verbose failed.",
-        ));
-    }
-    String::from_utf8(output.stdout)
-        .map(|value| value.trim().to_string())
-        .map_err(|error| {
-            diagnostic(
-                "project_editor_composition.cargo_unavailable",
-                "identity",
-                error.to_string(),
-            )
-        })
-}
-
+#[cfg(test)]
 fn diagnostic(
     code: impl Into<String>,
     stage: impl Into<String>,

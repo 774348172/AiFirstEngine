@@ -21,9 +21,11 @@ use editor_core::{
     GameViewPresentDiagnostic, GameViewPresentReport, GameViewRuntimeFrame, InspectorContextAnchor,
     PreparedProjectOpen, ProjectManifest, ProjectOpenPreparation, ProjectOpenPreparationError,
     ProjectOpenPreparationPhase, ProjectPreviewEvidenceError, ProjectPreviewFrameEvidence,
-    ProjectPreviewFrameReadback, ProjectPreviewFrameTicket, ProjectRuntimeSourceKind,
-    ProjectRuntimeTrustDecisionKind, ProjectRuntimeTrustInspection, ProjectRuntimeTrustModule,
-    ProjectRuntimeTrustRequest, ProjectRuntimeTrustStatus, WorkspaceReport,
+    ProjectPreviewFrameReadback, ProjectPreviewFrameTicket, ProjectRuntimeNativeModuleBuildControl,
+    ProjectRuntimeNativeModuleDiagnostic, ProjectRuntimePreparationTicket,
+    ProjectRuntimeSourceKind, ProjectRuntimeTrustDecisionKind, ProjectRuntimeTrustInspection,
+    ProjectRuntimeTrustModule, ProjectRuntimeTrustRequest, ProjectRuntimeTrustStatus,
+    WorkspaceReport,
 };
 use editor_input::{
     AssetDragDropTarget, AssetDragInputState, AssetDragUpdate, EditorInputEvent, EditorInputRouter,
@@ -42,6 +44,7 @@ use editor_ui_renderer::{
     UiRendererConfig, WorkspaceDragWindowFacts, WorkspaceIntent, WorkspaceUpdate,
     WorkspaceWindowId, WorkspaceWindowPlacement,
 };
+use engine_runtime::project_runtime_module::LinkedProjectRuntimeSet;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
@@ -63,16 +66,25 @@ pub struct ApprovedProjectRuntimeTrustRequest {
     pub trust_request: ProjectRuntimeTrustRequest,
 }
 
-pub trait ProjectEditorCompositionPreparationAdapter: Send + Sync {
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ProjectRuntimePreparationPhase {
+    RevalidatingTrust,
+    PreparingArtifact,
+    LoadingModule,
+}
+
+pub struct PreparedProjectRuntime {
+    pub identity: editor_core::ProjectNativeModuleIdentity,
+    pub linked_project_runtimes: Arc<LinkedProjectRuntimeSet>,
+}
+
+pub trait ProjectRuntimePreparationAdapter: Send + Sync {
     fn prepare(
         &self,
         approved: ApprovedProjectRuntimeTrustRequest,
-        control: editor_core::ProjectEditorCompositionPreparationControl,
-        progress: &mut dyn FnMut(editor_core::ProjectEditorCompositionPreparationPhase),
-    ) -> Result<
-        editor_core::ProjectEditorCompositionArtifact,
-        editor_core::ProjectEditorCompositionDiagnostic,
-    >;
+        control: ProjectRuntimeNativeModuleBuildControl,
+        progress: &mut dyn FnMut(ProjectRuntimePreparationPhase),
+    ) -> Result<PreparedProjectRuntime, ProjectRuntimeNativeModuleDiagnostic>;
 }
 
 pub trait ProjectOpenPreparationAdapter: Send + Sync {
@@ -133,17 +145,16 @@ impl ProjectOpenPreparationAdapter for DefaultProjectOpenPreparationAdapter {
     }
 }
 
-struct ProjectEditorCompositionPreparationWorker {
-    receiver: mpsc::Receiver<
-        Result<
-            editor_core::ProjectEditorCompositionArtifact,
-            editor_core::ProjectEditorCompositionDiagnostic,
-        >,
-    >,
-    progress_receiver: mpsc::Receiver<editor_core::ProjectEditorCompositionPreparationPhase>,
+enum ProjectRuntimePreparationEvent {
+    Progress(ProjectRuntimePreparationPhase),
+    Completed(Result<PreparedProjectRuntime, ProjectRuntimeNativeModuleDiagnostic>),
+}
+
+struct ProjectRuntimePreparationWorker {
+    receiver: mpsc::Receiver<ProjectRuntimePreparationEvent>,
     join: Option<std::thread::JoinHandle<()>>,
-    approved: ApprovedProjectRuntimeTrustRequest,
-    control: editor_core::ProjectEditorCompositionPreparationControl,
+    ticket: ProjectRuntimePreparationTicket,
+    control: ProjectRuntimeNativeModuleBuildControl,
 }
 
 enum ProjectOpenPreparationEvent {
@@ -170,15 +181,6 @@ struct EditorPlayPreparationWorker {
     started_at: Instant,
     cancelled: Arc<AtomicBool>,
 }
-
-struct ProjectCompositionActivity {
-    model: ProjectOpenActivityModel,
-    started_at: Instant,
-    next_progress_redraw: Instant,
-}
-
-const PROJECT_COMPOSITION_PROGRESS_REDRAW_INTERVAL: std::time::Duration =
-    std::time::Duration::from_millis(100);
 
 struct PendingProjectRuntimeTrust {
     inspection: ProjectRuntimeTrustInspection,
@@ -274,18 +276,12 @@ pub struct NativeEditorApplication {
     project_runtime_trust_environment: Option<ProjectRuntimeTrustEnvironment>,
     pending_project_runtime_trust: Option<PendingProjectRuntimeTrust>,
     approved_project_runtime_trust: Option<ApprovedProjectRuntimeTrustRequest>,
-    project_editor_composition_launcher: Option<editor_core::EditorProjectCompositionLauncher>,
-    project_editor_composition_preparer:
-        Option<std::sync::Arc<dyn ProjectEditorCompositionPreparationAdapter>>,
-    project_editor_composition_build_worker: Option<ProjectEditorCompositionPreparationWorker>,
-    project_editor_composition_ticket_root: Option<PathBuf>,
-    last_project_editor_composition_launch_receipt:
-        Option<editor_core::ProjectEditorCompositionLaunchReceipt>,
+    project_runtime_preparation_adapter: Option<Arc<dyn ProjectRuntimePreparationAdapter>>,
+    project_runtime_preparation_worker: Option<ProjectRuntimePreparationWorker>,
     project_open_preparation_worker: Option<ProjectOpenPreparationWorker>,
     project_open_preparation_adapter: Arc<dyn ProjectOpenPreparationAdapter>,
     editor_play_preparation_worker: Option<EditorPlayPreparationWorker>,
     editor_play_preparation_adapter: Arc<dyn EditorPlayPreparationAdapter>,
-    project_composition_activity: Option<ProjectCompositionActivity>,
 }
 
 #[derive(Default)]
@@ -493,16 +489,12 @@ impl NativeEditorApplication {
             project_runtime_trust_environment: None,
             pending_project_runtime_trust: None,
             approved_project_runtime_trust: None,
-            project_editor_composition_launcher: None,
-            project_editor_composition_preparer: None,
-            project_editor_composition_build_worker: None,
-            project_editor_composition_ticket_root: None,
-            last_project_editor_composition_launch_receipt: None,
+            project_runtime_preparation_adapter: None,
+            project_runtime_preparation_worker: None,
             project_open_preparation_worker: None,
             project_open_preparation_adapter: Arc::new(DefaultProjectOpenPreparationAdapter),
             editor_play_preparation_worker: None,
             editor_play_preparation_adapter: Arc::new(DefaultEditorPlayPreparationAdapter),
-            project_composition_activity: None,
         };
         #[cfg(not(test))]
         if let Some(store) = crate::default_workspace_layout_store() {
@@ -539,19 +531,7 @@ impl NativeEditorApplication {
             .pump(&mut self.gateway_core, &mut self.session);
         let asset_worker_changed = self.session.pump_asset_browser_refresh();
         let llm_worker_changed = self.session.pump_llm_patch_request();
-        let handoff_changed =
-            if let Some(launcher) = self.project_editor_composition_launcher.as_mut() {
-                if let Some(receipt) = launcher.poll() {
-                    self.last_project_editor_composition_launch_receipt = Some(receipt);
-                    self.project_composition_activity = None;
-                    true
-                } else {
-                    false
-                }
-            } else {
-                false
-            };
-        let composition_preparation_changed = self.pump_project_editor_composition_preparation();
+        let project_runtime_preparation_changed = self.pump_project_runtime_preparation();
         let project_open_preparation_changed = self.pump_project_open_preparation();
         let editor_play_preparation_changed = self.pump_editor_play_preparation();
         self.latest_model = EditorUiModelComposer::compose(&self.session);
@@ -578,14 +558,14 @@ impl NativeEditorApplication {
         self.frame_index += 1;
         self.redraw_requested = asset_worker_changed
             || llm_worker_changed
-            || handoff_changed
-            || composition_preparation_changed
+            || project_runtime_preparation_changed
             || project_open_preparation_changed
             || editor_play_preparation_changed
             || gateway_operation_steps > 0
             || self.last_gateway_requests_processed > 0
             || self.session.has_active_llm_patch_request()
             || self.project_open_preparation_worker.is_some()
+            || self.project_runtime_preparation_worker.is_some()
             || self.editor_play_preparation_worker.is_some()
             || thumbnail_requests_started > 0
             || asset_work_pending;
@@ -1858,15 +1838,6 @@ impl NativeEditorApplication {
     ) -> Option<CommandResult> {
         if let Some(path) = project_open_path(&command.payload) {
             if !path.is_empty() {
-                match self.review_project_runtime_trust(
-                    Path::new(path),
-                    &command.command_id,
-                    &command.request_id,
-                ) {
-                    ProjectRuntimeTrustReview::Continue => {}
-                    ProjectRuntimeTrustReview::Prompted => return None,
-                    ProjectRuntimeTrustReview::Rejected(result) => return Some(result),
-                }
                 return self.begin_project_open_preparation(command);
             }
         }
@@ -1956,44 +1927,6 @@ impl NativeEditorApplication {
         }
     }
 
-    pub(crate) fn dispatch_verified_composition_handoff_project_open(
-        &mut self,
-        project_root: &Path,
-        request_id: String,
-    ) -> Option<CommandResult> {
-        let payload = UiCommandPayload::OpenProject {
-            path: project_root.display().to_string(),
-        };
-        let command = UiCommand {
-            command_id: ui_command_id_for_payload(&payload).to_string(),
-            source: UiCommandSource::ProjectLauncher,
-            request_id,
-            payload,
-        };
-        let manifest = std::fs::read(project_root.join("project.aife.json"))
-            .ok()
-            .and_then(|bytes| serde_json::from_slice::<ProjectManifest>(&bytes).ok());
-        let identity_matches = manifest.as_ref().is_some_and(|manifest| {
-            self.session
-                .project_editor_composition_identity()
-                .is_some_and(|identity| {
-                    identity.project_id == manifest.project_id
-                        && identity.module_id == manifest.runtime_module.module_id
-                        && identity.interface_version == manifest.runtime_module.interface_version
-                })
-        });
-        if !identity_matches {
-            return Some(native_host_result(
-                &command.command_id,
-                &command.request_id,
-                CommandStatus::Rejected,
-                "project_editor_composition.handoff_open_identity_mismatch",
-                "Verified handoff project identity does not match the running composition.",
-            ));
-        }
-        self.begin_project_open_preparation(command)
-    }
-
     pub fn request_redraw(&mut self) {
         self.redraw_requested = true;
     }
@@ -2039,20 +1972,11 @@ impl NativeEditorApplication {
         self.approved_project_runtime_trust.take()
     }
 
-    pub fn install_project_editor_composition_launcher(
+    pub fn install_project_runtime_preparer(
         &mut self,
-        launcher: editor_core::EditorProjectCompositionLauncher,
+        preparer: Arc<dyn ProjectRuntimePreparationAdapter>,
     ) {
-        self.project_editor_composition_launcher = Some(launcher);
-    }
-
-    pub fn install_project_editor_composition_preparer(
-        &mut self,
-        preparer: std::sync::Arc<dyn ProjectEditorCompositionPreparationAdapter>,
-        ticket_root: PathBuf,
-    ) {
-        self.project_editor_composition_preparer = Some(preparer);
-        self.project_editor_composition_ticket_root = Some(ticket_root);
+        self.project_runtime_preparation_adapter = Some(preparer);
     }
 
     fn begin_project_open_preparation(&mut self, command: UiCommand) -> Option<CommandResult> {
@@ -2065,6 +1989,7 @@ impl NativeEditorApplication {
                 "A project is already being prepared. Wait for the active operation to finish.",
             ));
         }
+        self.cancel_project_runtime_preparation();
         let Some(path) = project_open_path(&command.payload).filter(|path| !path.is_empty()) else {
             return Some(native_host_result(
                 &command.command_id,
@@ -2155,6 +2080,15 @@ impl NativeEditorApplication {
     }
 
     fn begin_editor_play_preparation(&mut self, command: UiCommand) -> CommandResult {
+        if let Some(blocker) = self.session.project_runtime_play_blocker() {
+            return native_host_result(
+                &command.command_id,
+                &command.request_id,
+                CommandStatus::Rejected,
+                &blocker.code,
+                blocker.message,
+            );
+        }
         if self.editor_play_preparation_worker.is_some() {
             return native_host_result(
                 &command.command_id,
@@ -2356,10 +2290,14 @@ impl NativeEditorApplication {
                 }
                 match result {
                     Ok(prepared) => {
+                        let project_root = prepared.project_root.clone();
                         self.session.install_prepared_project_open(prepared);
                         let command = worker.command;
-                        let _ = self.dispatch_command(command);
+                        let result = self.dispatch_command(command);
                         self.session.clear_prepared_project_open();
+                        if result.status == CommandStatus::Committed {
+                            self.begin_project_runtime_after_authoring_open(&project_root);
+                        }
                     }
                     Err(error) => {
                         let result = native_host_result(
@@ -2381,21 +2319,11 @@ impl NativeEditorApplication {
     }
 
     fn sync_project_open_activity(&mut self) {
-        let activity = self
-            .project_open_preparation_worker
-            .as_ref()
-            .map(|worker| {
-                let mut activity = worker.activity.clone();
-                activity.elapsed_ms = worker.started_at.elapsed().as_millis() as u64;
-                activity
-            })
-            .or_else(|| {
-                self.project_composition_activity.as_ref().map(|activity| {
-                    let mut model = activity.model.clone();
-                    model.elapsed_ms = activity.started_at.elapsed().as_millis() as u64;
-                    model
-                })
-            });
+        let activity = self.project_open_preparation_worker.as_ref().map(|worker| {
+            let mut activity = worker.activity.clone();
+            activity.elapsed_ms = worker.started_at.elapsed().as_millis() as u64;
+            activity
+        });
         self.latest_model.project_launcher.activity = activity;
         if self.latest_model.project_launcher.activity.is_some() {
             for command in &mut self.latest_model.project_launcher.commands {
@@ -2405,251 +2333,196 @@ impl NativeEditorApplication {
         }
     }
 
-    pub(crate) fn project_composition_progress_deadline(&self) -> Option<Instant> {
-        self.project_composition_activity
-            .as_ref()
-            .map(|activity| activity.next_progress_redraw)
-    }
-
-    pub(crate) fn take_project_composition_progress_redraw_due(&mut self, now: Instant) -> bool {
-        let Some(activity) = self.project_composition_activity.as_mut() else {
-            return false;
+    fn begin_project_runtime_after_authoring_open(&mut self, project_root: &Path) {
+        let Some(project) = self.session.active_project_session() else {
+            return;
         };
-        if now < activity.next_progress_redraw {
-            return false;
+        let requested = &project.manifest.runtime_module;
+        if requested.resolved_source_kind() != ProjectRuntimeSourceKind::ProjectRust {
+            return;
         }
-        activity.next_progress_redraw = now + PROJECT_COMPOSITION_PROGRESS_REDRAW_INTERVAL;
-        self.redraw_requested = true;
-        true
-    }
-
-    fn pump_project_editor_composition_preparation(&mut self) -> bool {
-        if self.project_editor_composition_build_worker.is_none() {
-            let Some(approved) = self.approved_project_runtime_trust.take() else {
-                return false;
-            };
-            let Some(preparer) = self.project_editor_composition_preparer.clone() else {
-                self.approved_project_runtime_trust = Some(approved);
-                return false;
-            };
-            let (sender, receiver) = mpsc::sync_channel(1);
-            let (progress_sender, progress_receiver) = mpsc::sync_channel(8);
-            let worker_approved = approved.clone();
-            let control = editor_core::ProjectEditorCompositionPreparationControl::default();
-            let worker_control = control.clone();
-            let join = std::thread::Builder::new()
-                .name("project-editor-composition-prepare".to_string())
-                .spawn(move || {
-                    let mut progress = |phase| {
-                        let _ = progress_sender.try_send(phase);
-                    };
-                    let _ = sender.send(preparer.prepare(
-                        worker_approved,
-                        worker_control,
-                        &mut progress,
-                    ));
-                });
-            match join {
-                Ok(join) => {
-                    let project_display_name = approved
-                        .project_root
-                        .file_name()
-                        .and_then(|name| name.to_str())
-                        .unwrap_or("Project")
-                        .to_string();
-                    let started_at = Instant::now();
-                    self.project_composition_activity = Some(ProjectCompositionActivity {
-                        model: ProjectOpenActivityModel {
-                            operation_id: format!(
-                                "composition-{}-{}",
-                                approved.trust_request.project_id,
-                                self.frame_index + 1
-                            ),
-                            project_display_name,
-                            phase: ProjectOpenActivityPhase::Inspecting,
-                            completed_units: None,
-                            total_units: None,
-                            elapsed_ms: 0,
-                            cancellable: true,
-                            diagnostic_code: None,
-                            next_action: None,
-                        },
-                        started_at,
-                        next_progress_redraw: started_at
-                            + PROJECT_COMPOSITION_PROGRESS_REDRAW_INTERVAL,
-                    });
-                    self.project_editor_composition_build_worker =
-                        Some(ProjectEditorCompositionPreparationWorker {
-                            receiver,
-                            progress_receiver,
-                            join: Some(join),
-                            approved,
-                            control,
-                        });
-                    return true;
-                }
-                Err(error) => {
-                    self.project_composition_activity = None;
-                    self.last_project_editor_composition_launch_receipt =
-                        Some(failed_composition_launch_receipt(
-                            &approved.trust_request.project_id,
-                            "project_editor_composition.build_worker_start_failed",
-                            error.to_string(),
-                        ));
-                    return true;
-                }
+        self.session.await_project_runtime_trust(
+            project.manifest.project_id.clone(),
+            requested.module_id.clone(),
+            requested.interface_version.clone(),
+        );
+        match self.review_project_runtime_trust(
+            project_root,
+            "project_runtime_preparation",
+            &format!("project-runtime-open-{}", self.frame_index + 1),
+        ) {
+            ProjectRuntimeTrustReview::Continue => {
+                self.begin_approved_project_runtime_preparation();
             }
-        }
-
-        let progress_changed = {
-            let worker = self
-                .project_editor_composition_build_worker
-                .as_ref()
-                .expect("composition worker exists");
-            let mut latest = None;
-            while let Ok(phase) = worker.progress_receiver.try_recv() {
-                latest = Some(phase);
-            }
-            if let Some(phase) = latest {
-                if let Some(activity) = self.project_composition_activity.as_mut() {
-                    activity.model.phase = composition_activity_phase(phase);
-                }
-                true
-            } else {
-                false
-            }
-        };
-        let result = {
-            let worker = self
-                .project_editor_composition_build_worker
-                .as_ref()
-                .expect("composition worker exists");
-            match worker.receiver.try_recv() {
-                Ok(result) => Some(result),
-                Err(TryRecvError::Empty) => None,
-                Err(TryRecvError::Disconnected) => {
-                    Some(Err(editor_core::ProjectEditorCompositionDiagnostic {
-                        code: "project_editor_composition.build_worker_disconnected".to_string(),
-                        stage: "prepare".to_string(),
-                        message:
-                            "Composition preparation worker disconnected before returning a result."
-                                .to_string(),
-                        path: None,
-                        expected_identity: None,
-                        actual_identity: None,
-                        next_action:
-                            "Keep the current Editor open and inspect the build worker failure."
-                                .to_string(),
-                    }))
-                }
-            }
-        };
-        let Some(result) = result else {
-            return progress_changed;
-        };
-        let mut worker = self
-            .project_editor_composition_build_worker
-            .take()
-            .expect("completed composition worker exists");
-        if let Some(join) = worker.join.take() {
-            let _ = join.join();
-        }
-        match result {
-            Ok(artifact) => {
-                let running_identity_digest = self
-                    .session
-                    .project_editor_composition_identity()
-                    .and_then(|identity| identity.digest().ok());
-                let Some(ticket_root) = self.project_editor_composition_ticket_root.clone() else {
-                    self.last_project_editor_composition_launch_receipt =
-                        Some(failed_composition_launch_receipt(
-                            &worker.approved.trust_request.project_id,
-                            "project_editor_composition.ticket_root_unavailable",
-                            "Application-owned handoff ticket root is unavailable.",
-                        ));
-                    return true;
-                };
-                let request = editor_core::EditorCompositionHandoffRequest {
-                    old_editor_instance_id: self.editor_instance_id.clone(),
-                    running_identity_digest,
-                    artifact,
-                    project_root: worker.approved.project_root,
-                    project_id: worker.approved.trust_request.project_id,
-                    ticket_root,
-                    timeout_ms: editor_core::DEFAULT_EDITOR_COMPOSITION_HANDOFF_TIMEOUT_MS,
-                };
-                if let Some(activity) = self.project_composition_activity.as_mut() {
-                    activity.model.phase = ProjectOpenActivityPhase::WaitingReadiness;
-                }
-                self.begin_project_editor_composition_handoff(request);
-            }
-            Err(diagnostic) => {
-                self.project_composition_activity = None;
-                self.last_project_editor_composition_launch_receipt =
-                    Some(failed_composition_launch_receipt_with_diagnostic(
-                        &worker.approved.trust_request.project_id,
-                        diagnostic,
-                    ));
-            }
-        }
-        true
-    }
-
-    pub fn begin_project_editor_composition_handoff(
-        &mut self,
-        request: editor_core::EditorCompositionHandoffRequest,
-    ) -> editor_core::ProjectEditorCompositionLaunchReceipt {
-        self.persist_workspace_layout();
-        let receipt = match self.project_editor_composition_launcher.as_mut() {
-            Some(launcher) => launcher.handoff(request),
-            None => editor_core::ProjectEditorCompositionLaunchReceipt {
-                schema_version:
-                    editor_core::PROJECT_EDITOR_COMPOSITION_LAUNCH_RECEIPT_SCHEMA_VERSION
+            ProjectRuntimeTrustReview::Prompted => {}
+            ProjectRuntimeTrustReview::Rejected(result) => {
+                let diagnostic = result.diagnostics.first();
+                let failure = ProjectRuntimeNativeModuleDiagnostic {
+                    code: diagnostic
+                        .map(|value| value.code.clone())
+                        .unwrap_or_else(|| "project_runtime.trust_rejected".to_string()),
+                    stage: "trust".to_string(),
+                    message: diagnostic
+                        .map(|value| value.message.clone())
+                        .unwrap_or_else(|| {
+                            "Project Runtime trust review was rejected.".to_string()
+                        }),
+                    path: Some(project_root.display().to_string()),
+                    next_action: "Review the ProjectRust identity and approve it before Play."
                         .to_string(),
-                status: editor_core::ProjectEditorCompositionLaunchStatus::Failed,
-                nonce: String::new(),
-                old_editor_instance_id: self.editor_instance_id.clone(),
-                new_editor_instance_id: None,
-                project_id: String::new(),
-                composition_identity_digest: String::new(),
-                candidate_process_id: None,
-                diagnostics: vec![editor_core::ProjectEditorCompositionDiagnostic {
-                    code: "project_editor_composition.launcher_unavailable".to_string(),
-                    stage: "handoff".to_string(),
-                    message: "Editor composition launcher is unavailable.".to_string(),
-                    path: None,
-                    expected_identity: None,
-                    actual_identity: None,
-                    next_action: "Install the application-owned handoff launcher.".to_string(),
-                }],
-            },
+                };
+                if let Some(ticket) = match self.session.project_runtime_preparation_state() {
+                    editor_core::ProjectRuntimePreparationState::AwaitingTrust(ticket) => {
+                        Some(ticket.clone())
+                    }
+                    _ => None,
+                } {
+                    self.session
+                        .fail_project_runtime_preparation(&ticket, failure);
+                }
+            }
+        }
+    }
+
+    fn begin_approved_project_runtime_preparation(&mut self) {
+        let Some(approved) = self.approved_project_runtime_trust.take() else {
+            return;
         };
-        self.last_project_editor_composition_launch_receipt = Some(receipt.clone());
-        if receipt.status != editor_core::ProjectEditorCompositionLaunchStatus::Pending {
-            self.project_composition_activity = None;
+        let Some(project) = self.session.active_project_session() else {
+            return;
+        };
+        let active_root = project
+            .project_root
+            .canonicalize()
+            .unwrap_or_else(|_| project.project_root.clone());
+        if active_root != approved.project_root
+            || project.manifest.project_id != approved.trust_request.project_id
+        {
+            return;
+        }
+        let requested = &project.manifest.runtime_module;
+        let ticket = self.session.begin_project_runtime_preparation(
+            project.manifest.project_id.clone(),
+            requested.module_id.clone(),
+            requested.interface_version.clone(),
+        );
+        let Some(preparer) = self.project_runtime_preparation_adapter.clone() else {
+            self.session.fail_project_runtime_preparation(
+                &ticket,
+                ProjectRuntimeNativeModuleDiagnostic {
+                    code: "project_runtime.preparer_unavailable".to_string(),
+                    stage: "prepare".to_string(),
+                    message: "The stable Editor has no native project runtime preparer."
+                        .to_string(),
+                    path: Some(approved.project_root.display().to_string()),
+                    next_action: "Install the production ProjectRuntime preparation service."
+                        .to_string(),
+                },
+            );
+            return;
+        };
+        self.cancel_project_runtime_worker_only();
+        let (sender, receiver) = mpsc::channel();
+        let control = ProjectRuntimeNativeModuleBuildControl::default();
+        let worker_control = control.clone();
+        let join = std::thread::Builder::new()
+            .name("project-runtime-prepare".to_string())
+            .spawn(move || {
+                let progress_sender = sender.clone();
+                let result = preparer.prepare(approved, worker_control, &mut move |phase| {
+                    let _ = progress_sender.send(ProjectRuntimePreparationEvent::Progress(phase));
+                });
+                let _ = sender.send(ProjectRuntimePreparationEvent::Completed(result));
+            });
+        match join {
+            Ok(join) => {
+                self.project_runtime_preparation_worker = Some(ProjectRuntimePreparationWorker {
+                    receiver,
+                    join: Some(join),
+                    ticket,
+                    control,
+                });
+            }
+            Err(error) => {
+                self.session.fail_project_runtime_preparation(
+                    &ticket,
+                    ProjectRuntimeNativeModuleDiagnostic {
+                        code: "project_runtime.worker_start_failed".to_string(),
+                        stage: "prepare".to_string(),
+                        message: error.to_string(),
+                        path: None,
+                        next_action: "Retry opening the project.".to_string(),
+                    },
+                );
+            }
         }
         self.redraw_requested = true;
-        receipt
     }
 
-    pub fn cancel_project_editor_composition_handoff(
-        &mut self,
-    ) -> Option<editor_core::ProjectEditorCompositionLaunchReceipt> {
-        let receipt = self
-            .project_editor_composition_launcher
-            .as_mut()
-            .and_then(editor_core::EditorProjectCompositionLauncher::cancel);
-        if let Some(receipt) = &receipt {
-            self.last_project_editor_composition_launch_receipt = Some(receipt.clone());
-            self.project_composition_activity = None;
+    fn pump_project_runtime_preparation(&mut self) -> bool {
+        let event = {
+            let Some(worker) = self.project_runtime_preparation_worker.as_ref() else {
+                return false;
+            };
+            match worker.receiver.try_recv() {
+                Ok(event) => event,
+                Err(TryRecvError::Empty) => return true,
+                Err(TryRecvError::Disconnected) => ProjectRuntimePreparationEvent::Completed(Err(
+                    ProjectRuntimeNativeModuleDiagnostic {
+                        code: "project_runtime.worker_disconnected".to_string(),
+                        stage: "prepare".to_string(),
+                        message: "Native project runtime worker disconnected before completion."
+                            .to_string(),
+                        path: None,
+                        next_action: "Retry opening the project.".to_string(),
+                    },
+                )),
+            }
+        };
+        match event {
+            ProjectRuntimePreparationEvent::Progress(_phase) => true,
+            ProjectRuntimePreparationEvent::Completed(result) => {
+                let mut worker = self
+                    .project_runtime_preparation_worker
+                    .take()
+                    .expect("completed project runtime worker exists");
+                if let Some(join) = worker.join.take() {
+                    let _ = join.join();
+                }
+                match result {
+                    Ok(prepared) => {
+                        self.session.install_prepared_project_runtime(
+                            &worker.ticket,
+                            prepared.identity,
+                            prepared.linked_project_runtimes,
+                        );
+                    }
+                    Err(diagnostic) => {
+                        self.session
+                            .fail_project_runtime_preparation(&worker.ticket, diagnostic);
+                    }
+                }
+                self.redraw_requested = true;
+                true
+            }
         }
-        receipt
     }
 
-    pub fn last_project_editor_composition_launch_receipt(
-        &self,
-    ) -> Option<&editor_core::ProjectEditorCompositionLaunchReceipt> {
-        self.last_project_editor_composition_launch_receipt.as_ref()
+    fn cancel_project_runtime_worker_only(&mut self) {
+        if let Some(mut worker) = self.project_runtime_preparation_worker.take() {
+            worker.control.request_cancel();
+            if let Some(join) = worker.join.take() {
+                let _ = join.join();
+            }
+        }
+    }
+
+    pub fn cancel_project_runtime_preparation(&mut self) {
+        self.cancel_project_runtime_worker_only();
+        self.approved_project_runtime_trust = None;
+        self.pending_project_runtime_trust = None;
+        self.session.cancel_project_runtime_preparation();
+        self.redraw_requested = true;
     }
 
     fn review_project_runtime_trust(
@@ -2700,29 +2573,12 @@ impl NativeEditorApplication {
             }
         };
         if evaluation.status == ProjectRuntimeTrustStatus::Trusted {
-            let running_matches = self
-                .session
-                .project_editor_composition_identity()
-                .is_some_and(|identity| {
-                    identity.project_id == inspection.request.project_id
-                        && identity.module_id == inspection.module_id
-                        && identity.interface_version == manifest.runtime_module.interface_version
-                        && identity.editor_build_identity
-                            == inspection.request.editor_build_identity
-                        && identity.normalized_manifest_digest
-                            == inspection.request.normalized_manifest_digest
-                        && identity.normalized_dependency_digest
-                            == inspection.request.normalized_dependency_digest
-                });
-            if running_matches {
-                return ProjectRuntimeTrustReview::Continue;
-            }
             self.approved_project_runtime_trust = Some(ApprovedProjectRuntimeTrustRequest {
                 project_root: inspection.canonical_project_root,
                 trust_request: inspection.request,
             });
             self.redraw_requested = true;
-            return ProjectRuntimeTrustReview::Prompted;
+            return ProjectRuntimeTrustReview::Continue;
         }
         if evaluation.status == ProjectRuntimeTrustStatus::Denied {
             return ProjectRuntimeTrustReview::Rejected(native_host_result(
@@ -2816,6 +2672,35 @@ impl NativeEditorApplication {
                 "Project Runtime trust review was cancelled; no receipt, build, or launch was created.",
             )
         };
+        if result.status == CommandStatus::Committed
+            && decision == Some(ProjectRuntimeTrustDecisionKind::Trusted)
+        {
+            self.begin_approved_project_runtime_preparation();
+        } else if result.status == CommandStatus::Committed {
+            if let editor_core::ProjectRuntimePreparationState::AwaitingTrust(ticket) =
+                self.session.project_runtime_preparation_state()
+            {
+                let ticket = ticket.clone();
+                self.session.fail_project_runtime_preparation(
+                    &ticket,
+                    ProjectRuntimeNativeModuleDiagnostic {
+                        code: if decision == Some(ProjectRuntimeTrustDecisionKind::Denied) {
+                            "project_runtime.trust_denied".to_string()
+                        } else {
+                            "project_runtime.trust_cancelled".to_string()
+                        },
+                        stage: "trust".to_string(),
+                        message:
+                            "Project Runtime preparation cannot continue without trust approval."
+                                .to_string(),
+                        path: None,
+                        next_action:
+                            "Reopen the project and approve its current ProjectRust identity."
+                                .to_string(),
+                    },
+                );
+            }
+        }
         self.last_command_id = Some(command.command_id.clone());
         self.last_command_status = Some(result.status);
         self.last_feedback = Some(command_feedback_from_result(&command, &result));
@@ -3071,6 +2956,14 @@ impl NativeEditorApplication {
     ) -> Option<GameViewPresentReport> {
         self.session
             .tick_active_game_view_runtime_descriptor_frame()
+    }
+
+    pub fn tick_active_game_view_runtime_descriptor_frame_with_fixed_steps(
+        &mut self,
+        fixed_step_count: usize,
+    ) -> Option<GameViewPresentReport> {
+        self.session
+            .tick_active_game_view_runtime_descriptor_frame_with_fixed_steps(fixed_step_count)
     }
 
     pub fn active_game_view_frame_for_window_present(&self) -> Option<GameViewRuntimeFrame> {
@@ -3546,6 +3439,7 @@ impl NativeEditorApplication {
 
 impl Drop for NativeEditorApplication {
     fn drop(&mut self) {
+        self.cancel_project_runtime_worker_only();
         if let Some(mut worker) = self.editor_play_preparation_worker.take() {
             worker.cancelled.store(true, Ordering::Release);
             if let Some(join) = worker.join.take() {
@@ -3554,12 +3448,6 @@ impl Drop for NativeEditorApplication {
         }
         if let Some(mut worker) = self.project_open_preparation_worker.take() {
             worker.cancelled.store(true, Ordering::Release);
-            if let Some(join) = worker.join.take() {
-                let _ = join.join();
-            }
-        }
-        if let Some(mut worker) = self.project_editor_composition_build_worker.take() {
-            worker.control.request_cancel();
             if let Some(join) = worker.join.take() {
                 let _ = join.join();
             }
@@ -3573,88 +3461,6 @@ fn project_open_path(payload: &UiCommandPayload) -> Option<&str> {
             Some(path)
         }
         _ => None,
-    }
-}
-
-fn composition_activity_phase(
-    phase: editor_core::ProjectEditorCompositionPreparationPhase,
-) -> ProjectOpenActivityPhase {
-    match phase {
-        editor_core::ProjectEditorCompositionPreparationPhase::Inspecting => {
-            ProjectOpenActivityPhase::Inspecting
-        }
-        editor_core::ProjectEditorCompositionPreparationPhase::CacheLookup => {
-            ProjectOpenActivityPhase::CacheLookup
-        }
-        editor_core::ProjectEditorCompositionPreparationPhase::Staging => {
-            ProjectOpenActivityPhase::Staging
-        }
-        editor_core::ProjectEditorCompositionPreparationPhase::Compiling => {
-            ProjectOpenActivityPhase::Compiling
-        }
-        editor_core::ProjectEditorCompositionPreparationPhase::Sealing => {
-            ProjectOpenActivityPhase::Sealing
-        }
-        editor_core::ProjectEditorCompositionPreparationPhase::Ready => {
-            ProjectOpenActivityPhase::WaitingReadiness
-        }
-        editor_core::ProjectEditorCompositionPreparationPhase::Cancelled => {
-            ProjectOpenActivityPhase::Cancelled
-        }
-    }
-}
-
-#[cfg(test)]
-mod project_composition_progress_tests {
-    use super::*;
-
-    fn activity(started_at: Instant) -> ProjectCompositionActivity {
-        ProjectCompositionActivity {
-            model: ProjectOpenActivityModel {
-                operation_id: "composition-progress-test".to_string(),
-                project_display_name: "Fixture".to_string(),
-                phase: ProjectOpenActivityPhase::Compiling,
-                completed_units: None,
-                total_units: None,
-                elapsed_ms: 0,
-                cancellable: true,
-                diagnostic_code: None,
-                next_action: None,
-            },
-            started_at,
-            next_progress_redraw: started_at + PROJECT_COMPOSITION_PROGRESS_REDRAW_INTERVAL,
-        }
-    }
-
-    #[test]
-    fn project_editor_composition_redraw_worker_without_change_does_not_spin() {
-        let mut app = NativeEditorApplication::new(NativeEditorWindowConfig::default());
-        app.project_composition_activity = Some(activity(Instant::now()));
-        app.redraw_requested = false;
-
-        assert!(!app.frame(1280.0, 720.0).redraw_requested);
-        assert!(
-            app.handle_input_event(EditorInputEvent::PointerMove { x: 20.0, y: 20.0 })
-                .redraw_requested
-        );
-    }
-
-    #[test]
-    fn project_editor_composition_progress_deadline_advances_at_ten_hz() {
-        let mut app = NativeEditorApplication::new(NativeEditorWindowConfig::default());
-        let started_at = Instant::now();
-        app.project_composition_activity = Some(activity(started_at));
-        let first = started_at + PROJECT_COMPOSITION_PROGRESS_REDRAW_INTERVAL;
-
-        assert_eq!(app.project_composition_progress_deadline(), Some(first));
-        assert!(!app.take_project_composition_progress_redraw_due(
-            first - std::time::Duration::from_millis(1)
-        ));
-        assert!(app.take_project_composition_progress_redraw_due(first));
-        assert_eq!(
-            app.project_composition_progress_deadline(),
-            Some(first + PROJECT_COMPOSITION_PROGRESS_REDRAW_INTERVAL)
-        );
     }
 }
 
@@ -3723,45 +3529,6 @@ fn project_runtime_trust_request_id(request: &ProjectRuntimeTrustRequest) -> Str
         request.project_id,
         &digest[..digest.len().min(12)]
     )
-}
-
-fn failed_composition_launch_receipt(
-    project_id: &str,
-    code: &str,
-    message: impl Into<String>,
-) -> editor_core::ProjectEditorCompositionLaunchReceipt {
-    failed_composition_launch_receipt_with_diagnostic(
-        project_id,
-        editor_core::ProjectEditorCompositionDiagnostic {
-            code: code.to_string(),
-            stage: "prepare".to_string(),
-            message: message.into(),
-            path: None,
-            expected_identity: None,
-            actual_identity: None,
-            next_action:
-                "Keep the current Editor open and inspect composition preparation diagnostics."
-                    .to_string(),
-        },
-    )
-}
-
-fn failed_composition_launch_receipt_with_diagnostic(
-    project_id: &str,
-    diagnostic: editor_core::ProjectEditorCompositionDiagnostic,
-) -> editor_core::ProjectEditorCompositionLaunchReceipt {
-    editor_core::ProjectEditorCompositionLaunchReceipt {
-        schema_version: editor_core::PROJECT_EDITOR_COMPOSITION_LAUNCH_RECEIPT_SCHEMA_VERSION
-            .to_string(),
-        status: editor_core::ProjectEditorCompositionLaunchStatus::Failed,
-        nonce: String::new(),
-        old_editor_instance_id: String::new(),
-        new_editor_instance_id: None,
-        project_id: project_id.to_string(),
-        composition_identity_digest: String::new(),
-        candidate_process_id: None,
-        diagnostics: vec![diagnostic],
-    }
 }
 
 fn native_host_result(

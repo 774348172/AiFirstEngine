@@ -1,4 +1,4 @@
-# AI First Game Engine V0.0.1 介绍
+# AI First Game Engine V0.0.2 介绍
 
 ## 它要解决什么问题
 
@@ -29,6 +29,10 @@
 
 引擎 Core 提供 ECS、场景、输入、渲染、UI、资源和构建能力，不内置塔防、射击、敌人、武器等具体玩法。复杂项目逻辑由项目侧 Rust RuntimeModule 与受限规则资产承载。
 
+### 项目 Rust 模块使用稳定 ABI
+
+V0.0.2 引入 `project_runtime_abi` 与 `project_runtime_sdk`。项目模块不再依赖宿主内部 Rust 对象布局，而是通过窄 C ABI、版本、能力位和合同摘要完成绑定。编辑器可以独立构建、校验和缓存项目模块，并在项目首次打开时把高成本准备放到非阻塞后台阶段。
+
 ### AI 修改可审查
 
 AI 工具面以能力目录、结构化请求、诊断和变更记录为中心。目标是让一次项目修改能够在执行前检查，在执行后说明改了什么，并在可行时通过明确引用回滚。
@@ -37,7 +41,11 @@ AI 工具面以能力目录、结构化请求、诊断和变更记录为中心�
 
 Editor 负责 authoring、预览、项目组织和报告；Runtime 负责加载发布输入并执行游戏。渲染、物理和 UI 同步通过 Projection 边界传递，项目逻辑不直接持有渲染器或编辑器内部对象。
 
-## V0.0.1 能做什么
+### Windows 与 Android 共享运行底座
+
+Windows Player 和 Android GameActivity Player 共享 RuntimePackage、项目模块、World、AUI 与呈现合同。Android 导出只负责平台工具链、launcher、Gradle/APK 和 APK asset materialization，不建立 Android 专用 Scene、Rule 或 Renderer 分支。
+
+## V0.0.2 能做什么
 
 - 构建和启动 Windows 原生编辑器；
 - 使用结构化 Scene、Prefab、Asset、Rule、Input 和 AUI 数据；
@@ -46,10 +54,14 @@ Editor 负责 authoring、预览、项目组织和报告；Runtime 负责加载�
 - 通过 WGPU 呈现基础 2D 内容、纹理和运行时 UI；
 - 使用编辑器工作区、项目启动器、资产浏览、GameView、构建和报告等基础功能；
 - 为外部 AI 客户端提供早期 MCP Gateway 和受控项目工具基础。
+- 通过稳定 ABI/SDK 构建和绑定项目 Rust 原生模块；
+- 生成 Windows dev Player，并保持连续窗口、竖屏 contain 和输入坐标一致；
+- 在配置好外部 Android 工具链后生成 ARM64 或 x86_64 emulator debug APK；
+- 通过 AUI clean-frame cache 减少无变化 UI 的重复解析与呈现工作。
 
-## V0.0.1 不是什么
+## V0.0.2 不是什么
 
-它不是成熟的 Unity、Unreal 或 Godot 替代品，也不是开箱即用的无代码游戏平台。这个版本主要用于公开当前技术方向和可运行底座，接口与工程格式仍可能快速变化。使用者应把它视为实验性源码预览，而不是长期兼容的生产 SDK。
+它不是成熟的 Unity、Unreal 或 Godot 替代品，也不是开箱即用的无代码游戏平台。Android 能力目前是 dev APK 纵切，不包含 AAB、应用商店上传、正式 keystore 或完整设备矩阵。这个版本主要用于公开当前技术方向和可运行底座，接口、ABI 与工程格式仍可能快速变化。
 
 ## 后续方向
 

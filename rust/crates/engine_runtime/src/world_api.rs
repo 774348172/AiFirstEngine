@@ -232,6 +232,9 @@ impl<'a> WorldWriteApi<'a> {
 fn field_value(component: &ComponentValue, field_path: &FieldPath) -> Option<RuntimeValue> {
     match component {
         ComponentValue::Dynamic { value, .. } => runtime_field_value(value, field_path),
+        ComponentValue::SpriteRenderer2D(sprite) if field_path.as_str() == "visible" => {
+            Some(RuntimeValue::Bool(sprite.visible))
+        }
         _ => None,
     }
 }
@@ -266,6 +269,13 @@ fn set_component_field(
             value: dynamic_value,
             ..
         } => set_runtime_field(dynamic_value, field_path, value),
+        ComponentValue::SpriteRenderer2D(sprite) if field_path.as_str() == "visible" => {
+            let RuntimeValue::Bool(visible) = value else {
+                return Err(());
+            };
+            sprite.visible = visible;
+            Ok(())
+        }
         _ => Err(()),
     }
 }
@@ -484,6 +494,31 @@ mod tests {
         assert_eq!(record.after, Some("F64(3.0)".to_string()));
         assert_eq!(world.transform(&entity_id).unwrap().local_position.x, 3.0);
         assert_eq!(world.dirty_records()[0].dirty_type, DirtyType::Transform);
+    }
+
+    #[test]
+    fn write_component_field_updates_sprite_renderer_visibility() {
+        let mut world = World::new();
+        let entity_id = EntityId::from("sprite-a");
+        world.spawn_entity(entity_id.clone(), "Sprite", "visual", true, hierarchy());
+        world
+            .try_insert_sprite_renderer2d(
+                entity_id.clone(),
+                crate::components::SpriteRenderer2D::default(),
+            )
+            .unwrap();
+
+        let record = WorldWriteApi::new(&mut world)
+            .write_component_field(
+                entity_id.clone(),
+                ComponentTypeId::sprite_renderer2d(),
+                &FieldPath::parse("visible").unwrap(),
+                RuntimeValue::Bool(false),
+            )
+            .unwrap();
+
+        assert_eq!(record.field, "visible");
+        assert!(!world.sprite_renderer2d(&entity_id).unwrap().visible);
     }
 
     #[test]

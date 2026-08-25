@@ -3,7 +3,8 @@ use engine_runtime::archetype::ComponentValue;
 use engine_runtime::aui::{
     AuiActionEvent, AuiComputedRect, AuiInteractionConfig, AuiInteractionState,
     AuiInteractionSystem, AuiRuntimePresentOutput, AuiRuntimePresentStatus, AuiRuntimePresenter,
-    ProjectUiStateProducerContext, ProjectUiStateSnapshotProducer,
+    ProjectUiStateReportMode, ProjectUiStateSnapshotCache, ProjectUiStateSnapshotCacheResult,
+    ProjectUiStateSnapshotProducer,
 };
 use engine_runtime::aui_control_feedback::{
     presentation_delta_us_from_seconds, AuiControlFeedbackState,
@@ -14,8 +15,8 @@ use engine_runtime::diagnostics::{
 };
 use engine_runtime::engine_host_loop::{EngineFrameInput, EngineHostLoop, EngineHostMode};
 use engine_runtime::game_view_presentation::{
-    GameViewPresentationModule, GameViewPresentationSpec, GameViewRect, GameViewScalePolicy,
-    GameViewTargetSpec,
+    CanvasReferenceFact, GameViewPresentationModule, GameViewPresentationSpec, GameViewRect,
+    GameViewScalePolicy, GameViewTargetSpec,
 };
 use engine_runtime::input_action::InputTraceSummary;
 use engine_runtime::input_mapping::{
@@ -36,9 +37,9 @@ use engine_runtime::runtime_scene_hydration::{
     hydrate_active_scene_into_world, RuntimeSceneHydrationReport,
 };
 use engine_runtime::runtime_texture::{RuntimeTextureBindingContext, RuntimeTextureUploadRegistry};
+use engine_runtime::sprite2d_render_pipeline::Sprite2DTextureBindingContext;
 use engine_runtime::world::World;
 use serde::{Deserialize, Serialize};
-use sha2::{Digest, Sha256};
 use std::cell::RefCell;
 use std::collections::{BTreeMap, BTreeSet};
 #[cfg(test)]
@@ -376,10 +377,16 @@ pub struct EditorRuntimePlayInstance {
     input_mapping: InputMappingAsset,
     project_runtime_bind_receipt: ProjectRuntimeBindReceipt,
     project_runtime_session_report: Option<ProjectRuntimeSessionFrameReport>,
+    project_runtime_session_report_level: ProjectRuntimeSessionReportLevel,
     project_observation_state: Option<ProjectRuntimeObservationState>,
     aui_interaction_state: AuiInteractionState,
     aui_feedback_state: AuiControlFeedbackState,
     last_aui_present: Option<AuiRuntimePresentOutput>,
+    aui_snapshot_cache: ProjectUiStateSnapshotCache,
+    aui_present_rebuild_count: u64,
+    aui_present_cache_hit_count: u64,
+    aui_presentation_revision: u64,
+    animator_observation_scan_count: u64,
     pending_gameplay_input: Option<RuntimeInputFrame>,
     state: EditorRuntimePlayState,
     frame_count: u64,
@@ -388,6 +395,7 @@ pub struct EditorRuntimePlayInstance {
     last_rhi_command_plan: Option<RhiCommandPlan>,
     runtime_texture_uploads: RuntimeTextureUploadRegistry,
     runtime_texture_bindings: RuntimeTextureBindingContext,
+    sprite_texture_bindings: Sprite2DTextureBindingContext,
     report_path: Option<String>,
     hydration_report: RuntimeSceneHydrationReport,
     runtime_authoring_origins: BTreeMap<String, RuntimeAuthoringOrigin>,
@@ -1615,7 +1623,17 @@ impl EditorRuntimePlayInstance {
             }
         }
         let runtime_texture_bindings = runtime_texture_uploads.binding_context();
+        let mut sprite_texture_bindings = Sprite2DTextureBindingContext::new();
+        for (asset_id, binding) in runtime_texture_bindings.bindings() {
+            sprite_texture_bindings.insert_texture_handle(
+                asset_id,
+                binding.handle,
+                binding.sampler.clone(),
+            );
+        }
         let scene_id = package.active_scene.id.clone();
+        let aui_snapshot_cache =
+            ProjectUiStateSnapshotCache::new(active_aui_binding_paths(&package));
         report.scene_id = Some(scene_id.clone());
         let runtime_authoring_origins = build_runtime_authoring_origin_index(&hydration_report);
         let mut host = EngineHostLoop::with_project_runtime_session(
@@ -1658,10 +1676,16 @@ impl EditorRuntimePlayInstance {
             input_mapping: parts.default_input_mapping,
             project_runtime_bind_receipt: parts.receipt,
             project_runtime_session_report: None,
+            project_runtime_session_report_level: ProjectRuntimeSessionReportLevel::Summary,
             project_observation_state: None,
             aui_interaction_state: AuiInteractionState::default(),
             aui_feedback_state: AuiControlFeedbackState::default(),
             last_aui_present: None,
+            aui_snapshot_cache,
+            aui_present_rebuild_count: 0,
+            aui_present_cache_hit_count: 0,
+            aui_presentation_revision: 0,
+            animator_observation_scan_count: 0,
             pending_gameplay_input: None,
             state: EditorRuntimePlayState::Loading,
             frame_count: 0,
@@ -1670,6 +1694,7 @@ impl EditorRuntimePlayInstance {
             last_rhi_command_plan: None,
             runtime_texture_uploads,
             runtime_texture_bindings,
+            sprite_texture_bindings,
             report_path: None,
             hydration_report,
             runtime_authoring_origins,
@@ -1680,7 +1705,7 @@ impl EditorRuntimePlayInstance {
         instance.state = EditorRuntimePlayState::Running;
 
         for _ in 0..request.frame_limit {
-            let frame = instance.tick_descriptor_frame(&mut report, None);
+            let frame = instance.tick_descriptor_frame(&mut report, None, 1);
             instance.last_frame = Some(frame);
             instance.frame_count += 1;
         }
@@ -1812,14 +1837,22 @@ impl EditorRuntimePlayInstance {
 
     pub fn tick_next_descriptor_frame(&mut self) -> GameViewPresentReport {
         let pending_input = self.pending_gameplay_input.take();
-        self.tick_next_descriptor_frame_internal(pending_input)
+        self.tick_next_descriptor_frame_internal(pending_input, 1)
+    }
+
+    pub fn tick_next_descriptor_frame_with_fixed_steps(
+        &mut self,
+        fixed_step_count: usize,
+    ) -> GameViewPresentReport {
+        let pending_input = self.pending_gameplay_input.take();
+        self.tick_next_descriptor_frame_internal(pending_input, fixed_step_count)
     }
 
     pub fn tick_next_descriptor_frame_with_runtime_input(
         &mut self,
         runtime_input_frame: RuntimeInputFrame,
     ) -> GameViewPresentReport {
-        self.tick_next_descriptor_frame_internal(Some(runtime_input_frame))
+        self.tick_next_descriptor_frame_internal(Some(runtime_input_frame), 1)
     }
 
     pub fn route_aui_input_immediately(
@@ -1840,6 +1873,8 @@ impl EditorRuntimePlayInstance {
             report.recompute_status();
             return report;
         };
+        let previous_composition = aui_present.composition.clone();
+        let revision_before_input = self.aui_presentation_revision;
         let Some(last_frame) = self.last_frame.clone() else {
             report.diagnostics.push(GameViewPresentDiagnostic::warning(
                 "game_view_frame_missing",
@@ -1921,16 +1956,11 @@ impl EditorRuntimePlayInstance {
         report.project_observation_state = self.project_observation_state.clone();
 
         if !interaction_result.actions.is_empty() {
-            if let Some(refreshed) = build_aui_present_output(
-                &self.package,
-                &self.world,
-                last_frame.frame_index,
-                self.ui_state_producer.as_mut(),
-            ) {
+            if let Some(refreshed) = self.take_or_rebuild_aui_present(last_frame.frame_index) {
                 aui_present = refreshed;
             }
         }
-        let feedback = AuiRuntimePresenter::apply_control_feedback_with_fonts(
+        let feedback = AuiRuntimePresenter::apply_control_feedback_with_fonts_for_presentation(
             &mut aui_present,
             &interaction_result,
             &mut self.aui_feedback_state,
@@ -1939,7 +1969,13 @@ impl EditorRuntimePlayInstance {
             ),
             &self.package.font_atlases,
             &self.package.font_bundles,
+            Some(&presentation),
         );
+        if aui_present.composition != previous_composition
+            && self.aui_presentation_revision == revision_before_input
+        {
+            self.aui_presentation_revision = self.aui_presentation_revision.saturating_add(1);
+        }
         let render_thread_frame = self.host.render_thread_for_target_with_runtime_resources(
             RenderTarget::viewport_texture(
                 last_frame.target_id.clone(),
@@ -1949,11 +1985,10 @@ impl EditorRuntimePlayInstance {
             .with_presentation_scale_policy(self.game_view_target.scale_policy),
             Some(&aui_present.overlay),
             Some(&aui_present.composition),
-            None,
+            Some(&self.sprite_texture_bindings),
             Some(&self.runtime_texture_bindings),
         );
         self.last_rhi_command_plan = Some(render_thread_frame.renderer_output.rhi_command_plan);
-        self.last_aui_present = Some(aui_present.clone());
         self.enqueue_pending_gameplay_input(filtered_frame);
 
         let mut updated_frame = last_frame.clone();
@@ -1972,11 +2007,13 @@ impl EditorRuntimePlayInstance {
             .iter()
             .cloned()
             .collect();
-        updated_frame.aui_presentation_identity = aui_presentation_identity(Some(&aui_present));
+        updated_frame.aui_presentation_identity =
+            aui_presentation_identity(&self.session_id, self.aui_presentation_revision, true);
         updated_frame.gameplay_action_count = 0;
         updated_frame.gameplay_action_ids.clear();
         self.last_aui_action_targets =
             build_aui_action_targets(&aui_present, updated_frame.width, updated_frame.height);
+        self.last_aui_present = Some(aui_present);
         self.last_frame = Some(updated_frame.clone());
         report.last_frame = Some(updated_frame);
         report.last_frame_hash = Some(last_frame.frame_hash);
@@ -2020,6 +2057,7 @@ impl EditorRuntimePlayInstance {
     fn tick_next_descriptor_frame_internal(
         &mut self,
         runtime_input_frame: Option<RuntimeInputFrame>,
+        fixed_step_count: usize,
     ) -> GameViewPresentReport {
         if self.state == EditorRuntimePlayState::Paused {
             return self.paused_report("auto_tick");
@@ -2027,7 +2065,7 @@ impl EditorRuntimePlayInstance {
         self.state = EditorRuntimePlayState::Running;
         let mut report = self.running_report_base();
         report.control_command = "tick".to_string();
-        let frame = self.tick_descriptor_frame(&mut report, runtime_input_frame);
+        let frame = self.tick_descriptor_frame(&mut report, runtime_input_frame, fixed_step_count);
         self.last_frame = Some(frame);
         self.frame_count += 1;
         report.frame_count = self.frame_count;
@@ -2078,7 +2116,7 @@ impl EditorRuntimePlayInstance {
         report.control_state = self.state;
         report.control_command = "step_frame".to_string();
         report.step_count = 1;
-        let frame = self.tick_descriptor_frame(&mut report, None);
+        let frame = self.tick_descriptor_frame(&mut report, None, 1);
         self.last_frame = Some(frame);
         self.frame_count += 1;
         self.state = EditorRuntimePlayState::Paused;
@@ -2143,6 +2181,7 @@ impl EditorRuntimePlayInstance {
         &mut self,
         level: ProjectRuntimeSessionReportLevel,
     ) {
+        self.project_runtime_session_report_level = level;
         self.host.set_project_runtime_session_report_level(level);
     }
 
@@ -2247,16 +2286,16 @@ impl EditorRuntimePlayInstance {
         &mut self,
         report: &mut GameViewPresentReport,
         runtime_input_frame: Option<RuntimeInputFrame>,
+        fixed_step_count: usize,
     ) -> GameViewRuntimeFrame {
         let expected_frame_index = self.frame_count + 1;
-        let mut aui_present = build_aui_present_output(
-            &self.package,
-            &self.world,
-            expected_frame_index,
-            self.ui_state_producer.as_mut(),
-        );
+        let mut aui_present = self.take_or_rebuild_aui_present(expected_frame_index);
         let mut frame_input = EngineFrameInput::new(EngineHostMode::EditorPlay)
-            .with_runtime_texture_bindings(self.runtime_texture_bindings.clone());
+            .with_runtime_texture_bindings(self.runtime_texture_bindings.clone())
+            .with_fixed_step_count(fixed_step_count)
+            .with_unscaled_delta_time(
+                engine_runtime::runtime_time::DEFAULT_FIXED_DELTA_TIME * fixed_step_count as f32,
+            );
         let mut ui_draw_item_count = 0;
         let aui_present_status = if let Some(aui_present) = aui_present.as_ref() {
             ui_draw_item_count = aui_present.report.draw_item_count;
@@ -2338,16 +2377,18 @@ impl EditorRuntimePlayInstance {
                         input_bridge_status = "runtime_input_frame_filtered_by_aui".to_string();
                     }
                     if let Some(present) = aui_present.as_mut() {
-                        let feedback = AuiRuntimePresenter::apply_control_feedback_with_fonts(
-                            present,
-                            &interaction_result,
-                            &mut self.aui_feedback_state,
-                            presentation_delta_us_from_seconds(
-                                engine_runtime::runtime_time::DEFAULT_FIXED_DELTA_TIME,
-                            ),
-                            &self.package.font_atlases,
-                            &self.package.font_bundles,
-                        );
+                        let feedback =
+                            AuiRuntimePresenter::apply_control_feedback_with_fonts_for_presentation(
+                                present,
+                                &interaction_result,
+                                &mut self.aui_feedback_state,
+                                presentation_delta_us_from_seconds(
+                                    engine_runtime::runtime_time::DEFAULT_FIXED_DELTA_TIME,
+                                ),
+                                &self.package.font_atlases,
+                                &self.package.font_bundles,
+                                Some(&presentation),
+                            );
                         aui_feedback_override_count = feedback.overrides.len();
                         aui_feedback_profile_ids = feedback
                             .report
@@ -2397,24 +2438,31 @@ impl EditorRuntimePlayInstance {
         report.gameplay_action_ids = gameplay_action_ids.clone();
 
         let output = self.host.tick(frame_input, &mut self.world);
-        let animator2d_play_observations = self
-            .host
-            .animator2d_module()
-            .map(|module| {
-                self.world
-                    .entity_ids()
-                    .into_iter()
-                    .filter(|entity_id| self.world.animator2d(entity_id).is_some())
-                    .filter_map(|entity_id| {
-                        crate::Animator2DAuthoringService::play_observation(
-                            entity_id,
-                            module,
-                            &output.animator2d_frame_result,
-                        )
-                    })
-                    .collect()
-            })
-            .unwrap_or_default();
+        let animator2d_play_observations = if self.project_runtime_session_report_level
+            == ProjectRuntimeSessionReportLevel::Trace
+        {
+            self.animator_observation_scan_count =
+                self.animator_observation_scan_count.saturating_add(1);
+            self.host
+                .animator2d_module()
+                .map(|module| {
+                    self.world
+                        .entity_ids()
+                        .into_iter()
+                        .filter(|entity_id| self.world.animator2d(entity_id).is_some())
+                        .filter_map(|entity_id| {
+                            crate::Animator2DAuthoringService::play_observation(
+                                entity_id,
+                                module,
+                                &output.animator2d_frame_result,
+                            )
+                        })
+                        .collect()
+                })
+                .unwrap_or_default()
+        } else {
+            Vec::new()
+        };
         self.project_runtime_session_report = output.project_runtime_session_report.clone();
         report.project_runtime_session_report = self.project_runtime_session_report.clone();
         self.project_observation_state = output.project_observation_state.clone();
@@ -2469,15 +2517,18 @@ impl EditorRuntimePlayInstance {
                 )
             };
         let texture_id = stable_game_view_surface_id(&self.session_id, &target_id);
-        let aui_presentation_identity = aui_presentation_identity(aui_present.as_ref());
+        let aui_presentation_identity = aui_presentation_identity(
+            &self.session_id,
+            self.aui_presentation_revision,
+            aui_present.is_some(),
+        );
         self.last_aui_action_targets = aui_present
             .as_ref()
             .map(|present| build_aui_action_targets(present, width, height))
             .unwrap_or_default();
-        self.last_aui_present = aui_present.clone();
         report.texture_descriptor_status = descriptor_status.clone();
         report.gpu_present_status = "gpu_unavailable".to_string();
-        GameViewRuntimeFrame {
+        let frame = GameViewRuntimeFrame {
             schema_version: GAME_VIEW_RUNTIME_FRAME_SCHEMA_VERSION.to_string(),
             session_id: self.session_id.clone(),
             scene_id: self.scene_id.clone(),
@@ -2507,23 +2558,104 @@ impl EditorRuntimePlayInstance {
             runtime_target_kind,
             animator2d_play_observations,
             diagnostics,
-        }
+        };
+        self.last_aui_present = aui_present;
+        frame
+    }
+
+    fn take_or_rebuild_aui_present(&mut self, frame_index: u64) -> Option<AuiRuntimePresentOutput> {
+        let document_id = self
+            .package
+            .aui_manifest
+            .documents
+            .first()
+            .map(|entry| entry.document_id.as_str())?;
+        let document = self.package.aui_documents.get(document_id)?;
+        let snapshot_output = match self.aui_snapshot_cache.resolve(
+            self.ui_state_producer.as_mut(),
+            frame_index,
+            &self.package,
+            &self.world,
+            ProjectUiStateReportMode::Summary,
+        ) {
+            Ok(ProjectUiStateSnapshotCacheResult::Reuse) | Err(_) => {
+                if let Some(present) = self.last_aui_present.take() {
+                    self.aui_present_cache_hit_count =
+                        self.aui_present_cache_hit_count.saturating_add(1);
+                    return Some(present);
+                }
+                return None;
+            }
+            Ok(ProjectUiStateSnapshotCacheResult::Replace(output)) => output,
+        };
+        self.aui_present_rebuild_count = self.aui_present_rebuild_count.saturating_add(1);
+        self.aui_presentation_revision = self.aui_presentation_revision.saturating_add(1);
+        let presentation = GameViewPresentationModule::resolve(GameViewPresentationSpec {
+            session_id: self.session_id.clone(),
+            target_id: "editor-gameview-font".to_string(),
+            target_extent: self.game_view_target.extent,
+            display_rect: GameViewRect::from_extent(self.game_view_target.extent),
+            scale_policy: self.game_view_target.scale_policy,
+            surface_generation: 1,
+            presentation_revision: self.aui_presentation_revision,
+            canvas_references: document
+                .canvases
+                .iter()
+                .map(|canvas| {
+                    CanvasReferenceFact::new(
+                        canvas.canvas_id.clone(),
+                        canvas.reference_resolution.x.round().max(1.0) as u32,
+                        canvas.reference_resolution.y.round().max(1.0) as u32,
+                    )
+                })
+                .collect(),
+        })
+        .ok();
+        Some(match presentation.as_ref() {
+            Some(presentation) => {
+                AuiRuntimePresenter::present_project_snapshot_with_fonts_for_presentation(
+                    document,
+                    snapshot_output,
+                    &self.package.font_atlases,
+                    &self.package.font_bundles,
+                    presentation,
+                )
+            }
+            None => AuiRuntimePresenter::present_project_snapshot_with_fonts(
+                document,
+                snapshot_output,
+                &self.package.font_atlases,
+                &self.package.font_bundles,
+            ),
+        })
     }
 }
 
-fn aui_presentation_identity(present: Option<&AuiRuntimePresentOutput>) -> String {
-    let Some(present) = present else {
+fn aui_presentation_identity(session_id: &str, revision: u64, present: bool) -> String {
+    if !present {
         return "aui:none".to_string();
-    };
-    let visible_content = (
-        &present.composition.stages,
-        &present.composition.glyph_plan,
-        &present.composition.canvas_references,
-    );
-    match serde_json::to_vec(&visible_content) {
-        Ok(bytes) => format!("aui:sha256:{:x}", Sha256::digest(bytes)),
-        Err(_) => "aui:serialization-failed".to_string(),
     }
+    format!("aui:revision:{session_id}:{revision}")
+}
+
+fn active_aui_binding_paths(package: &RuntimePackage) -> Vec<String> {
+    let Some(document_id) = package
+        .aui_manifest
+        .documents
+        .first()
+        .map(|entry| entry.document_id.as_str())
+    else {
+        return Vec::new();
+    };
+    package
+        .aui_documents
+        .get(document_id)
+        .into_iter()
+        .flat_map(|document| &document.nodes)
+        .flat_map(|node| node.binding_refs.iter().map(|binding| binding.path.clone()))
+        .collect::<BTreeSet<_>>()
+        .into_iter()
+        .collect()
 }
 
 fn build_aui_action_targets(
@@ -2577,31 +2709,6 @@ fn runtime_temporary_world_mutation_error(
     error: engine_runtime::world::WorldMutationError,
 ) -> RuntimeTemporaryEditError {
     RuntimeTemporaryEditError::new(error.code, error.message)
-}
-
-fn build_aui_present_output(
-    package: &RuntimePackage,
-    world: &World,
-    frame_index: u64,
-    producer: &mut dyn ProjectUiStateSnapshotProducer,
-) -> Option<AuiRuntimePresentOutput> {
-    let document_id = package
-        .aui_manifest
-        .documents
-        .first()
-        .map(|entry| entry.document_id.as_str())?;
-    let document = package.aui_documents.get(document_id)?;
-    let snapshot_output = producer.produce(ProjectUiStateProducerContext::new(
-        frame_index,
-        package,
-        world,
-    ));
-    Some(AuiRuntimePresenter::present_project_snapshot_with_fonts(
-        document,
-        snapshot_output,
-        &package.font_atlases,
-        &package.font_bundles,
-    ))
 }
 
 fn aui_present_status_name(status: AuiRuntimePresentStatus) -> &'static str {
@@ -2715,7 +2822,8 @@ fn game_view_report_path(runtime_package_path: &Path) -> PathBuf {
 mod tests {
     use super::*;
     use engine_runtime::aui::{
-        AuiActionRef, AuiCanvas, AuiDocument, AuiNode, AuiNodeKind, AuiRect,
+        AuiActionRef, AuiCanvas, AuiDocument, AuiInteractionFeedbackProfile,
+        AuiInteractionFeedbackRegistry, AuiNode, AuiNodeKind, AuiRect, AuiStyle,
     };
     use engine_runtime::game_view_presentation::GameViewTargetSpec;
     use engine_runtime::input_action::PointerPosition;
@@ -2933,6 +3041,137 @@ mod tests {
             fs::read(&report_path).expect("paused report remains readable"),
             paused_report_on_disk,
             "paused auto tick must not rewrite the disk report"
+        );
+    }
+
+    #[test]
+    fn editor_gameview_clean_frame_reuses_aui_present() {
+        let root = temp_root("clean-frame-aui-cache");
+        let package_dir =
+            write_runtime_package_with_aui(&root, "runtime-package", aui_button_document());
+        let output = EditorRuntimePlayInstance::start(EditorRuntimePlayRequest {
+            schema_version: EDITOR_RUNTIME_PLAY_REQUEST_SCHEMA_VERSION.to_string(),
+            session_id: "session-clean-frame-aui-cache".to_string(),
+            project_root: root,
+            runtime_package_path: package_dir,
+            scene_ref: Some("scene-main".to_string()),
+            run_profile: Some("editor-gameview".to_string()),
+            frame_limit: 1,
+            requested_by: "Automation".to_string(),
+            preview_package_report_path: None,
+        });
+        let mut instance = output.instance.expect("runtime instance");
+        let initial_identity = output
+            .frame
+            .expect("initial frame")
+            .aui_presentation_identity;
+
+        let second = instance.tick_next_descriptor_frame();
+        let third = instance.tick_next_descriptor_frame();
+
+        assert_eq!(instance.aui_present_rebuild_count, 1);
+        assert_eq!(instance.aui_present_cache_hit_count, 2);
+        assert_eq!(instance.animator_observation_scan_count, 0);
+        assert!(second
+            .last_frame
+            .as_ref()
+            .expect("second frame")
+            .animator2d_play_observations
+            .is_empty());
+        assert_eq!(
+            second
+                .last_frame
+                .as_ref()
+                .expect("second frame")
+                .aui_presentation_identity,
+            initial_identity
+        );
+        assert_eq!(
+            third
+                .last_frame
+                .as_ref()
+                .expect("third frame")
+                .aui_presentation_identity,
+            initial_identity
+        );
+    }
+
+    #[test]
+    fn editor_gameview_fixed_catch_up_advances_one_present_frame() {
+        let root = temp_root("fixed-catch-up-one-present");
+        let package_dir = write_minimal_runtime_package(&root, "runtime-package");
+        let output = EditorRuntimePlayInstance::start(EditorRuntimePlayRequest {
+            schema_version: EDITOR_RUNTIME_PLAY_REQUEST_SCHEMA_VERSION.to_string(),
+            session_id: "session-fixed-catch-up-one-present".to_string(),
+            project_root: root,
+            runtime_package_path: package_dir,
+            scene_ref: Some("scene-main".to_string()),
+            run_profile: Some("editor-gameview".to_string()),
+            frame_limit: 1,
+            requested_by: "Automation".to_string(),
+            preview_package_report_path: None,
+        });
+        let mut instance = output.instance.expect("runtime instance");
+
+        let report = instance.tick_next_descriptor_frame_with_fixed_steps(3);
+
+        assert_eq!(
+            report.frame_count, 2,
+            "catch-up publishes one ordinary frame"
+        );
+        assert_eq!(
+            report
+                .project_runtime_session_report
+                .as_ref()
+                .expect("project runtime report")
+                .stages
+                .iter()
+                .filter(|stage| {
+                    stage.stage
+                        == engine_runtime::project_runtime_session::ProjectRuntimeSessionStage::FixedUpdate
+                })
+                .count(),
+            3
+        );
+    }
+
+    #[test]
+    fn editor_gameview_visible_dirty_advances_presentation_revision_once() {
+        let root = temp_root("visible-dirty-aui-revision");
+        let package_dir =
+            write_runtime_package_with_aui(&root, "runtime-package", aui_button_document());
+        let output = EditorRuntimePlayInstance::start(EditorRuntimePlayRequest {
+            schema_version: EDITOR_RUNTIME_PLAY_REQUEST_SCHEMA_VERSION.to_string(),
+            session_id: "session-visible-dirty-aui-revision".to_string(),
+            project_root: root,
+            runtime_package_path: package_dir,
+            scene_ref: Some("scene-main".to_string()),
+            run_profile: Some("editor-gameview".to_string()),
+            frame_limit: 1,
+            requested_by: "Automation".to_string(),
+            preview_package_report_path: None,
+        });
+        let mut instance = output.instance.expect("runtime instance");
+        let initial_revision = instance.aui_presentation_revision;
+        let initial_identity = instance
+            .last_frame
+            .as_ref()
+            .expect("initial frame")
+            .aui_presentation_identity
+            .clone();
+        let point = button_target_point(&instance, "session-visible-dirty-aui-revision");
+
+        let pressed = instance.route_aui_input_immediately(pointer_down_frame(2, point.x, point.y));
+
+        assert_eq!(instance.aui_presentation_revision, initial_revision + 1);
+        assert_eq!(instance.aui_present_rebuild_count, 1);
+        assert_ne!(
+            pressed
+                .last_frame
+                .as_ref()
+                .expect("pressed frame")
+                .aui_presentation_identity,
+            initial_identity
         );
     }
 
@@ -3294,6 +3533,117 @@ mod tests {
     }
 
     #[test]
+    fn editor_gameview_neutral_hover_keeps_textured_aui_presentation_byte_stable() {
+        let root = temp_root("neutral-hover-textured-aui");
+        let package_dir = write_runtime_package_with_textured_aui(
+            &root,
+            "runtime-package",
+            neutral_hover_textured_button_document(),
+        );
+        let output = EditorRuntimePlayInstance::start(EditorRuntimePlayRequest {
+            schema_version: EDITOR_RUNTIME_PLAY_REQUEST_SCHEMA_VERSION.to_string(),
+            session_id: "session-neutral-hover-textured-aui".to_string(),
+            project_root: root,
+            runtime_package_path: package_dir,
+            scene_ref: Some("scene-main".to_string()),
+            run_profile: Some("editor-gameview".to_string()),
+            frame_limit: 1,
+            requested_by: "Automation".to_string(),
+            preview_package_report_path: None,
+        });
+        let mut instance = output.instance.expect("runtime instance");
+        let initial_frame = instance.last_frame.clone().expect("initial frame");
+        let initial_plan = instance
+            .last_rhi_command_plan()
+            .expect("initial RHI plan")
+            .clone();
+        let point = button_target_point(&instance, "session-neutral-hover-textured-aui");
+
+        let hover = instance.route_aui_input_immediately(pointer_move_frame(2, point.x, point.y));
+        let hovered_frame = hover.last_frame.as_ref().expect("hovered frame");
+        let hovered_plan = instance.last_rhi_command_plan().expect("hovered RHI plan");
+
+        assert_eq!(hovered_frame.aui_feedback_override_count, 0);
+        assert_eq!(
+            hovered_frame.aui_presentation_identity, initial_frame.aui_presentation_identity,
+            "neutral PointerMove must not publish a different AUI presentation"
+        );
+        assert_eq!(
+            hovered_plan.commands, initial_plan.commands,
+            "neutral PointerMove must not replace the textured AUI command stream"
+        );
+    }
+
+    #[test]
+    fn editor_gameview_immediate_aui_input_preserves_sprite_texture_binding() {
+        let root = temp_root("immediate-input-sprite-texture");
+        let package_dir = write_runtime_package_with_textured_aui(
+            &root,
+            "runtime-package",
+            aui_button_document(),
+        );
+        let scene_path = package_dir.join("scenes").join("scene-main.json");
+        let mut scene: serde_json::Value =
+            serde_json::from_str(&fs::read_to_string(&scene_path).unwrap()).unwrap();
+        scene["entities"][0]["mesh"] = serde_json::Value::Null;
+        scene["entities"][0]["spriteRenderer2D"] = json!({
+            "spriteRef": { "id": "texture-board", "type": "texture" },
+            "materialRef": null,
+            "color": [1.0, 1.0, 1.0, 1.0],
+            "flipX": false,
+            "flipY": false,
+            "sortingLayer": 0,
+            "orderInLayer": 0,
+            "sortZ": 0,
+            "visible": true
+        });
+        fs::write(&scene_path, serde_json::to_vec_pretty(&scene).unwrap()).unwrap();
+        let output = EditorRuntimePlayInstance::start(EditorRuntimePlayRequest {
+            schema_version: EDITOR_RUNTIME_PLAY_REQUEST_SCHEMA_VERSION.to_string(),
+            session_id: "session-immediate-input-sprite-texture".to_string(),
+            project_root: root,
+            runtime_package_path: package_dir,
+            scene_ref: Some("scene-main".to_string()),
+            run_profile: Some("editor-gameview".to_string()),
+            frame_limit: 1,
+            requested_by: "Automation".to_string(),
+            preview_package_report_path: None,
+        });
+        let mut instance = output.instance.expect("runtime instance");
+        let point = button_target_point(&instance, "session-immediate-input-sprite-texture");
+
+        instance.route_aui_input_immediately(pointer_down_frame(2, point.x, point.y));
+
+        let sprite_draw = instance
+            .last_rhi_command_plan()
+            .expect("immediate RHI command plan")
+            .commands
+            .iter()
+            .find_map(|command| match command {
+                RhiCommand::Draw {
+                    payload:
+                        RhiDrawPayload::SpriteTextured {
+                            sprite_ref,
+                            texture,
+                            fallback_used,
+                            ..
+                        },
+                    ..
+                } if sprite_ref == "texture-board" => Some((texture, fallback_used)),
+                _ => None,
+            })
+            .expect("Sprite2D textured draw after immediate AUI input");
+        assert!(
+            sprite_draw.0.is_some(),
+            "Sprite2D texture handle must survive immediate AUI input"
+        );
+        assert!(
+            !sprite_draw.1,
+            "immediate AUI input must not downgrade Sprite2D to fallback"
+        );
+    }
+
+    #[test]
     fn editor_gameview_immediate_input_preserves_unconsumed_gameplay() {
         let root = temp_root("immediate-input-gameplay");
         let package_dir =
@@ -3529,7 +3879,7 @@ mod tests {
   "project": {
     "projectId": "project-editor-gameview-test",
     "name": "Editor GameView Test",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "runtimeModule": {
       "moduleId": "engine.empty.runtime",
       "interfaceVersion": "project-runtime-module.v2",
@@ -3819,6 +4169,86 @@ mod tests {
         package_dir
     }
 
+    fn write_runtime_package_with_textured_aui(
+        root: &Path,
+        name: &str,
+        document: AuiDocument,
+    ) -> PathBuf {
+        let package_dir = write_runtime_package_with_aui(root, name, document);
+        let cooked_dir = package_dir.join("cooked").join("textures");
+        fs::create_dir_all(&cooked_dir).unwrap();
+        fs::write(
+            cooked_dir.join("texture-board.texture.json"),
+            serde_json::to_vec_pretty(&json!({
+                "schemaVersion": "cooked-texture.v1",
+                "assetId": "texture-board",
+                "cookedAssetId": "cooked-texture-board",
+                "sourceHash": "sha256:test-texture-board",
+                "width": 1,
+                "height": 1,
+                "format": "rgba8UnormSrgb",
+                "colorSpace": "srgb",
+                "mipCount": 1,
+                "byteLength": 4,
+                "pixelDataPath": "cooked/textures/texture-board.rgba8",
+                "sampler": "linearClamp"
+            }))
+            .unwrap(),
+        )
+        .unwrap();
+        fs::write(cooked_dir.join("texture-board.rgba8"), [54, 68, 73, 255]).unwrap();
+
+        let asset_manifest_path = package_dir.join("assets").join("asset-manifest.json");
+        let mut asset_manifest: serde_json::Value =
+            serde_json::from_str(&fs::read_to_string(&asset_manifest_path).unwrap()).unwrap();
+        asset_manifest["assets"]
+            .as_array_mut()
+            .unwrap()
+            .push(json!({
+                "id": "texture-board",
+                "name": "Board Texture",
+                "type": "texture",
+                "source": "cooked/textures/texture-board.texture.json",
+                "state": "available",
+                "bundleId": "startup"
+            }));
+        asset_manifest["runtimeAssetIndex"]
+            .as_array_mut()
+            .unwrap()
+            .push(json!({
+                "assetGuid": "texture-board",
+                "assetId": "texture-board",
+                "assetType": "texture",
+                "subAssetId": null,
+                "version": "1",
+                "cookedAssetId": "cooked-texture-board",
+                "bundleId": "startup",
+                "loaderKind": "texture",
+                "dependencies": [],
+                "hash": null,
+                "size": 4,
+                "flags": ["test"]
+            }));
+        asset_manifest["cookedAssetTable"]
+            .as_array_mut()
+            .unwrap()
+            .push(json!({
+                "cookedAssetId": "cooked-texture-board",
+                "bundleId": "startup",
+                "path": "cooked/textures/texture-board.texture.json",
+                "offset": null,
+                "size": 4,
+                "compression": "none",
+                "hash": null
+            }));
+        fs::write(
+            &asset_manifest_path,
+            serde_json::to_vec_pretty(&asset_manifest).unwrap(),
+        )
+        .unwrap();
+        package_dir
+    }
+
     fn write_runtime_package_with_observation_contract(root: &Path, name: &str) -> PathBuf {
         let package_dir = write_minimal_runtime_package(root, name);
         let contract = ProjectObservationContract {
@@ -3861,6 +4291,51 @@ mod tests {
             vec![AuiCanvas::screen_overlay("main", 800.0, 600.0, "root")],
             vec![root, button],
         )
+    }
+
+    fn neutral_hover_textured_button_document() -> AuiDocument {
+        let root = AuiNode::new("root", AuiNodeKind::Panel, AuiRect::stretch_full())
+            .with_children(["board", "fire_button"])
+            .with_style(AuiStyle::color("#202020"));
+        let board = AuiNode::new(
+            "board",
+            AuiNodeKind::Image,
+            AuiRect::fixed_position(100.0, 100.0, 240.0, 80.0),
+        )
+        .with_parent("root")
+        .with_image("texture-board")
+        .with_style(AuiStyle::color("#FFFFFF"));
+        let button = AuiNode::new(
+            "fire_button",
+            AuiNodeKind::Button,
+            AuiRect::fixed_position(100.0, 100.0, 240.0, 80.0),
+        )
+        .with_parent("root")
+        .with_interactable(true)
+        .with_style(AuiStyle::color("#FFFFFF00"))
+        .with_action(AuiActionRef::click("ui.fire_button"));
+        let mut profile = AuiInteractionFeedbackProfile::new("neutral-hover");
+        profile.hover_scale_permille = 1000;
+        profile.hover_brightness_permille = 0;
+        profile.hover_opacity_permille = 1000;
+        profile.hover_in_ms = 0;
+        profile.hover_out_ms = 0;
+        let mut canvas = AuiCanvas::screen_overlay("main", 800.0, 600.0, "root");
+        canvas.default_focus_node_id = Some("fire_button".to_string());
+        let mut document = AuiDocument::new("hud", vec![canvas], vec![root, board, button]);
+        document.interaction_feedback = Some(AuiInteractionFeedbackRegistry {
+            default_button_profile: Some("neutral-hover".to_string()),
+            profiles: vec![profile],
+            ..Default::default()
+        });
+        document
+    }
+
+    fn pointer_move_frame(frame_id: u64, x: f32, y: f32) -> RuntimeInputFrame {
+        let mut frame = RuntimeInputFrame::new(frame_id, "game-view");
+        frame.pointer_position = Some(PointerPosition { x, y });
+        frame.events.push(RuntimeInputEvent::PointerMove { x, y });
+        frame
     }
 
     fn pointer_down_frame(frame_id: u64, x: f32, y: f32) -> RuntimeInputFrame {

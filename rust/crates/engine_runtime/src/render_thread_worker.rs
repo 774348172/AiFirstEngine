@@ -542,10 +542,6 @@ impl RenderCommandDispatcher {
                 let (output, mut report) = render_thread.submit_frame_output(packet);
                 report.submit_sequence = ticket.submit_sequence;
                 self.completed_frame_index = report.completed_frame_index;
-                self.inline_reports.push_back(CachedSubmission {
-                    output: output.clone(),
-                    report: report.clone(),
-                });
                 (ticket, Some((output, report)))
             }
             RenderWorkerMode::DedicatedWorker => {
@@ -812,6 +808,7 @@ mod tests {
             aui_composition: None,
             sprite_texture_bindings: None,
             runtime_texture_bindings: None,
+            game_view_presentation: None,
             view_id: Some(RenderViewId(1)),
             quality_profile: QualityProfile::default(),
             render_target: RenderTarget::viewport_texture("viewport-main", 640, 360),
@@ -890,5 +887,23 @@ mod tests {
         assert_eq!(report.frame_index, 7);
         assert_eq!(report.submit_sequence, ticket.submit_sequence);
         assert_eq!(dispatcher.completed_frame_index(), 7);
+    }
+
+    #[test]
+    fn inline_dispatcher_does_not_retain_immediate_submissions() {
+        let mut dispatcher = RenderCommandDispatcher::inline(RenderThreadConfig::default());
+
+        for frame_index in 1..=256 {
+            let (_, immediate) = dispatcher.submit_frame_output(packet(frame_index));
+
+            assert!(
+                immediate.is_some(),
+                "inline frame {frame_index} must be immediate"
+            );
+            assert!(
+                dispatcher.inline_reports.is_empty(),
+                "inline frame {frame_index} retained a duplicate completed submission"
+            );
+        }
     }
 }

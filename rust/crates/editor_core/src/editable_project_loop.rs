@@ -166,7 +166,7 @@ pub fn create_default_editable_project_fixture() -> DefaultEditableProjectFixtur
     let root_dir = std::env::temp_dir().join(format!("editable-project-loop-{stamp}"));
     let scene_dir = root_dir.join("scenes");
     let runtime_package_dir = root_dir.join("runtime-package");
-    crate::ProjectLauncherState::new("0.0.1")
+    crate::ProjectLauncherState::new("0.0.2")
         .create_project(&root_dir, "Editable Project Fixture")
         .expect("fixture producer should own the new project target");
     fs::create_dir_all(&scene_dir).expect("fixture scene dir should be created");
@@ -498,7 +498,7 @@ fn runtime_manifest_json() -> &'static str {
   "project": {
     "projectId": "editable-project-loop-fixture",
     "name": "Editable Project Loop Fixture",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "runtimeModule": {
       "moduleId": "engine.empty.runtime",
       "interfaceVersion": "project-runtime-module.v2",

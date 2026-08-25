@@ -5,6 +5,7 @@ use crate::font_bundle::{
     CookedFontBundleAsset, RuntimeFontBundleLoader, RuntimeFontBundleManifest,
     RuntimeFontBundleRegistry, RuntimePackageSourceFontBundle,
 };
+use crate::game_view_presentation::GameViewTargetSpec;
 use crate::project_observation::CookedProjectObservationContract;
 use crate::rule_artifact::validate_runtime_rule_manifest_artifacts;
 use crate::runtime_asset::{
@@ -66,6 +67,8 @@ pub struct RuntimeProjectInfo {
     pub name: String,
     pub version: String,
     pub runtime_module: RuntimeProjectModuleRef,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub game_view_target: Option<GameViewTargetSpec>,
 }
 
 impl RuntimeProjectInfo {
@@ -80,7 +83,13 @@ impl RuntimeProjectInfo {
             name: name.into(),
             version: version.into(),
             runtime_module,
+            game_view_target: None,
         }
+    }
+
+    pub fn with_game_view_target(mut self, target: GameViewTargetSpec) -> Self {
+        self.game_view_target = Some(target);
+        self
     }
 
     pub fn explicit_empty(
@@ -2608,7 +2617,7 @@ mod tests {
   "project": {
     "projectId": "project-fixture",
     "name": "Fixture",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "runtimeModule": {
       "moduleId": "engine.empty.runtime",
       "interfaceVersion": "project-runtime-module.v2",

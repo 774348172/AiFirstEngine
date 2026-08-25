@@ -759,6 +759,13 @@ pub(crate) mod real_native_editor_window {
         *next_tick = now + GAME_VIEW_TICK_INTERVAL;
     }
 
+    fn advance_due_game_view_frame(
+        fixed_step_count: usize,
+        mut advance: impl FnMut(usize) -> bool,
+    ) -> bool {
+        fixed_step_count > 0 && advance(fixed_step_count)
+    }
+
     fn earliest_editor_deadline(
         game_view: Option<std::time::Instant>,
         project_composition: Option<std::time::Instant>,
@@ -1005,14 +1012,11 @@ pub(crate) mod real_native_editor_window {
             let graceful_exit_requested = Arc::new(AtomicBool::new(false));
             #[cfg(not(test))]
             {
-                let editor_build_identity = crate::current_editor_build_identity()?;
                 let state_root = crate::project_editor_composition_state_root()?;
-                crate::install_project_editor_composition_production_services(
+                crate::install_project_runtime_production_services(
                     &mut app,
                     &state_root,
                     editor_core::default_engine_sdk_root(),
-                    editor_build_identity,
-                    graceful_exit_requested.clone(),
                 )?;
             }
             Ok(Self {
@@ -2019,14 +2023,23 @@ pub(crate) mod real_native_editor_window {
                             event_loop.exit();
                         } else if had_candidate_readiness && self.candidate_readiness.is_none() {
                             if let Some(project_root) = self.pending_handoff_project_open.take() {
-                                let _ =
-                                    self.app.dispatch_verified_composition_handoff_project_open(
-                                        &project_root,
-                                        format!(
-                                            "project-composition-handoff-open-{}",
+                                let payload = editor_ui_model::UiCommandPayload::OpenProject {
+                                    path: project_root.display().to_string(),
+                                };
+                                let _ = self.app.dispatch_project_launcher_command_or_dispatch(
+                                    editor_ui_model::UiCommand {
+                                        command_id: editor_ui_model::ui_command_id_for_payload(
+                                            &payload,
+                                        )
+                                        .to_string(),
+                                        source: editor_ui_model::UiCommandSource::ProjectLauncher,
+                                        request_id: format!(
+                                            "legacy-handoff-open-{}",
                                             self.report.frame_index
                                         ),
-                                    );
+                                        payload,
+                                    },
+                                );
                             }
                         }
                     }
@@ -2060,13 +2073,13 @@ pub(crate) mod real_native_editor_window {
             {
                 let tick_count =
                     advance_game_view_tick_deadline(now, &mut self.next_game_view_tick);
-                let mut advanced = false;
-                for _ in 0..tick_count {
-                    advanced |= self
-                        .app
-                        .tick_active_game_view_runtime_descriptor_frame()
-                        .is_some();
-                }
+                let advanced = advance_due_game_view_frame(tick_count, |fixed_step_count| {
+                    self.app
+                        .tick_active_game_view_runtime_descriptor_frame_with_fixed_steps(
+                            fixed_step_count,
+                        )
+                        .is_some()
+                });
                 if advanced {
                     self.request_redraw();
                 }
@@ -2075,13 +2088,7 @@ pub(crate) mod real_native_editor_window {
                 reset_game_view_tick_deadline(now, &mut self.next_game_view_tick);
                 None
             };
-            if self.app.take_project_composition_progress_redraw_due(now) {
-                self.request_redraw();
-            }
-            match earliest_editor_deadline(
-                game_view_deadline,
-                self.app.project_composition_progress_deadline(),
-            ) {
+            match game_view_deadline {
                 Some(deadline) => event_loop.set_control_flow(ControlFlow::WaitUntil(deadline)),
                 None => event_loop.set_control_flow(ControlFlow::Wait),
             }
@@ -2870,15 +2877,26 @@ pub(crate) mod real_native_editor_window {
             }
             let mut app = match production_scenario.as_ref() {
                 Some(scenario) => NativeEditorApplication::with_project_manager(
-                    config,
+                    config.clone(),
                     session,
                     ProjectManagerController::with_recent_store_path(
                         &scenario.recent_project_store_path,
                     ),
                     Box::new(NativeFolderDialogBackend),
                 ),
-                None => NativeEditorApplication::with_session(config, session),
+                None => NativeEditorApplication::with_session(config.clone(), session),
             };
+            #[cfg(not(test))]
+            if let Err(error) = (|| {
+                let state_root = crate::project_editor_composition_state_root()?;
+                crate::install_project_runtime_production_services(
+                    &mut app,
+                    &state_root,
+                    editor_core::default_engine_sdk_root(),
+                )
+            })() {
+                return Self::failed_initialization(options, config, error);
+            }
             if let Some(store_root) = options.workspace_layout_store_root {
                 app = app
                     .with_workspace_layout_store(crate::workspace_layout_store_at_root(store_root));
@@ -3737,6 +3755,7 @@ pub(crate) mod real_native_editor_window {
             {
                 return Err("authority.checkpoint_id_invalid".to_string());
             }
+            let game_view_frame = self.app.active_game_view_frame_for_window_present();
             let renderer = self
                 .renderer
                 .as_mut()
@@ -3766,6 +3785,72 @@ pub(crate) mod real_native_editor_window {
             writer
                 .write_image_data(&capture.rgba8)
                 .map_err(|error| format!("authority.checkpoint_write_failed:{error}"))?;
+            if let Some(frame) = game_view_frame {
+                if let Some(receipt) = self
+                    .frame_publication
+                    .last_good(&frame.session_id, &frame.target_id)
+                    .cloned()
+                {
+                    let context = renderer.shared_context();
+                    let game_view = renderer.viewport_textures().readback_gpu_exact(
+                        context.device(),
+                        context.queue(),
+                        &receipt,
+                    )?;
+                    let game_view_path =
+                        scenario_root.join(format!("{checkpoint_id}-gameview.png"));
+                    let game_view_file = std::fs::File::create(&game_view_path)
+                        .map_err(|error| format!("authority.checkpoint_create_failed:{error}"))?;
+                    let mut game_view_encoder = png::Encoder::new(
+                        std::io::BufWriter::new(game_view_file),
+                        game_view.width,
+                        game_view.height,
+                    );
+                    game_view_encoder.set_color(png::ColorType::Rgba);
+                    game_view_encoder.set_depth(png::BitDepth::Eight);
+                    let mut game_view_writer = game_view_encoder
+                        .write_header()
+                        .map_err(|error| format!("authority.checkpoint_header_failed:{error}"))?;
+                    game_view_writer
+                        .write_image_data(&game_view.rgba8)
+                        .map_err(|error| format!("authority.checkpoint_write_failed:{error}"))?;
+                    let pixel_count = game_view.rgba8.len() / 4;
+                    let white_pixel_count = game_view
+                        .rgba8
+                        .chunks_exact(4)
+                        .filter(|pixel| pixel[0] >= 245 && pixel[1] >= 245 && pixel[2] >= 245)
+                        .count();
+                    let luminance_sum = game_view
+                        .rgba8
+                        .chunks_exact(4)
+                        .map(|pixel| {
+                            u64::from(pixel[0]) * 2126
+                                + u64::from(pixel[1]) * 7152
+                                + u64::from(pixel[2]) * 722
+                        })
+                        .sum::<u64>();
+                    let state = serde_json::json!({
+                        "schemaVersion": "debug-289-hover-frame.v1",
+                        "checkpointId": checkpoint_id,
+                        "runtimeFrameIndex": frame.frame_index,
+                        "runtimeFrameHash": frame.frame_hash,
+                        "auiPresentationIdentity": frame.aui_presentation_identity,
+                        "publicationReceipt": receipt,
+                        "viewportTextureLifecycleEventCount": self.outcome.window_report.viewport_texture_lifecycle_event_count,
+                        "gameViewRgbaSha256": engine_runtime::canonical_digest::sha256_prefixed(&game_view.rgba8),
+                        "pixelCount": pixel_count,
+                        "whitePixelCount": white_pixel_count,
+                        "averageLuminancePermillion": if pixel_count == 0 { 0 } else { luminance_sum / pixel_count as u64 / 255 },
+                    });
+                    std::fs::write(
+                        scenario_root.join(format!("{checkpoint_id}-state.json")),
+                        serde_json::to_vec_pretty(&state).map_err(|error| {
+                            format!("authority.checkpoint_state_failed:{error}")
+                        })?,
+                    )
+                    .map_err(|error| format!("authority.checkpoint_state_failed:{error}"))?;
+                }
+            }
             Ok((
                 path.display().to_string(),
                 engine_runtime::canonical_digest::sha256_prefixed(&capture.rgba8),
@@ -4379,13 +4464,13 @@ pub(crate) mod real_native_editor_window {
             {
                 let tick_count =
                     advance_game_view_tick_deadline(now, &mut self.next_game_view_tick);
-                let mut advanced = false;
-                for _ in 0..tick_count {
-                    advanced |= self
-                        .app
-                        .tick_active_game_view_runtime_descriptor_frame()
-                        .is_some();
-                }
+                let advanced = advance_due_game_view_frame(tick_count, |fixed_step_count| {
+                    self.app
+                        .tick_active_game_view_runtime_descriptor_frame_with_fixed_steps(
+                            fixed_step_count,
+                        )
+                        .is_some()
+                });
                 if advanced {
                     if let Some(window) = &self.window {
                         window.request_redraw();
@@ -4396,15 +4481,7 @@ pub(crate) mod real_native_editor_window {
                 reset_game_view_tick_deadline(now, &mut self.next_game_view_tick);
                 None
             };
-            if self.app.take_project_composition_progress_redraw_due(now) {
-                if let Some(window) = &self.window {
-                    window.request_redraw();
-                }
-            }
-            match earliest_editor_deadline(
-                game_view_deadline,
-                self.app.project_composition_progress_deadline(),
-            ) {
+            match game_view_deadline {
                 Some(deadline) => event_loop.set_control_flow(ControlFlow::WaitUntil(deadline)),
                 None => event_loop.set_control_flow(ControlFlow::Wait),
             }
@@ -4545,6 +4622,27 @@ pub(crate) mod real_native_editor_window {
                 GAME_VIEW_MAX_CATCH_UP_TICKS
             );
             assert_eq!(next_tick, stalled + GAME_VIEW_TICK_INTERVAL);
+        }
+
+        #[test]
+        fn fixed_catch_up_publishes_one_game_view_frame() {
+            let mut publication_count = 0;
+            let mut observed_fixed_steps = 0;
+
+            let advanced = advance_due_game_view_frame(6, |fixed_step_count| {
+                publication_count += 1;
+                observed_fixed_steps = fixed_step_count;
+                true
+            });
+
+            assert!(advanced);
+            assert_eq!(publication_count, 1);
+            assert_eq!(observed_fixed_steps, 6);
+            assert!(!advance_due_game_view_frame(0, |_| {
+                publication_count += 1;
+                true
+            }));
+            assert_eq!(publication_count, 1);
         }
 
         #[test]

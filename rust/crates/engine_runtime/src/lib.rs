@@ -36,6 +36,7 @@ pub mod project_logic;
 pub mod project_observation;
 pub mod project_rule_asset;
 pub mod project_runtime_module;
+pub mod project_runtime_native_adapter;
 pub mod project_runtime_session;
 pub mod projection;
 pub mod query;

@@ -28,5 +28,5 @@ jobs:
         run: cargo check --locked --workspace --all-features
 
       - name: Test engine foundations
-        run: cargo test --locked -p engine_input -p engine_runtime -p editor_ui_model
+        run: cargo test --locked -p engine_input -p engine_runtime -p editor_ui_model -p project_runtime_abi -p project_runtime_sdk -p runtime_player_android
 

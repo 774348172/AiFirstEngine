@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
+use crate::canonical_digest::sha256_prefixed;
 use crate::font_bundle::{
     FontBundleRenderMode, FontBundleStyle, RuntimeFontBundleRegistry, RuntimeFontRegistry,
     RuntimeFontResolveRequest,
@@ -805,11 +806,73 @@ pub enum ProjectUiStateReportMode {
     Trace,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProjectUiBindingSetIdentity {
+    pub digest: String,
+}
+
+impl ProjectUiBindingSetIdentity {
+    pub fn from_paths(paths: &[String]) -> Self {
+        let mut canonical = paths
+            .iter()
+            .map(|path| path.trim().to_string())
+            .filter(|path| !path.is_empty())
+            .collect::<BTreeSet<_>>()
+            .into_iter()
+            .collect::<Vec<_>>();
+        let mut bytes = Vec::new();
+        for path in canonical.drain(..) {
+            bytes.extend_from_slice(&(path.len() as u64).to_be_bytes());
+            bytes.extend_from_slice(path.as_bytes());
+        }
+        Self {
+            digest: sha256_prefixed(&bytes),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProjectUiStateIdentity {
+    pub producer_epoch: u64,
+    pub visible_revision: u64,
+    pub binding_set: ProjectUiBindingSetIdentity,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ProjectUiBindingSet {
+    Known(ProjectUiBindingSetIdentity),
+    Replace {
+        identity: ProjectUiBindingSetIdentity,
+        active_binding_paths: Vec<String>,
+    },
+}
+
+impl ProjectUiBindingSet {
+    pub fn identity(&self) -> &ProjectUiBindingSetIdentity {
+        match self {
+            Self::Known(identity) | Self::Replace { identity, .. } => identity,
+        }
+    }
+
+    pub fn active_binding_paths(&self) -> Option<&[String]> {
+        match self {
+            Self::Known(_) => None,
+            Self::Replace {
+                active_binding_paths,
+                ..
+            } => Some(active_binding_paths),
+        }
+    }
+}
+
 pub struct ProjectUiStateProducerContext<'a> {
     pub frame_index: u64,
     pub package: &'a RuntimePackage,
     pub world: &'a World,
-    pub active_binding_paths: Vec<String>,
+    pub binding_set: ProjectUiBindingSet,
+    pub previous_identity: Option<ProjectUiStateIdentity>,
     pub report_mode: ProjectUiStateReportMode,
 }
 
@@ -819,13 +882,31 @@ impl<'a> ProjectUiStateProducerContext<'a> {
             frame_index,
             package,
             world,
-            active_binding_paths: Vec::new(),
+            binding_set: ProjectUiBindingSet::Replace {
+                identity: ProjectUiBindingSetIdentity::from_paths(&[]),
+                active_binding_paths: Vec::new(),
+            },
+            previous_identity: None,
             report_mode: ProjectUiStateReportMode::Summary,
         }
     }
 
     pub fn with_active_binding_paths(mut self, paths: impl IntoIterator<Item = String>) -> Self {
-        self.active_binding_paths = sorted_strings(paths);
+        let active_binding_paths = sorted_strings(paths);
+        self.binding_set = ProjectUiBindingSet::Replace {
+            identity: ProjectUiBindingSetIdentity::from_paths(&active_binding_paths),
+            active_binding_paths,
+        };
+        self
+    }
+
+    pub fn with_binding_set(mut self, binding_set: ProjectUiBindingSet) -> Self {
+        self.binding_set = binding_set;
+        self
+    }
+
+    pub fn with_previous_identity(mut self, identity: Option<ProjectUiStateIdentity>) -> Self {
+        self.previous_identity = identity;
         self
     }
 
@@ -838,10 +919,136 @@ impl<'a> ProjectUiStateProducerContext<'a> {
 pub trait ProjectUiStateSnapshotProducer {
     fn producer_id(&self) -> &str;
 
+    /// Source-level fixture compatibility. Production consumers call `resolve`.
     fn produce(
         &mut self,
         context: ProjectUiStateProducerContext<'_>,
     ) -> ProjectUiStateSnapshotOutput;
+
+    fn resolve(
+        &mut self,
+        context: ProjectUiStateProducerContext<'_>,
+    ) -> Result<ProjectUiStateResolve, ProjectUiStateResolveError> {
+        Ok(ProjectUiStateResolve::Uncacheable {
+            output: self.produce(context),
+        })
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum ProjectUiStateResolve {
+    Reuse {
+        identity: ProjectUiStateIdentity,
+    },
+    Replace {
+        identity: ProjectUiStateIdentity,
+        output: ProjectUiStateSnapshotOutput,
+    },
+    Uncacheable {
+        output: ProjectUiStateSnapshotOutput,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProjectUiStateResolveError {
+    pub code: String,
+    pub message: String,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum ProjectUiStateSnapshotCacheResult {
+    Reuse,
+    Replace(ProjectUiStateSnapshotOutput),
+}
+
+pub struct ProjectUiStateSnapshotCache {
+    active_binding_paths: Vec<String>,
+    binding_set_identity: ProjectUiBindingSetIdentity,
+    binding_set_registered: bool,
+    previous_identity: Option<ProjectUiStateIdentity>,
+}
+
+impl ProjectUiStateSnapshotCache {
+    pub fn new(paths: impl IntoIterator<Item = String>) -> Self {
+        let active_binding_paths = sorted_strings(paths);
+        let binding_set_identity = ProjectUiBindingSetIdentity::from_paths(&active_binding_paths);
+        Self {
+            active_binding_paths,
+            binding_set_identity,
+            binding_set_registered: false,
+            previous_identity: None,
+        }
+    }
+
+    pub fn active_binding_paths(&self) -> &[String] {
+        &self.active_binding_paths
+    }
+
+    pub fn resolve(
+        &mut self,
+        producer: &mut dyn ProjectUiStateSnapshotProducer,
+        frame_index: u64,
+        package: &RuntimePackage,
+        world: &World,
+        report_mode: ProjectUiStateReportMode,
+    ) -> Result<ProjectUiStateSnapshotCacheResult, ProjectUiStateResolveError> {
+        let binding_set = if self.binding_set_registered {
+            ProjectUiBindingSet::Known(self.binding_set_identity.clone())
+        } else {
+            ProjectUiBindingSet::Replace {
+                identity: self.binding_set_identity.clone(),
+                active_binding_paths: self.active_binding_paths.clone(),
+            }
+        };
+        let result = producer.resolve(
+            ProjectUiStateProducerContext::new(frame_index, package, world)
+                .with_binding_set(binding_set)
+                .with_previous_identity(self.previous_identity.clone())
+                .with_report_mode(report_mode),
+        )?;
+        match result {
+            ProjectUiStateResolve::Reuse { identity } => {
+                if self.previous_identity.as_ref() != Some(&identity) {
+                    return Err(ProjectUiStateResolveError::new(
+                        "project_ui_state.reuse_without_baseline",
+                        "producer returned Reuse without the caller's current identity",
+                    ));
+                }
+                self.binding_set_registered = true;
+                Ok(ProjectUiStateSnapshotCacheResult::Reuse)
+            }
+            ProjectUiStateResolve::Replace {
+                identity,
+                mut output,
+            } => {
+                if identity.binding_set != self.binding_set_identity {
+                    return Err(ProjectUiStateResolveError::new(
+                        "project_ui_state.resolve_contract_fault",
+                        "producer returned an identity for a different binding set",
+                    ));
+                }
+                output.report.active_binding_paths = self.active_binding_paths.clone();
+                self.previous_identity = Some(identity);
+                self.binding_set_registered = true;
+                Ok(ProjectUiStateSnapshotCacheResult::Replace(output))
+            }
+            ProjectUiStateResolve::Uncacheable { mut output } => {
+                output.report.active_binding_paths = self.active_binding_paths.clone();
+                self.previous_identity = None;
+                self.binding_set_registered = false;
+                Ok(ProjectUiStateSnapshotCacheResult::Replace(output))
+            }
+        }
+    }
+}
+
+impl ProjectUiStateResolveError {
+    pub fn new(code: impl Into<String>, message: impl Into<String>) -> Self {
+        Self {
+            code: code.into(),
+            message: message.into(),
+        }
+    }
 }
 
 fn sorted_snapshot_paths(snapshot: &ProjectUiStateSnapshot) -> Vec<String> {
@@ -3542,6 +3749,22 @@ impl AuiRuntimePresenter {
         )
     }
 
+    pub fn present_project_snapshot_with_fonts_for_presentation(
+        document: &AuiDocument,
+        snapshot_output: ProjectUiStateSnapshotOutput,
+        font_atlases: &RuntimeAuiFontAtlasRegistry,
+        font_bundles: &RuntimeFontBundleRegistry,
+        presentation: &ResolvedGameViewPresentation,
+    ) -> AuiRuntimePresentOutput {
+        Self::present_with_snapshot_output_and_fonts_for_presentation(
+            document,
+            snapshot_output,
+            font_atlases,
+            font_bundles,
+            Some(presentation),
+        )
+    }
+
     pub fn present_with_snapshot_output(
         document: &AuiDocument,
         snapshot_output: ProjectUiStateSnapshotOutput,
@@ -3573,6 +3796,22 @@ impl AuiRuntimePresenter {
         font_atlases: &RuntimeAuiFontAtlasRegistry,
         font_bundles: &RuntimeFontBundleRegistry,
     ) -> AuiRuntimePresentOutput {
+        Self::present_with_snapshot_output_and_fonts_for_presentation(
+            document,
+            snapshot_output,
+            font_atlases,
+            font_bundles,
+            None,
+        )
+    }
+
+    fn present_with_snapshot_output_and_fonts_for_presentation(
+        document: &AuiDocument,
+        snapshot_output: ProjectUiStateSnapshotOutput,
+        font_atlases: &RuntimeAuiFontAtlasRegistry,
+        font_bundles: &RuntimeFontBundleRegistry,
+        presentation: Option<&ResolvedGameViewPresentation>,
+    ) -> AuiRuntimePresentOutput {
         let snapshot_source = snapshot_output.report.snapshot_source;
         let snapshot = snapshot_output.snapshot;
         let (resolved_document, binding_report) =
@@ -3590,7 +3829,11 @@ impl AuiRuntimePresenter {
         );
         let mut overlay = composition.to_overlay_frame();
         let glyph_plan = if font_bundles.default_bundle().is_some() {
-            build_text_glyph_plan_from_bundles(&overlay, font_bundles)
+            build_text_glyph_plan_from_bundles_for_presentation(
+                &overlay,
+                font_bundles,
+                presentation,
+            )
         } else {
             build_text_glyph_plan(&overlay, font_atlases)
         };
@@ -3797,6 +4040,26 @@ impl AuiRuntimePresenter {
         font_atlases: &RuntimeAuiFontAtlasRegistry,
         font_bundles: &RuntimeFontBundleRegistry,
     ) -> crate::aui_control_feedback::AuiControlFeedbackFrame {
+        Self::apply_control_feedback_with_fonts_for_presentation(
+            output,
+            interaction,
+            state,
+            presentation_delta_us,
+            font_atlases,
+            font_bundles,
+            None,
+        )
+    }
+
+    pub fn apply_control_feedback_with_fonts_for_presentation(
+        output: &mut AuiRuntimePresentOutput,
+        interaction: &AuiInteractionResult,
+        state: &mut crate::aui_control_feedback::AuiControlFeedbackState,
+        presentation_delta_us: u64,
+        font_atlases: &RuntimeAuiFontAtlasRegistry,
+        font_bundles: &RuntimeFontBundleRegistry,
+        presentation: Option<&ResolvedGameViewPresentation>,
+    ) -> crate::aui_control_feedback::AuiControlFeedbackFrame {
         let feedback = crate::aui_control_feedback::AuiControlFeedbackModule::advance(
             state,
             crate::aui_control_feedback::AuiControlFeedbackFrameInput {
@@ -3820,7 +4083,11 @@ impl AuiRuntimePresenter {
         );
         let mut overlay = composition.to_overlay_frame();
         let glyph_plan = if font_bundles.default_bundle().is_some() {
-            build_text_glyph_plan_from_bundles(&overlay, font_bundles)
+            build_text_glyph_plan_from_bundles_for_presentation(
+                &overlay,
+                font_bundles,
+                presentation,
+            )
         } else {
             build_text_glyph_plan(&overlay, font_atlases)
         };
@@ -3930,6 +4197,14 @@ pub fn build_text_glyph_plan_from_bundles(
     overlay: &AuiOverlayFrame,
     font_bundles: &RuntimeFontBundleRegistry,
 ) -> Option<AuiTextGlyphPlan> {
+    build_text_glyph_plan_from_bundles_for_presentation(overlay, font_bundles, None)
+}
+
+pub fn build_text_glyph_plan_from_bundles_for_presentation(
+    overlay: &AuiOverlayFrame,
+    font_bundles: &RuntimeFontBundleRegistry,
+    presentation: Option<&ResolvedGameViewPresentation>,
+) -> Option<AuiTextGlyphPlan> {
     if overlay.report.text_count == 0 {
         return None;
     }
@@ -3950,18 +4225,18 @@ pub fn build_text_glyph_plan_from_bundles(
             continue;
         };
         let font_size = item.font_size.unwrap_or(12.0).max(1.0);
-        let requested_pixel_size = font_size.round().clamp(1.0, f32::from(u16::MAX)) as u16;
-        let render_mode = match item
+        let target_scale = presentation
+            .and_then(|value| value.canvas_reference_to_target_scale(&item.canvas_id))
+            .filter(|value| value.is_finite() && *value > 0.0)
+            .unwrap_or(1.0);
+        let physical_font_size = font_size * target_scale;
+        let requested_pixel_size =
+            physical_font_size.round().clamp(1.0, f32::from(u16::MAX)) as u16;
+        let raster_policy = item
             .font
             .as_ref()
             .map(|font| font.raster_policy)
-            .unwrap_or_default()
-        {
-            AuiFontRasterPolicy::Bitmap => FontBundleRenderMode::BitmapR8,
-            AuiFontRasterPolicy::Msdf => FontBundleRenderMode::MsdfRgba8,
-            AuiFontRasterPolicy::AutoHybrid if font_size > 32.0 => FontBundleRenderMode::MsdfRgba8,
-            AuiFontRasterPolicy::AutoHybrid => FontBundleRenderMode::BitmapR8,
-        };
+            .unwrap_or_default();
         let bundle_id = item
             .font
             .as_ref()
@@ -3970,27 +4245,58 @@ pub fn build_text_glyph_plan_from_bundles(
         let mut previous = None;
         for ch in text.chars() {
             requested_glyph_count += 1;
-            let Some(resolved) = registry.resolve(RuntimeFontResolveRequest {
-                font_bundle_id: bundle_id.clone(),
-                font_family_id: item
-                    .font
-                    .as_ref()
-                    .and_then(|font| font.font_family_id.clone()),
-                style: match item
-                    .font
-                    .as_ref()
-                    .map(|font| font.style)
-                    .unwrap_or_default()
-                {
-                    AuiFontStyleKind::Normal => FontBundleStyle::Normal,
-                    AuiFontStyleKind::Italic => FontBundleStyle::Italic,
-                    AuiFontStyleKind::Oblique => FontBundleStyle::Oblique,
-                },
-                weight: item.font.as_ref().map(|font| font.weight).unwrap_or(400),
-                codepoint: u32::from(ch),
-                render_mode,
-                pixel_size: requested_pixel_size,
-            }) else {
+            let font_family_id = item
+                .font
+                .as_ref()
+                .and_then(|font| font.font_family_id.clone());
+            let style = match item
+                .font
+                .as_ref()
+                .map(|font| font.style)
+                .unwrap_or_default()
+            {
+                AuiFontStyleKind::Normal => FontBundleStyle::Normal,
+                AuiFontStyleKind::Italic => FontBundleStyle::Italic,
+                AuiFontStyleKind::Oblique => FontBundleStyle::Oblique,
+            };
+            let weight = item.font.as_ref().map(|font| font.weight).unwrap_or(400);
+            let resolve = |render_mode| {
+                registry.resolve(RuntimeFontResolveRequest {
+                    font_bundle_id: bundle_id.clone(),
+                    font_family_id: font_family_id.clone(),
+                    style,
+                    weight,
+                    codepoint: u32::from(ch),
+                    render_mode,
+                    pixel_size: requested_pixel_size,
+                })
+            };
+            let resolved = match raster_policy {
+                AuiFontRasterPolicy::Bitmap => resolve(FontBundleRenderMode::BitmapR8),
+                AuiFontRasterPolicy::Msdf => resolve(FontBundleRenderMode::MsdfRgba8),
+                AuiFontRasterPolicy::AutoHybrid if physical_font_size > 32.0 => {
+                    resolve(FontBundleRenderMode::MsdfRgba8)
+                }
+                AuiFontRasterPolicy::AutoHybrid => {
+                    let bitmap = resolve(FontBundleRenderMode::BitmapR8);
+                    match bitmap {
+                        Some(bitmap)
+                            if (0.875..=1.125).contains(
+                                &(physical_font_size / f32::from(bitmap.glyph.pixel_size.max(1))),
+                            ) =>
+                        {
+                            Some(bitmap)
+                        }
+                        _ => resolve(FontBundleRenderMode::MsdfRgba8),
+                    }
+                }
+            }
+            .or_else(|| {
+                ch.is_whitespace()
+                    .then(|| resolve(FontBundleRenderMode::BitmapR8))
+                    .flatten()
+            });
+            let Some(resolved) = resolved else {
                 unsupported_glyph_count += 1;
                 previous = None;
                 continue;
@@ -5730,6 +6036,11 @@ impl AuiInteractionSystem {
                 )
             {
                 state.hovered_node = eligible_hit_node.clone();
+                if event_kind == AuiInteractionEventKind::PointerMove
+                    && state.focus.focused_node.is_some()
+                {
+                    state.focus.focus_reason = AuiFocusReason::Pointer;
+                }
             } else if !event_info.hover_capable
                 || matches!(
                     event_kind,
@@ -7128,9 +7439,11 @@ mod tests {
         ];
         let mut glyphs = Vec::new();
         for (index, character) in ['A', 'V', '中'].into_iter().enumerate() {
-            for (render_mode, pixel_size, page_index) in [
-                (FontBundleRenderMode::BitmapR8, 16, 0),
-                (FontBundleRenderMode::MsdfRgba8, 64, 1),
+            for (render_mode, pixel_size, page_index, y) in [
+                (FontBundleRenderMode::BitmapR8, 16, 0, 0),
+                (FontBundleRenderMode::BitmapR8, 24, 0, 16),
+                (FontBundleRenderMode::BitmapR8, 32, 0, 40),
+                (FontBundleRenderMode::MsdfRgba8, 64, 1, 0),
             ] {
                 glyphs.push(CookedFontBundleGlyph {
                     font_family_id: "family-ui".to_string(),
@@ -7142,12 +7455,29 @@ mod tests {
                     render_mode,
                     pixel_size,
                     page_index,
-                    pixel_rect: [index as u32 * 8, 0, 8, 12],
+                    pixel_rect: [index as u32 * 8, y, 8, 12],
                     bearing_x: 0,
                     bearing_y: 12,
                     advance_per_em_millionths: 600_000,
                 });
             }
+        }
+        for (pixel_size, y) in [(16, 0), (24, 16), (32, 40)] {
+            glyphs.push(CookedFontBundleGlyph {
+                font_family_id: "family-ui".to_string(),
+                font_face_id: "face-ui".to_string(),
+                style: FontBundleStyle::Normal,
+                weight: 400,
+                glyph_id: 4,
+                codepoint: u32::from(' '),
+                render_mode: FontBundleRenderMode::BitmapR8,
+                pixel_size,
+                page_index: 0,
+                pixel_rect: [24, y, 0, 0],
+                bearing_x: 0,
+                bearing_y: 0,
+                advance_per_em_millionths: 300_000,
+            });
         }
         let metadata = CookedFontBundleAsset {
             schema_version: COOKED_FONT_BUNDLE_SCHEMA_VERSION.to_string(),
@@ -7270,6 +7600,97 @@ mod tests {
         assert!(msdf.quads.iter().all(
             |quad| quad.render_mode == FontBundleRenderMode::MsdfRgba8 && quad.page_index == 1
         ));
+    }
+
+    #[test]
+    fn aui_text_glyph_plan_uses_bitmap_metrics_for_whitespace_without_msdf_outline() {
+        let registry = v2_font_registry();
+        let mut overlay = v2_text_overlay(40.0, AuiFontRasterPolicy::AutoHybrid);
+        overlay.draw_items[0].text = Some("A V".to_string());
+
+        let plan = build_text_glyph_plan_from_bundles(&overlay, &registry).unwrap();
+
+        assert_eq!(plan.requested_glyph_count, 3);
+        assert_eq!(plan.rendered_glyph_count, 3);
+        assert_eq!(plan.unsupported_glyph_count, 0);
+        assert_eq!(plan.quads[0].render_mode, FontBundleRenderMode::MsdfRgba8);
+        assert_eq!(plan.quads[1].codepoint, u32::from(' '));
+        assert_eq!(plan.quads[1].render_mode, FontBundleRenderMode::BitmapR8);
+        assert_eq!(plan.quads[1].rect.width, 0.0);
+        assert_eq!(plan.quads[2].render_mode, FontBundleRenderMode::MsdfRgba8);
+        assert!(plan.quads[2].rect.x > plan.quads[1].rect.x);
+    }
+
+    #[test]
+    fn aui_text_glyph_plan_uses_target_physical_pixels_for_auto_hybrid() {
+        let registry = v2_font_registry();
+        let presentation_720 = crate::game_view_presentation::GameViewPresentationModule::resolve(
+            crate::game_view_presentation::GameViewPresentationSpec {
+                session_id: "font-720".to_string(),
+                target_id: "portrait".to_string(),
+                target_extent: crate::game_view_presentation::GameViewExtent::new(720, 1280),
+                display_rect: crate::game_view_presentation::GameViewRect::new(
+                    0.0, 0.0, 720.0, 1280.0,
+                ),
+                scale_policy: crate::game_view_presentation::GameViewScalePolicy::Contain,
+                surface_generation: 1,
+                presentation_revision: 1,
+                canvas_references: vec![crate::game_view_presentation::CanvasReferenceFact::new(
+                    "main", 1080, 1920,
+                )],
+            },
+        )
+        .unwrap();
+        let presentation_1080 = crate::game_view_presentation::GameViewPresentationModule::resolve(
+            crate::game_view_presentation::GameViewPresentationSpec {
+                session_id: "font-1080".to_string(),
+                target_id: "portrait".to_string(),
+                target_extent: crate::game_view_presentation::GameViewExtent::new(1080, 1920),
+                display_rect: crate::game_view_presentation::GameViewRect::new(
+                    0.0, 0.0, 1080.0, 1920.0,
+                ),
+                scale_policy: crate::game_view_presentation::GameViewScalePolicy::Contain,
+                surface_generation: 1,
+                presentation_revision: 1,
+                canvas_references: vec![crate::game_view_presentation::CanvasReferenceFact::new(
+                    "main", 1080, 1920,
+                )],
+            },
+        )
+        .unwrap();
+
+        let plan_720 = build_text_glyph_plan_from_bundles_for_presentation(
+            &v2_text_overlay(36.0, AuiFontRasterPolicy::AutoHybrid),
+            &registry,
+            Some(&presentation_720),
+        )
+        .unwrap();
+        assert!(plan_720.quads.iter().all(|quad| {
+            quad.render_mode == FontBundleRenderMode::BitmapR8
+                && (quad.uv_rect[1] - 0.25).abs() < f32::EPSILON
+        }));
+
+        let plan_1080 = build_text_glyph_plan_from_bundles_for_presentation(
+            &v2_text_overlay(36.0, AuiFontRasterPolicy::AutoHybrid),
+            &registry,
+            Some(&presentation_1080),
+        )
+        .unwrap();
+        assert!(plan_1080
+            .quads
+            .iter()
+            .all(|quad| quad.render_mode == FontBundleRenderMode::MsdfRgba8));
+
+        let body_720 = build_text_glyph_plan_from_bundles_for_presentation(
+            &v2_text_overlay(24.0, AuiFontRasterPolicy::AutoHybrid),
+            &registry,
+            Some(&presentation_720),
+        )
+        .unwrap();
+        assert!(body_720.quads.iter().all(|quad| {
+            quad.render_mode == FontBundleRenderMode::BitmapR8
+                && quad.uv_rect[1].abs() < f32::EPSILON
+        }));
     }
 
     #[test]
@@ -8495,6 +8916,31 @@ mod tests {
             );
             assert!(result.control_snapshot.focus_visible);
         }
+    }
+
+    #[test]
+    fn aui_pointer_move_keeps_default_focus_logical_without_keyboard_focus_visual() {
+        let document = navigation_text_entry_document();
+        let layout = AuiLayoutEngine::layout(&document, 1);
+        let frame = pointer_frame(vec![RuntimeInputEvent::PointerMove { x: 40.0, y: 40.0 }]);
+        let mut state = AuiInteractionState::default();
+
+        let result = AuiInteractionSystem::process_with_state(
+            &document,
+            &layout,
+            &frame,
+            &mut state,
+            AuiInteractionConfig::default(),
+        );
+
+        assert_eq!(result.default_focus_applied_count, 1);
+        assert_eq!(state.focus.focused_node.as_deref(), Some("play_button"));
+        assert_eq!(state.focus.focus_reason, AuiFocusReason::Pointer);
+        assert!(!result.control_snapshot.focus_visible);
+        assert_eq!(
+            result.control_snapshot.hovered_node.as_deref(),
+            Some("play_button")
+        );
     }
 
     #[test]

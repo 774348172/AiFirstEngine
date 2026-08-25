@@ -2,6 +2,7 @@ mod ai_capability_tool_kernel;
 mod ai_goal_grant;
 mod ai_image_generation;
 mod ai_tool_catalog;
+mod android_export;
 mod animator2d_authoring;
 mod animator2d_cooker;
 mod asset_browser;
@@ -51,8 +52,10 @@ mod project_patch;
 mod project_player_artifact;
 mod project_preview_evidence;
 mod project_readiness;
+mod project_runtime_native_module;
 mod project_runtime_package_assembler;
 mod project_runtime_player_staging;
+mod project_runtime_preparation;
 mod project_runtime_trust;
 mod project_visual_diagnostics;
 mod project_write_scope;
@@ -115,6 +118,7 @@ pub use ai_tool_catalog::{
     AiToolCatalogRequest, AiToolMutationAvailabilityState, AiToolReadAvailabilityState,
     AI_TOOL_CATALOG_SCHEMA_VERSION, AI_TOOL_CATALOG_V1_SCHEMA_VERSION,
 };
+pub use android_export::*;
 pub use animator2d_authoring::*;
 pub use animator2d_cooker::*;
 pub use asset_browser::{
@@ -470,6 +474,21 @@ pub use project_readiness::{
     ProjectReadiness, ProjectReadinessCheck, ProjectReadinessCheckStatus, ProjectReadinessReport,
     ProjectReadinessStatus, PROJECT_READINESS_REPORT_SCHEMA_VERSION,
 };
+pub use project_runtime_native_module::{
+    ProjectNativeModuleIdentity, ProjectRuntimeNativeModuleArtifact,
+    ProjectRuntimeNativeModuleBuildControl, ProjectRuntimeNativeModuleBuildReport,
+    ProjectRuntimeNativeModuleBuildRequest, ProjectRuntimeNativeModuleBuildStatus,
+    ProjectRuntimeNativeModuleBuildStep, ProjectRuntimeNativeModuleBuilder,
+    ProjectRuntimeNativeModuleCacheStatus, ProjectRuntimeNativeModuleDescriptor,
+    ProjectRuntimeNativeModuleDiagnostic, ProjectRuntimeNativeModuleLoader,
+    ProjectRuntimeNativeModuleSeal, PROJECT_RUNTIME_NATIVE_MODULE_ARTIFACT_SCHEMA_VERSION,
+    PROJECT_RUNTIME_NATIVE_MODULE_BUILDER_SCHEMA_VERSION,
+    PROJECT_RUNTIME_NATIVE_MODULE_BUILD_REPORT_SCHEMA_VERSION,
+    PROJECT_RUNTIME_NATIVE_MODULE_DESCRIPTOR_SCHEMA_VERSION,
+    PROJECT_RUNTIME_NATIVE_MODULE_IDENTITY_SCHEMA_VERSION,
+    PROJECT_RUNTIME_NATIVE_MODULE_LOAD_REPORT_SCHEMA_VERSION,
+    PROJECT_RUNTIME_NATIVE_MODULE_SEAL_SCHEMA_VERSION,
+};
 pub use project_runtime_package_assembler::{
     BuildProfile, BuildProfileApplication, BuildProfileIconRef, BuildProfileRelease,
     BuildProfileValidationIssue, PrefabRuntimeBakeInstanceEntry, PrefabRuntimeBakeReport,
@@ -482,6 +501,10 @@ pub use project_runtime_package_assembler::{
     PROJECT_RUNTIME_PACKAGE_ASSEMBLY_REPORT_SCHEMA_VERSION,
 };
 pub use project_runtime_player_staging::ProjectRuntimePlayerDependencyIdentity;
+pub use project_runtime_preparation::{
+    ProjectRuntimePreparationBlocker, ProjectRuntimePreparationModule,
+    ProjectRuntimePreparationState, ProjectRuntimePreparationTicket,
+};
 pub use project_runtime_trust::{
     ProjectRuntimeRepositoryTrustEntry, ProjectRuntimeRepositoryTrustPolicy,
     ProjectRuntimeTrustDecision, ProjectRuntimeTrustDecisionKind,

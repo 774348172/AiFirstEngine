@@ -36,7 +36,6 @@ mod native_app;
 mod native_interaction_gate;
 mod native_real_window;
 mod native_workspace_window_host;
-mod project_editor_composition_production_gate;
 mod project_runtime_trust_prompt;
 mod reachability_gate;
 mod real_window_interaction_gate;

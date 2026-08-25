@@ -181,8 +181,11 @@ impl EditorSession {
         let has_play_source = has_package || has_project;
         let runtime_disabled_reason =
             (!has_package).then(|| "Open a Runtime Package first.".to_string());
-        let play_disabled_reason =
-            (!has_play_source).then(|| "Open or create a project first.".to_string());
+        let project_runtime_blocker = self.project_runtime_play_blocker();
+        let play_disabled_reason = project_runtime_blocker
+            .as_ref()
+            .map(|blocker| blocker.code.clone())
+            .or_else(|| (!has_play_source).then(|| "Open or create a project first.".to_string()));
         let has_scene_document = self.editor_scene_document.is_some();
         let scene_disabled_reason =
             (!has_scene_document).then(|| "Open an editable Scene first.".to_string());
@@ -262,7 +265,9 @@ impl EditorSession {
                 toolbar_command(
                     "play",
                     "Play",
-                    has_play_source && (!play_session_running || game_view_paused),
+                    has_play_source
+                        && project_runtime_blocker.is_none()
+                        && (!play_session_running || game_view_paused),
                     play_disabled_reason,
                 ),
                 toolbar_command(

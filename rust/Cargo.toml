@@ -1,6 +1,8 @@
 [workspace]
 members = [
   "crates/engine_input",
+  "crates/project_runtime_abi",
+  "crates/project_runtime_sdk",
   "crates/engine_runtime",
   "crates/editor_ui_model",
   "crates/editor_core",
@@ -13,11 +15,12 @@ members = [
   "crates/editor_host",
   "crates/runtime_cli",
   "crates/runtime_player_winit",
+  "crates/runtime_player_android",
 ]
 resolver = "2"
 
 [workspace.package]
-version = "0.0.1"
+version = "0.0.2"
 edition = "2021"
 license = "UNLICENSED"
 publish = false

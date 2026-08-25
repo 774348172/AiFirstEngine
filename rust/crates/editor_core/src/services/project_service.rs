@@ -1099,6 +1099,11 @@ impl EditorSession {
         project: &crate::ProjectSession,
     ) -> Result<(), (&'static str, String)> {
         let requested = &project.manifest.runtime_module;
+        if requested.resolved_source_kind() == crate::ProjectRuntimeSourceKind::ProjectRust {
+            // ProjectRust authoring does not require an already loaded module. Play performs the
+            // exact native-module identity check after asynchronous preparation publishes ready.
+            return Ok(());
+        }
         let linked = self
             .linked_project_runtimes
             .only_descriptor()
@@ -1108,31 +1113,7 @@ impl EditorSession {
                     error.message,
                 )
             })?;
-        if requested.resolved_source_kind() == crate::ProjectRuntimeSourceKind::ProjectRust {
-            if let Some(identity) = &self.project_editor_composition_identity {
-                if identity.project_id != project.manifest.project_id
-                    || identity.module_id != requested.module_id
-                    || identity.interface_version != requested.interface_version
-                    || linked.module_id != identity.module_id
-                    || linked.interface_version != identity.interface_version
-                    || linked.aot_content_digest != identity.aot_content_digest
-                {
-                    return Err((
-                        "project_editor_composition.handoff_required",
-                        "The running Editor composition identity does not exactly match this ProjectRust project."
-                            .to_string(),
-                    ));
-                }
-            } else if linked.module_id != requested.module_id
-                || linked.interface_version != requested.interface_version
-            {
-                return Err((
-                    "project_editor_composition.handoff_required",
-                    "The running Editor does not contain the requested ProjectRust module."
-                        .to_string(),
-                ));
-            }
-        } else if linked.module_id != requested.module_id
+        if linked.module_id != requested.module_id
             || linked.interface_version != requested.interface_version
         {
             return Err((

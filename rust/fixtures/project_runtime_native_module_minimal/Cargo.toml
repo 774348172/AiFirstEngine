@@ -1,0 +1,15 @@
+[package]
+name = "project_runtime_native_module_minimal"
+version = "0.0.2"
+edition = "2021"
+publish = false
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+project_runtime_abi = { path = "../../crates/project_runtime_abi" }
+project_runtime_sdk = { path = "../../crates/project_runtime_sdk" }
+serde = { version = "1", features = ["derive"] }
+
+[workspace]

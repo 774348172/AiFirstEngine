@@ -499,6 +499,10 @@ fn build_project_rust_inner(
             OsString::from("CARGO_PROFILE_DEV_DEBUG"),
             OsString::from("0"),
         ),
+        (
+            OsString::from("AIFE_PROJECT_RUNTIME_AOT_DIGEST"),
+            OsString::from(&request.expected_module.aot_content_digest),
+        ),
     ];
     run_required_cargo_step(
         report,
@@ -698,7 +702,7 @@ fn write_generated_host(
     );
     package.insert(
         "version".to_string(),
-        toml::Value::String("0.0.1".to_string()),
+        toml::Value::String("0.0.2".to_string()),
     );
     package.insert(
         "edition".to_string(),
@@ -724,6 +728,17 @@ fn write_generated_host(
         "features".to_string(),
         toml::Value::Array(vec![toml::Value::String("real-window".to_string())]),
     );
+    let mut engine_runtime_dependency = toml::map::Map::new();
+    engine_runtime_dependency.insert(
+        "path".to_string(),
+        toml::Value::String(
+            source
+                .sdk_root
+                .join("crates/engine_runtime")
+                .display()
+                .to_string(),
+        ),
+    );
     let mut dependencies = toml::map::Map::new();
     dependencies.insert(
         "project_runtime".to_string(),
@@ -732,6 +747,10 @@ fn write_generated_host(
     dependencies.insert(
         "runtime_cli".to_string(),
         toml::Value::Table(runtime_cli_dependency),
+    );
+    dependencies.insert(
+        "engine_runtime".to_string(),
+        toml::Value::Table(engine_runtime_dependency),
     );
     dependencies.insert(
         "serde_json".to_string(),
@@ -764,7 +783,9 @@ fn write_generated_host(
         r#"use std::sync::Arc;
 
 fn main() {
-    let linked_modules = match project_runtime::linked_set() {
+    // SAFETY: the statically linked project exports a process-static API table.
+    let api = unsafe { *project_runtime::aife_project_runtime_entry_v1() };
+    let linked_modules = match engine_runtime::project_runtime_native_adapter::linked_project_runtime_set_from_api(api) {
         Ok(linked_modules) => linked_modules,
         Err(error) => {
             eprintln!("project runtime link failed: {error}");
@@ -1174,7 +1195,7 @@ mod tests {
             fs::create_dir_all(sdk.join("crates").join(crate_name).join("src")).unwrap();
             fs::write(
                 sdk.join("crates").join(crate_name).join("Cargo.toml"),
-                format!("[package]\nname='{crate_name}'\nversion='0.0.1'\n"),
+                format!("[package]\nname='{crate_name}'\nversion='0.0.2'\n"),
             )
             .unwrap();
             fs::write(
@@ -1327,108 +1348,39 @@ mod tests {
         fs::create_dir_all(runtime_root.join("src")).unwrap();
         let cargo_manifest = r#"[package]
 name = "fixture_project_runtime"
-version = "0.0.1"
+version = "0.0.2"
 edition = "2021"
 publish = false
 
 [dependencies]
-engine_runtime = "=0.0.1"
+project_runtime_abi = "=0.0.2"
+project_runtime_sdk = "=0.0.2"
 serde = { version = "1", features = ["derive"] }
-serde_json = "1"
 "#;
-        let lib_source = r#"use engine_runtime::aui::{
-    AuiSnapshotSource, ProjectUiStateProducerContext, ProjectUiStateSnapshot,
-    ProjectUiStateSnapshotOutput, ProjectUiStateSnapshotProducer,
-};
-use engine_runtime::project_runtime_module::{
-    project_runtime_aot_digest, LinkedProjectRuntimeSet, ProjectRuntimeAotDigestSource,
-    ProjectRuntimeError, ProjectRuntimeModule, ProjectRuntimeModuleDescriptor,
-    ProjectRuntimeRegistration, PROJECT_RUNTIME_MODULE_INTERFACE_VERSION,
-};
-use engine_runtime::project_runtime_session::create_empty_project_runtime_session;
-use serde::{Deserialize, Serialize};
-use std::sync::{Arc, OnceLock};
-
-const MODULE_ID: &str = "fixture.project.runtime";
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-struct FixtureSerializedState {
-    value: serde_json::Value,
-}
-
-pub struct FixtureProjectRuntime;
-
-impl ProjectRuntimeModule for FixtureProjectRuntime {
-    fn descriptor(&self) -> &ProjectRuntimeModuleDescriptor {
-        static DESCRIPTOR: OnceLock<ProjectRuntimeModuleDescriptor> = OnceLock::new();
-        DESCRIPTOR.get_or_init(|| {
-            let digest = project_runtime_aot_digest(
-                MODULE_ID,
-                PROJECT_RUNTIME_MODULE_INTERFACE_VERSION,
-                "RuntimeModule/Cargo.toml",
-                "fixture_project_runtime",
-                "fixture_project_player",
-                [
-                    ProjectRuntimeAotDigestSource {
-                        relative_path: "RuntimeModule/Cargo.toml",
-                        bytes: include_bytes!("../Cargo.toml"),
-                    },
-                    ProjectRuntimeAotDigestSource {
-                        relative_path: "RuntimeModule/src/lib.rs",
-                        bytes: include_bytes!("lib.rs"),
-                    },
-                ],
-            )
-            .expect("fixture digest must be canonical");
-            ProjectRuntimeModuleDescriptor::new(MODULE_ID, digest)
-        })
-    }
-
-    fn install(
-        &self,
-        registration: &mut ProjectRuntimeRegistration,
-    ) -> Result<(), ProjectRuntimeError> {
-        registration.set_runtime_session_factory(create_empty_project_runtime_session)?;
-        registration.set_ui_state_producer_factory(create_ui_state_producer)
-    }
-}
-
-struct FixtureUiStateProducer;
-
-impl ProjectUiStateSnapshotProducer for FixtureUiStateProducer {
-    fn producer_id(&self) -> &str {
-        "fixture_project_ui_state"
-    }
-
-    fn produce(
-        &mut self,
-        context: ProjectUiStateProducerContext<'_>,
-    ) -> ProjectUiStateSnapshotOutput {
-        ProjectUiStateSnapshotOutput::new(
-            self.producer_id(),
-            AuiSnapshotSource::ProjectProducer,
-            ProjectUiStateSnapshot::new(context.frame_index),
-        )
-    }
-}
-
-fn create_ui_state_producer() -> Box<dyn ProjectUiStateSnapshotProducer> {
-    Box::new(FixtureUiStateProducer)
-}
-
-pub fn linked_set() -> Result<LinkedProjectRuntimeSet, ProjectRuntimeError> {
-    LinkedProjectRuntimeSet::singleton(Arc::new(FixtureProjectRuntime))
-}
-"#;
+        let lib_source =
+            include_str!("../../../fixtures/project_runtime_native_module_minimal/src/lib.rs")
+                .replace("fixture.native.runtime", "fixture.project.runtime")
+                .replace(
+                    "project-runtime-module.v1",
+                    PROJECT_RUNTIME_MODULE_INTERFACE_VERSION,
+                )
+                .replace(
+                    "aot_content_digest: AOT_CONTENT_DIGEST.to_string(),",
+                    concat!(
+                        "aot_content_digest: option_env!(\"AIFE_PROJECT_RUNTIME_AOT_DIGEST\")\n",
+                        "                .unwrap_or(AOT_CONTENT_DIGEST)\n",
+                        "                .to_string(),",
+                    ),
+                );
         fs::write(runtime_root.join("Cargo.toml"), cargo_manifest).unwrap();
-        fs::write(runtime_root.join("src/lib.rs"), lib_source).unwrap();
+        fs::write(runtime_root.join("src/lib.rs"), &lib_source).unwrap();
         fs::write(
             project.join("project.aife.json"),
             serde_json::to_vec_pretty(&serde_json::json!({
                 "schemaVersion": "aife-project.v2",
                 "projectId": project_id,
                 "projectName": "Fixture Project Runtime Player",
-                "engineVersion": "0.0.1",
+                "engineVersion": "0.0.2",
                 "createdAt": "0",
                 "lastOpenedAt": null,
                 "defaultScene": "Scenes/Main.scene.json",

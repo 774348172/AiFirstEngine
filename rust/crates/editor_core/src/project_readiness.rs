@@ -396,11 +396,11 @@ mod tests {
     #[test]
     fn newly_created_empty_project_is_ready_without_runtime_source() {
         let root = unique_temp_dir("empty-ready");
-        ProjectLauncherState::new("0.0.1")
+        ProjectLauncherState::new("0.0.2")
             .create_project(&root, "Ready")
             .unwrap();
 
-        let report = ProjectReadiness::inspect(&root, "0.0.1");
+        let report = ProjectReadiness::inspect(&root, "0.0.2");
 
         assert_eq!(report.status, ProjectReadinessStatus::Ready);
         assert_eq!(
@@ -417,7 +417,7 @@ mod tests {
     #[test]
     fn project_rust_requires_manifest_and_library_source() {
         let root = unique_temp_dir("project-rust-incomplete");
-        let mut session = ProjectLauncherState::new("0.0.1")
+        let mut session = ProjectLauncherState::new("0.0.2")
             .create_project(&root, "RustProject")
             .unwrap();
         session.manifest.runtime_module.source_kind = Some(ProjectRuntimeSourceKind::ProjectRust);
@@ -428,7 +428,7 @@ mod tests {
         )
         .unwrap();
 
-        let report = ProjectReadiness::inspect(&root, "0.0.1");
+        let report = ProjectReadiness::inspect(&root, "0.0.2");
 
         assert_eq!(report.status, ProjectReadinessStatus::Incomplete);
         assert!(report
@@ -439,7 +439,7 @@ mod tests {
     #[test]
     fn legacy_empty_manifest_without_source_kind_remains_ready() {
         let root = unique_temp_dir("legacy-empty-ready");
-        ProjectLauncherState::new("0.0.1")
+        ProjectLauncherState::new("0.0.2")
             .create_project(&root, "Legacy")
             .unwrap();
         let path = root.join("project.aife.json");
@@ -451,7 +451,7 @@ mod tests {
             .remove("sourceKind");
         fs::write(path, serde_json::to_string_pretty(&value).unwrap()).unwrap();
 
-        let report = ProjectReadiness::inspect(&root, "0.0.1");
+        let report = ProjectReadiness::inspect(&root, "0.0.2");
 
         assert_eq!(report.status, ProjectReadinessStatus::Ready);
         assert_eq!(
@@ -463,12 +463,12 @@ mod tests {
     #[test]
     fn missing_input_is_incomplete() {
         let root = unique_temp_dir("missing-input");
-        ProjectLauncherState::new("0.0.1")
+        ProjectLauncherState::new("0.0.2")
             .create_project(&root, "MissingInput")
             .unwrap();
         fs::remove_file(root.join("Input/input.none.json")).unwrap();
 
-        let report = ProjectReadiness::inspect(&root, "0.0.1");
+        let report = ProjectReadiness::inspect(&root, "0.0.2");
 
         assert_eq!(report.status, ProjectReadinessStatus::Incomplete);
         assert_eq!(

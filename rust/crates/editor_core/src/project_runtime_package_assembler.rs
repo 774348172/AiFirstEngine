@@ -12,6 +12,7 @@ use crate::{
 use engine_input::InputDiagnosticSeverity;
 use engine_runtime::animator2d::{CookedAnimator2DRegistry, RuntimeAnimator2D};
 use engine_runtime::canonical_digest::sha256_prefixed;
+use engine_runtime::game_view_presentation::GameViewTargetSpec;
 use engine_runtime::project_observation::ProjectObservationContract;
 use engine_runtime::project_runtime_module::{
     project_runtime_aot_digest, ProjectRuntimeAotDigestSource, EMPTY_PROJECT_RUNTIME_AOT_DIGEST,
@@ -82,6 +83,8 @@ pub struct BuildProfile {
     pub frame_limit: u64,
     pub headless_surface_gate: bool,
     pub real_window_smoke: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub game_view_target: Option<GameViewTargetSpec>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub architecture: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -163,6 +166,14 @@ impl BuildProfile {
         }
 
         let mut issues = self.common_validation_issues();
+        if self.target != "windows" {
+            issues.push(BuildProfileValidationIssue::new(
+                "release_identity_invalid",
+                "target",
+                "build-profile.v2 release currently supports only Windows.",
+                "Set target to windows or use build-profile.v1 for Android dev.",
+            ));
+        }
         if self.profile != "release" {
             issues.push(BuildProfileValidationIssue::new(
                 "release_identity_invalid",
@@ -234,12 +245,12 @@ impl BuildProfile {
 
     fn common_validation_issues(&self) -> Vec<BuildProfileValidationIssue> {
         let mut issues = Vec::new();
-        if self.target != "windows" {
+        if !matches!(self.target.as_str(), "windows" | "android") {
             issues.push(BuildProfileValidationIssue::new(
                 "release_identity_invalid",
                 "target",
                 format!("Unsupported build target: {}.", self.target),
-                "Set target to windows.",
+                "Set target to windows or android.",
             ));
         }
         if self.runtime_package_mode != "debug-readable" {
@@ -274,6 +285,16 @@ impl BuildProfile {
                 ),
                 "Use disabled, optional, or required.",
             ));
+        }
+        if let Some(target) = self.game_view_target {
+            if let Err(error) = target.validate() {
+                issues.push(BuildProfileValidationIssue::new(
+                    "release_identity_invalid",
+                    "gameViewTarget",
+                    format!("Invalid GameView target: {}.", error.code),
+                    "Use a supported non-zero GameView target extent.",
+                ));
+            }
         }
         issues
     }
@@ -690,6 +711,12 @@ impl ProjectRuntimePackageAssembler {
                 runtime_module_digest,
             ),
         ));
+        if let Some(target) = build_profile
+            .as_ref()
+            .and_then(|profile| profile.game_view_target)
+        {
+            input.project = input.project.with_game_view_target(target);
+        }
         input.observation_contract =
             collect_project_observation_contract(&request.project_root, &project, &mut diagnostics);
         producer_reports.push(ProjectAssemblyProducerReport::uncached(
@@ -865,6 +892,7 @@ impl ProjectRuntimePackageAssembler {
         };
         let report = report_for(
             &request.project_root,
+            request.build_profile_path.as_deref(),
             status,
             Some(scene.scene_id.clone()),
             Some(project.default_scene.clone()),
@@ -1194,6 +1222,7 @@ fn failed_result(
 
 fn report_for(
     project_root: &Path,
+    build_profile_path: Option<&Path>,
     status: ProjectRuntimePackageAssemblyStatus,
     active_scene_id: Option<String>,
     active_scene_source_path: Option<String>,
@@ -1226,6 +1255,7 @@ fn report_for(
         prefab_bake_report,
         source_mappings: build_source_mappings(
             project_root,
+            build_profile_path,
             active_scene_source_path.as_deref(),
             input,
         ),
@@ -1236,6 +1266,7 @@ fn report_for(
 
 fn build_source_mappings(
     project_root: &Path,
+    selected_build_profile_path: Option<&Path>,
     active_scene_source_path: Option<&str>,
     input: &RuntimePackageBuildInput,
 ) -> Vec<ProjectRuntimeSourceMapping> {
@@ -1249,12 +1280,24 @@ fn build_source_mappings(
         build_input_path: "project".to_string(),
         runtime_path: "manifest.json#project".to_string(),
     }];
-    let build_profile_path = project_root.join("BuildProfiles").join("windows.dev.json");
+    let build_profile_path = selected_build_profile_path
+        .map(Path::to_path_buf)
+        .unwrap_or_else(|| project_root.join("BuildProfiles").join("windows.dev.json"));
     if build_profile_path.is_file() {
+        let source_path = build_profile_path
+            .strip_prefix(project_root)
+            .unwrap_or(&build_profile_path)
+            .to_string_lossy()
+            .replace('\\', "/");
+        let object_id = build_profile_path
+            .file_stem()
+            .and_then(|value| value.to_str())
+            .unwrap_or("build-profile")
+            .to_string();
         mappings.push(ProjectRuntimeSourceMapping {
             domain: ProjectRuntimePackageAssemblyDomain::BuildProfile,
-            source_path: "BuildProfiles/windows.dev.json".to_string(),
-            object_id: "windows.dev".to_string(),
+            source_path,
+            object_id,
             build_input_path: "buildProfile".to_string(),
             runtime_path: "manifest.json#buildRecipe".to_string(),
         });
@@ -3055,6 +3098,73 @@ fn vec3(value: EditorVec3) -> Vector3 {
 mod tests {
     use super::*;
     use std::time::{SystemTime, UNIX_EPOCH};
+
+    #[test]
+    fn build_profile_v1_accepts_android_dev_and_rejects_unknown_target() {
+        let profile = BuildProfile {
+            schema_version: BUILD_PROFILE_SCHEMA_VERSION_V1.to_string(),
+            profile: "dev".to_string(),
+            target: "android".to_string(),
+            runtime_package_mode: "debug-readable".to_string(),
+            frame_limit: 3,
+            headless_surface_gate: false,
+            real_window_smoke: "optional".to_string(),
+            game_view_target: Some(GameViewTargetSpec::portrait_720x1280()),
+            architecture: None,
+            application: None,
+            release: None,
+        };
+
+        assert!(profile.validation_issues().is_empty());
+        let mut unsupported = profile;
+        unsupported.target = "web".to_string();
+        assert!(unsupported
+            .validation_issues()
+            .iter()
+            .any(|issue| issue.field == "target"));
+    }
+
+    #[test]
+    fn explicit_android_profile_owns_its_source_mapping() {
+        let project_root = workspace_root()
+            .join("samples")
+            .join("tower_defense_project");
+        let profile_path = project_root.join("BuildProfiles").join("android.dev.json");
+
+        let result = ProjectRuntimePackageAssembler::assemble(
+            ProjectRuntimePackageAssemblyRequest::new(&project_root)
+                .with_build_profile_path(&profile_path),
+        );
+
+        assert_eq!(result.status, ProjectRuntimePackageAssemblyStatus::Success);
+        assert!(result.report.source_mappings.iter().any(|mapping| {
+            mapping.domain == ProjectRuntimePackageAssemblyDomain::BuildProfile
+                && mapping.source_path == "BuildProfiles/android.dev.json"
+                && mapping.object_id == "android.dev"
+        }));
+    }
+
+    #[test]
+    fn tower_windows_dev_profile_enters_runtime_package_game_view_target() {
+        let project_root = workspace_root()
+            .join("samples")
+            .join("tower_defense_project");
+
+        let result = ProjectRuntimePackageAssembler::assemble(
+            ProjectRuntimePackageAssemblyRequest::new(&project_root),
+        );
+
+        assert_eq!(result.status, ProjectRuntimePackageAssemblyStatus::Success);
+        let profile = result.build_profile.expect("Tower Windows dev profile");
+        let input = result
+            .build_input
+            .expect("Tower RuntimePackage build input");
+        assert_eq!(
+            profile.game_view_target,
+            Some(GameViewTargetSpec::portrait_720x1280())
+        );
+        assert_eq!(input.project.game_view_target, profile.game_view_target);
+    }
 
     #[test]
     fn engine_builtin_font_pack_selection_covers_default_and_additional_matrix() {

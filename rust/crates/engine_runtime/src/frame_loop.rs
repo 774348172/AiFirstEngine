@@ -241,6 +241,27 @@ impl FrameLoop {
         input_trace_summary: Option<InputTraceSummary>,
         unscaled_delta_time: f32,
     ) -> RuntimeFrameOutput {
+        self.tick_runtime_frame_with_input_delta_and_fixed_steps(
+            world,
+            render_scene,
+            extract,
+            action_snapshot,
+            input_trace_summary,
+            unscaled_delta_time,
+            1,
+        )
+    }
+
+    pub fn tick_runtime_frame_with_input_delta_and_fixed_steps(
+        &mut self,
+        world: &mut World,
+        render_scene: &mut RenderSceneState,
+        extract: &mut RenderExtractContext,
+        action_snapshot: Option<&ActionSnapshot>,
+        input_trace_summary: Option<InputTraceSummary>,
+        unscaled_delta_time: f32,
+        fixed_step_count: usize,
+    ) -> RuntimeFrameOutput {
         self.tick_runtime_frame_with_input_delta_and_runtime(
             world,
             render_scene,
@@ -249,6 +270,7 @@ impl FrameLoop {
             input_trace_summary,
             unscaled_delta_time,
             None,
+            fixed_step_count,
         )
     }
 
@@ -270,6 +292,7 @@ impl FrameLoop {
             input_trace_summary,
             unscaled_delta_time,
             Some(runtime_context),
+            1,
         )
     }
 
@@ -282,6 +305,7 @@ impl FrameLoop {
         input_trace_summary: Option<InputTraceSummary>,
         unscaled_delta_time: f32,
         runtime_context: Option<RuntimeFrameContext<'_>>,
+        fixed_step_count: usize,
     ) -> RuntimeFrameOutput {
         self.tick_runtime_frame_with_input_delta_runtime_and_session(
             world,
@@ -291,6 +315,7 @@ impl FrameLoop {
             input_trace_summary,
             unscaled_delta_time,
             runtime_context,
+            fixed_step_count,
             None,
         )
         .expect("frame execution without a project runtime session cannot session-fault")
@@ -307,6 +332,31 @@ impl FrameLoop {
         runtime_context: Option<RuntimeFrameContext<'_>>,
         project_session: ProjectRuntimeFrameSession<'_>,
     ) -> Result<RuntimeFrameOutput, RuntimeFrameSessionFault> {
+        self.tick_runtime_frame_with_project_session_delta_and_fixed_steps(
+            world,
+            render_scene,
+            extract,
+            action_snapshot,
+            input_trace_summary,
+            unscaled_delta_time,
+            runtime_context,
+            project_session,
+            1,
+        )
+    }
+
+    pub fn tick_runtime_frame_with_project_session_delta_and_fixed_steps(
+        &mut self,
+        world: &mut World,
+        render_scene: &mut RenderSceneState,
+        extract: &mut RenderExtractContext,
+        action_snapshot: Option<&ActionSnapshot>,
+        input_trace_summary: Option<InputTraceSummary>,
+        unscaled_delta_time: f32,
+        runtime_context: Option<RuntimeFrameContext<'_>>,
+        project_session: ProjectRuntimeFrameSession<'_>,
+        fixed_step_count: usize,
+    ) -> Result<RuntimeFrameOutput, RuntimeFrameSessionFault> {
         self.tick_runtime_frame_with_input_delta_runtime_and_session(
             world,
             render_scene,
@@ -315,6 +365,7 @@ impl FrameLoop {
             input_trace_summary,
             unscaled_delta_time,
             runtime_context,
+            fixed_step_count,
             Some(project_session),
         )
     }
@@ -328,6 +379,7 @@ impl FrameLoop {
         input_trace_summary: Option<InputTraceSummary>,
         unscaled_delta_time: f32,
         mut runtime_context: Option<RuntimeFrameContext<'_>>,
+        fixed_step_count: usize,
         mut project_session: Option<ProjectRuntimeFrameSession<'_>>,
     ) -> Result<RuntimeFrameOutput, RuntimeFrameSessionFault> {
         self.frame += 1;
@@ -396,85 +448,234 @@ impl FrameLoop {
         {
             trace.record_input_summary(&input_summary);
         }
-        trace.record(
-            frame,
-            "engine.frame_loop",
-            "FixedUpdate",
-            "fixed_update",
-            Some(world.entity_count()),
-        );
-        self.runtime_time.advance_fixed_step();
-        let fixed_time_context = self.runtime_time.context();
-        if let Some(binding) = project_session.as_mut() {
-            let stage_report = execute_project_runtime_session_stage_with_animator2d(
-                binding.session,
-                ProjectRuntimeSessionStage::FixedUpdate,
-                frame,
-                fixed_time_context,
-                world,
-                &[],
-                binding.report_level,
-                &mut animator2d_commands,
-            );
+        if let Some(context) = runtime_context.as_ref() {
+            self.set_animator2d_registry(context.package.animator2d_registry.clone())
+                .expect("RuntimePackage Animator2D registry was validated during load");
+        }
+        let animator_report_level = project_session
+            .as_ref()
+            .map(|binding| match binding.report_level {
+                ProjectRuntimeSessionReportLevel::Off => Animator2DReportLevel::Off,
+                ProjectRuntimeSessionReportLevel::Summary => Animator2DReportLevel::Summary,
+                ProjectRuntimeSessionReportLevel::Trace => Animator2DReportLevel::Trace,
+            })
+            .unwrap_or(Animator2DReportLevel::Summary);
+        let mut physics2d_pair_report = CollisionPairReport::default();
+        let mut animator2d_frame_result = Animator2DFrameResult::default();
+        let mut last_fixed_time_context = None;
+
+        for fixed_step_index in 0..fixed_step_count {
             trace.record(
                 frame,
-                "project.runtime_session",
-                ProjectRuntimeSessionStage::FixedUpdate.as_str(),
-                format!("{:?}", stage_report.status),
+                "engine.frame_loop",
+                "FixedUpdate",
+                format!("fixed_update:{}/{}", fixed_step_index + 1, fixed_step_count),
                 Some(world.entity_count()),
             );
-            let terminal_fault = stage_report.terminal_fault;
-            project_runtime_session_report
-                .as_mut()
-                .expect("session report exists with session binding")
-                .push_stage(stage_report);
-            if terminal_fault {
-                self.runtime_time.leave_fixed_step();
-                trace.record(
-                    frame,
-                    "engine.frame_loop",
-                    "FrameFault",
-                    "project_runtime_session",
-                    Some(world.entity_count()),
-                );
-                return Err(RuntimeFrameSessionFault {
-                    frame_index: frame,
-                    runtime_trace: trace,
-                    time_trace_summary,
-                    report: project_runtime_session_report.expect("session report exists on fault"),
-                });
-            }
-        }
-        if let Some(context) = runtime_context.as_mut() {
-            self.project_logic
-                .run_fixed_update_with_runtime_and_time_context(
-                    frame,
-                    world,
-                    &mut trace,
-                    action_snapshot,
-                    Some(fixed_time_context),
-                    context.package,
-                    &mut *context.instance_loader,
-                );
-        } else {
-            self.project_logic.run_fixed_update_with_time_context(
-                frame,
-                world,
-                &mut trace,
-                action_snapshot,
-                Some(fixed_time_context),
-            );
-        }
-        let project_observation_state = project_session.as_ref().and_then(|binding| {
-            binding.observation_contract.map(|contract| {
-                execute_project_runtime_observation(
-                    &*binding.session,
+            self.runtime_time.advance_fixed_step();
+            let fixed_time_context = self.runtime_time.context();
+            last_fixed_time_context = Some(fixed_time_context);
+            let fixed_action_snapshot = if fixed_step_index == 0 {
+                action_snapshot
+            } else {
+                None
+            };
+
+            if let Some(binding) = project_session.as_mut() {
+                let stage_report = execute_project_runtime_session_stage_with_animator2d(
+                    binding.session,
+                    ProjectRuntimeSessionStage::FixedUpdate,
                     frame,
                     fixed_time_context,
                     world,
-                    contract,
+                    &[],
                     binding.report_level,
+                    &mut animator2d_commands,
+                );
+                trace.record(
+                    frame,
+                    "project.runtime_session",
+                    ProjectRuntimeSessionStage::FixedUpdate.as_str(),
+                    format!("{:?}", stage_report.status),
+                    Some(world.entity_count()),
+                );
+                let terminal_fault = stage_report.terminal_fault;
+                project_runtime_session_report
+                    .as_mut()
+                    .expect("session report exists with session binding")
+                    .push_stage(stage_report);
+                if terminal_fault {
+                    self.runtime_time.leave_fixed_step();
+                    trace.record(
+                        frame,
+                        "engine.frame_loop",
+                        "FrameFault",
+                        "project_runtime_session",
+                        Some(world.entity_count()),
+                    );
+                    return Err(RuntimeFrameSessionFault {
+                        frame_index: frame,
+                        runtime_trace: trace,
+                        time_trace_summary: self.runtime_time.trace_summary(),
+                        report: project_runtime_session_report
+                            .expect("session report exists on fault"),
+                    });
+                }
+            }
+
+            if let Some(context) = runtime_context.as_mut() {
+                self.project_logic
+                    .run_fixed_update_with_runtime_and_time_context(
+                        frame,
+                        world,
+                        &mut trace,
+                        fixed_action_snapshot,
+                        Some(fixed_time_context),
+                        context.package,
+                        &mut *context.instance_loader,
+                    );
+            } else {
+                self.project_logic.run_fixed_update_with_time_context(
+                    frame,
+                    world,
+                    &mut trace,
+                    fixed_action_snapshot,
+                    Some(fixed_time_context),
+                );
+            }
+
+            if fixed_step_index == 0 {
+                trace.record(
+                    frame,
+                    "engine.frame_loop",
+                    "Update",
+                    "update",
+                    Some(world.entity_count()),
+                );
+                if let Some(context) = runtime_context.as_mut() {
+                    self.project_logic
+                        .run_frame_update_with_runtime_and_time_context(
+                            frame,
+                            world,
+                            &mut trace,
+                            action_snapshot,
+                            Some(frame_time_context),
+                            context.package,
+                            &mut *context.instance_loader,
+                        );
+                } else {
+                    self.project_logic.run_frame_update_with_time_context(
+                        frame,
+                        world,
+                        &mut trace,
+                        action_snapshot,
+                        Some(frame_time_context),
+                    );
+                }
+            }
+
+            let mut physics2d_world = Physics2DWorld::new();
+            let physics2d_sync_report =
+                Physics2DBridge::sync_from_world(world, &mut physics2d_world);
+            trace.record_physics2d(Physics2DTraceRecord::sync(
+                frame,
+                "Physics2D",
+                &physics2d_sync_report,
+            ));
+            trace.record(
+                frame,
+                "engine.physics2d",
+                "Physics2D",
+                "sync_from_world",
+                Some(physics2d_sync_report.synced_colliders),
+            );
+            physics2d_pair_report = physics2d_world.build_collision_pairs();
+            trace.record_physics2d(Physics2DTraceRecord::pair_report(
+                frame,
+                "Physics2D",
+                &physics2d_pair_report,
+            ));
+            trace.record(
+                frame,
+                "engine.physics2d",
+                "Physics2D",
+                "build_collision_pairs",
+                Some(physics2d_pair_report.pairs.len()),
+            );
+            if let Some(context) = runtime_context.as_mut() {
+                self.project_logic
+                    .run_post_physics_with_runtime_and_time_context(
+                        frame,
+                        world,
+                        &mut trace,
+                        fixed_action_snapshot,
+                        Some(fixed_time_context),
+                        &physics2d_pair_report.pairs,
+                        context.package,
+                        &mut *context.instance_loader,
+                    );
+            }
+
+            let step_animator_result = if let Some(module) = self.animator2d.as_mut() {
+                module.apply(std::mem::take(&mut animator2d_commands));
+                module.tick(
+                    world,
+                    fixed_time_context.fixed_frame_count,
+                    animator_report_level,
                 )
+            } else {
+                Animator2DFrameResult {
+                    fixed_tick_index: fixed_time_context.fixed_frame_count,
+                    failed_entity_count: animator2d_commands.len(),
+                    ..Animator2DFrameResult::default()
+                }
+            };
+            animator2d_commands.clear();
+            animator2d_frame_result.fixed_tick_index = step_animator_result.fixed_tick_index;
+            animator2d_frame_result.evaluated_entity_count = animator2d_frame_result
+                .evaluated_entity_count
+                .saturating_add(step_animator_result.evaluated_entity_count);
+            animator2d_frame_result.changed_entity_count = animator2d_frame_result
+                .changed_entity_count
+                .saturating_add(step_animator_result.changed_entity_count);
+            animator2d_frame_result.failed_entity_count = animator2d_frame_result
+                .failed_entity_count
+                .saturating_add(step_animator_result.failed_entity_count);
+            animator2d_frame_result.retired_entity_count = animator2d_frame_result
+                .retired_entity_count
+                .saturating_add(step_animator_result.retired_entity_count);
+            animator2d_frame_result.transition_count = animator2d_frame_result
+                .transition_count
+                .saturating_add(step_animator_result.transition_count);
+            animator2d_frame_result
+                .diagnostics
+                .extend(step_animator_result.diagnostics);
+            animator2d_frame_result
+                .trace
+                .extend(step_animator_result.trace);
+            self.runtime_time.leave_fixed_step();
+        }
+
+        if fixed_step_count == 0 && !animator2d_commands.is_empty() {
+            if let Some(module) = self.animator2d.as_mut() {
+                module.apply(std::mem::take(&mut animator2d_commands));
+            } else {
+                animator2d_frame_result.failed_entity_count = animator2d_commands.len();
+            }
+        }
+
+        let project_observation_state = last_fixed_time_context.and_then(|fixed_time_context| {
+            project_session.as_ref().and_then(|binding| {
+                binding.observation_contract.map(|contract| {
+                    execute_project_runtime_observation(
+                        &*binding.session,
+                        frame,
+                        fixed_time_context,
+                        world,
+                        contract,
+                        binding.report_level,
+                    )
+                })
             })
         });
         if let Some(state) = &project_observation_state {
@@ -494,100 +695,36 @@ impl FrameLoop {
                 state.runtime_frame().map(|_| world.entity_count()),
             );
         }
-        self.runtime_time.leave_fixed_step();
-        trace.record(
-            frame,
-            "engine.frame_loop",
-            "Update",
-            "update",
-            Some(world.entity_count()),
-        );
-        if let Some(context) = runtime_context.as_mut() {
-            self.project_logic
-                .run_frame_update_with_runtime_and_time_context(
-                    frame,
-                    world,
-                    &mut trace,
-                    action_snapshot,
-                    Some(frame_time_context),
-                    context.package,
-                    &mut *context.instance_loader,
-                );
-        } else {
-            self.project_logic.run_frame_update_with_time_context(
+
+        if fixed_step_count == 0 {
+            trace.record(
                 frame,
-                world,
-                &mut trace,
-                action_snapshot,
-                Some(frame_time_context),
+                "engine.frame_loop",
+                "Update",
+                "update",
+                Some(world.entity_count()),
             );
-        }
-        let mut physics2d_world = Physics2DWorld::new();
-        let physics2d_sync_report = Physics2DBridge::sync_from_world(world, &mut physics2d_world);
-        trace.record_physics2d(Physics2DTraceRecord::sync(
-            frame,
-            "Physics2D",
-            &physics2d_sync_report,
-        ));
-        trace.record(
-            frame,
-            "engine.physics2d",
-            "Physics2D",
-            "sync_from_world",
-            Some(physics2d_sync_report.synced_colliders),
-        );
-        let physics2d_pair_report = physics2d_world.build_collision_pairs();
-        trace.record_physics2d(Physics2DTraceRecord::pair_report(
-            frame,
-            "Physics2D",
-            &physics2d_pair_report,
-        ));
-        trace.record(
-            frame,
-            "engine.physics2d",
-            "Physics2D",
-            "build_collision_pairs",
-            Some(physics2d_pair_report.pairs.len()),
-        );
-        if let Some(context) = runtime_context.as_mut() {
-            self.project_logic
-                .run_post_physics_with_runtime_and_time_context(
+            if let Some(context) = runtime_context.as_mut() {
+                self.project_logic
+                    .run_frame_update_with_runtime_and_time_context(
+                        frame,
+                        world,
+                        &mut trace,
+                        action_snapshot,
+                        Some(frame_time_context),
+                        context.package,
+                        &mut *context.instance_loader,
+                    );
+            } else {
+                self.project_logic.run_frame_update_with_time_context(
                     frame,
                     world,
                     &mut trace,
                     action_snapshot,
                     Some(frame_time_context),
-                    &physics2d_pair_report.pairs,
-                    context.package,
-                    &mut *context.instance_loader,
                 );
-        }
-        if let Some(context) = runtime_context.as_ref() {
-            self.set_animator2d_registry(context.package.animator2d_registry.clone())
-                .expect("RuntimePackage Animator2D registry was validated during load");
-        }
-        let animator_report_level = project_session
-            .as_ref()
-            .map(|binding| match binding.report_level {
-                ProjectRuntimeSessionReportLevel::Off => Animator2DReportLevel::Off,
-                ProjectRuntimeSessionReportLevel::Summary => Animator2DReportLevel::Summary,
-                ProjectRuntimeSessionReportLevel::Trace => Animator2DReportLevel::Trace,
-            })
-            .unwrap_or(Animator2DReportLevel::Summary);
-        let animator2d_frame_result = if let Some(module) = self.animator2d.as_mut() {
-            module.apply(animator2d_commands);
-            module.tick(
-                world,
-                fixed_time_context.fixed_frame_count,
-                animator_report_level,
-            )
-        } else {
-            Animator2DFrameResult {
-                fixed_tick_index: fixed_time_context.fixed_frame_count,
-                failed_entity_count: animator2d_commands.len(),
-                ..Animator2DFrameResult::default()
             }
-        };
+        }
         trace.record(
             frame,
             "engine.animator2d",
@@ -1347,6 +1484,140 @@ mod tests {
                 .local_position
                 .x,
             0.02
+        );
+    }
+
+    #[test]
+    fn fixed_catch_up_presents_once() {
+        let mut runner = ProjectLogicRunner::new(RuleExecutionPlan {
+            fixed_update: vec![RuleCall::rust_aot(TIME_DELTA_RULE)],
+            frame_update: Vec::new(),
+            post_physics: Vec::new(),
+            event_handler: Vec::new(),
+        });
+        runner.register_rust_aot_rule(TIME_DELTA_RULE, time_delta_rule);
+        let scene = renderable_scene_fixture();
+        let mut world = load_scene_into_world(&scene)
+            .value
+            .expect("world should load");
+        let mut frame_loop = FrameLoop::with_project_logic(scene.id, runner);
+        let mut render_scene = RenderSceneState::new();
+        let mut extract = RenderExtractContext::new();
+
+        let output = frame_loop.tick_runtime_frame_with_input_delta_and_fixed_steps(
+            &mut world,
+            &mut render_scene,
+            &mut extract,
+            None,
+            None,
+            0.05,
+            3,
+        );
+
+        assert_eq!(output.time_trace_summary.frame_count, 1);
+        assert_eq!(output.time_trace_summary.fixed_frame_count, 3);
+        assert_eq!(
+            world
+                .transform(&crate::ids::EntityId::from("entity-player"))
+                .unwrap()
+                .local_position
+                .x,
+            3.0 * DEFAULT_FIXED_DELTA_TIME
+        );
+        assert_eq!(
+            output
+                .runtime_trace
+                .events
+                .iter()
+                .filter(|event| event.phase == "RenderExtract")
+                .count(),
+            1
+        );
+        assert_eq!(
+            output
+                .runtime_trace
+                .events
+                .iter()
+                .filter(|event| event.phase == "FrameEnd")
+                .count(),
+            1
+        );
+        assert_eq!(
+            output
+                .runtime_trace
+                .events
+                .iter()
+                .filter(|event| {
+                    event.system_id == "engine.frame_loop" && event.phase == "FixedUpdate"
+                })
+                .count(),
+            3
+        );
+
+        let scene = renderable_scene_fixture();
+        let mut zero_world = load_scene_into_world(&scene)
+            .value
+            .expect("zero-step world should load");
+        let mut zero_loop = FrameLoop::new(scene.id);
+        let mut zero_render_scene = RenderSceneState::new();
+        let mut zero_extract = RenderExtractContext::new();
+        let zero = zero_loop.tick_runtime_frame_with_input_delta_and_fixed_steps(
+            &mut zero_world,
+            &mut zero_render_scene,
+            &mut zero_extract,
+            None,
+            None,
+            0.0,
+            0,
+        );
+        assert_eq!(zero.time_trace_summary.fixed_frame_count, 0);
+        assert_eq!(
+            zero.runtime_trace
+                .events
+                .iter()
+                .filter(|event| event.phase == "RenderExtract")
+                .count(),
+            1
+        );
+
+        let mut action_runner = ProjectLogicRunner::new(RuleExecutionPlan {
+            fixed_update: vec![RuleCall::rust_aot(FIRE_MOVE_RULE)],
+            frame_update: Vec::new(),
+            post_physics: Vec::new(),
+            event_handler: Vec::new(),
+        });
+        action_runner.register_rust_aot_rule(FIRE_MOVE_RULE, fire_move_rule);
+        let scene = renderable_scene_fixture();
+        let mut action_world = load_scene_into_world(&scene)
+            .value
+            .expect("action world should load");
+        let mut action_loop = FrameLoop::with_project_logic(scene.id, action_runner);
+        let mut action_render_scene = RenderSceneState::new();
+        let mut action_extract = RenderExtractContext::new();
+        let action_snapshot = ActionSnapshot::with_actions(
+            1,
+            vec![crate::input_action::InputActionState::button(
+                "action.fire",
+                crate::input_action::ActionPhase::Pressed,
+            )],
+        );
+        action_loop.tick_runtime_frame_with_input_delta_and_fixed_steps(
+            &mut action_world,
+            &mut action_render_scene,
+            &mut action_extract,
+            Some(&action_snapshot),
+            None,
+            0.05,
+            3,
+        );
+        assert_eq!(
+            action_world
+                .transform(&EntityId::from("entity-player"))
+                .unwrap()
+                .local_position
+                .x,
+            1.0,
+            "the ordinary-frame action snapshot must not replay during catch-up"
         );
     }
 

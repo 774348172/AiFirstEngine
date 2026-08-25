@@ -1,5 +1,6 @@
 use crate::aui::{
-    AuiSnapshotSource, ProjectUiStateProducerContext, ProjectUiStateSnapshot,
+    AuiSnapshotSource, ProjectUiStateIdentity, ProjectUiStateProducerContext,
+    ProjectUiStateResolve, ProjectUiStateResolveError, ProjectUiStateSnapshot,
     ProjectUiStateSnapshotOutput, ProjectUiStateSnapshotProducer,
 };
 use crate::canonical_digest::{sha256_prefixed, CanonicalDigestError, ConsistencyDigest};
@@ -197,13 +198,45 @@ impl ProjectUiStateSnapshotProducer for EmptyProjectUiStateProducer {
             ProjectUiStateSnapshot::new(context.frame_index),
         )
     }
+
+    fn resolve(
+        &mut self,
+        context: ProjectUiStateProducerContext<'_>,
+    ) -> Result<ProjectUiStateResolve, ProjectUiStateResolveError> {
+        let identity = ProjectUiStateIdentity {
+            producer_epoch: 1,
+            visible_revision: 0,
+            binding_set: context.binding_set.identity().clone(),
+        };
+        if context.previous_identity.as_ref() == Some(&identity) {
+            return Ok(ProjectUiStateResolve::Reuse { identity });
+        }
+        let output = self.produce(context);
+        Ok(ProjectUiStateResolve::Replace { identity, output })
+    }
 }
 
 fn create_empty_ui_state_producer() -> Box<dyn ProjectUiStateSnapshotProducer> {
     Box::new(EmptyProjectUiStateProducer)
 }
 
-pub type ProjectUiStateProducerFactory = fn() -> Box<dyn ProjectUiStateSnapshotProducer>;
+pub type ProjectUiStateProducerFactory =
+    Arc<dyn Fn() -> Box<dyn ProjectUiStateSnapshotProducer> + Send + Sync>;
+
+pub struct ProjectRuntimeSessionBundle {
+    pub project_runtime_session: Box<dyn ProjectRuntimeSession>,
+    pub ui_state_producer: Box<dyn ProjectUiStateSnapshotProducer>,
+}
+
+pub type ProjectRuntimeSessionBundleFactory = Arc<
+    dyn for<'a> Fn(
+            ProjectRuntimeSessionCreateContext<'a>,
+        ) -> Result<
+            ProjectRuntimeSessionBundle,
+            crate::project_runtime_session::ProjectRuntimeSessionFactoryError,
+        > + Send
+        + Sync,
+>;
 
 #[derive(Clone)]
 struct RegisteredProjectRule {
@@ -215,6 +248,7 @@ pub struct ProjectRuntimeRegistration {
     rules: BTreeMap<String, RegisteredProjectRule>,
     runtime_session_factory: Option<ProjectRuntimeSessionFactory>,
     ui_state_producer_factory: Option<ProjectUiStateProducerFactory>,
+    session_bundle_factory: Option<ProjectRuntimeSessionBundleFactory>,
 }
 
 impl ProjectRuntimeRegistration {
@@ -223,6 +257,7 @@ impl ProjectRuntimeRegistration {
             rules: BTreeMap::new(),
             runtime_session_factory: None,
             ui_state_producer_factory: None,
+            session_bundle_factory: None,
         }
     }
 
@@ -230,7 +265,12 @@ impl ProjectRuntimeRegistration {
         &mut self,
         rule_id: impl Into<String>,
         artifact_id: impl Into<String>,
-        rule: RustAotRule,
+        rule: impl for<'a> Fn(
+                &mut crate::logic_executor::LogicContext<'a>,
+            ) -> crate::logic_executor::LogicResult
+            + Send
+            + Sync
+            + 'static,
     ) -> Result<(), ProjectRuntimeError> {
         let rule_id = rule_id.into();
         let artifact_id = artifact_id.into();
@@ -244,7 +284,13 @@ impl ProjectRuntimeRegistration {
         }
         if self
             .rules
-            .insert(rule_id.clone(), RegisteredProjectRule { artifact_id, rule })
+            .insert(
+                rule_id.clone(),
+                RegisteredProjectRule {
+                    artifact_id,
+                    rule: RustAotRule::new(rule),
+                },
+            )
             .is_some()
         {
             return Err(ProjectRuntimeError::new(
@@ -260,9 +306,13 @@ impl ProjectRuntimeRegistration {
 
     pub fn set_ui_state_producer_factory(
         &mut self,
-        factory: ProjectUiStateProducerFactory,
+        factory: impl Fn() -> Box<dyn ProjectUiStateSnapshotProducer> + Send + Sync + 'static,
     ) -> Result<(), ProjectRuntimeError> {
-        if self.ui_state_producer_factory.replace(factory).is_some() {
+        if self
+            .ui_state_producer_factory
+            .replace(Arc::new(factory))
+            .is_some()
+        {
             return Err(ProjectRuntimeError::new(
                 "project_runtime.registration_failed",
                 "register_ui_state_producer",
@@ -275,14 +325,51 @@ impl ProjectRuntimeRegistration {
 
     pub fn set_runtime_session_factory(
         &mut self,
-        factory: ProjectRuntimeSessionFactory,
+        factory: impl for<'a> Fn(
+                ProjectRuntimeSessionCreateContext<'a>,
+            ) -> Result<
+                Box<dyn ProjectRuntimeSession>,
+                crate::project_runtime_session::ProjectRuntimeSessionFactoryError,
+            > + Send
+            + Sync
+            + 'static,
     ) -> Result<(), ProjectRuntimeError> {
-        if self.runtime_session_factory.replace(factory).is_some() {
+        if self
+            .runtime_session_factory
+            .replace(Arc::new(factory))
+            .is_some()
+        {
             return Err(ProjectRuntimeError::new(
                 "project_runtime.session_duplicate",
                 "register_runtime_session",
                 "Project runtime module registered more than one runtime session factory.",
                 "Keep exactly one ProjectRuntimeSession factory per project module.",
+            ));
+        }
+        Ok(())
+    }
+
+    pub fn set_runtime_session_bundle_factory(
+        &mut self,
+        factory: impl for<'a> Fn(
+                ProjectRuntimeSessionCreateContext<'a>,
+            ) -> Result<
+                ProjectRuntimeSessionBundle,
+                crate::project_runtime_session::ProjectRuntimeSessionFactoryError,
+            > + Send
+            + Sync
+            + 'static,
+    ) -> Result<(), ProjectRuntimeError> {
+        if self
+            .session_bundle_factory
+            .replace(Arc::new(factory))
+            .is_some()
+        {
+            return Err(ProjectRuntimeError::new(
+                "project_runtime.session_bundle_duplicate",
+                "register_runtime_session_bundle",
+                "Project runtime module registered more than one session bundle factory.",
+                "Keep exactly one ProjectRuntimeSessionBundle factory per project module.",
             ));
         }
         Ok(())
@@ -294,7 +381,7 @@ impl ProjectRuntimeRegistration {
     ) -> Result<RegistrationRuntimeParts, ProjectRuntimeError> {
         let mut registry = RuleModuleRegistry::new();
         for (rule_id, registered) in self.rules {
-            registry.register_generated_rule_artifact(
+            registry.register_generated_rule_artifact_value(
                 rule_id,
                 registered.artifact_id,
                 registered.rule,
@@ -303,7 +390,24 @@ impl ProjectRuntimeRegistration {
         let project_logic = registry
             .build_runner_strict(&package.rules)
             .map_err(ProjectRuntimeError::from_rule_registry)?;
-        let runtime_session_factory = self.runtime_session_factory.ok_or_else(|| {
+        let create_context = ProjectRuntimeSessionCreateContext {
+            project_id: &package.manifest.project.project_id,
+            module_id: &package.manifest.project.runtime_module.module_id,
+        };
+        let (project_runtime_session, ui_state_producer) = if let Some(factory) =
+            self.session_bundle_factory
+        {
+            let bundle = factory(create_context).map_err(|error| {
+                ProjectRuntimeError::new(
+                    "project_runtime.session_factory_failed",
+                    "create_runtime_session_bundle",
+                    error.message,
+                    "Fix the project runtime session bundle factory before launching the runtime.",
+                )
+            })?;
+            (bundle.project_runtime_session, bundle.ui_state_producer)
+        } else {
+            let runtime_session_factory = self.runtime_session_factory.ok_or_else(|| {
             ProjectRuntimeError::new(
                 "project_runtime.session_missing",
                 "finalize_registration",
@@ -311,27 +415,16 @@ impl ProjectRuntimeRegistration {
                 "Register an explicit ProjectRuntimeSession factory, including a no-op session for stateless projects.",
             )
         })?;
-        let project_runtime_session = runtime_session_factory(ProjectRuntimeSessionCreateContext {
-            project_id: &package.manifest.project.project_id,
-            module_id: &package.manifest.project.runtime_module.module_id,
-        })
-        .map_err(|error| {
-            ProjectRuntimeError::new(
-                "project_runtime.session_factory_failed",
-                "create_runtime_session",
-                error.message,
-                "Fix the project runtime session factory before launching the runtime.",
-            )
-        })?;
-        if project_runtime_session.session_id().trim().is_empty() {
-            return Err(ProjectRuntimeError::new(
-                "project_runtime.session_id_missing",
-                "create_runtime_session",
-                "Project runtime session factory returned an empty session id.",
-                "Return a stable non-empty session id from ProjectRuntimeSession::session_id.",
-            ));
-        }
-        let ui_state_producer = self
+            let project_runtime_session =
+                runtime_session_factory(create_context).map_err(|error| {
+                    ProjectRuntimeError::new(
+                        "project_runtime.session_factory_failed",
+                        "create_runtime_session",
+                        error.message,
+                        "Fix the project runtime session factory before launching the runtime.",
+                    )
+                })?;
+            let ui_state_producer = self
             .ui_state_producer_factory
             .map(|factory| factory())
             .ok_or_else(|| {
@@ -342,6 +435,16 @@ impl ProjectRuntimeRegistration {
                     "Register a project UI state producer, including a no-op producer for projects without AUI bindings.",
                 )
             })?;
+            (project_runtime_session, ui_state_producer)
+        };
+        if project_runtime_session.session_id().trim().is_empty() {
+            return Err(ProjectRuntimeError::new(
+                "project_runtime.session_id_missing",
+                "create_runtime_session",
+                "Project runtime session factory returned an empty session id.",
+                "Return a stable non-empty session id from ProjectRuntimeSession::session_id.",
+            ));
+        }
         Ok(RegistrationRuntimeParts {
             project_logic,
             project_runtime_session,
@@ -858,7 +961,7 @@ mod tests {
         let mut input = RuntimePackageBuildInput::new(RuntimeProjectInfo::new(
             "project-test",
             "Test Project",
-            "0.0.1",
+            "0.0.2",
             RuntimeProjectModuleRef::new(
                 "sample.test.runtime",
                 PROJECT_RUNTIME_MODULE_INTERFACE_VERSION,

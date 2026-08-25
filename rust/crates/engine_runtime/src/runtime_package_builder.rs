@@ -620,13 +620,19 @@ fn validate_request(
             Some("Set activeSceneId to a saved scene id.".to_string()),
         ));
     }
-    if request.target != "dev-desktop" {
+    if !matches!(
+        request.target.as_str(),
+        "dev-desktop" | "android-arm64-dev" | "android-x86_64-dev"
+    ) {
         diagnostics.push(RuntimePackageDiagnostic::error(
             "UnsupportedTarget",
-            "RuntimePackageBuilder C-min only supports dev-desktop",
+            "RuntimePackageBuilder only supports dev-desktop, android-arm64-dev, and android-x86_64-dev",
             None,
             Some("target".to_string()),
-            Some("Use target=dev-desktop for the first runtime package gate.".to_string()),
+            Some(
+                "Use target=dev-desktop, target=android-arm64-dev, or target=android-x86_64-dev."
+                    .to_string(),
+            ),
         ));
     }
 }
@@ -1871,6 +1877,33 @@ mod tests {
     use std::time::{SystemTime, UNIX_EPOCH};
 
     #[test]
+    fn runtime_package_target_contract_accepts_android_and_rejects_unknown_targets() {
+        let mut request = RuntimePackageBuildRequest::dev_desktop("runtime-package", "scene-main");
+        request.target = "android-arm64-dev".to_string();
+        let mut diagnostics = Vec::new();
+        validate_request(&request, &mut diagnostics);
+        assert!(
+            diagnostics.is_empty(),
+            "android target diagnostics: {diagnostics:?}"
+        );
+
+        request.target = "android-x86_64-dev".to_string();
+        diagnostics.clear();
+        validate_request(&request, &mut diagnostics);
+        assert!(
+            diagnostics.is_empty(),
+            "android emulator target diagnostics: {diagnostics:?}"
+        );
+
+        request.target = "unknown-target".to_string();
+        diagnostics.clear();
+        validate_request(&request, &mut diagnostics);
+        assert_eq!(diagnostics.len(), 1);
+        assert_eq!(diagnostics[0].code, "UnsupportedTarget");
+        assert_eq!(diagnostics[0].path.as_deref(), Some("target"));
+    }
+
+    #[test]
     fn runtime_package_builder_writes_loadable_minimal_scene_package() {
         let root = temp_root("minimal");
         let package_dir = root.join("runtime-package");
@@ -2885,7 +2918,7 @@ mod tests {
         let mut input = RuntimePackageBuildInput::new(RuntimeProjectInfo::explicit_empty(
             "project-fixture",
             "Fixture",
-            "0.0.1",
+            "0.0.2",
         ));
         let mapping = InputMappingAsset::gameplay_default();
         input.input_mappings.push(RuntimePackageSourceJson {
