@@ -536,6 +536,7 @@ impl NativeEditorApplication {
         let editor_play_preparation_changed = self.pump_editor_play_preparation();
         self.latest_model = EditorUiModelComposer::compose(&self.session);
         self.sync_editor_play_activity();
+        self.sync_project_editor_composition_actionability();
         self.apply_inspector_context_lock();
         self.sync_gateway_access_requests();
         self.sync_project_runtime_trust_prompt();
@@ -658,7 +659,8 @@ impl NativeEditorApplication {
         if self.consume_asset_browser_input(&event) {
             return self.report();
         }
-        if self.try_route_production_game_view_input(&event) {
+        let game_view_input_consumed = self.try_route_production_game_view_input(&event);
+        if game_view_input_consumed && !interaction_update.handled {
             return self.report();
         }
         self.focus_input.observe_event(
@@ -2080,14 +2082,16 @@ impl NativeEditorApplication {
     }
 
     fn begin_editor_play_preparation(&mut self, command: UiCommand) -> CommandResult {
-        if let Some(blocker) = self.session.project_runtime_play_blocker() {
-            return native_host_result(
-                &command.command_id,
-                &command.request_id,
-                CommandStatus::Rejected,
-                &blocker.code,
-                blocker.message,
-            );
+        if !self.active_project_uses_linked_editor_composition() {
+            if let Some(blocker) = self.session.project_runtime_play_blocker() {
+                return native_host_result(
+                    &command.command_id,
+                    &command.request_id,
+                    CommandStatus::Rejected,
+                    &blocker.code,
+                    blocker.message,
+                );
+            }
         }
         if self.editor_play_preparation_worker.is_some() {
             return native_host_result(
@@ -2341,6 +2345,9 @@ impl NativeEditorApplication {
         if requested.resolved_source_kind() != ProjectRuntimeSourceKind::ProjectRust {
             return;
         }
+        if self.active_project_uses_linked_editor_composition() {
+            return;
+        }
         self.session.await_project_runtime_trust(
             project.manifest.project_id.clone(),
             requested.module_id.clone(),
@@ -2381,6 +2388,45 @@ impl NativeEditorApplication {
                         .fail_project_runtime_preparation(&ticket, failure);
                 }
             }
+        }
+    }
+
+    fn active_project_uses_linked_editor_composition(&self) -> bool {
+        let Some(project) = self.session.active_project_session() else {
+            return false;
+        };
+        let Some(identity) = self.session.project_editor_composition_identity() else {
+            return false;
+        };
+        let requested = &project.manifest.runtime_module;
+        requested.resolved_source_kind() == ProjectRuntimeSourceKind::ProjectRust
+            && identity.project_id == project.manifest.project_id
+            && identity.module_id == requested.module_id
+            && identity.interface_version == requested.interface_version
+    }
+
+    fn sync_project_editor_composition_actionability(&mut self) {
+        if !self.active_project_uses_linked_editor_composition()
+            || self.latest_model.toolbar.runtime_state == editor_ui_model::RuntimeRunState::Playing
+        {
+            return;
+        }
+        let Some(play) = self
+            .latest_model
+            .toolbar
+            .commands
+            .iter_mut()
+            .find(|command| command.command_id == "play")
+        else {
+            return;
+        };
+        if play
+            .reason_disabled
+            .as_deref()
+            .is_some_and(|reason| reason.starts_with("project_runtime."))
+        {
+            play.enabled = true;
+            play.reason_disabled = None;
         }
     }
 

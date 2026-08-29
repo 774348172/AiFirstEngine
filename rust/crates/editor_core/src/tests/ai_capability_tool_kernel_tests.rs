@@ -1310,7 +1310,7 @@ fn ai_capability_tool_kernel_grant_rejects_delete_and_dependency_escalation() {
                         patch_id: "dependency-change-patch".to_string(),
                         operations: vec![ControlledSourcePatchOperation::CreateOrReplace {
                             path: "RuntimeModule/Cargo.toml".to_string(),
-                            text: "[package]\nname = \"dependency_change\"\nversion = \"0.0.2\"\n"
+                            text: "[package]\nname = \"dependency_change\"\nversion = \"0.0.3\"\n"
                                 .to_string(),
                         }],
                     },

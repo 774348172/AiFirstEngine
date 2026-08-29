@@ -2780,6 +2780,7 @@ pub(crate) mod real_native_editor_window {
         scenario_started_at: Option<std::time::Instant>,
         scenario_step_started_at: Option<std::time::Instant>,
         scenario_reports: Vec<crate::ProductionAuthorityStepReport>,
+        scenario_pending_diagnostic: Option<String>,
         pending_game_view_coordinates: Option<crate::GameViewAuiCoordinateEvidence>,
         next_game_view_tick: std::time::Instant,
     }
@@ -2950,6 +2951,7 @@ pub(crate) mod real_native_editor_window {
                 scenario_started_at: None,
                 scenario_step_started_at: None,
                 scenario_reports: Vec::new(),
+                scenario_pending_diagnostic: None,
                 pending_game_view_coordinates: None,
                 next_game_view_tick: std::time::Instant::now(),
             }
@@ -3014,6 +3016,7 @@ pub(crate) mod real_native_editor_window {
                 scenario_started_at: None,
                 scenario_step_started_at: None,
                 scenario_reports: Vec::new(),
+                scenario_pending_diagnostic: None,
                 pending_game_view_coordinates: None,
                 next_game_view_tick: std::time::Instant::now(),
             }
@@ -3346,7 +3349,11 @@ pub(crate) mod real_native_editor_window {
                         vec!["authority.scenario_step_timeout".to_string()],
                     ));
                 }
-                self.fail_production_scenario(event_loop, "authority.scenario_step_timeout");
+                let diagnostic = self
+                    .scenario_pending_diagnostic
+                    .clone()
+                    .unwrap_or_else(|| "authority.scenario_step_timeout".to_string());
+                self.fail_production_scenario(event_loop, &diagnostic);
                 return true;
             }
             if self.app.session().has_active_editor_runtime_play_instance() {
@@ -3374,11 +3381,19 @@ pub(crate) mod real_native_editor_window {
                         let node = tree
                             .node(&widget_id_value)
                             .ok_or_else(|| format!("authority_input.widget_missing:{widget_id}"))?;
-                        if node.visibility != editor_ui_renderer::WidgetVisibility::Visible
-                            || !node.enabled
-                        {
+                        if node.visibility != editor_ui_renderer::WidgetVisibility::Visible {
                             return Err(format!(
                                 "authority_input.widget_not_actionable:{widget_id}"
+                            ));
+                        }
+                        if !node.enabled {
+                            let reason = node
+                                .binding
+                                .as_ref()
+                                .and_then(|binding| binding.reason_disabled.as_deref())
+                                .unwrap_or("reason_missing");
+                            return Err(format!(
+                                "authority_input.widget_disabled:{widget_id}:{reason}"
                             ));
                         }
                         let rect = node.effective_clip.map_or(Some(node.logical_rect), |clip| {
@@ -3408,6 +3423,7 @@ pub(crate) mod real_native_editor_window {
                             ));
                         }
                         Err(error) if scenario_actionability_pending(&error) => {
+                            self.scenario_pending_diagnostic = Some(error);
                             self.defer_production_scenario_step(event_loop)
                         }
                         Err(error) => self.fail_production_scenario(event_loop, &error),
@@ -3441,6 +3457,7 @@ pub(crate) mod real_native_editor_window {
                             }
                         }
                         Err(error) if scenario_actionability_pending(&error) => {
+                            self.scenario_pending_diagnostic = Some(error);
                             self.defer_production_scenario_step(event_loop)
                         }
                         Err(error) => self.fail_production_scenario(event_loop, &error),
@@ -3864,6 +3881,7 @@ pub(crate) mod real_native_editor_window {
         fn advance_scenario_step(&mut self) {
             self.scenario_step_index += 1;
             self.scenario_step_started_at = None;
+            self.scenario_pending_diagnostic = None;
             self.outcome.input_replay = None;
             self.stage = AuthorityCaptureStage::InitialFrame;
         }
@@ -4534,6 +4552,7 @@ pub(crate) mod real_native_editor_window {
     fn scenario_actionability_pending(error: &str) -> bool {
         error.starts_with("authority_input.widget_missing:")
             || error.starts_with("authority_input.widget_not_actionable:")
+            || error.starts_with("authority_input.widget_disabled:")
             || error.starts_with("authority_input.widget_clipped:")
             || error == "authority.game_viewport_missing"
             || error.starts_with("authority.aui_target_not_actionable:")

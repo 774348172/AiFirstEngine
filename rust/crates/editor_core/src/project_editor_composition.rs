@@ -1597,7 +1597,7 @@ mod tests {
 
 [[package]]
 name = "{root_name}"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = ["serde"]
 
 [[package]]

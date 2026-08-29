@@ -702,7 +702,7 @@ fn write_generated_host(
     );
     package.insert(
         "version".to_string(),
-        toml::Value::String("0.0.2".to_string()),
+        toml::Value::String("0.0.3".to_string()),
     );
     package.insert(
         "edition".to_string(),
@@ -1195,7 +1195,7 @@ mod tests {
             fs::create_dir_all(sdk.join("crates").join(crate_name).join("src")).unwrap();
             fs::write(
                 sdk.join("crates").join(crate_name).join("Cargo.toml"),
-                format!("[package]\nname='{crate_name}'\nversion='0.0.2'\n"),
+                format!("[package]\nname='{crate_name}'\nversion='0.0.3'\n"),
             )
             .unwrap();
             fs::write(
@@ -1348,13 +1348,13 @@ mod tests {
         fs::create_dir_all(runtime_root.join("src")).unwrap();
         let cargo_manifest = r#"[package]
 name = "fixture_project_runtime"
-version = "0.0.2"
+version = "0.0.3"
 edition = "2021"
 publish = false
 
 [dependencies]
-project_runtime_abi = "=0.0.2"
-project_runtime_sdk = "=0.0.2"
+project_runtime_abi = "=0.0.3"
+project_runtime_sdk = "=0.0.3"
 serde = { version = "1", features = ["derive"] }
 "#;
         let lib_source =
@@ -1380,7 +1380,7 @@ serde = { version = "1", features = ["derive"] }
                 "schemaVersion": "aife-project.v2",
                 "projectId": project_id,
                 "projectName": "Fixture Project Runtime Player",
-                "engineVersion": "0.0.2",
+                "engineVersion": "0.0.3",
                 "createdAt": "0",
                 "lastOpenedAt": null,
                 "defaultScene": "Scenes/Main.scene.json",

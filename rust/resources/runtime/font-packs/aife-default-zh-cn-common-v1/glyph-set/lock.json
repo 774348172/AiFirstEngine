@@ -1330,6 +1330,7 @@
     {
       "codepoint": 20280,
       "sources": [
+        "engineZhCnCatalog",
         "rankedHan"
       ]
     },
@@ -2024,6 +2025,7 @@
     {
       "codepoint": 21319,
       "sources": [
+        "engineZhCnCatalog",
         "rankedHan"
       ]
     },
@@ -3260,6 +3262,7 @@
     {
       "codepoint": 23553,
       "sources": [
+        "engineZhCnCatalog",
         "rankedHan"
       ]
     },
@@ -4124,6 +4127,7 @@
     {
       "codepoint": 25214,
       "sources": [
+        "engineZhCnCatalog",
         "rankedHan"
       ]
     },
@@ -4197,6 +4201,7 @@
     {
       "codepoint": 25289,
       "sources": [
+        "engineZhCnCatalog",
         "rankedHan"
       ]
     },
@@ -5154,6 +5159,7 @@
     {
       "codepoint": 27604,
       "sources": [
+        "engineZhCnCatalog",
         "rankedHan"
       ]
     },
@@ -5536,6 +5542,7 @@
     {
       "codepoint": 28909,
       "sources": [
+        "engineZhCnCatalog",
         "rankedHan"
       ]
     },
@@ -6298,6 +6305,7 @@
     {
       "codepoint": 31934,
       "sources": [
+        "engineZhCnCatalog",
         "rankedHan"
       ]
     },
@@ -6984,6 +6992,7 @@
     {
       "codepoint": 35013,
       "sources": [
+        "engineZhCnCatalog",
         "rankedHan"
       ]
     },
@@ -8167,6 +8176,7 @@
     {
       "codepoint": 39044,
       "sources": [
+        "engineZhCnCatalog",
         "rankedHan"
       ]
     },
@@ -8377,5 +8387,5 @@
   ],
   "hanCodepointCount": 1223,
   "totalCodepointCount": 1357,
-  "digest": "sha256:21094e227e679d5b20e92e7957d8cc6cf18201f65a1bada7aacef387dbb7bf64"
+  "digest": "sha256:0e138343ea0c4e91bb82eac6bc8e90322839f64795f27869363bd495ed41b289"
 }

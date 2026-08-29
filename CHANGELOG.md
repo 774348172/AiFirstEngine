@@ -2,6 +2,30 @@
 
 本文档记录公开发布版本的主要变化。
 
+## [0.0.3] - 2026-08-29
+
+### Added
+
+- Player 图形 backend 选择诊断。
+- GL 多页 Bitmap/MSDF FontBundle 的独立 D2 页纹理路径。
+- 经过筛选的架构、渲染和编辑器交互设计资料。
+- 发布来源清单、设计索引和文件级 SHA-256 清单。
+
+### Changed
+
+- Android x86_64 Player 固定选择 GL backend，其它目标继续使用 primary backend。
+- 生成式 Editor 项目组合改为通过稳定 C ABI entry 接入项目原生模块。
+- Linked composition 的 Play actionability、GameView 输入路由和真实窗口诊断更加一致。
+- MCP server 对外软件版本跟随 Cargo package version。
+- 公开发布 crate 版本统一为 `0.0.3`。
+- 内置中文 FontPack 更新本地化目录来源归因并由正式 producer 重新封印，字符规模保持不变。
+- `Cargo.lock` 按当前工作区锁定闭包重新裁剪；传递依赖锁定版本与 V0.0.2 存在变化。
+
+### Packaging
+
+- 设计资料集只收录正式架构与方案，排除当前状态入口、施工队列、过程性审查报告和历史失败归档。
+- 源码包保持引擎-only 边界，不纳入样例项目、项目专用 RuntimeModule/Player、构建缓存和内部证据。
+
 ## [0.0.2] - 2026-08-25
 
 ### Added
@@ -39,4 +63,3 @@
 
 - 临时塔防项目以及其它样例游戏和项目专用代码。
 - 内部施工材料、历史原型、验证产物、二进制和压缩产物。
-

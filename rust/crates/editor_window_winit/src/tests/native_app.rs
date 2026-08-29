@@ -215,7 +215,7 @@ fn write_project_rust_fixture_for_preparation() -> std::path::PathBuf {
         format!(
             r#"[package]
 name = "fixture_project_runtime"
-version = "0.0.2"
+version = "0.0.3"
 edition = "2021"
 publish = false
 
@@ -256,6 +256,38 @@ serde = {{ version = "1", features = ["derive"] }}
     });
     std::fs::write(manifest_path, serde_json::to_vec_pretty(&manifest).unwrap()).unwrap();
     root
+}
+
+fn specialized_composition_session_for_project(project_root: &std::path::Path) -> EditorSession {
+    let manifest: editor_core::ProjectManifest =
+        serde_json::from_slice(&std::fs::read(project_root.join("project.aife.json")).unwrap())
+            .unwrap();
+    let digest = |value: char| format!("sha256:{}", value.to_string().repeat(64));
+    let identity = editor_core::ProjectEditorCompositionIdentity {
+        schema_version: editor_core::PROJECT_EDITOR_COMPOSITION_IDENTITY_SCHEMA_VERSION.to_string(),
+        project_id: manifest.project_id,
+        module_id: manifest.runtime_module.module_id.clone(),
+        interface_version: manifest.runtime_module.interface_version.clone(),
+        aot_content_digest: digest('3'),
+        editor_build_identity: digest('4'),
+        engine_sdk_digest: digest('5'),
+        toolchain_identity: "rustc-test".to_string(),
+        target_triple: "host".to_string(),
+        profile: "release".to_string(),
+        normalized_manifest_digest: digest('6'),
+        normalized_dependency_digest: digest('7'),
+        dependency_lock_digest: digest('8'),
+    };
+    let linked = engine_runtime::project_runtime_module::LinkedProjectRuntimeSet::singleton(
+        std::sync::Arc::new(FixtureLoadedProjectRuntime {
+            descriptor: engine_runtime::project_runtime_module::ProjectRuntimeModuleDescriptor::new(
+                manifest.runtime_module.module_id,
+                identity.aot_content_digest.clone(),
+            ),
+        }),
+    )
+    .unwrap();
+    EditorSession::with_project_editor_composition(std::sync::Arc::new(linked), identity).unwrap()
 }
 
 #[test]
@@ -1718,7 +1750,7 @@ fn native_editor_application_loads_recent_projects_from_store() {
         editor_ui_model::RecentProjectEntry {
             name: "StoredProject".to_string(),
             path: project_root.display().to_string(),
-            engine_version: "0.0.2".to_string(),
+            engine_version: "0.0.3".to_string(),
             last_opened_at: Some("1".to_string()),
             last_modified_at: Some("1".to_string()),
             valid: true,
@@ -1756,7 +1788,7 @@ fn native_editor_migrates_duplicate_windows_recent_project_paths_once() {
     let entry = |path: String, last_opened_at: &str| editor_ui_model::RecentProjectEntry {
         name: "StoredProject".to_string(),
         path,
-        engine_version: "0.0.2".to_string(),
+        engine_version: "0.0.3".to_string(),
         last_opened_at: Some(last_opened_at.to_string()),
         last_modified_at: Some("1".to_string()),
         valid: true,
@@ -2314,6 +2346,145 @@ fn toolbar_overflow_click_opens_editor_local_command_popup() {
     );
     assert!(!app.toolbar_overflow_open());
     assert_eq!(app.report().last_command_id, last_command);
+}
+
+#[test]
+fn recent_open_keeps_specialized_composition_play_actionable_in_720_toolbar_overflow() {
+    let project_root = write_project_rust_fixture_for_preparation();
+    let state_root = unique_project_launcher_temp_dir();
+    let rust_root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .and_then(std::path::Path::parent)
+        .unwrap()
+        .to_path_buf();
+    let session = specialized_composition_session_for_project(&project_root);
+    let mut app =
+        NativeEditorApplication::with_session(NativeEditorWindowConfig::default(), session)
+            .with_project_runtime_trust_environment(ProjectRuntimeTrustEnvironment {
+                trust_module: editor_core::ProjectRuntimeTrustModule::open(&state_root).unwrap(),
+                engine_sdk_root: rust_root,
+                editor_build_identity: format!(
+                    "sha256:{}",
+                    project_runtime_abi::project_runtime_abi_digest_hex()
+                ),
+            });
+
+    assert!(app
+        .dispatch_project_launcher_command_or_dispatch(UiCommand {
+            command_id: "select_recent_project".to_string(),
+            source: UiCommandSource::ProjectLauncher,
+            request_id: "recent-specialized-composition".to_string(),
+            payload: UiCommandPayload::SelectRecentProject {
+                path: project_root.display().to_string(),
+            },
+        })
+        .is_none());
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
+    loop {
+        app.frame(360.0, 640.0);
+        if app.latest_model().mode == EditorUiMode::AuthoringWorkspace
+            && app.latest_model().project_launcher.activity.is_none()
+        {
+            break;
+        }
+        assert!(
+            std::time::Instant::now() < deadline,
+            "recent-open did not reach authoring: activity={:?}",
+            app.latest_model().project_launcher.activity
+        );
+        std::thread::sleep(std::time::Duration::from_millis(1));
+    }
+
+    assert!(app
+        .session()
+        .project_editor_composition_identity()
+        .is_some());
+    assert!(app.latest_model().project_runtime_trust_prompt.is_none());
+    let play = app
+        .latest_model()
+        .toolbar
+        .commands
+        .iter()
+        .find(|command| command.command_id == "play")
+        .expect("Play command");
+    assert!(play.enabled, "Play disabled: {:?}", play.reason_disabled);
+
+    let overflow = app
+        .retained_ui_renderer()
+        .tree()
+        .and_then(|tree| {
+            tree.node(
+                &editor_ui_renderer::WidgetId::semantic("editor/shell/toolbar/overflow").unwrap(),
+            )
+        })
+        .expect("720 portrait toolbar overflow")
+        .logical_rect;
+    app.handle_input_event(EditorInputEvent::PointerDown {
+        x: overflow.x + overflow.width * 0.5,
+        y: overflow.y + overflow.height * 0.5,
+        button: PointerButton::Primary,
+    });
+    app.handle_input_event(EditorInputEvent::PointerUp {
+        x: overflow.x + overflow.width * 0.5,
+        y: overflow.y + overflow.height * 0.5,
+        button: PointerButton::Primary,
+    });
+    app.frame(360.0, 640.0);
+    let overflow_play = app
+        .retained_ui_renderer()
+        .tree()
+        .and_then(|tree| {
+            tree.node(
+                &editor_ui_renderer::WidgetId::semantic("editor/shell/toolbar/overflow/play")
+                    .unwrap(),
+            )
+        })
+        .expect("overflow Play command");
+    assert_eq!(
+        overflow_play.visibility,
+        editor_ui_renderer::WidgetVisibility::Visible
+    );
+    assert!(
+        overflow_play.enabled,
+        "overflow Play disabled: {:?}",
+        overflow_play
+            .binding
+            .as_ref()
+            .and_then(|binding| binding.reason_disabled.as_deref())
+    );
+    let play_rect = overflow_play.logical_rect;
+    let play_center = editor_ui_renderer::UiPoint {
+        x: play_rect.x + play_rect.width * 0.5,
+        y: play_rect.y + play_rect.height * 0.5,
+    };
+    let picked = editor_ui_renderer::pick_widget(
+        app.retained_ui_renderer().tree().unwrap(),
+        play_center,
+        None,
+    )
+    .expect("overflow Play center pick");
+    assert_eq!(picked.target.as_str(), "editor/shell/toolbar/overflow/play");
+    app.handle_input_event(EditorInputEvent::PointerDown {
+        x: play_center.x,
+        y: play_center.y,
+        button: PointerButton::Primary,
+    });
+    assert_eq!(
+        app.widget_interaction_snapshot()
+            .captured_widget_id
+            .as_ref()
+            .map(editor_ui_renderer::WidgetId::as_str),
+        Some("editor/shell/toolbar/overflow/play")
+    );
+    let activated = app.handle_input_event(EditorInputEvent::PointerUp {
+        x: play_center.x,
+        y: play_center.y,
+        button: PointerButton::Primary,
+    });
+    assert_eq!(activated.last_command_id.as_deref(), Some("play"));
+
+    let _ = std::fs::remove_dir_all(project_root);
+    let _ = std::fs::remove_dir_all(state_root);
 }
 
 #[test]

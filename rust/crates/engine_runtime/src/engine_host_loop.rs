@@ -1219,7 +1219,7 @@ mod tests {
         let mut input = RuntimePackageBuildInput::new(RuntimeProjectInfo::explicit_empty(
             "project-observation-test",
             "Observation Test",
-            "0.0.2",
+            "0.0.3",
         ));
         input.scenes.push(RuntimeScene {
             schema_version: RUNTIME_SCENE_SCHEMA_VERSION.to_string(),

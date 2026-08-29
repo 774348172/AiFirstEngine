@@ -847,7 +847,7 @@ fn project_launcher_model_serializes_recent_projects() {
     launcher.recent_projects.push(RecentProjectEntry {
         name: "PlaneGame".to_string(),
         path: "D:/Projects/PlaneGame".to_string(),
-        engine_version: "0.0.2".to_string(),
+        engine_version: "0.0.3".to_string(),
         last_opened_at: Some("2026-06-30T00:00:00Z".to_string()),
         last_modified_at: None,
         valid: true,

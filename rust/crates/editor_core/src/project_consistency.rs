@@ -300,7 +300,7 @@ mod tests {
             schema_version: PROJECT_MANIFEST_SCHEMA_VERSION.to_string(),
             project_id: "project-main".to_string(),
             project_name: "Main Project".to_string(),
-            engine_version: "0.0.2".to_string(),
+            engine_version: "0.0.3".to_string(),
             created_at: "2026-01-01T00:00:00Z".to_string(),
             last_opened_at: Some("2026-01-02T00:00:00Z".to_string()),
             default_scene: "Scenes/Main.scene.json".to_string(),

@@ -2918,7 +2918,7 @@ mod tests {
         let mut input = RuntimePackageBuildInput::new(RuntimeProjectInfo::explicit_empty(
             "project-fixture",
             "Fixture",
-            "0.0.2",
+            "0.0.3",
         ));
         let mapping = InputMappingAsset::gameplay_default();
         input.input_mappings.push(RuntimePackageSourceJson {

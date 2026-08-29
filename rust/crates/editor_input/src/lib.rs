@@ -1702,7 +1702,7 @@ mod tests {
             .push(RecentProjectEntry {
                 name: "PlaneGame".to_string(),
                 path: "D:/Projects/PlaneGame".to_string(),
-                engine_version: "0.0.2".to_string(),
+                engine_version: "0.0.3".to_string(),
                 last_opened_at: None,
                 last_modified_at: None,
                 valid: true,

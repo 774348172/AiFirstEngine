@@ -204,7 +204,7 @@ fn stage_exported_package(exported: &Path) {
   "project": {
     "projectId": "project-exported-player-process-test",
     "name": "Exported Player Process Test",
-    "version": "0.0.2",
+    "version": "0.0.3",
     "runtimeModule": {
       "moduleId": "engine.empty.runtime",
       "interfaceVersion": "project-runtime-module.v2",

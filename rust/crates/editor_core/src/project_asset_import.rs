@@ -3046,7 +3046,7 @@ mod tests {
         let candidates = root.join("candidates");
         fs::create_dir_all(&source_dir).unwrap();
         fs::create_dir_all(&candidates).unwrap();
-        ProjectLauncherState::new("0.0.2")
+        ProjectLauncherState::new("0.0.3")
             .create_project(&project, "Asset Import Test")
             .unwrap();
         let source = source_dir.join("test-texture.png");

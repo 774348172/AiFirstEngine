@@ -1104,7 +1104,7 @@ mod tests {
         let root =
             std::env::temp_dir().join(format!("ai-image-generation-{name}-{}", std::process::id()));
         let _ = fs::remove_dir_all(&root);
-        crate::ProjectLauncherState::new("0.0.2")
+        crate::ProjectLauncherState::new("0.0.3")
             .create_project(&root, "AI Image Test")
             .expect("test project created");
         if let Ok(store) = generated_candidate_store_root(&root) {

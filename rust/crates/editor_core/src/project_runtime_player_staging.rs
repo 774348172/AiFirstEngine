@@ -1004,7 +1004,7 @@ mod tests {
         let cargo = format!(
             r#"[package]
 name = "fixture_production_runtime"
-version = "0.0.2"
+version = "0.0.3"
 edition = "2021"
 publish = false
 
@@ -1021,7 +1021,7 @@ serde_json = "1"
             "schemaVersion": "aife-project.v2",
             "projectId": "fixture.production.staging",
             "projectName": "Fixture",
-            "engineVersion": "0.0.2",
+            "engineVersion": "0.0.3",
             "createdAt": "0",
             "lastOpenedAt": null,
             "defaultScene": "Scenes/Main.scene.json",
@@ -1146,7 +1146,7 @@ pub struct Fixture { pub value: serde_json::Value }
         fs::write(
             runtime.join("Cargo.toml"),
             format!(
-                "[package]\nname='fixture_reject_runtime'\nversion='0.0.2'\nedition='2021'\n\
+                "[package]\nname='fixture_reject_runtime'\nversion='0.0.3'\nedition='2021'\n\
                  [dependencies]\nengine_runtime={{path='{}'}}\nreqwest='0.12'\n",
                 sdk.join("crates/engine_runtime")
                     .canonicalize()
@@ -1164,7 +1164,7 @@ pub struct Fixture { pub value: serde_json::Value }
                 "schemaVersion": "aife-project.v2",
                 "projectId": "fixture.production.reject",
                 "projectName": "Fixture",
-                "engineVersion": "0.0.2",
+                "engineVersion": "0.0.3",
                 "createdAt": "0",
                 "lastOpenedAt": null,
                 "defaultScene": "Scenes/Main.scene.json",
@@ -1198,7 +1198,7 @@ pub struct Fixture { pub value: serde_json::Value }
             .replace('\\', "/");
         let manifest_with = |extra_package: &str, extra_root: &str, dependency: &str| {
             format!(
-                "[package]\nname='fixture_reject_runtime'\nversion='0.0.2'\nedition='2021'\n{extra_package}\n\
+                "[package]\nname='fixture_reject_runtime'\nversion='0.0.3'\nedition='2021'\n{extra_package}\n\
                  [dependencies]\nengine_runtime={{path='{engine_runtime}'}}\n{dependency}\n{extra_root}\n"
             )
         };

@@ -961,7 +961,7 @@ mod tests {
         let mut input = RuntimePackageBuildInput::new(RuntimeProjectInfo::new(
             "project-test",
             "Test Project",
-            "0.0.2",
+            "0.0.3",
             RuntimeProjectModuleRef::new(
                 "sample.test.runtime",
                 PROJECT_RUNTIME_MODULE_INTERFACE_VERSION,

@@ -2541,6 +2541,14 @@ mod real_window {
         aui_present_cache: NativeAuiPresentCache,
     }
 
+    pub(super) fn player_wgpu_backends(is_android: bool, is_x86_64: bool) -> wgpu::Backends {
+        if is_android && is_x86_64 {
+            wgpu::Backends::GL
+        } else {
+            wgpu::Backends::PRIMARY
+        }
+    }
+
     struct RealWindowHost {
         request: NativePlayerWindowRunRequest,
         window: Arc<winit::window::Window>,
@@ -2588,7 +2596,10 @@ mod real_window {
                 return Err("window.zero_sized_surface".to_string());
             }
             let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
-                backends: wgpu::Backends::PRIMARY,
+                backends: player_wgpu_backends(
+                    cfg!(target_os = "android"),
+                    cfg!(target_arch = "x86_64"),
+                ),
                 flags: wgpu::InstanceFlags::default(),
                 memory_budget_thresholds: wgpu::MemoryBudgetThresholds::default(),
                 backend_options: wgpu::BackendOptions::default(),
@@ -2625,9 +2636,16 @@ mod real_window {
                 surface_config.format,
                 size.width,
                 size.height,
-                backend_name,
+                backend_name.clone(),
             );
-            let report = NativeWindowHostReport::base(&request);
+            let mut report = NativeWindowHostReport::base(&request);
+            report.diagnostics.push(NativeWindowHostDiagnostic {
+                severity: NativeWindowHostDiagnosticSeverity::Info,
+                code: "graphics.backend_selected".to_string(),
+                layer: "surface".to_string(),
+                message: backend_name,
+                path: None,
+            });
             Ok(Self {
                 request,
                 window,
@@ -3774,6 +3792,22 @@ mod tests {
     use super::*;
 
     #[test]
+    fn player_wgpu_backends_uses_gl_only_for_android_x86_64() {
+        assert_eq!(
+            real_window::player_wgpu_backends(true, true),
+            wgpu::Backends::GL
+        );
+        assert_eq!(
+            real_window::player_wgpu_backends(true, false),
+            wgpu::Backends::PRIMARY
+        );
+        assert_eq!(
+            real_window::player_wgpu_backends(false, true),
+            wgpu::Backends::PRIMARY
+        );
+    }
+
+    #[test]
     fn primary_touch_mapping_preserves_physical_pixels_and_cancel_phase() {
         let started = primary_touch_raw_event(
             7,
@@ -4185,6 +4219,8 @@ mod tests {
         assert_ne!(receipt.producer_id, receipt.session_id);
     }
 
+    // Requires the complex-shooter project module, which is excluded from engine-only releases.
+    #[cfg(any())]
     #[test]
     fn headless_player_builds_linked_static_rule_runner_from_package_rules() {
         let root = temp_root("headless-linked-rules");
@@ -4205,6 +4241,7 @@ mod tests {
             .any(|diagnostic| diagnostic.code == "missing_registered_rule"));
     }
 
+    #[cfg(any())]
     #[test]
     fn headless_player_reports_missing_registered_rule_from_package_manifest() {
         let root = temp_root("headless-missing-rule");
@@ -4249,6 +4286,7 @@ mod tests {
             && diagnostic.layer == "project_runtime"));
     }
 
+    #[cfg(any())]
     #[test]
     fn headless_native_player_reports_aui_present_evidence() {
         let root = temp_root("headless-aui");
@@ -4929,7 +4967,7 @@ mod tests {
   "project": {
     "projectId": "project-runtime-player-test",
     "name": "Runtime Player Test",
-    "version": "0.0.2",
+    "version": "0.0.3",
     "runtimeModule": {
       "moduleId": "engine.empty.runtime",
       "interfaceVersion": "project-runtime-module.v2",
@@ -5045,6 +5083,7 @@ mod tests {
         package_dir
     }
 
+    #[cfg(any())]
     fn use_complex_shooter_module(package_dir: &Path) -> LinkedProjectRuntimeSet {
         let manifest_path = package_dir.join("manifest.json");
         let mut manifest: serde_json::Value =
@@ -5063,6 +5102,7 @@ mod tests {
             .unwrap()
     }
 
+    #[cfg(any())]
     fn write_sample_rule_manifest(package_dir: &Path) {
         fs::write(
             package_dir.join("rules").join("rule-manifest.json"),

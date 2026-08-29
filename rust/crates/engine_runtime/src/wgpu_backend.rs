@@ -301,6 +301,10 @@ pub mod real {
         _height: u32,
     }
 
+    fn uses_standalone_font_page_textures(backend_name: &str) -> bool {
+        backend_name.eq_ignore_ascii_case("gl")
+    }
+
     fn surface_content_scissor(rect: GameViewRect) -> Result<[u32; 4], String> {
         let right = rect.x + rect.width;
         let bottom = rect.y + rect.height;
@@ -412,11 +416,19 @@ pub mod real {
         }
 
         pub fn new_offscreen(width: u32, height: u32) -> Result<Self, String> {
+            Self::new_offscreen_with_backends(width, height, wgpu::Backends::PRIMARY)
+        }
+
+        fn new_offscreen_with_backends(
+            width: u32,
+            height: u32,
+            backends: wgpu::Backends,
+        ) -> Result<Self, String> {
             if width == 0 || height == 0 {
                 return Err("wgpu_backend.zero_sized_target".to_string());
             }
             let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
-                backends: wgpu::Backends::PRIMARY,
+                backends,
                 flags: wgpu::InstanceFlags::default(),
                 memory_budget_thresholds: wgpu::MemoryBudgetThresholds::default(),
                 backend_options: wgpu::BackendOptions::default(),
@@ -595,21 +607,43 @@ pub mod real {
                     FontBundleRenderMode::BitmapR8 => 1,
                     FontBundleRenderMode::MsdfRgba8 => 4,
                 };
-                let texture = Arc::new(self.device.create_texture(&wgpu::TextureDescriptor {
-                    label: Some("runtime-wgpu-font-texture-array"),
-                    size: wgpu::Extent3d {
-                        width,
-                        height,
-                        depth_or_array_layers: pages.len() as u32,
-                    },
-                    mip_level_count: 1,
-                    sample_count: 1,
-                    dimension: wgpu::TextureDimension::D2,
-                    format,
-                    usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
-                    view_formats: &[],
-                }));
+                let standalone_pages =
+                    uses_standalone_font_page_textures(&self.state.device_context.backend_name);
+                let shared_texture = (!standalone_pages).then(|| {
+                    Arc::new(self.device.create_texture(&wgpu::TextureDescriptor {
+                        label: Some("runtime-wgpu-font-texture-array"),
+                        size: wgpu::Extent3d {
+                            width,
+                            height,
+                            depth_or_array_layers: pages.len() as u32,
+                        },
+                        mip_level_count: 1,
+                        sample_count: 1,
+                        dimension: wgpu::TextureDimension::D2,
+                        format,
+                        usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+                        view_formats: &[],
+                    }))
+                });
                 for (layer, (global_page_index, page)) in pages.iter().enumerate() {
+                    let texture = shared_texture.clone().unwrap_or_else(|| {
+                        Arc::new(self.device.create_texture(&wgpu::TextureDescriptor {
+                            label: Some("runtime-wgpu-font-page-texture"),
+                            size: wgpu::Extent3d {
+                                width,
+                                height,
+                                depth_or_array_layers: 1,
+                            },
+                            mip_level_count: 1,
+                            sample_count: 1,
+                            dimension: wgpu::TextureDimension::D2,
+                            format,
+                            usage: wgpu::TextureUsages::TEXTURE_BINDING
+                                | wgpu::TextureUsages::COPY_DST,
+                            view_formats: &[],
+                        }))
+                    });
+                    let texture_layer = if standalone_pages { 0 } else { layer as u32 };
                     let payload = bundle
                         .page_payloads
                         .get(*global_page_index)
@@ -621,7 +655,7 @@ pub mod real {
                             origin: wgpu::Origin3d {
                                 x: 0,
                                 y: 0,
-                                z: layer as u32,
+                                z: texture_layer,
                             },
                             aspect: wgpu::TextureAspect::All,
                         },
@@ -638,14 +672,18 @@ pub mod real {
                         },
                     );
                     let view = texture.create_view(&wgpu::TextureViewDescriptor {
-                        label: Some("runtime-wgpu-font-array-layer-view"),
+                        label: Some(if standalone_pages {
+                            "runtime-wgpu-font-page-view"
+                        } else {
+                            "runtime-wgpu-font-array-layer-view"
+                        }),
                         format: Some(format),
                         dimension: Some(wgpu::TextureViewDimension::D2),
                         usage: Some(wgpu::TextureUsages::TEXTURE_BINDING),
                         aspect: wgpu::TextureAspect::All,
                         base_mip_level: 0,
                         mip_level_count: Some(1),
-                        base_array_layer: layer as u32,
+                        base_array_layer: texture_layer,
                         array_layer_count: Some(1),
                     });
                     let sampler =
@@ -1917,6 +1955,51 @@ fn vs_main(
         }
 
         #[test]
+        fn standalone_font_page_texture_policy_is_gl_only() {
+            assert!(uses_standalone_font_page_textures("Gl"));
+            assert!(uses_standalone_font_page_textures("GL"));
+            assert!(!uses_standalone_font_page_textures("Vulkan"));
+            assert!(!uses_standalone_font_page_textures("Dx12"));
+            assert!(!uses_standalone_font_page_textures("Metal"));
+        }
+
+        #[test]
+        fn font_texture_gl_multi_page_samples_nonzero_bitmap_and_msdf_pages() {
+            let mut backend =
+                match RealWgpuBackend::new_offscreen_with_backends(16, 16, wgpu::Backends::GL) {
+                    Ok(backend) => backend,
+                    Err(error) => {
+                        eprintln!("GL adapter unavailable; skipped: {error}");
+                        return;
+                    }
+                };
+            assert_eq!(backend.state.device_context.backend_name, "Gl");
+
+            let bundle = test_multi_page_font_bundle();
+            let report = backend.register_font_texture_arrays(&bundle).unwrap();
+            assert_eq!(report.bitmap_layer_count, 2);
+            assert_eq!(report.msdf_layer_count, 2);
+
+            for (render_mode, zero_page, opaque_page) in [
+                (FontBundleRenderMode::BitmapR8, 0, 1),
+                (FontBundleRenderMode::MsdfRgba8, 2, 3),
+            ] {
+                let zero =
+                    render_font_page_center_pixel(&mut backend, &bundle, render_mode, zero_page);
+                let opaque =
+                    render_font_page_center_pixel(&mut backend, &bundle, render_mode, opaque_page);
+                assert!(
+                    zero[1] < 8,
+                    "{render_mode:?} page {zero_page} sampled nonzero coverage: {zero:?}"
+                );
+                assert!(
+                    opaque[1] > 200,
+                    "{render_mode:?} page {opaque_page} lost nonzero coverage: {opaque:?}"
+                );
+            }
+        }
+
+        #[test]
         fn font_generation_gpu_retirement_keeps_generations_until_explicit_retire() {
             let mut backend = match RealWgpuBackend::new_offscreen(16, 16) {
                 Ok(backend) => backend,
@@ -2146,6 +2229,104 @@ fn vs_main(
                     ],
                 ],
             }
+        }
+
+        fn test_multi_page_font_bundle() -> RuntimeLoadedFontBundle {
+            let page = |page_index: u32,
+                        render_mode: FontBundleRenderMode,
+                        format: &str,
+                        byte_len: usize|
+             -> CookedFontBundlePage {
+                CookedFontBundlePage {
+                    page_index,
+                    render_mode,
+                    format: format.to_string(),
+                    width: 2,
+                    height: 2,
+                    byte_len,
+                    sha256: format!("sha256:multi-page-{page_index}"),
+                    payload_path: format!("multi-page-{page_index}.bin"),
+                }
+            };
+            RuntimeLoadedFontBundle {
+                metadata: CookedFontBundleAsset {
+                    schema_version: COOKED_FONT_BUNDLE_SCHEMA_VERSION.to_string(),
+                    font_bundle_id: "test-multi-page-font-bundle".to_string(),
+                    font_stack_id: "test-stack".to_string(),
+                    generation: 1,
+                    max_bitmap_pages: 2,
+                    max_msdf_pages: 2,
+                    legacy_mode: false,
+                    fallback_used: false,
+                    quality_gate_eligible: true,
+                    pages: vec![
+                        page(0, FontBundleRenderMode::BitmapR8, "R8Unorm", 4),
+                        page(1, FontBundleRenderMode::BitmapR8, "R8Unorm", 4),
+                        page(2, FontBundleRenderMode::MsdfRgba8, "Rgba8Unorm", 16),
+                        page(3, FontBundleRenderMode::MsdfRgba8, "Rgba8Unorm", 16),
+                    ],
+                    glyphs: Vec::new(),
+                    kerning_adjustments: Vec::new(),
+                    bundle_digest: "sha256:test-multi-page-bundle".to_string(),
+                },
+                page_payloads: vec![vec![0; 4], vec![255; 4], vec![0; 16], vec![255; 16]],
+            }
+        }
+
+        fn render_font_page_center_pixel(
+            backend: &mut RealWgpuBackend,
+            bundle: &RuntimeLoadedFontBundle,
+            render_mode: FontBundleRenderMode,
+            page_index: u32,
+        ) -> [u8; 4] {
+            let handle = font_bundle_page_generation_render_handle(
+                &bundle.metadata.font_bundle_id,
+                render_mode,
+                page_index,
+                bundle.metadata.generation,
+            );
+            let target = format!("font-page-{page_index}");
+            let mut graph = RenderGraph::new(format!("graph-{target}"), page_index as u64 + 1);
+            graph.output_target = Some(target.clone());
+            graph
+                .resources
+                .push(RenderResource::surface_backbuffer(target.clone(), 16, 16));
+            graph.passes.push(RenderPass {
+                pass_id: format!("draw-font-page-{page_index}"),
+                pass_name: "Draw Font Page".to_string(),
+                pass_kind: RenderPassKind::DrawUiComposition,
+                view_id: "view-1".to_string(),
+                reads: Vec::new(),
+                writes: vec![target.clone()],
+                color_targets: vec![target.clone()],
+                depth_target: None,
+                commands: vec![
+                    RenderPassCommand::Clear {
+                        target: target.clone(),
+                        color: color([0.0, 0.0, 0.0, 1.0]),
+                    },
+                    RenderPassCommand::DrawUiComposition {
+                        target,
+                        stage: "screen_overlay".to_string(),
+                        item_count: 1,
+                        text_count: 1,
+                        image_count: 0,
+                        glyph_count: 1,
+                        font_atlas_id: Some(bundle.metadata.font_bundle_id.clone()),
+                        text_pass_inserted: true,
+                        debug_label: format!("font page {page_index}"),
+                        texture: Some(handle),
+                        font_render_mode: Some(render_mode),
+                        font_page_index: Some(page_index),
+                        vertices: quad_vertices_for_test(),
+                    },
+                ],
+                debug_source: None,
+            });
+            let rgba = backend
+                .render_plan_to_rgba_bytes(&compile_render_graph_to_rhi_plan(&graph), 16, 16)
+                .unwrap();
+            rgba[(8 * 16 + 8) * 4..(8 * 16 + 9) * 4].try_into().unwrap()
         }
 
         fn assert_font_pipeline_outputs_local_coverage(render_mode: FontBundleRenderMode) {

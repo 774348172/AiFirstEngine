@@ -343,7 +343,7 @@ mod tests {
                 project: RuntimeProjectInfo::explicit_empty(
                     "project-hydration-fixture",
                     "Hydration Fixture",
-                    "0.0.2",
+                    "0.0.3",
                 ),
                 active_scene_id: "scene-main".to_string(),
                 scenes: vec![RuntimeSceneManifestEntry {

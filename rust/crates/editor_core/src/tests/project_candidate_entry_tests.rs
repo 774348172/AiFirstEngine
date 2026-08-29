@@ -448,7 +448,7 @@ fn project_candidate_entry_source_patch_lowers_and_validates_through_controlled_
         operations: vec![
             ControlledSourcePatchOperation::CreateOrReplace {
                 path: "RuntimeModule/Cargo.toml".to_string(),
-                text: "[package]\nname = \"candidate_source_runtime\"\nversion = \"0.0.2\"\nedition = \"2021\"\n\n[dependencies]\nengine_runtime = \"=0.0.2\"\n"
+                text: "[package]\nname = \"candidate_source_runtime\"\nversion = \"0.0.3\"\nedition = \"2021\"\n\n[dependencies]\nengine_runtime = \"=0.0.3\"\n"
                     .to_string(),
             },
             ControlledSourcePatchOperation::CreateOrReplace {

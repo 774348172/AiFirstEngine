@@ -865,7 +865,7 @@ fn write_generated_composition(
     let mut manifest = toml::map::Map::new();
     let package_name = generated_package_name(identity)?;
     let mut package = toml::toml! {
-        version = "0.0.2"
+        version = "0.0.3"
         edition = "2021"
         publish = false
     };
@@ -936,7 +936,12 @@ fn generated_main(identity: &ProjectEditorCompositionIdentity) -> String {
     r#"use std::sync::Arc;
 
 fn linked() -> Arc<engine_runtime::project_runtime_module::LinkedProjectRuntimeSet> {
-    Arc::new(project_runtime::linked_set().expect("project RuntimeModule linked_set must be valid"))
+    // SAFETY: the statically linked project exports a process-static ABI v1 table.
+    let api = unsafe { *project_runtime::aife_project_runtime_entry_v1() };
+    Arc::new(
+        engine_runtime::project_runtime_native_adapter::linked_project_runtime_set_from_api(api)
+            .expect("project RuntimeModule ABI v1 table must be valid"),
+    )
 }
 
 fn identity() -> editor_window_winit::ProjectEditorCompositionIdentity {
@@ -1933,7 +1938,7 @@ mod tests {
         fs::write(
             runtime.join("Cargo.toml"),
             format!(
-                "[package]\nname='fixture_editor_runtime'\nversion='0.0.2'\nedition='2021'\npublish=false\n\n[dependencies]\nengine_runtime={{path='{engine_runtime}'}}\n"
+                "[package]\nname='fixture_editor_runtime'\nversion='0.0.3'\nedition='2021'\npublish=false\n\n[dependencies]\nengine_runtime={{path='{engine_runtime}'}}\n"
             ),
         )
         .unwrap();
@@ -1975,7 +1980,7 @@ pub fn linked_set() -> Result<LinkedProjectRuntimeSet, ProjectRuntimeError> {{
                 "schemaVersion": "aife-project.v2",
                 "projectId": "fixture.editor.project",
                 "projectName": "Fixture Editor",
-                "engineVersion": "0.0.2",
+                "engineVersion": "0.0.3",
                 "createdAt": "0",
                 "lastOpenedAt": null,
                 "defaultScene": "Scenes/Main.scene.json",
@@ -2057,6 +2062,11 @@ pub fn linked_set() -> Result<LinkedProjectRuntimeSet, ProjectRuntimeError> {{
             fs::read(right.join("GeneratedEditor/src/main.rs")).unwrap()
         );
         let main = fs::read_to_string(left.join("GeneratedEditor/src/main.rs")).unwrap();
+        assert!(main.contains("project_runtime::aife_project_runtime_entry_v1()"));
+        assert!(main.contains(
+            "engine_runtime::project_runtime_native_adapter::linked_project_runtime_set_from_api"
+        ));
+        assert!(!main.contains("project_runtime::linked_set()"));
         assert!(main.contains("--run-production-authority-scenario"));
         assert!(main.contains("run_real_project_editor_composition_authority"));
         assert!(main.contains("scenario_path: Some(scenario_path)"));
@@ -2380,7 +2390,7 @@ pub fn linked_set() -> Result<LinkedProjectRuntimeSet, ProjectRuntimeError> {{
         let input_digest = format!("sha256:{}", "1".repeat(64));
         let root_name = generated_package_name(&fixture.request.expected_identity).unwrap();
         let lock = format!(
-            "version = 3\n\n[[package]]\nname = \"{root_name}\"\nversion = \"0.0.2\"\n\n[[package]]\nname = \"fixture_dep\"\nversion = \"1.0.0\"\n"
+            "version = 3\n\n[[package]]\nname = \"{root_name}\"\nversion = \"0.0.3\"\n\n[[package]]\nname = \"fixture_dep\"\nversion = \"1.0.0\"\n"
         );
         let lineage =
             generated_composition_lock_lineage(lock.as_bytes(), &root_name, input_digest.clone())
@@ -2443,14 +2453,14 @@ pub fn linked_set() -> Result<LinkedProjectRuntimeSet, ProjectRuntimeError> {{
     fn project_editor_composition_lineage_store_manifest_template_is_path_independent() {
         let left = br#"[package]
 name = "generated"
-version = "0.0.2"
+version = "0.0.3"
 
 [dependencies]
 project_runtime = { path = "G:/run-a/RuntimeModuleBuild", package = "fixture" }
 "#;
         let right = br#"[package]
 name = "generated"
-version = "0.0.2"
+version = "0.0.3"
 
 [dependencies]
 project_runtime = { path = "G:/run-b/RuntimeModuleBuild", package = "fixture" }
@@ -2461,7 +2471,7 @@ project_runtime = { path = "G:/run-b/RuntimeModuleBuild", package = "fixture" }
         );
         let changed = br#"[package]
 name = "generated"
-version = "0.0.2"
+version = "0.0.3"
 
 [dependencies]
 project_runtime = { path = "G:/run-b/RuntimeModuleBuild", package = "fixture", features = ["extra"] }

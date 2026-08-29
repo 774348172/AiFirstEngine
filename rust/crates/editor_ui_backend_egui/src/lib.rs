@@ -42,10 +42,11 @@ pub fn egui_context_smoke() -> HeadlessEguiBackendContext {
 mod tests {
     use super::*;
     use editor_ui_model::{
-        AiPanelModel, AuthoringWorkflowModel, BuildExportModel, ConsoleModel, EditorUiMode,
-        HierarchyModel, InputMappingAuthoringModel, InspectorModel, PanelLayoutModel,
-        ProjectAuthoringWorkspaceModel, ProjectBrowserModel, ProjectLauncherModel, RuntimeRunState,
-        RuntimeTraceModel, ToolbarCommand, ToolbarModel, ViewportModel, WorkspaceViewMode,
+        AiPanelModel, Animator2DAuthoringModel, AuthoringWorkflowModel, BuildExportModel,
+        ConsoleModel, EditorUiMode, HierarchyModel, InputMappingAuthoringModel, InspectorModel,
+        PanelLayoutModel, ProjectAuthoringWorkspaceModel, ProjectBrowserModel,
+        ProjectLauncherModel, RuntimeRunState, RuntimeTraceModel, ToolbarCommand, ToolbarModel,
+        ViewportModel, WorkspaceViewMode,
     };
 
     #[test]
@@ -62,6 +63,7 @@ mod tests {
             report_panel: editor_ui_model::ReportPanelModel::empty(),
             input_mapping_authoring: InputMappingAuthoringModel::empty(),
             rule_authoring: editor_ui_model::RuleAuthoringModel::empty(),
+            animator2d_authoring: Animator2DAuthoringModel::default(),
             authoring_workflow: AuthoringWorkflowModel::empty(),
             project_authoring_workspace: ProjectAuthoringWorkspaceModel::empty(),
             workspace_view_mode: WorkspaceViewMode::SceneView,

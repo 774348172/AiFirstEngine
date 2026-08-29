@@ -1,6 +1,6 @@
 [package]
 name = "project_runtime_native_module_minimal"
-version = "0.0.2"
+version = "0.0.3"
 edition = "2021"
 publish = false
 

@@ -55,7 +55,7 @@ pub fn handle_mcp_request(adapter: &mut GatewayRemoteAdapter, request: Value) ->
         "initialize" => Ok(json!({
             "protocolVersion": MCP_PROTOCOL_VERSION,
             "capabilities": {"tools": {"listChanged": false}},
-            "serverInfo": {"name": "ai-first-game-engine", "version": "1.0.0"}
+            "serverInfo": {"name": "ai-first-game-engine", "version": env!("CARGO_PKG_VERSION")}
         })),
         "ping" => Ok(json!({})),
         "shutdown" => Ok(json!({})),

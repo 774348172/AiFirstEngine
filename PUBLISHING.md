@@ -1,33 +1,42 @@
 # 发布到 GitHub 和 Gitee
 
-本目录已经是独立的 V0.0.2 源码发布根目录，并继承 V0.0.1 Git 历史。不要把上级仓库的 `samples`、`target`、`evidence` 或其它 `release` 内容带进来。
+本目录是独立的 V0.0.3 源码发布仓库，并继承 V0.0.1/V0.0.2 Git 历史。不要把上级主仓库的 `samples`、`target`、`evidence`、施工资料或其它 `release` 内容带入。
 
-## 初始化提交
+## 发布身份
 
-```powershell
-cd G:\gameEngin\release\AiFirstGameEngine-v0.0.2-source
-git add .
-git commit -m "release: AI First Game Engine v0.0.2"
-git tag -a v0.0.2 -m "AI First Game Engine v0.0.2"
+```text
+branch: main
+tag: v0.0.3
+commit message: release: AI First Game Engine v0.0.3
 ```
 
-## 添加双远端
-
-先在 GitHub 和 Gitee 各创建一个空仓库，不要勾选自动生成 README、LICENSE 或 `.gitignore`。然后执行：
+发布 commit 和 annotated tag 由成包流程创建。推送前应确认：
 
 ```powershell
-git remote add github https://github.com/<account>/<repository>.git
+git status --short
+git cat-file -t v0.0.3
+git show --stat --oneline v0.0.3
+```
+
+## 双远端
+
+```powershell
 git remote set-url origin https://gitee.com/brother-b/ai-game-engine.git
+git remote add github https://github.com/774348172/AGEngine.git
+git remote -v
 ```
 
-## 推送分支和标签
+如果 `github` 已存在，使用 `git remote set-url github ...`。
+
+## 推送
 
 ```powershell
 git push -u github main
-git push github v0.0.2
-git push origin main
-git push origin v0.0.2
+git push github v0.0.3
+git push -u origin main
+git push origin v0.0.3
 ```
 
-推荐在两个平台的 Release 页面使用 [RELEASE_NOTES.md](RELEASE_NOTES.md) 作为 V0.0.2 版本介绍。本发布不附加 zip、7z 或其它压缩包。
+推送会改变远端状态，不属于本地成包步骤，必须单独确认后执行。本地成包不会自动推送。
 
+推荐在两个平台的 Release 页面使用 [RELEASE_NOTES.md](RELEASE_NOTES.md) 作为版本介绍，并附上成包流程生成的 `AiFirstGameEngine-v0.0.3-source.zip` 及其 SHA-256。

@@ -516,7 +516,7 @@ fn generate_android_project(
     write_text(
         &launcher_root.join("Cargo.toml"),
         &format!(
-            "[package]\nname = \"aife_android_launcher\"\nversion = \"0.0.2\"\nedition = \"2021\"\n\n[lib]\nname = \"main\"\ncrate-type = [\"cdylib\"]\n\n[dependencies]\nruntime_player_android = {{ path = \"{}\" }}\nproject_runtime = {{ package = \"{}\", path = \"{}\" }}\nwinit = {{ version = \"0.30\", features = [\"android-game-activity\"] }}\n\n[workspace]\n",
+            "[package]\nname = \"aife_android_launcher\"\nversion = \"0.0.3\"\nedition = \"2021\"\n\n[lib]\nname = \"main\"\ncrate-type = [\"cdylib\"]\n\n[dependencies]\nruntime_player_android = {{ path = \"{}\" }}\nproject_runtime = {{ package = \"{}\", path = \"{}\" }}\nwinit = {{ version = \"0.30\", features = [\"android-game-activity\"] }}\n\n[workspace]\n",
             toml_path(&engine_rust_root.join("crates/runtime_player_android")),
             project.runtime_module.cargo_package,
             toml_path(runtime_module_root),
@@ -548,7 +548,7 @@ fn generate_android_project(
     write_text(
         &android_project.join("app/build.gradle.kts"),
         &format!(
-            "plugins {{ id(\"com.android.application\") }}\n\nandroid {{\n    namespace = \"{application_id}\"\n    compileSdk = {ANDROID_COMPILE_SDK}\n    ndkVersion = \"{ANDROID_NDK_VERSION}\"\n    defaultConfig {{\n        applicationId = \"{application_id}\"\n        minSdk = {ANDROID_MIN_SDK}\n        targetSdk = {ANDROID_COMPILE_SDK}\n        versionCode = 1\n        versionName = \"0.0.2-dev\"\n        ndk {{ abiFilters += \"{}\" }}\n    }}\n}}\n\ndependencies {{\n    implementation(\"androidx.games:games-activity:3.0.5\")\n    implementation(\"androidx.appcompat:appcompat:1.7.1\")\n    implementation(platform(\"org.jetbrains.kotlin:kotlin-bom:1.8.22\"))\n}}\n",
+            "plugins {{ id(\"com.android.application\") }}\n\nandroid {{\n    namespace = \"{application_id}\"\n    compileSdk = {ANDROID_COMPILE_SDK}\n    ndkVersion = \"{ANDROID_NDK_VERSION}\"\n    defaultConfig {{\n        applicationId = \"{application_id}\"\n        minSdk = {ANDROID_MIN_SDK}\n        targetSdk = {ANDROID_COMPILE_SDK}\n        versionCode = 1\n        versionName = \"0.0.3-dev\"\n        ndk {{ abiFilters += \"{}\" }}\n    }}\n}}\n\ndependencies {{\n    implementation(\"androidx.games:games-activity:3.0.5\")\n    implementation(\"androidx.appcompat:appcompat:1.7.1\")\n    implementation(platform(\"org.jetbrains.kotlin:kotlin-bom:1.8.22\"))\n}}\n",
             request.abi.android_abi()
         ),
     )?;
@@ -1019,7 +1019,7 @@ mod tests {
             "schemaVersion": "aife-project.v2",
             "projectId": "tower-test",
             "projectName": "Tower Test",
-            "engineVersion": "0.0.2",
+            "engineVersion": "0.0.3",
             "createdAt": "1",
             "lastOpenedAt": "1",
             "defaultScene": "Scenes/Main.scene.json",

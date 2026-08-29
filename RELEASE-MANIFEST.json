@@ -1,0 +1,78 @@
+{
+  "schemaVersion": "aife-source-release-manifest.v1",
+  "productName": "AI First Game Engine",
+  "productVersion": "0.0.3",
+  "releaseDate": "2026-08-29",
+  "releaseKind": "source-preview",
+  "releaseRepository": {
+    "branch": "main",
+    "tag": "v0.0.3",
+    "historyBaseCommit": "2e03d1aed0d2833bb40f86fdf3ff1a9adbed1422",
+    "identityAuthority": "the commit referenced by annotated tag v0.0.3"
+  },
+  "sourceCapture": {
+    "kind": "working-tree-snapshot",
+    "baseCommit": "acaffa8cb95bbb54d093bbf45835a59315c82da5",
+    "branch": "codex/255-capability-catalog",
+    "dirty": true,
+    "statusCommand": "git status --short (default collapsed untracked-directory mode)",
+    "trackedStatusEntryCount": 174,
+    "untrackedStatusEntryCount": 224,
+    "note": "The base commit alone cannot reconstruct this release. The tagged release commit is authoritative."
+  },
+  "contents": {
+    "productCrates": [
+      "ai_tool_gateway",
+      "editor_core",
+      "editor_host",
+      "editor_input",
+      "editor_ui_backend_egui",
+      "editor_ui_model",
+      "editor_ui_renderer",
+      "editor_wgpu_renderer",
+      "editor_window_winit",
+      "engine_input",
+      "engine_runtime",
+      "project_runtime_abi",
+      "project_runtime_sdk",
+      "runtime_cli",
+      "runtime_player_android",
+      "runtime_player_winit"
+    ],
+    "resourceRoots": [
+      "rust/resources/editor",
+      "rust/resources/runtime"
+    ],
+    "builtInFontPackSeal": {
+      "packId": "aife-default-zh-cn-common-v1",
+      "glyphSetDigest": "sha256:0e138343ea0c4e91bb82eac6bc8e90322839f64795f27869363bd495ed41b289",
+      "bundleDigest": "sha256:c78679021bbaac9371e7b281c48d0c4bacabc00fa05a77bd8b586c82c0bfd67c",
+      "codepointCount": 1357,
+      "hanCodepointCount": 1223,
+      "determinismCheck": "two consecutive producer runs matched all 12 cooked-file SHA-256 values"
+    },
+    "fixtureRoots": [
+      "rust/fixtures/fonts/qualification",
+      "rust/fixtures/project_runtime_native_module_minimal"
+    ],
+    "documentation": {
+      "engineArchitectureFiles": 229,
+      "renderingFiles": 1,
+      "editorInteractionFiles": 9,
+      "index": "docs/DESIGN_INDEX.md"
+    },
+    "hashIndex": "SHA256SUMS.txt"
+  },
+  "exclusions": [
+    "samples and project-specific RuntimeModule/Player sources",
+    "construction documents, completion records, internal construction/code review reports and evidence",
+    "OpenCode and other third-party source/reference mirrors",
+    "legacy TypeScript/Electron prototype",
+    "build caches, precompiled engine executables/libraries, installers and transient build outputs"
+  ],
+  "licenses": {
+    "project": "UNLICENSED",
+    "projectNotice": "LICENSE",
+    "thirdPartyNoticesRetainedAdjacentToResources": true
+  }
+}

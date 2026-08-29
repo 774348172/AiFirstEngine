@@ -46,7 +46,7 @@
       "width": 1024,
       "height": 1024,
       "byteLen": 4194304,
-      "sha256": "sha256:769acf3304f0502b604a96dc640c892f1f87e690548970ae7d3274b656bd9095",
+      "sha256": "sha256:63a755315f5a2dfce50b6cecc5fd81955a1e22274e4e21a048309b604624d14b",
       "payloadPath": "fonts/aife-default-zh-cn-common-v1/msdf-page-000.rgba8"
     },
     {
@@ -56,7 +56,7 @@
       "width": 1024,
       "height": 1024,
       "byteLen": 4194304,
-      "sha256": "sha256:b27fac4a76caf69f8ba903c7bfb748ff5d1868d0335f2e090cde4977ce284f58",
+      "sha256": "sha256:53195e8e08defa5b484d09d63b540d53a67b1d5ceefea8f4e9af8489b9a2a772",
       "payloadPath": "fonts/aife-default-zh-cn-common-v1/msdf-page-001.rgba8"
     },
     {
@@ -66,7 +66,7 @@
       "width": 1024,
       "height": 1024,
       "byteLen": 4194304,
-      "sha256": "sha256:e368fa5a78674ee462fefa92434c247d3a9af6eca4c626b28c2d656bf49ff385",
+      "sha256": "sha256:80c20e5f927bb3d3387ada6b2fd9e454237e429b474aa9584da4e055a39229c6",
       "payloadPath": "fonts/aife-default-zh-cn-common-v1/msdf-page-002.rgba8"
     },
     {
@@ -76,7 +76,7 @@
       "width": 1024,
       "height": 1024,
       "byteLen": 4194304,
-      "sha256": "sha256:503bd68b6ec52caa7e7bbbbc1661450a316d43b5babdab763cfe5d50eeb7c265",
+      "sha256": "sha256:19a57107a60b8a448b4676a4f0f80ef60bc6d63ca687b9f6b3f44b9f9ab2099d",
       "payloadPath": "fonts/aife-default-zh-cn-common-v1/msdf-page-003.rgba8"
     },
     {
@@ -86,7 +86,7 @@
       "width": 1024,
       "height": 1024,
       "byteLen": 4194304,
-      "sha256": "sha256:97c9a3d6c72bd5a83659e0ad38b8e9e620a4c6b9f7c1e6fdd83ef44ddcda99c5",
+      "sha256": "sha256:22a277fb36ae24bc34d739386ea29c2cc197d5301a458b1a73dc73b3ad63cca5",
       "payloadPath": "fonts/aife-default-zh-cn-common-v1/msdf-page-004.rgba8"
     },
     {
@@ -96,7 +96,7 @@
       "width": 1024,
       "height": 1024,
       "byteLen": 4194304,
-      "sha256": "sha256:6ee5ac229a59ebed6a3a70fbda9c5988393de70ffdde0185a9c4cdbee3e387c3",
+      "sha256": "sha256:7a8504da8191561008f810df8ddf61cf48c79dcf7f2a6b2d832248e4c0192ac4",
       "payloadPath": "fonts/aife-default-zh-cn-common-v1/msdf-page-005.rgba8"
     },
     {
@@ -106,7 +106,7 @@
       "width": 1024,
       "height": 1024,
       "byteLen": 4194304,
-      "sha256": "sha256:333831b1e911acdb139e2bffd9ccd94c110bf288f24bc07ee97892272fb0217e",
+      "sha256": "sha256:1a505d203e2cc99c2ac6a50698ad28d06fa30d0b536a5fe7c6f06d359a005032",
       "payloadPath": "fonts/aife-default-zh-cn-common-v1/msdf-page-006.rgba8"
     }
   ],
@@ -108653,5 +108653,5 @@
     }
   ],
   "kerningAdjustments": [],
-  "bundleDigest": "sha256:f3c07b12ab3728e56dc01961e412ebb97a2a8c8bfc5902e47dd5a593b324665c"
+  "bundleDigest": "sha256:c78679021bbaac9371e7b281c48d0c4bacabc00fa05a77bd8b586c82c0bfd67c"
 }

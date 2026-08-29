@@ -1132,7 +1132,7 @@ mod tests {
         fs::create_dir_all(cargo_root.join("src")).unwrap();
         fs::write(
             cargo_root.join("Cargo.toml"),
-            b"[package]\nname = \"feature_harness\"\nversion = \"0.0.2\"\n",
+            b"[package]\nname = \"feature_harness\"\nversion = \"0.0.3\"\n",
         )
         .unwrap();
         fs::write(cargo_root.join("src/lib.rs"), b"pub fn source() {}\n").unwrap();

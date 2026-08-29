@@ -1237,7 +1237,7 @@ mod tests {
   "project": {
     "projectId": "project-runtime-cli-test",
     "name": "Runtime CLI Test",
-    "version": "0.0.2",
+    "version": "0.0.3",
     "runtimeModule": {
       "moduleId": "engine.empty.runtime",
       "interfaceVersion": "project-runtime-module.v2",

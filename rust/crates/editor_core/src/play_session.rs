@@ -686,7 +686,7 @@ mod tests {
   "project": {
     "projectId": "editor-play-session-test",
     "name": "Editor Play Session Test",
-    "version": "0.0.2",
+    "version": "0.0.3",
     "runtimeModule": {
       "moduleId": "engine.empty.runtime",
       "interfaceVersion": "project-runtime-module.v2",

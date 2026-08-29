@@ -3879,7 +3879,7 @@ mod tests {
   "project": {
     "projectId": "project-editor-gameview-test",
     "name": "Editor GameView Test",
-    "version": "0.0.2",
+    "version": "0.0.3",
     "runtimeModule": {
       "moduleId": "engine.empty.runtime",
       "interfaceVersion": "project-runtime-module.v2",

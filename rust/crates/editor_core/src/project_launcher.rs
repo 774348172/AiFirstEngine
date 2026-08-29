@@ -387,7 +387,7 @@ const PROJECT_CREATE_CLAIM_FILE: &str = ".aife-project-create-claim";
 
 impl Default for ProjectLauncherState {
     fn default() -> Self {
-        Self::new("0.0.2")
+        Self::new("0.0.3")
     }
 }
 
@@ -1114,7 +1114,7 @@ mod tests {
     #[test]
     fn create_project_writes_minimum_project_skeleton() {
         let root = unique_temp_dir("project-launcher-create");
-        let mut launcher = ProjectLauncherState::new("0.0.2");
+        let mut launcher = ProjectLauncherState::new("0.0.3");
 
         let session = launcher
             .create_project(&root, "PlaneGame")
@@ -1134,7 +1134,7 @@ mod tests {
         fs::create_dir_all(&root).unwrap();
         let sentinel = root.join("caller-owned.txt");
         fs::write(&sentinel, b"unchanged").unwrap();
-        let mut launcher = ProjectLauncherState::new("0.0.2");
+        let mut launcher = ProjectLauncherState::new("0.0.3");
 
         let error = launcher
             .create_project(&root, "MustNotOverwrite")
@@ -1147,7 +1147,7 @@ mod tests {
 
     #[test]
     fn project_create_rejects_non_absolute_root_and_missing_parent() {
-        let mut launcher = ProjectLauncherState::new("0.0.2");
+        let mut launcher = ProjectLauncherState::new("0.0.3");
         let relative_error = launcher
             .create_project("relative/project", "Relative")
             .expect_err("relative target must be rejected");
@@ -1166,7 +1166,7 @@ mod tests {
     fn project_create_rejects_target_file_and_invalid_name_without_writing() {
         let target = unique_temp_dir("project-launcher-target-file");
         fs::write(&target, b"caller-owned").unwrap();
-        let mut launcher = ProjectLauncherState::new("0.0.2");
+        let mut launcher = ProjectLauncherState::new("0.0.3");
 
         let file_error = launcher
             .create_project(&target, "TargetFile")
@@ -1193,7 +1193,7 @@ mod tests {
                 let target = target.clone();
                 let barrier = barrier.clone();
                 std::thread::spawn(move || {
-                    let mut launcher = ProjectLauncherState::new("0.0.2");
+                    let mut launcher = ProjectLauncherState::new("0.0.3");
                     barrier.wait();
                     launcher.create_project(&target, format!("Owner{index}"))
                 })
@@ -1219,7 +1219,7 @@ mod tests {
     #[test]
     fn project_create_initialization_failure_removes_owned_target() {
         let target = unique_temp_dir("project-launcher-owned-cleanup");
-        let mut launcher = ProjectLauncherState::new("0.0.2");
+        let mut launcher = ProjectLauncherState::new("0.0.3");
         launcher.template_registry.templates[0].default_scene = "../escape.scene.json".to_string();
 
         let error = launcher
@@ -1253,7 +1253,7 @@ mod tests {
     #[test]
     fn open_project_validates_manifest_and_updates_recent_list() {
         let root = unique_temp_dir("project-launcher-open");
-        let mut launcher = ProjectLauncherState::new("0.0.2");
+        let mut launcher = ProjectLauncherState::new("0.0.3");
         launcher.create_project(&root, "OpenMe").unwrap();
         launcher.recent_projects.clear();
 
@@ -1270,7 +1270,7 @@ mod tests {
     #[test]
     fn open_project_keeps_manifest_bytes_unchanged_and_updates_editor_recent_state() {
         let root = unique_temp_dir("project-launcher-open-read-only");
-        let mut launcher = ProjectLauncherState::new("0.0.2");
+        let mut launcher = ProjectLauncherState::new("0.0.3");
         launcher.create_project(&root, "ReadOnlyOpen").unwrap();
         let manifest_path = root.join("project.aife.json");
         let manifest_before = fs::read(&manifest_path).unwrap();
@@ -1293,7 +1293,7 @@ mod tests {
     #[test]
     fn project_settings_game_view_target_legacy_default_and_invalid_target_are_explicit() {
         let root = unique_temp_dir("project-launcher-game-view-settings");
-        let mut launcher = ProjectLauncherState::new("0.0.2");
+        let mut launcher = ProjectLauncherState::new("0.0.3");
         let created = launcher.create_project(&root, "GameViewSettings").unwrap();
         assert_eq!(
             created.settings.resolved_game_view_target(),
@@ -1325,14 +1325,14 @@ mod tests {
 
     #[test]
     fn refresh_recent_projects_marks_missing_project_invalid() {
-        let mut launcher = ProjectLauncherState::new("0.0.2");
+        let mut launcher = ProjectLauncherState::new("0.0.3");
         launcher.recent_projects.push(RecentProjectEntry {
             name: "Missing".to_string(),
             path: unique_temp_dir("project-launcher-missing")
                 .join("deleted")
                 .display()
                 .to_string(),
-            engine_version: "0.0.2".to_string(),
+            engine_version: "0.0.3".to_string(),
             last_opened_at: None,
             last_modified_at: None,
             valid: true,
@@ -1352,7 +1352,7 @@ mod tests {
         let document = ProjectRecentProjectsDocument::new(vec![RecentProjectEntry {
             name: "StoredProject".to_string(),
             path: "D:/Projects/StoredProject".to_string(),
-            engine_version: "0.0.2".to_string(),
+            engine_version: "0.0.3".to_string(),
             last_opened_at: Some("1".to_string()),
             last_modified_at: Some("1".to_string()),
             valid: true,
@@ -1369,12 +1369,12 @@ mod tests {
     #[test]
     fn launcher_loads_and_validates_recent_projects() {
         let project_root = unique_temp_dir("project-launcher-valid-recent");
-        let mut setup = ProjectLauncherState::new("0.0.2");
+        let mut setup = ProjectLauncherState::new("0.0.3");
         setup.create_project(&project_root, "ValidProject").unwrap();
         let store_path = unique_temp_dir("project-launcher-store").join("recent.json");
         setup.save_recent_projects(&store_path).unwrap();
 
-        let mut launcher = ProjectLauncherState::new("0.0.2");
+        let mut launcher = ProjectLauncherState::new("0.0.3");
         launcher.load_recent_projects(&store_path).unwrap();
 
         assert_eq!(launcher.recent_projects.len(), 1);
@@ -1386,7 +1386,7 @@ mod tests {
     #[test]
     fn launcher_collapses_windows_verbatim_and_display_paths_for_the_same_project() {
         let project_root = unique_temp_dir("project-launcher-verbatim-recent");
-        let mut setup = ProjectLauncherState::new("0.0.2");
+        let mut setup = ProjectLauncherState::new("0.0.3");
         setup.create_project(&project_root, "SameProject").unwrap();
         let display_path = project_root.display().to_string();
         let verbatim_path = format!(r"\\?\{display_path}");
@@ -1397,7 +1397,7 @@ mod tests {
         newer.path = verbatim_path;
         newer.last_opened_at = Some("20".to_string());
 
-        let mut launcher = ProjectLauncherState::new("0.0.2");
+        let mut launcher = ProjectLauncherState::new("0.0.3");
         launcher.apply_recent_projects(vec![older, newer]);
 
         assert_eq!(launcher.recent_projects.len(), 1);
@@ -1418,7 +1418,7 @@ mod tests {
         fs::create_dir_all(&root).unwrap();
         fs::write(root.join("project.aife.json"), "{not-json").unwrap();
 
-        let status = validate_project_root(&root, "0.0.2");
+        let status = validate_project_root(&root, "0.0.3");
 
         assert_eq!(status, ProjectValidationStatus::InvalidManifest);
         assert!(!status.valid());
