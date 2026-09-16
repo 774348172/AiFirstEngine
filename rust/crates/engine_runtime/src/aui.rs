@@ -16,6 +16,7 @@ use crate::input_mapping::{
 };
 use crate::projection::{ProjectionDomain, ProjectionKind, ProjectionReport};
 use crate::runtime_package::{RuntimeAuiFontAtlasRegistry, RuntimePackage};
+use crate::text_shaping::{layout_glyph_run, shape_text};
 use crate::world::World;
 
 pub const AUI_DOCUMENT_SCHEMA_VERSION: &str = "aui-document.v2";
@@ -545,6 +546,9 @@ impl AuiBindingRef {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum AuiBindingTarget {
+    RectOffsetX,
+    RectOffsetY,
+    TextColor,
     TextText,
     InputFieldText,
     ProgressBarValue,
@@ -1682,6 +1686,30 @@ fn apply_binding_value(
     value: AuiBindingValue,
 ) -> Result<(), String> {
     match (binding.target_field, value) {
+        (AuiBindingTarget::RectOffsetX, AuiBindingValue::Number(value)) if value.is_finite() => {
+            node.rect.offset_min.x = value;
+            Ok(())
+        }
+        (AuiBindingTarget::RectOffsetY, AuiBindingValue::Number(value)) if value.is_finite() => {
+            node.rect.offset_min.y = value;
+            Ok(())
+        }
+        (AuiBindingTarget::TextColor, AuiBindingValue::String(value))
+        | (AuiBindingTarget::TextColor, AuiBindingValue::Color(value))
+            if value.starts_with('#')
+                && matches!(value.len(), 7 | 9)
+                && value[1..].bytes().all(|c| c.is_ascii_hexdigit()) =>
+        {
+            node.style
+                .get_or_insert(AuiStyle {
+                    color: None,
+                    text_color: None,
+                    font_size: None,
+                    font: None,
+                })
+                .text_color = Some(value);
+            Ok(())
+        }
         (AuiBindingTarget::TextText, AuiBindingValue::String(value))
         | (AuiBindingTarget::InputFieldText, AuiBindingValue::String(value)) => {
             node.text = Some(value);
@@ -4242,8 +4270,17 @@ pub fn build_text_glyph_plan_from_bundles_for_presentation(
             .as_ref()
             .and_then(|font| font.font_bundle_id.clone());
         let mut cursor_x = item.rect.x;
+        // Text rectangles use a top-left origin, while cooked glyph metrics are
+        // baseline-relative. Keep one shared baseline and apply each glyph's
+        // bearings so punctuation (，。、“”) sits on the same line as Hanzi.
+        let baseline_y = item.rect.y + font_size * 0.80;
+        let shaped = default_bundle
+            .font_face_sources
+            .first()
+            .and_then(|source| shape_text(&source.font_face_id, &source.bytes, text));
+        let shaped_layout = shaped.as_ref().map(layout_glyph_run);
         let mut previous = None;
-        for ch in text.chars() {
+        for (char_index, ch) in text.chars().enumerate() {
             requested_glyph_count += 1;
             let font_family_id = item
                 .font
@@ -4296,19 +4333,32 @@ pub fn build_text_glyph_plan_from_bundles_for_presentation(
                     .then(|| resolve(FontBundleRenderMode::BitmapR8))
                     .flatten()
             });
-            let Some(resolved) = resolved else {
+            let Some(mut resolved) = resolved else {
                 unsupported_glyph_count += 1;
                 previous = None;
                 continue;
             };
+            if let Some(run_item) = shaped.as_ref().and_then(|run| run.items.get(char_index)) {
+                if let Some(bundle) = font_bundles.bundles_by_id.get(&resolved.font_bundle_id) {
+                    if let Some(glyph) = bundle.metadata.glyphs.iter().find(|glyph| {
+                        glyph.glyph_id == run_item.glyph_id as u16
+                            && glyph.render_mode == resolved.glyph.render_mode
+                            && glyph.pixel_size == resolved.glyph.pixel_size
+                    }) {
+                        resolved.glyph = glyph.clone();
+                    }
+                }
+            }
             if resolved.fallback_used {
                 unsupported_glyph_count += 1;
                 fallback_used = true;
             }
-            if let Some(previous_glyph) = previous.as_ref() {
-                let kerning =
-                    registry.kerning(&resolved.font_bundle_id, previous_glyph, &resolved.glyph);
-                cursor_x += kerning as f32 / 1_000_000.0 * font_size;
+            if shaped.is_none() {
+                if let Some(previous_glyph) = previous.as_ref() {
+                    let kerning =
+                        registry.kerning(&resolved.font_bundle_id, previous_glyph, &resolved.glyph);
+                    cursor_x += kerning as f32 / 1_000_000.0 * font_size;
+                }
             }
             let page = font_bundles
                 .bundles_by_id
@@ -4320,9 +4370,36 @@ pub fn build_text_glyph_plan_from_bundles_for_presentation(
                         .get(resolved.glyph.page_index as usize)
                 })?;
             let scale = font_size / f32::from(resolved.glyph.pixel_size.max(1));
+            let metric_scale = match resolved.glyph.render_mode {
+                FontBundleRenderMode::BitmapR8 => scale,
+                // MSDF bearings are stored in font units (1000/em).
+                FontBundleRenderMode::MsdfRgba8 => font_size / 1000.0,
+            };
+            let shaped_item = shaped.as_ref().and_then(|run| run.items.get(char_index));
+            let shaped_placement = shaped_layout
+                .as_ref()
+                .and_then(|layout| layout.get(char_index));
+            let shaped_scale = shaped
+                .as_ref()
+                .map(|run| font_size / f32::from(run.units_per_em.max(1)))
+                .unwrap_or(0.0);
             let rect = AuiComputedRect {
-                x: cursor_x,
-                y: item.rect.y,
+                x: if let Some(placement) = shaped_placement {
+                    item.rect.x
+                        + placement.x as f32 * shaped_scale
+                        + resolved.glyph.bearing_x as f32 * metric_scale
+                } else {
+                    cursor_x
+                        + resolved.glyph.bearing_x as f32 * metric_scale
+                        + shaped_item
+                            .map(|item| item.offset_x as f32 * shaped_scale)
+                            .unwrap_or(0.0)
+                },
+                y: baseline_y
+                    - resolved.glyph.bearing_y as f32 * metric_scale
+                    - shaped_placement
+                        .map(|item| item.y as f32 * shaped_scale)
+                        .unwrap_or(0.0),
                 width: resolved.glyph.pixel_rect[2] as f32 * scale,
                 height: resolved.glyph.pixel_rect[3] as f32 * scale,
             };
@@ -4332,6 +4409,15 @@ pub fn build_text_glyph_plan_from_bundles_for_presentation(
                 clipped_glyph_count += 1;
             }
             let [x, y, width, height] = resolved.glyph.pixel_rect;
+            // Keep linear filtering inside the packed glyph cell. The cooker
+            // leaves one pixel of padding, but sampling exactly on the cell
+            // edge can still pull a neighbouring punctuation stroke into the
+            // quad at large UI sizes.
+            let inset = 0.5_f32;
+            let u0 = (x as f32 + inset) / page.width as f32;
+            let v0 = (y as f32 + inset) / page.height as f32;
+            let u1 = (x as f32 + width as f32 - inset) / page.width as f32;
+            let v1 = (y as f32 + height as f32 - inset) / page.height as f32;
             quads.push(AuiTextGlyphQuad {
                 item_id: item.item_id.clone(),
                 node_id: item.node_id.clone(),
@@ -4341,17 +4427,16 @@ pub fn build_text_glyph_plan_from_bundles_for_presentation(
                     resolved.glyph.font_face_id, resolved.glyph.glyph_id
                 ),
                 rect,
-                uv_rect: [
-                    x as f32 / page.width as f32,
-                    y as f32 / page.height as f32,
-                    (x + width) as f32 / page.width as f32,
-                    (y + height) as f32 / page.height as f32,
-                ],
+                uv_rect: [u0, v0, u1, v1],
                 page_index: resolved.glyph.page_index,
                 render_mode: resolved.glyph.render_mode,
                 clipped,
             });
-            cursor_x += resolved.glyph.advance_per_em_millionths as f32 / 1_000_000.0 * font_size;
+            cursor_x += shaped_item
+                .map(|item| item.advance_x as f32 * shaped_scale)
+                .unwrap_or_else(|| {
+                    resolved.glyph.advance_per_em_millionths as f32 / 1_000_000.0 * font_size
+                });
             previous = Some(resolved.glyph);
         }
     }
@@ -7506,6 +7591,7 @@ mod tests {
             RuntimeLoadedFontBundle {
                 metadata,
                 page_payloads: vec![vec![0; 4096], vec![0; 16384]],
+                font_face_sources: Vec::new(),
             },
         );
         registry
@@ -7666,8 +7752,7 @@ mod tests {
         )
         .unwrap();
         assert!(plan_720.quads.iter().all(|quad| {
-            quad.render_mode == FontBundleRenderMode::BitmapR8
-                && (quad.uv_rect[1] - 0.25).abs() < f32::EPSILON
+            quad.render_mode == FontBundleRenderMode::BitmapR8 && quad.uv_rect[1] > 0.25
         }));
 
         let plan_1080 = build_text_glyph_plan_from_bundles_for_presentation(
@@ -7688,8 +7773,7 @@ mod tests {
         )
         .unwrap();
         assert!(body_720.quads.iter().all(|quad| {
-            quad.render_mode == FontBundleRenderMode::BitmapR8
-                && quad.uv_rect[1].abs() < f32::EPSILON
+            quad.render_mode == FontBundleRenderMode::BitmapR8 && quad.uv_rect[1] > 0.0
         }));
     }
 
@@ -7704,6 +7788,21 @@ mod tests {
         let unkerned_second_x = 16.0 * 600_000.0 / 1_000_000.0;
         assert_eq!(plan.quads[1].rect.x, 8.0);
         assert!(plan.quads[1].rect.x < unkerned_second_x);
+    }
+
+    #[test]
+    fn aui_text_glyph_plan_applies_baseline_and_bearings() {
+        let registry = v2_font_registry();
+        let plan = build_text_glyph_plan_from_bundles(
+            &v2_text_overlay(16.0, AuiFontRasterPolicy::Bitmap),
+            &registry,
+        )
+        .unwrap();
+        // The cooked fixture uses a non-zero vertical bearing. The glyph quad
+        // must therefore be placed from the shared baseline, rather than at
+        // the text rectangle's top edge.
+        assert!(plan.quads.iter().all(|quad| quad.rect.y > 0.0));
+        assert!(plan.quads.iter().all(|quad| quad.rect.y < 16.0));
     }
 
     fn interaction_document() -> AuiDocument {
@@ -8457,6 +8556,54 @@ mod tests {
             warning.image.as_ref().map(|image| image.asset_id.as_str()),
             Some("warning_low_hp")
         );
+    }
+
+    #[test]
+    fn feedback_bindings_move_layout_and_color_without_accepting_invalid_values() {
+        let mut node = AuiNode::new(
+            "score",
+            AuiNodeKind::Text,
+            AuiRect::fixed_position(0.0, 0.0, 100.0, 32.0),
+        );
+        for (target, value) in [
+            (
+                AuiBindingTarget::RectOffsetX,
+                AuiBindingValue::Number(300.0),
+            ),
+            (
+                AuiBindingTarget::RectOffsetY,
+                AuiBindingValue::Number(240.0),
+            ),
+            (
+                AuiBindingTarget::TextColor,
+                AuiBindingValue::String("#9fefff80".into()),
+            ),
+        ] {
+            apply_binding_value(
+                &mut node,
+                &AuiBindingRef::new("test", target, "test", None),
+                value,
+            )
+            .unwrap();
+        }
+        assert_eq!(node.rect.offset_min, AuiVec2::new(300.0, 240.0));
+        assert_eq!(
+            node.style.as_ref().unwrap().text_color.as_deref(),
+            Some("#9fefff80")
+        );
+        assert!(apply_binding_value(
+            &mut node,
+            &AuiBindingRef::new("test", AuiBindingTarget::RectOffsetX, "test", None),
+            AuiBindingValue::Number(f32::NAN)
+        )
+        .is_err());
+        assert!(apply_binding_value(
+            &mut node,
+            &AuiBindingRef::new("test", AuiBindingTarget::TextColor, "test", None),
+            AuiBindingValue::String("bad".into())
+        )
+        .is_err());
+        assert_eq!(node.rect.offset_min.x, 300.0);
     }
 
     #[test]

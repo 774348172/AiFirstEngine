@@ -1,14 +1,14 @@
 {
   "schemaVersion": "aife-source-release-manifest.v1",
   "productName": "AI First Game Engine",
-  "productVersion": "0.0.3",
-  "releaseDate": "2026-08-29",
+  "productVersion": "0.0.4",
+  "releaseDate": "2026-09-16",
   "releaseKind": "source-preview",
   "releaseRepository": {
     "branch": "main",
-    "tag": "v0.0.3",
+    "tag": "v0.0.4",
     "historyBaseCommit": "2e03d1aed0d2833bb40f86fdf3ff1a9adbed1422",
-    "identityAuthority": "the commit referenced by annotated tag v0.0.3"
+    "identityAuthority": "the commit referenced by annotated tag v0.0.4"
   },
   "sourceCapture": {
     "kind": "working-tree-snapshot",
@@ -76,3 +76,4 @@
     "thirdPartyNoticesRetainedAdjacentToResources": true
   }
 }
+

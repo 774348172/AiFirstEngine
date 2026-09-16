@@ -954,31 +954,19 @@ pub(crate) mod real_native_editor_window {
             _model: Option<EditorUiModel>,
             options: RealNativeEditorLaunchOptions,
         ) -> Result<Self, String> {
-            Self::try_new_with_launch_options_and_gateway_wake(config, _model, options, None)
-        }
-
-        #[cfg(test)]
-        fn try_new_with_launch_options_and_gateway_wake(
-            config: NativeEditorWindowConfig,
-            _model: Option<EditorUiModel>,
-            options: RealNativeEditorLaunchOptions,
-            gateway_wake: Option<ai_tool_gateway::GatewayOwnerThreadWake>,
-        ) -> Result<Self, String> {
-            Self::try_new_with_launch_options_and_gateway_wake_and_composition(
+            Self::try_new_with_launch_options_and_composition(
                 config,
                 _model,
                 options,
-                gateway_wake,
                 crate::default_editor_linked_project_runtimes(),
                 None,
             )
         }
 
-        fn try_new_with_launch_options_and_gateway_wake_and_composition(
+        fn try_new_with_launch_options_and_composition(
             config: NativeEditorWindowConfig,
             _model: Option<EditorUiModel>,
             options: RealNativeEditorLaunchOptions,
-            gateway_wake: Option<ai_tool_gateway::GatewayOwnerThreadWake>,
             linked_project_runtimes: Arc<LinkedProjectRuntimeSet>,
             project_composition_identity: Option<editor_core::ProjectEditorCompositionIdentity>,
         ) -> Result<Self, String> {
@@ -995,19 +983,14 @@ pub(crate) mod real_native_editor_window {
                 .map_err(|error| error.to_string())?,
                 None => EditorSession::with_linked_project_runtimes(linked_project_runtimes),
             };
-            let gateway_discovery_root_override = options
-                .isolated_project_launch_root
-                .as_ref()
-                .map(|root| root.join("gateway-discovery"));
             #[allow(unused_mut)]
-            let mut app = NativeEditorApplication::with_project_manager_and_dialog_initial_directory_and_gateway(
+            let mut app =
+                NativeEditorApplication::with_project_manager_and_dialog_initial_directory(
                     config,
                     session,
                     project_manager,
                     Box::new(NativeFolderDialogBackend),
                     options.project_dialog_initial_directory,
-                    gateway_wake,
-                    gateway_discovery_root_override,
                 );
             let graceful_exit_requested = Arc::new(AtomicBool::new(false));
             #[cfg(not(test))]
@@ -2715,27 +2698,21 @@ pub(crate) mod real_native_editor_window {
                 );
             }
         };
-        let gateway_event_proxy = event_loop.create_proxy();
-        let gateway_wake: ai_tool_gateway::GatewayOwnerThreadWake = Arc::new(move || {
-            let _ = gateway_event_proxy.send_event(());
-        });
-        let mut app =
-            match RealNativeEditorApp::try_new_with_launch_options_and_gateway_wake_and_composition(
-                NativeEditorWindowConfig::default(),
-                model,
-                options,
-                Some(gateway_wake),
-                linked_project_runtimes,
-                project_composition_identity,
-            ) {
-                Ok(app) => app,
-                Err(error) => {
-                    return RealNativeEditorWindowReport::environment_blocked(
-                        "project-launch-isolation",
-                        error,
-                    );
-                }
-            };
+        let mut app = match RealNativeEditorApp::try_new_with_launch_options_and_composition(
+            NativeEditorWindowConfig::default(),
+            model,
+            options,
+            linked_project_runtimes,
+            project_composition_identity,
+        ) {
+            Ok(app) => app,
+            Err(error) => {
+                return RealNativeEditorWindowReport::environment_blocked(
+                    "project-launch-isolation",
+                    error,
+                );
+            }
+        };
         app.pending_handoff_project_open = candidate_readiness
             .as_ref()
             .map(|readiness| readiness.project_root.clone());

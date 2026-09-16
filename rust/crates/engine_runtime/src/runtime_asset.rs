@@ -171,6 +171,14 @@ impl RuntimeAssetIndex {
         }
         .ok_or(RuntimeAssetResolveError::MissingAssetRef)?;
 
+        // Audio references must not let a valid GUID silently override a conflicting id.
+        if record.asset_type == "audio"
+            && !asset_ref.id.is_empty()
+            && asset_ref.id != record.asset_id
+        {
+            return Err(RuntimeAssetResolveError::MissingAssetRef);
+        }
+
         if record.asset_type != asset_ref.asset_type {
             return Err(RuntimeAssetResolveError::TypeMismatch {
                 expected: asset_ref.asset_type.clone(),
@@ -331,6 +339,8 @@ pub struct DecodedAsset {
     pub bytes_len: usize,
     pub source_debug: String,
     pub ref_count: u32,
+    pub audio_clip: Option<std::sync::Arc<crate::audio::DecodedAudioClip>>,
+    pub bytes: Option<std::sync::Arc<[u8]>>,
 }
 
 pub fn prepared_kind(loader_kind: &str) -> PreparedRuntimeResourceKind {

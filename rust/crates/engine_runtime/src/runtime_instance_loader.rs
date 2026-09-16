@@ -354,6 +354,91 @@ impl RuntimeInstanceLoader {
     ) -> bool {
         report.stage = InstanceStage::ResolveAssets;
         for entity in entities {
+            for component in entity
+                .components
+                .iter()
+                .filter(|component| component.component_type == "engine.audio_source")
+            {
+                let source = match crate::audio::decode_audio_source(&component.data) {
+                    Ok(source) => source,
+                    Err(message) => {
+                        report.diagnostics.push(
+                            InstanceDiagnostic::error(
+                                "audio.source_invalid",
+                                message,
+                                InstanceStage::ResolveAssets,
+                            )
+                            .with_source_entity_id(SourceEntityId::from(entity.id.clone()))
+                            .with_suggested_fix(
+                                "Fix AudioSource clipRef/volume before loading this instance.",
+                            ),
+                        );
+                        return false;
+                    }
+                };
+                match self.asset_loader.load(&source.clip_ref) {
+                    Ok(handle) => handles.push(handle),
+                    Err(()) => {
+                        report.diagnostics.push(
+                            InstanceDiagnostic::error(
+                                "audio.asset_load_failed",
+                                format!(
+                                    "AudioSource on {} cannot load audio {}: {:?}",
+                                    entity.id,
+                                    source.clip_ref.id,
+                                    self.asset_loader.diagnostics()
+                                ),
+                                InstanceStage::ResolveAssets,
+                            )
+                            .with_source_entity_id(SourceEntityId::from(entity.id.clone()))
+                            .with_suggested_fix(
+                                "Check the clipRef id/guid/type and cooked PCM WAV payload.",
+                            ),
+                        );
+                        return false;
+                    }
+                }
+            }
+            for component in entity
+                .components
+                .iter()
+                .filter(|component| component.component_type == "engine.particle_effect")
+            {
+                let source = match crate::runtime_particles::decode_particle_effect(&component.data)
+                {
+                    Ok(source) => source,
+                    Err(message) => {
+                        report.diagnostics.push(
+                            InstanceDiagnostic::error(
+                                "particle_effect.source_invalid",
+                                message,
+                                InstanceStage::ResolveAssets,
+                            )
+                            .with_source_entity_id(SourceEntityId::from(entity.id.clone()))
+                            .with_suggested_fix(
+                                "Fix ParticleEffect effectRef/volume before loading this instance.",
+                            ),
+                        );
+                        return false;
+                    }
+                };
+                match self.asset_loader.load(&source.effect_ref) {
+                    Ok(handle) => handles.push(handle),
+                    Err(()) => {
+                        report.diagnostics.push(
+                            InstanceDiagnostic::error(
+                                "particle_effect.asset_load_failed",
+                                format!("ParticleEffect on {} cannot load audio {}: {:?}", entity.id, source.effect_ref.id, self.asset_loader.diagnostics()),
+                                InstanceStage::ResolveAssets,
+                            )
+                            .with_source_entity_id(SourceEntityId::from(entity.id.clone()))
+                            .with_suggested_fix("Check the effectRef id/guid/type and cooked particle-effect payload."),
+                        );
+                        return false;
+                    }
+                }
+            }
+
             if let Some(mesh) = &entity.mesh {
                 for asset_ref in [
                     mesh.asset_ref.as_ref(),
@@ -537,6 +622,90 @@ mod tests {
                     RuntimeValue::EntityRef(EntityId::from("player"))
                 )]),
             })
+        );
+    }
+
+    #[test]
+    fn prefab_command_position_is_applied_before_projection_and_preserves_prefab_shape() {
+        use crate::gameplay_command::{
+            apply_gameplay_commands_with_runtime, GameplayCommand, GameplayCommandId,
+            RuntimeCommandContext,
+        };
+        use crate::math::Vec3;
+        let package = package_fixture();
+        let mut loader = RuntimeInstanceLoader::from_package(&package);
+        loader.asset_loader_mut().mount_bundle("startup");
+        let mut world = World::new();
+        let mut roots = Vec::new();
+        for (index, position) in [
+            None,
+            Some(Vec3 {
+                x: 3.5,
+                y: -3.25,
+                z: 0.0,
+            }),
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let records = apply_gameplay_commands_with_runtime(
+                &mut world,
+                vec![(
+                    GameplayCommandId(index as u64),
+                    GameplayCommand::InstantiatePrefab {
+                        prefab_ref: asset_ref("prefab-ship", "prefab"),
+                        parent_entity: None,
+                        target_scene_instance: None,
+                        position,
+                    },
+                )],
+                RuntimeCommandContext {
+                    package: &package,
+                    instance_loader: &mut loader,
+                },
+            );
+            assert_eq!(records[0].result, "ok");
+            let root = records[0].root_entity_id.unwrap();
+            let id = world
+                .try_resolve_runtime_entity(root)
+                .unwrap()
+                .source_id
+                .clone();
+            roots.push(id.clone());
+            let transform = world.transform(&id).unwrap();
+            assert_eq!(
+                transform.local_position,
+                position.unwrap_or(Vec3 {
+                    x: 0.0,
+                    y: 0.0,
+                    z: 0.0
+                })
+            );
+            assert_eq!(
+                transform.local_scale,
+                Vec3 {
+                    x: 1.0,
+                    y: 1.0,
+                    z: 1.0
+                }
+            );
+        }
+        let mut scene = RenderSceneState::new();
+        let mut extract = RenderExtractContext::new();
+        let commands = extract
+            .extract_world_dirty(1, &mut world, &scene)
+            .normalize_merge(&scene);
+        assert!(crate::render_command::apply_batch(&mut scene, &commands).is_empty());
+        let proxy = scene
+            .proxy(scene.proxy_for_source(&roots[1]).unwrap())
+            .unwrap();
+        assert_eq!(
+            proxy.common.transform.local_position,
+            Vec3 {
+                x: 3.5,
+                y: -3.25,
+                z: 0.0
+            }
         );
     }
 
@@ -1001,7 +1170,7 @@ mod tests {
             manifest: RuntimePackageManifest {
                 schema_version: RUNTIME_PACKAGE_SCHEMA_VERSION.to_string(),
                 package_mode: RUNTIME_PACKAGE_MODE.to_string(),
-                project: RuntimeProjectInfo::explicit_empty("project-fixture", "Fixture", "0.0.3"),
+                project: RuntimeProjectInfo::explicit_empty("project-fixture", "Fixture", "0.1.0"),
                 active_scene_id: "scene-main".to_string(),
                 scenes: vec![RuntimeSceneManifestEntry {
                     id: "scene-main".to_string(),

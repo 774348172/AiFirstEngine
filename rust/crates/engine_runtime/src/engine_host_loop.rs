@@ -13,7 +13,7 @@ use crate::project_observation::{
     CookedProjectObservationContract, ProjectRuntimeObservationState,
 };
 use crate::project_runtime_session::{
-    execute_project_runtime_observation, execute_project_runtime_session_stage_with_animator2d,
+    execute_project_runtime_observation, execute_project_runtime_session_stage_with_media,
     EmptyProjectRuntimeSession, ProjectRuntimeSession, ProjectRuntimeSessionFrameReport,
     ProjectRuntimeSessionReportLevel, ProjectRuntimeSessionStage,
 };
@@ -147,6 +147,10 @@ pub struct ImmediateAuiActionDispatchOutput {
 }
 
 pub struct EngineHostLoop {
+    audio: crate::runtime_audio::RuntimeAudio,
+    pending_audio_commands: Vec<crate::runtime_audio::AudioSourceCommand>,
+    pending_particle_commands: Vec<crate::runtime_particles::ParticleCommand>,
+    particles: crate::runtime_particles::RuntimeParticles,
     frame_loop: FrameLoop,
     project_runtime_session: Box<dyn ProjectRuntimeSession>,
     project_runtime_session_report_level: ProjectRuntimeSessionReportLevel,
@@ -190,6 +194,10 @@ impl fmt::Debug for EngineHostLoop {
 impl EngineHostLoop {
     pub fn new(scene_id: impl Into<String>) -> Self {
         Self {
+            audio: crate::runtime_audio::RuntimeAudio::default(),
+            pending_audio_commands: Vec::new(),
+            pending_particle_commands: Vec::new(),
+            particles: crate::runtime_particles::RuntimeParticles::default(),
             frame_loop: FrameLoop::new(scene_id),
             project_runtime_session: Box::new(EmptyProjectRuntimeSession),
             project_runtime_session_report_level: ProjectRuntimeSessionReportLevel::Off,
@@ -212,6 +220,10 @@ impl EngineHostLoop {
         project_logic: crate::project_logic::ProjectLogicRunner,
     ) -> Self {
         Self {
+            audio: crate::runtime_audio::RuntimeAudio::default(),
+            pending_audio_commands: Vec::new(),
+            pending_particle_commands: Vec::new(),
+            particles: crate::runtime_particles::RuntimeParticles::default(),
             frame_loop: FrameLoop::with_project_logic(scene_id, project_logic),
             project_runtime_session: Box::new(EmptyProjectRuntimeSession),
             project_runtime_session_report_level: ProjectRuntimeSessionReportLevel::Off,
@@ -235,6 +247,10 @@ impl EngineHostLoop {
         project_runtime_session: Box<dyn ProjectRuntimeSession>,
     ) -> Self {
         Self {
+            audio: crate::runtime_audio::RuntimeAudio::default(),
+            pending_audio_commands: Vec::new(),
+            pending_particle_commands: Vec::new(),
+            particles: crate::runtime_particles::RuntimeParticles::default(),
             frame_loop: FrameLoop::with_project_logic(scene_id, project_logic),
             project_runtime_session,
             project_runtime_session_report_level: ProjectRuntimeSessionReportLevel::Off,
@@ -265,6 +281,10 @@ impl EngineHostLoop {
 
     pub fn new_with_render_mode(scene_id: impl Into<String>, mode: RenderThreadMode) -> Self {
         Self {
+            audio: crate::runtime_audio::RuntimeAudio::default(),
+            pending_audio_commands: Vec::new(),
+            pending_particle_commands: Vec::new(),
+            particles: crate::runtime_particles::RuntimeParticles::default(),
             frame_loop: FrameLoop::new(scene_id),
             project_runtime_session: Box::new(EmptyProjectRuntimeSession),
             project_runtime_session_report_level: ProjectRuntimeSessionReportLevel::Off,
@@ -284,6 +304,19 @@ impl EngineHostLoop {
 
     pub fn render_scene(&self) -> &RenderSceneState {
         &self.render_scene
+    }
+
+    pub fn set_audio_output(
+        &mut self,
+        output: Box<dyn crate::runtime_audio::AudioOutput>,
+        trace: bool,
+    ) {
+        self.audio = crate::runtime_audio::RuntimeAudio::new(output);
+        self.audio.set_trace_enabled(trace);
+    }
+
+    pub fn audio_report(&self) -> crate::runtime_audio::RuntimeAudioReport {
+        self.audio.report()
     }
 
     pub fn project_observation_state(&self) -> Option<&ProjectRuntimeObservationState> {
@@ -328,7 +361,7 @@ impl EngineHostLoop {
 
         let time = self.frame_loop.runtime_time().context();
         let mut animator2d_commands = Vec::new();
-        let stage_report = execute_project_runtime_session_stage_with_animator2d(
+        let stage_report = execute_project_runtime_session_stage_with_media(
             self.project_runtime_session.as_mut(),
             ProjectRuntimeSessionStage::AuiActionDispatch,
             frame_index,
@@ -337,6 +370,8 @@ impl EngineHostLoop {
             actions,
             self.project_runtime_session_report_level,
             &mut animator2d_commands,
+            &mut self.pending_audio_commands,
+            &mut self.pending_particle_commands,
         );
         let terminal_fault = stage_report.terminal_fault;
         let mut frame_report = ProjectRuntimeSessionFrameReport::new(
@@ -505,7 +540,41 @@ impl EngineHostLoop {
         &mut self,
         input: EngineFrameInput,
         world: &mut World,
-        runtime_context: Option<RuntimeFrameContext<'_>>,
+        mut runtime_context: Option<RuntimeFrameContext<'_>>,
+    ) -> EngineFrameOutput {
+        // Prepare clips before gameplay; cleanup and device errors never depend on FixedUpdate.
+        self.audio.update(
+            world,
+            runtime_context
+                .as_mut()
+                .map(|context| context.instance_loader.asset_loader_mut()),
+            Vec::new(),
+            self.host_frame,
+        );
+        let output = self.tick_control_frame(
+            input,
+            world,
+            runtime_context.as_mut().map(|context| RuntimeFrameContext {
+                package: context.package,
+                instance_loader: &mut *context.instance_loader,
+            }),
+        );
+        self.audio.update(
+            world,
+            runtime_context
+                .as_mut()
+                .map(|context| context.instance_loader.asset_loader_mut()),
+            std::mem::take(&mut self.pending_audio_commands),
+            self.host_frame,
+        );
+        output
+    }
+
+    fn tick_control_frame(
+        &mut self,
+        input: EngineFrameInput,
+        world: &mut World,
+        mut runtime_context: Option<RuntimeFrameContext<'_>>,
     ) -> EngineFrameOutput {
         self.host_frame += 1;
         if let Some(context) = runtime_context.as_ref() {
@@ -617,7 +686,10 @@ impl EngineHostLoop {
                 input.action_snapshot.as_ref(),
                 input.input_trace_summary,
                 input.unscaled_delta_time,
-                runtime_context,
+                runtime_context.as_mut().map(|c| RuntimeFrameContext {
+                    package: c.package,
+                    instance_loader: &mut *c.instance_loader,
+                }),
                 ProjectRuntimeFrameSession {
                     session: self.project_runtime_session.as_mut(),
                     actions,
@@ -626,7 +698,7 @@ impl EngineHostLoop {
                 },
                 input.fixed_step_count,
             );
-        let runtime_frame = match runtime_frame {
+        let mut runtime_frame = match runtime_frame {
             Ok(frame) => frame,
             Err(fault) => {
                 self.project_runtime_session_faulted = true;
@@ -650,6 +722,23 @@ impl EngineHostLoop {
             }
         };
 
+        self.pending_audio_commands
+            .append(&mut runtime_frame.audio_source_commands);
+
+        self.pending_particle_commands
+            .append(&mut runtime_frame.particle_commands);
+        self.render_scene.particle_sources = self.particles.update(
+            world,
+            runtime_context
+                .as_mut()
+                .map(|c| c.instance_loader.asset_loader_mut()),
+            std::mem::take(&mut self.pending_particle_commands),
+            self.host_frame,
+            runtime_frame.time_trace_summary.delta_time,
+        );
+        self.render_scene.particle_diagnostics = self.particles.diagnostics.clone();
+        self.render_scene.particle_projection_active |=
+            !self.render_scene.particle_sources.is_empty();
         self.sync_scene_camera_2d_view(world);
 
         self.output_from_runtime_frame(
@@ -858,6 +947,8 @@ fn translation_matrix(x: f32, y: f32, z: f32) -> [f32; 16] {
 }
 
 fn orthographic_2d_projection(half_width: f32, half_height: f32) -> [f32; 16] {
+    // Match the renderer's default 2D depth span. Identity Z clips world-plane
+    // geometry behind a camera at z=10, although the XY-only Sprite path hid it.
     [
         1.0 / half_width,
         0.0,
@@ -869,11 +960,11 @@ fn orthographic_2d_projection(half_width: f32, half_height: f32) -> [f32; 16] {
         0.0, //
         0.0,
         0.0,
-        1.0,
+        -0.001,
         0.0, //
         0.0,
         0.0,
-        0.0,
+        0.5,
         1.0,
     ]
 }
@@ -1008,6 +1099,26 @@ mod tests {
         assert!((view.projection_matrix[5] - 1.0 / 9.6).abs() < 0.0001);
         assert_eq!(view.view_matrix[12], -2.0);
         assert_eq!(view.view_matrix[13], 3.0);
+        // World z=0 must remain inside WGPU's 0..1 clip depth with a camera at z=10.
+        // Sprites used only XY; particles consume the complete scene camera matrix.
+        let particle_view = crate::particle_render_contract::ParticleRenderView::from_scene_view(
+            Some(view),
+            720,
+            1280,
+            [0.0.into(); 3],
+        );
+        let depth = |z: f32| {
+            particle_view.world_to_clip[2][2].to_f32() * z
+                + particle_view.world_to_clip[3][2].to_f32()
+        };
+        for z in [-2.0, 0.0, 2.0] {
+            assert!(
+                (0.0..=1.0).contains(&depth(z)),
+                "world z={z}, clip z={}",
+                depth(z)
+            );
+        }
+        assert!(depth(2.0) < depth(0.0) && depth(0.0) < depth(-2.0));
     }
 
     impl ProjectRuntimeSession for InvalidMutationObservationSession {
@@ -1219,7 +1330,7 @@ mod tests {
         let mut input = RuntimePackageBuildInput::new(RuntimeProjectInfo::explicit_empty(
             "project-observation-test",
             "Observation Test",
-            "0.0.3",
+            "0.1.0",
         ));
         input.scenes.push(RuntimeScene {
             schema_version: RUNTIME_SCENE_SCHEMA_VERSION.to_string(),

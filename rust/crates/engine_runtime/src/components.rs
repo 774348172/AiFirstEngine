@@ -4,6 +4,7 @@ use std::collections::BTreeSet;
 use std::fmt;
 
 pub use crate::animator2d::RuntimeAnimator2D as Animator2D;
+pub use crate::audio::AudioSource;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ComponentTypeId(String);
@@ -39,6 +40,14 @@ impl ComponentTypeId {
 
     pub fn animator2d() -> Self {
         Self::new("engine.animator2d")
+    }
+
+    pub fn particle_effect() -> Self {
+        Self::new("engine.particle_effect")
+    }
+
+    pub fn audio_source() -> Self {
+        Self::new("engine.audio_source")
     }
 
     pub fn collider2d() -> Self {
@@ -78,6 +87,8 @@ impl ComponentRegistry {
         registry.register(ComponentTypeId::renderable());
         registry.register(ComponentTypeId::sprite_renderer2d());
         registry.register(ComponentTypeId::animator2d());
+        registry.register(ComponentTypeId::audio_source());
+        registry.register(ComponentTypeId::particle_effect());
         registry.register(ComponentTypeId::collider2d());
         registry
     }

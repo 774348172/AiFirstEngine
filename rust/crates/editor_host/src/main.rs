@@ -1,15 +1,11 @@
-use editor_core::{command_for_test, CommandStatus, EditorSession};
+use editor_core::EditorSession;
 use editor_ui_backend_egui::summarize_model_for_egui_backend;
-use editor_ui_model::UiCommandPayload;
 use editor_ui_renderer::{SelfUiRenderer, UiRendererConfig};
 use editor_window_winit::{
     default_editor_linked_project_runtimes, run_real_native_editor_window_with_model_and_options,
-    validate_window_skeleton, NativeEditorApplication, NativeEditorWindowConfig,
-    RealNativeEditorLaunchOptions,
+    validate_window_skeleton, NativeEditorWindowConfig, RealNativeEditorLaunchOptions,
 };
-use std::io::Write;
 use std::path::PathBuf;
-use std::time::{Duration, Instant};
 
 fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
@@ -30,9 +26,6 @@ fn run_editor_host_with_args(args: &[String]) -> String {
 
 fn try_run_editor_host_with_args(args: &[String]) -> Result<String, String> {
     let launch_request = parse_editor_host_args(args)?;
-    if let Some(preflight) = launch_request.gateway_process_preflight {
-        return run_gateway_process_preflight(preflight);
-    }
     let real_window_options = if launch_request.real_window {
         Some(launch_request.real_window_options()?)
     } else {
@@ -73,14 +66,6 @@ fn try_run_editor_host_with_args(args: &[String]) -> Result<String, String> {
 struct EditorHostLaunchRequest {
     real_window: bool,
     isolated_project_launch_root: Option<PathBuf>,
-    gateway_process_preflight: Option<GatewayProcessPreflight>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-struct GatewayProcessPreflight {
-    project_root: PathBuf,
-    discovery_root: PathBuf,
-    timeout_ms: u64,
 }
 
 impl EditorHostLaunchRequest {
@@ -95,10 +80,6 @@ impl EditorHostLaunchRequest {
 fn parse_editor_host_args(args: &[String]) -> Result<EditorHostLaunchRequest, String> {
     let mut real_window = false;
     let mut isolated_project_launch_root = None;
-    let mut gateway_process_preflight = false;
-    let mut project_root = None;
-    let mut gateway_discovery_root = None;
-    let mut gateway_preflight_timeout_ms = None;
     let mut index = 0;
     while index < args.len() {
         match args[index].as_str() {
@@ -122,50 +103,6 @@ fn parse_editor_host_args(args: &[String]) -> Result<EditorHostLaunchRequest, St
                 isolated_project_launch_root = Some(PathBuf::from(value));
                 index += 2;
             }
-            "--gateway-process-preflight" => {
-                if gateway_process_preflight {
-                    return Err("editor_host.gateway_process_preflight_duplicate".to_string());
-                }
-                gateway_process_preflight = true;
-                index += 1;
-            }
-            "--project-root" => {
-                project_root = Some(parse_path_arg(
-                    args,
-                    index,
-                    project_root.is_some(),
-                    "project_root",
-                )?);
-                index += 2;
-            }
-            "--gateway-discovery-root" => {
-                gateway_discovery_root = Some(parse_path_arg(
-                    args,
-                    index,
-                    gateway_discovery_root.is_some(),
-                    "gateway_discovery_root",
-                )?);
-                index += 2;
-            }
-            "--gateway-preflight-timeout-ms" => {
-                if gateway_preflight_timeout_ms.is_some() {
-                    return Err("editor_host.gateway_preflight_timeout_ms_duplicate".to_string());
-                }
-                let raw = args
-                    .get(index + 1)
-                    .filter(|value| !value.is_empty() && !value.starts_with("--"))
-                    .ok_or_else(|| {
-                        "editor_host.gateway_preflight_timeout_ms_missing".to_string()
-                    })?;
-                let timeout_ms = raw
-                    .parse::<u64>()
-                    .map_err(|_| "editor_host.gateway_preflight_timeout_ms_invalid".to_string())?;
-                if !(1_000..=60_000).contains(&timeout_ms) {
-                    return Err("editor_host.gateway_preflight_timeout_ms_out_of_range".to_string());
-                }
-                gateway_preflight_timeout_ms = Some(timeout_ms);
-                index += 2;
-            }
             argument => {
                 return Err(format!("editor_host.unknown_argument: {argument}"));
             }
@@ -174,119 +111,14 @@ fn parse_editor_host_args(args: &[String]) -> Result<EditorHostLaunchRequest, St
     if isolated_project_launch_root.is_some() && !real_window {
         return Err("editor_host.isolated_project_launch_root_requires_real_window".to_string());
     }
-    if gateway_process_preflight && real_window {
-        return Err("editor_host.gateway_process_preflight_conflicts_real_window".to_string());
-    }
-    let gateway_process_preflight = if gateway_process_preflight {
-        Some(GatewayProcessPreflight {
-            project_root: project_root
-                .ok_or_else(|| "editor_host.gateway_preflight_project_root_missing".to_string())?,
-            discovery_root: gateway_discovery_root.ok_or_else(|| {
-                "editor_host.gateway_preflight_discovery_root_missing".to_string()
-            })?,
-            timeout_ms: gateway_preflight_timeout_ms.unwrap_or(10_000),
-        })
-    } else {
-        if project_root.is_some()
-            || gateway_discovery_root.is_some()
-            || gateway_preflight_timeout_ms.is_some()
-        {
-            return Err("editor_host.gateway_preflight_option_requires_mode".to_string());
-        }
-        None
-    };
     Ok(EditorHostLaunchRequest {
         real_window,
         isolated_project_launch_root,
-        gateway_process_preflight,
     })
-}
-
-fn parse_path_arg(
-    args: &[String],
-    index: usize,
-    duplicate: bool,
-    name: &str,
-) -> Result<PathBuf, String> {
-    if duplicate {
-        return Err(format!("editor_host.{name}_duplicate"));
-    }
-    args.get(index + 1)
-        .filter(|value| !value.is_empty() && !value.starts_with("--"))
-        .map(PathBuf::from)
-        .ok_or_else(|| format!("editor_host.{name}_missing"))
 }
 
 fn production_editor_session() -> EditorSession {
     EditorSession::with_linked_project_runtimes(default_editor_linked_project_runtimes())
-}
-
-fn run_gateway_process_preflight(options: GatewayProcessPreflight) -> Result<String, String> {
-    let project_root = options
-        .project_root
-        .canonicalize()
-        .map_err(|error| format!("editor_host.gateway_preflight_project_root_invalid: {error}"))?;
-    let discovery_root = if options.discovery_root.is_absolute() {
-        options.discovery_root
-    } else {
-        return Err("editor_host.gateway_preflight_discovery_root_not_absolute".to_string());
-    };
-    std::fs::create_dir_all(&discovery_root).map_err(|error| {
-        format!("editor_host.gateway_preflight_discovery_root_create_failed: {error}")
-    })?;
-
-    let mut session = production_editor_session();
-    let opened = session.execute_command(command_for_test(UiCommandPayload::OpenProject {
-        path: project_root.display().to_string(),
-    }));
-    if opened.status != CommandStatus::Committed {
-        return Err(format!(
-            "editor_host.gateway_preflight_project_open_failed: {:?}",
-            opened.status
-        ));
-    }
-    let mut app = NativeEditorApplication::with_session_and_gateway_discovery_root(
-        NativeEditorWindowConfig::default(),
-        session,
-        discovery_root,
-    );
-    app.frame(1280.0, 720.0);
-    if let Some(error) = app.gateway_host_error() {
-        return Err(format!("{}: {}", error.code, error.message));
-    }
-    let discovery_path = app
-        .gateway_discovery_path()
-        .ok_or_else(|| "editor_host.gateway_preflight_discovery_missing".to_string())?
-        .to_path_buf();
-    println!(
-        "editor_host gateway-preflight-ready: discovery={}",
-        discovery_path.display()
-    );
-    std::io::stdout()
-        .flush()
-        .map_err(|error| format!("editor_host.gateway_preflight_stdout_flush_failed: {error}"))?;
-
-    let deadline = Instant::now() + Duration::from_millis(options.timeout_ms);
-    let mut saw_connected_client = false;
-    loop {
-        app.frame(1280.0, 720.0);
-        if let Some(error) = app.gateway_host_error() {
-            return Err(format!("{}: {}", error.code, error.message));
-        }
-        let active_clients = app.gateway_active_client_count();
-        saw_connected_client |= active_clients > 0;
-        if saw_connected_client && active_clients == 0 {
-            drop(app);
-            if discovery_path.exists() {
-                return Err("editor_host.gateway_preflight_discovery_cleanup_failed".to_string());
-            }
-            return Ok("editor_host gateway-process-preflight: passed".to_string());
-        }
-        if Instant::now() >= deadline {
-            return Err("editor_host.gateway_preflight_timed_out".to_string());
-        }
-        std::thread::sleep(Duration::from_millis(1));
-    }
 }
 
 #[cfg(test)]
@@ -294,8 +126,8 @@ mod tests {
     use super::*;
     use editor_core::{
         command_for_test, AiCapabilityGrant, AiCapabilityToolKernel, AiToolExecutionStatus,
-        AiToolInvocation, AiToolInvocationPayload, AiToolOperationSnapshot, AiToolOperationState,
-        AiToolStartOutcome, CommandStatus, ProjectCandidateEntry, ProjectPreviewFrameTicket,
+        AiToolInvocation, AiToolInvocationPayload, AiToolOperationSnapshot, AiToolStartOutcome,
+        CommandStatus, ProjectCandidateEntry, ProjectPreviewFrameTicket,
         AI_TOOL_INVOCATION_SCHEMA_VERSION, TOOL_ID_PROJECT_PREVIEW,
     };
     use editor_input::{EditorInputEvent, EditorInputRouter, PointerButton};
@@ -381,47 +213,10 @@ mod tests {
     }
 
     #[test]
-    fn production_runtime_composition_previews_complex_shooter_with_linked_runtime() {
-        let project_root = copy_complex_shooter_fixture("production-complex-shooter");
+    fn production_editor_default_composition_rejects_project_specific_runtime() {
+        let project_root = copy_complex_shooter_fixture("production-project-runtime-unlinked");
         let (operation, ticket, linked_module_id) =
-            production_preview(&project_root, "production-complex-shooter-preview");
-
-        assert_eq!(
-            operation.state,
-            AiToolOperationState::Running,
-            "operation={operation:#?}\nticket={ticket:#?}"
-        );
-        assert_eq!(operation.stage, "awaiting_frame_evidence");
-        assert!(operation.result.is_none());
-        let ticket = ticket.expect("production Preview must retain a frame ticket");
-        assert_eq!(ticket.operation_id, operation.operation_id);
-        assert_eq!(ticket.project_identity, "project-complex-shooter-sample");
-        assert_eq!(
-            linked_module_id.as_deref(),
-            Some("sample.complex-shooter.runtime")
-        );
-
-        fs::remove_dir_all(project_root).expect("remove complex-shooter fixture");
-    }
-
-    #[test]
-    fn production_runtime_composition_rejects_unlinked_project_c01_runtime() {
-        let project_root = copy_complex_shooter_fixture("production-c01-unlinked");
-        let manifest_path = project_root.join("project.aife.json");
-        let mut manifest: serde_json::Value = serde_json::from_slice(
-            &fs::read(&manifest_path).expect("read copied project manifest"),
-        )
-        .expect("parse copied project manifest");
-        manifest["runtimeModule"]["moduleId"] =
-            serde_json::Value::String("project.c01.runtime".to_string());
-        fs::write(
-            &manifest_path,
-            serde_json::to_vec_pretty(&manifest).expect("encode C-01 project manifest"),
-        )
-        .expect("write C-01 project manifest");
-
-        let (operation, ticket, linked_module_id) =
-            production_preview(&project_root, "production-c01-preview");
+            production_preview(&project_root, "production-project-runtime-unlinked-preview");
 
         let result = operation
             .result
@@ -437,11 +232,13 @@ mod tests {
         assert!(result
             .diagnostics
             .first()
-            .is_some_and(|diagnostic| diagnostic.message.contains("project.c01.runtime")));
+            .is_some_and(|diagnostic| diagnostic
+                .message
+                .contains("sample.complex-shooter.runtime")));
         assert!(ticket.is_none());
         assert!(linked_module_id.is_none());
 
-        fs::remove_dir_all(project_root).expect("remove C-01 fixture");
+        fs::remove_dir_all(project_root).expect("remove complex-shooter fixture");
     }
 
     fn production_preview(

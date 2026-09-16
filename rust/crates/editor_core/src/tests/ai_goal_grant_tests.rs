@@ -81,7 +81,7 @@ fn ai_goal_grant_spec_binds_goal_risk_and_project_session() {
     let spec = AiGoalGrantSpec::new(
         goal(),
         low_risk(),
-        "gateway-session-1",
+        "provider-session-1",
         "native-editor-user",
         Some(1_000_000),
     )
@@ -93,7 +93,7 @@ fn ai_goal_grant_spec_binds_goal_risk_and_project_session() {
     assert_eq!(spec.risk_envelope.max_mutation_count, 4);
 
     let mut tampered = spec;
-    tampered.client_session_id = "gateway-session-2".to_string();
+    tampered.client_session_id = "provider-session-2".to_string();
     assert_eq!(
         tampered.validate_integrity().unwrap_err().code,
         "ai_goal.approval_digest_mismatch"
@@ -110,7 +110,7 @@ fn ai_goal_grant_capability_uses_approved_goal_and_risk_budgets() {
     let spec = AiGoalGrantSpec::new(
         goal(),
         low_risk(),
-        "gateway-session-1",
+        "provider-session-1",
         "native-editor-user",
         Some(expires_at_epoch_ms),
     )
@@ -144,7 +144,7 @@ fn ai_goal_grant_elevated_capability_preserves_approved_scope_and_integrity() {
     let spec = AiGoalGrantSpec::new(
         goal(),
         risk,
-        "gateway-session-elevated",
+        "provider-session-elevated",
         "native-editor-user",
         None,
     )

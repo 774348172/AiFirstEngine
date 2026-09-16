@@ -1,0 +1,65 @@
+name: Rust Quality Gate
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rust-quality-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  rust-quality:
+    runs-on: windows-latest
+    timeout-minutes: 90
+    defaults:
+      run:
+        working-directory: rust
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Resolve committed Rust toolchain
+        run: rustup show active-toolchain
+
+      - name: Cache Cargo inputs and target
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~\.cargo\registry
+            ~\.cargo\git
+            rust\target
+          key: rust-quality-${{ runner.os }}-${{ hashFiles('rust/rust-toolchain.toml', 'rust/Cargo.lock') }}
+          restore-keys: |
+            rust-quality-${{ runner.os }}-
+
+      - name: Run canonical quality gate
+        run: cargo run -p quality_gate --locked -- verify --report-mode summary
+
+      - name: Publish quality gate summary
+        if: always()
+        shell: pwsh
+        run: |
+          $path = 'target/quality-gate/quality-gate-report.v2.json'
+          if (Test-Path -LiteralPath $path) {
+            $report = Get-Content -Raw -Encoding UTF8 -LiteralPath $path | ConvertFrom-Json
+            "### Rust Quality Gate" | Add-Content -Encoding UTF8 $env:GITHUB_STEP_SUMMARY
+            "- Passed: $($report.passed)" | Add-Content -Encoding UTF8 $env:GITHUB_STEP_SUMMARY
+            "- Toolchain: $($report.toolchain.rustc_version)" | Add-Content -Encoding UTF8 $env:GITHUB_STEP_SUMMARY
+            "- Lint: $($report.lint.observed_occurrences) observed / $($report.lint.new_entries) new" | Add-Content -Encoding UTF8 $env:GITHUB_STEP_SUMMARY
+          }
+
+      - name: Upload quality gate report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rust-quality-gate-report
+          path: rust/target/quality-gate/quality-gate-report.v2.json
+          if-no-files-found: error
+          retention-days: 14

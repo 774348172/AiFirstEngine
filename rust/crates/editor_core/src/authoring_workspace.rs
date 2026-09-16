@@ -545,7 +545,6 @@ mod tests {
                 prompt_placeholder: "Describe an editor change...".to_string(),
                 prompt_draft: String::new(),
                 messages: Vec::new(),
-                gateway_access: Default::default(),
                 proposed_commands: Vec::new(),
                 allowed_command_ids: Vec::new(),
                 busy: false,

@@ -119,6 +119,13 @@ pub struct LogicQuery {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LogicFailureLocation {
+    pub entity_id: EntityId,
+    pub component_type: ComponentTypeId,
+    pub field_path: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LogicResult {
     pub rule_id: String,
     pub executor_kind: ExecutorKind,
@@ -128,6 +135,7 @@ pub struct LogicResult {
     pub writes: Vec<LogicWrite>,
     pub command_ids: Vec<GameplayCommandId>,
     pub errors: Vec<LogicError>,
+    pub failure_location: Option<LogicFailureLocation>,
 }
 
 impl LogicResult {
@@ -141,6 +149,7 @@ impl LogicResult {
             writes: Vec::new(),
             command_ids: Vec::new(),
             errors: Vec::new(),
+            failure_location: None,
         }
     }
 
@@ -154,6 +163,7 @@ impl LogicResult {
             writes: Vec::new(),
             command_ids: Vec::new(),
             errors: Vec::new(),
+            failure_location: None,
         }
     }
 
@@ -175,6 +185,7 @@ impl LogicResult {
                 code,
                 message: message.into(),
             }],
+            failure_location: None,
         }
     }
 
@@ -193,6 +204,7 @@ impl LogicResult {
                     "IR interpreter is validation-only in v1 and is not a runtime execution path"
                         .to_string(),
             }],
+            failure_location: None,
         }
     }
 }
@@ -350,6 +362,7 @@ impl<'a> LogicContext<'a> {
             prefab_ref,
             parent_entity,
             target_scene_instance,
+            position: None,
         })
     }
 

@@ -154,6 +154,7 @@ mod tests {
                 bundle_digest: format!("sha256:generation-{generation}"),
             },
             page_payloads: Vec::new(),
+            font_face_sources: Vec::new(),
         }
     }
 

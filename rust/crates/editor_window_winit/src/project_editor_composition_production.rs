@@ -17,8 +17,13 @@ use editor_core::{
     PROJECT_RUNTIME_NATIVE_MODULE_IDENTITY_SCHEMA_VERSION,
 };
 use engine_runtime::canonical_digest::sha256_prefixed;
+#[cfg(test)]
 use engine_runtime::project_runtime_module::{
     project_runtime_aot_digest, ProjectRuntimeAotDigestSource,
+};
+use project_authoring_execution::{
+    GameProjectCompiler, PreparedRuntimePackage, ProjectAuthoringSession,
+    ProjectRuntimeProductionStaging, TargetProfile,
 };
 use std::ffi::OsString;
 use std::fs;
@@ -67,7 +72,18 @@ impl ProjectRuntimePreparationAdapter for NativeProjectRuntimePreparer {
                 Some(&approved.project_root),
             ));
         }
-        let identity = native_module_identity(&approved.project_root, &inspection)?;
+        let prepared = prepare_project_runtime(&approved.project_root)?;
+        let identity =
+            native_module_identity(&approved.project_root, &self.engine_sdk_root, &prepared)?;
+        let prepared_runtime_glue =
+            prepared.generated_runtime_glue().cloned().ok_or_else(|| {
+                native_diagnostic(
+                    "project_runtime.generated_glue_missing",
+                    "prepare",
+                    "ProjectRust preparation did not produce Compiler-owned runtime glue.",
+                    Some(&approved.project_root),
+                )
+            })?;
         let manifest: ProjectManifest = serde_json::from_slice(
             &fs::read(approved.project_root.join("project.aife.json")).map_err(|error| {
                 native_diagnostic(
@@ -108,6 +124,7 @@ impl ProjectRuntimePreparationAdapter for NativeProjectRuntimePreparer {
                 metadata_hard_deadline_ms: 120_000,
                 build_hard_deadline_ms: 1_200_000,
                 capture_limit_bytes: 1024 * 1024,
+                prepared_runtime_glue: Some(prepared_runtime_glue),
             },
             control,
         );
@@ -229,94 +246,15 @@ fn project_runtime_abi_identity() -> String {
 
 fn native_module_identity(
     project_root: &Path,
-    inspection: &ProjectRuntimeTrustInspection,
+    engine_sdk_root: &Path,
+    prepared: &PreparedRuntimePackage,
 ) -> Result<ProjectNativeModuleIdentity, ProjectRuntimeNativeModuleDiagnostic> {
-    let manifest_path = project_root.join("project.aife.json");
-    let manifest: ProjectManifest =
-        serde_json::from_slice(&fs::read(&manifest_path).map_err(|error| {
-            native_diagnostic(
-                "project_runtime.manifest_read_failed",
-                "identity",
-                error.to_string(),
-                Some(&manifest_path),
-            )
-        })?)
-        .map_err(|error| {
-            native_diagnostic(
-                "project_runtime.manifest_invalid",
-                "identity",
-                error.to_string(),
-                Some(&manifest_path),
-            )
+    let staging =
+        ProjectRuntimeProductionStaging::plan(project_root, engine_sdk_root).map_err(|error| {
+            native_diagnostic(error.code, "identity", error.message, Some(project_root))
         })?;
-    let cargo_manifest_path = project_root.join(&manifest.runtime_module.cargo_manifest);
-    let module_root = cargo_manifest_path
-        .parent()
-        .map(Path::to_path_buf)
-        .ok_or_else(|| {
-            native_diagnostic(
-                "project_runtime.cargo_manifest_parent_missing",
-                "identity",
-                "RuntimeModule Cargo manifest has no parent directory.",
-                Some(&cargo_manifest_path),
-            )
-        })?;
-    let lock_path = module_root.join("Cargo.lock");
-    let lock_bytes = fs::read(&lock_path).map_err(|error| {
-        native_diagnostic(
-            "project_runtime.lock_read_failed",
-            "identity",
-            error.to_string(),
-            Some(&lock_path),
-        )
-    })?;
-    let mut sources = vec![cargo_manifest_path, lock_path.clone()];
-    collect_native_rust_sources(project_root, &module_root.join("src"), &mut sources)?;
-    sources.sort();
-    sources.dedup();
-    let source_bytes = sources
-        .into_iter()
-        .map(|path| {
-            let relative = path.strip_prefix(project_root).map_err(|_| {
-                native_diagnostic(
-                    "project_runtime.source_outside_project",
-                    "identity",
-                    "RuntimeModule source escaped the project root.",
-                    Some(&path),
-                )
-            })?;
-            let bytes = fs::read(&path).map_err(|error| {
-                native_diagnostic(
-                    "project_runtime.source_read_failed",
-                    "identity",
-                    error.to_string(),
-                    Some(&path),
-                )
-            })?;
-            Ok((relative.to_string_lossy().replace('\\', "/"), bytes))
-        })
-        .collect::<Result<Vec<_>, ProjectRuntimeNativeModuleDiagnostic>>()?;
-    let aot_content_digest = project_runtime_aot_digest(
-        &manifest.runtime_module.module_id,
-        &manifest.runtime_module.interface_version,
-        &manifest.runtime_module.cargo_manifest,
-        &manifest.runtime_module.cargo_package,
-        &manifest.runtime_module.player_binary,
-        source_bytes
-            .iter()
-            .map(|(relative_path, bytes)| ProjectRuntimeAotDigestSource {
-                relative_path,
-                bytes,
-            }),
-    )
-    .map_err(|error| {
-        native_diagnostic(
-            "project_runtime.aot_identity_failed",
-            "identity",
-            error.to_string(),
-            Some(project_root),
-        )
-    })?;
+    let build_input = prepared.runtime_package_build_input();
+    let runtime_module = &build_input.project.runtime_module;
     Ok(ProjectNativeModuleIdentity {
         schema_version: PROJECT_RUNTIME_NATIVE_MODULE_IDENTITY_SCHEMA_VERSION.to_string(),
         project_runtime_abi_digest: project_runtime_abi_identity(),
@@ -324,13 +262,13 @@ fn native_module_identity(
             "sha256:{}",
             project_runtime_sdk::project_runtime_contract_digest_hex()
         ),
-        project_id: manifest.project_id,
-        module_id: manifest.runtime_module.module_id,
-        logical_interface_version: manifest.runtime_module.interface_version,
-        aot_content_digest,
-        normalized_manifest_digest: inspection.request.normalized_manifest_digest.clone(),
-        normalized_dependency_digest: inspection.request.normalized_dependency_digest.clone(),
-        dependency_lock_digest: sha256_prefixed(&lock_bytes),
+        project_id: build_input.project.project_id.clone(),
+        module_id: runtime_module.module_id.clone(),
+        logical_interface_version: runtime_module.interface_version.clone(),
+        aot_content_digest: runtime_module.aot_content_digest.clone(),
+        normalized_manifest_digest: staging.normalized_manifest_digest,
+        normalized_dependency_digest: staging.normalized_dependency_digest,
+        dependency_lock_digest: staging.trusted_lock_digest,
         toolchain_identity: native_rustc_identity()?,
         target_triple: "host".to_string(),
         profile: "release".to_string(),
@@ -339,63 +277,59 @@ fn native_module_identity(
     })
 }
 
-fn collect_native_rust_sources(
+fn prepare_project_runtime(
     project_root: &Path,
-    directory: &Path,
-    output: &mut Vec<PathBuf>,
-) -> Result<(), ProjectRuntimeNativeModuleDiagnostic> {
-    let mut entries = fs::read_dir(directory)
+) -> Result<PreparedRuntimePackage, ProjectRuntimeNativeModuleDiagnostic> {
+    let mut session = ProjectAuthoringSession::open(project_root).map_err(|error| {
+        native_diagnostic(
+            "project_runtime.authoring_context_open_failed",
+            "prepare_compiler",
+            error.to_string(),
+            Some(project_root),
+        )
+    })?;
+    let paths = session
+        .source_inventory()
         .map_err(|error| {
             native_diagnostic(
-                "project_runtime.source_read_failed",
-                "identity",
+                "project_runtime.source_inventory_failed",
+                "prepare_compiler",
                 error.to_string(),
-                Some(directory),
+                Some(project_root),
             )
         })?
-        .map(|entry| entry.map(|entry| entry.path()))
-        .collect::<Result<Vec<_>, _>>()
+        .entries
+        .into_iter()
+        .map(|entry| entry.relative_path)
+        .collect();
+    let lease = session
+        .acquire_snapshot_lease("editor-project-runtime-preparation", paths)
         .map_err(|error| {
             native_diagnostic(
-                "project_runtime.source_read_failed",
-                "identity",
+                "project_runtime.snapshot_lease_failed",
+                "prepare_compiler",
                 error.to_string(),
-                Some(directory),
+                Some(project_root),
             )
         })?;
-    entries.sort();
-    for path in entries {
-        let metadata = fs::symlink_metadata(&path).map_err(|error| {
+    let compiler = GameProjectCompiler::bind(&lease).map_err(|error| {
+        native_diagnostic(
+            error.code(),
+            "prepare_compiler",
+            error.to_string(),
+            Some(project_root),
+        )
+    })?;
+    compiler
+        .prepare(&lease, TargetProfile::WindowsDev)
+        .map_err(|error| {
             native_diagnostic(
-                "project_runtime.source_read_failed",
-                "identity",
+                error.code(),
+                "prepare_compiler",
                 error.to_string(),
-                Some(&path),
+                Some(project_root),
             )
-        })?;
-        if metadata.file_type().is_symlink() {
-            return Err(native_diagnostic(
-                "project_runtime.source_link_rejected",
-                "identity",
-                "RuntimeModule source links are not allowed.",
-                Some(&path),
-            ));
-        }
-        if metadata.is_dir() {
-            collect_native_rust_sources(project_root, &path, output)?;
-        } else if path.extension().is_some_and(|extension| extension == "rs") {
-            path.strip_prefix(project_root).map_err(|_| {
-                native_diagnostic(
-                    "project_runtime.source_outside_project",
-                    "identity",
-                    "RuntimeModule source escaped the project root.",
-                    Some(&path),
-                )
-            })?;
-            output.push(path);
-        }
-    }
-    Ok(())
+        })
 }
 
 fn native_rustc_identity() -> Result<String, ProjectRuntimeNativeModuleDiagnostic> {
@@ -659,5 +593,25 @@ mod tests {
                 .unwrap(),
             absolute
         );
+    }
+
+    #[test]
+    fn production_preparer_uses_compiler_generated_runtime_glue() {
+        let repository_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .and_then(Path::parent)
+            .and_then(Path::parent)
+            .unwrap();
+        let project_root = repository_root.join("samples/complex_shooter_project");
+
+        let prepared = prepare_project_runtime(&project_root).unwrap();
+
+        assert!(prepared.generated_runtime_glue().is_some());
+        assert!(prepared
+            .runtime_package_build_input()
+            .project
+            .runtime_module
+            .aot_content_digest
+            .starts_with("sha256:"));
     }
 }

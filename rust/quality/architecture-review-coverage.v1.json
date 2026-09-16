@@ -1,0 +1,3290 @@
+{
+  "schema_version": "architecture-review-coverage.v1",
+  "entries": [
+    {
+      "subject": "crates/architecture_review/src/eval.rs",
+      "domain": "quality-tooling",
+      "owner": "engine-quality",
+      "status": "coverage_pending",
+      "context_digest": "sha256:336178027b54b2d7d62d1642b11fb90ef8db738341ff37304c77fdb0c424a3e4",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/architecture_review/src/lib.rs",
+      "domain": "quality-tooling",
+      "owner": "engine-quality",
+      "status": "coverage_pending",
+      "context_digest": "sha256:a3d56e7e2f761a7a4e6493ceafa1fbaa735f3031958c74d9063425462ed5326b",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/architecture_review/src/main.rs",
+      "domain": "quality-tooling",
+      "owner": "engine-quality",
+      "status": "coverage_pending",
+      "context_digest": "sha256:69993a98a76d5ad6b20259ee7fa7b6dbcc14c2d9bba7bbfd5e13789f29d2d272",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/architecture_review/tests/loopback_provider.rs",
+      "domain": "quality-tooling",
+      "owner": "engine-quality",
+      "status": "coverage_pending",
+      "context_digest": "sha256:ad52330d83ea30a8f008a7dbc60a3b1ff110e5375503e1573781357584cf55ab",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/code_hygiene/src/lib.rs",
+      "domain": "quality-tooling",
+      "owner": "engine-quality",
+      "status": "coverage_pending",
+      "context_digest": "sha256:2d3e61cc78af62ebb3780cb3b2a054aa40728e9ff54558c3b4b40c929fd5d3bd",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/code_hygiene/src/main.rs",
+      "domain": "quality-tooling",
+      "owner": "engine-quality",
+      "status": "coverage_pending",
+      "context_digest": "sha256:f34c196b210609574ccb3700f1e303af54d32e76339bfb9ba6e0c037ef729c72",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/code_hygiene/src/v2.rs",
+      "domain": "quality-tooling",
+      "owner": "engine-quality",
+      "status": "coverage_pending",
+      "context_digest": "sha256:80d85257ef9de2821a9123c86946c0eebdcc9042b3450d423023f09f99776dcc",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/code_hygiene/tests/hygiene_report.rs",
+      "domain": "quality-tooling",
+      "owner": "engine-quality",
+      "status": "coverage_pending",
+      "context_digest": "sha256:4961bfbfc41c697fa984117a00f5087b2f4c7ca1d723121e81ecfaf980cc5aa6",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/ai_image_generation.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:062aab670597ea55d903841fc6ed226aecfa3a02f1dc4f9c9fd97ebf83b07e96",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/asset_browser.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:35b5d519eb37072935b14e3ba543011468a5da4f0b3bd0363bb397f94db8e5ad",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/asset_placement.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:2aa12f3449a0c307ef198ecade011d08470febc916836dbdf31b3e7605f5148c",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/asset_thumbnail.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:2a3085c8dd62b3cc1c2dd335f76e75d790807af160706c1085af740e431d59a0",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/aui_authoring.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:43ce1039872e341b911ba04a495d3232b5c92336e448b4a1c03407eb7887e6a1",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/aui_document_cooker.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:629b249b2235ff184cd0f0d08bc241fab6297fc2b8d9c9b175de7f15d0d4508d",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/aui_font_atlas_cooker.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:f4bef30623b5e0359c2b0a3e89c765e8f4e4c8540c3716b5929eaf73a4d04150",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/aui_scene_authoring.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:87e8ceef68d8c9719b3af440f0317f00fe39b73870972758bb68ac221c67f0ae",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/aui_template.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:aa432356ce4b5fff624646de887cf3526792c60d181800aedd596c3f34ee3915",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/authoring_system.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:bf6cf6031f79629e4fae343deaf3a7d2e4e3402ff596f52ffb75844b6616df40",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/authoring_workflow.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:264b3c3aaccf4434f378eacf61d13a091148cf470fd6324345e216770dd0bb9d",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/authoring_workspace.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:96d587c06bc6c56a2ea74dd315ac86dd403a02e6e99cd0ece36df84ea57d17f0",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/desktop_export.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:e6319ad984b60dd376d6148bda20ed5f582e5ebe04084c2194f080256fc6c451",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/editable_project_loop.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:47cd38ef925373c36a0401f6de49ad207dcb0c99b3f8cf6831a71768afd7731c",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/editor_command.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:c2ffd0607ce24495d8c4296e1bdd5df6f9c88e37c544f29ad5931d6258dda4a2",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/editor_command_executor.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:85f7d96b556f440b94eb273e04a3294524a3aeb7cd7dd02c417de881aa3003e0",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/editor_command_registry.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:e8f20dfff63037a5ec8cdfcfea7b736f55efc3f32727b6c9b7c8e0879fe30e3b",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/editor_gameview_play.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:fa18ba7ae9e1086e64329bf801984e9a5cdb4c0ccdd271ee8f47ac218619ab0e",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/editor_preview_package.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:9a3caafbb5e7db5c68c0ee9091f0435c302da8376d00d9ed50fec14d403ba97e",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/input_mapping_authoring.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:7eb90e2102324cd89ba13fb7eb3c9ff9b1a4314abdfe9828e36f5c755a98f412",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/inspector_details.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:c21e43803cdb158c0eb9e4b905c8bfe70bb2ed551f151cdb5d92218c4c61f73d",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/lib.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:0a2ffa320cda238d8bdc34b868c638c8c595af550a061430f29bb79cf3ba8316",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/manual_walkthrough.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:463ea6a1c196050519a3c46fcf4fe33fc6c45288fdb7a09040fa99301309b5e8",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/play_session.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:469c77984303d33c36e4c579778946b5f3079e8c1fae827df6b394351344a98b",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/prefab_workflow.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:dc9c8a0a85e52777a34c9bee71e14d6ed9ebdb041febacc698ec17bbc426c913",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/project_consistency.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:ad5234a9a731e54757db6bea7fc006d677670bbdea909115a668826ac3e6b222",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/project_launcher.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:b5cab049a691685129c567746b1ae5228943b0685cca8bc0a7761f7c4ca72061",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/project_patch/applier.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:740d01c8c0acbba8e8ac605566278bcd7bc7bcd847537414f35999de63d87da1",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/project_patch/context.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:2d99de7def500833e296b4f5e2b8cf297c569f2a32553739898d389895ffce74",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/project_patch/history.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:5aa5aaafbb409af3d522351bc5dca2022fd5b3cb09337d3fcae64d0011ae766f",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/project_patch/import.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:2e1eba8304e75c87e66dd35e68a537e8f057684446a253f1cddde311271d824e",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/project_patch/llm_http.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:3867a928a731395aac90f570c185294fd350178614201d2add8b9fc3fc6bc24b",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/project_patch/llm_repair.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:91bd5c592181ccca67d3589c4188e35664ab7ded0f2bffd5bd1801fe783acc68",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/project_patch/llm_request.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:648045a4a08247a2d93a98b1ea799a52667297929f1c614f500fd4b45dc61b83",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/project_patch/llm_request_controller.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:833b724ad82646cbf8b28518331e9033abfa1ff868654d3c01a853b97530b25e",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/project_patch/llm_source.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:b8f3fd7f3c5177d8a06c978fd590984b9466d830b6995f1b63e9561f5e1e8359",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/project_patch/llm_transport.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:0342a8c1e26884afd1010b45f8a9e45e1e53e54f5a9c4945cb2b792872ad3a5e",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/project_patch/mod.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:589c1243f077629bca318583c0dbc839d4e1073431d3ee81bcac6bac22094ce2",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/project_patch/model.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:9a142a8edc53b9a1a1bf090e8219994cb030fb7201c95075d8338b0cdcef8648",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/project_patch/repair_scope.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:ca849dae3f74bd6fc700ed1af20e2db31cf0e1c314f9c70b5f6070d3e8cf7ec2",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/project_patch/schema.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:576b30241ae29b791850824404bf4d56c7d9c65ef0b981bc20cdf85620fb9bd0",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/project_patch/session.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:0dd32e45d356da32cfb9c99a7190ae2318d2f3d6c655ec58290a3b93c1c42932",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/project_patch/validator.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:356a6909f5dcdb443454bb27f42a9215606e8b195813126071117633507d8765",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/project_player_artifact.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:9c3ac2c6d9b01a131f1d15dd7fd2ad6836dc7c8b53ad1b1c3d5cf5c35ef3b241",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/project_runtime_package_assembler.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:0763a5103d7d02ef97b009ef74a978cbbe29147ca8864a25ccc58227fdc71315",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/project_write_scope.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:90063e8fe5d04c2ddd6a3ff91c096d806c2ddf7a81eb252b2df4496e86877332",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/property_editing.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:d59bb81a33a86ac5ec73f655cb1e21b295555a27070a54f09e19d8dd62ea05e9",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/release_package.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:79ad846b6924a4982a169219981bc5b15afe1e40faec1b19d4c09a0250386c0c",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/report_panel.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:7e9c01ca500498bb0cf593dd8c4aa1e6467fda2095e336abc42aec05deffa5fa",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/rule_authoring.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:2d278cfd979ee4f94fbb0b73e91c6369e9d785ce6a2222a6a5a8d67193ef5c0e",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/runtime_selection.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:55f0dc14f05151828fe898a783e0d10dd8e3a0075a0b4bea51717a538ebb3877",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/scene_editing.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:5660f8422ed4639dff7eceecf9e88f69f907d750c83e0774ba88957679b2224e",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/scene_editing/collider_debug.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:3ed704db2ef66032feefa14846b4a0f0def61f65fc1ca158fea45ee39ff27c68",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/scene_editing/command.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:764f953bd49be5d8c2574a5ed98022a2217622b6efa230de921bc3424c268a68",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/scene_editing/diagnostics.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:ce844dfd7bc07c050e906ca8c5e65bd638edc7365163645b1dcc449094bb2aef",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/scene_editing/document.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:a6008fa693860ad98439b68c61a43b3f5d1b9121381cdb0d2fa539fa7c7cb709",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/scene_editing/entity.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:2b016154d6c7d9bd0ab25b4b6e6d19c9748c61dde02666581e4c4cbc2b52d07d",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/scene_editing/json_path.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:5bdd1fa867e76b4422c4b176514882eac0438d6f1baf94d610764b74bf58bf79",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/scene_editing/preview_world_sync.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:b11038a30d544e676a9a22b0ed278125b2bc0d686e79a45a7c40147216c3fc29",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/scene_editing/tests.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:5874da716fcce0e70c6e4926b5f78a72b8d6f3f69f8f132216e2f9d56bace6a9",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/scene_editing/transaction.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:1e44a00df2a09219b1b58ae236e2d8b1b1a2beb8162f62f9732563269b8f0751",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/scene_editing/transform.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:78a0db4d5408cf3ce76837da7963187aff4b4a36debbcf750b6515611abff05d",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/scene_editing/undo.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:05e24980dfbf5bf1e69c4efd56b43a34491904b928a668df5d26ad65f6f46690",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/services/ai_service.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:c9c4db12fa41c32dde3a5c0b42369b255226ed27c4b9f393a1bdda55373b17d5",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/services/aui_service.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:ad93ff5e383e691a87a2d1ebeac9e3640f371cf3bdd2fc438c4586c595ce63e0",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/services/authoring_workflow_service.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:86a6b69a6e11a9ecb691a594e43ca650113e912eee3f769d32445159701cf64e",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/services/build_service.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:f7272c4f6736d4a929a3d00c3fe279d51b1707d9f57e790cb2fed9452b5f3bde",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/services/console_service.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:68f54afb32f068facfde5e89b59dd88d74edf84f428ff9cac84a58e96633cb7e",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/services/mod.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:58e9c429ae40d637e95b639ca26b265e824a2065c9650789f7ca9f7d020c3025",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/services/play_service.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:292040fbd2217ebaaaf999c9246bc4568722a6d7f610906b7ae4eea8f66d4735",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/services/prefab_service.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:c2944c0f48428057ea114e3f75836f9bbd8e36e0b5cf13f7203c76382167da43",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/services/project_service.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:d3273fdfef20aeb883c744989ded045df9b96018481250bbe8ea5a2d427a39e3",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/services/rule_service.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:ecf36c152b6e42275834751e50aed942d1a249c4d7ed31b68ceb6ddf12fc49b8",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/services/runtime_service.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:15b34edd79a650191fdbfdc8900f39440d272d286c1bca502a9cf7ab599fc807",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/services/scene_service.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:5fa1ce38dee44e9fac3e0d47a140a6cc358584fbc5723dc6d719552f294051e0",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/session.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:5188c64a3ecd28d49531bee5fdafceadc98f02f80488ad1f004a1546bb882b3c",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/tests/ai_service_tests.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:8f9d8b083feae90832cb930ff7cffb786495d8c115bf6a87a4ef93f4796edcce",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/tests/aui_authoring_tests.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:8ced9e691b5ec608ef6e55f240154d325a863b5fb9a353c0f2b02b2a184811f0",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/tests/aui_scene_authoring_tests.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:425978ea4c3f7d9de3a1a259eb0186d9b1ee1b1962cb45d0719c76222820a1fa",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/tests/aui_template_tests.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:4ce6ed78a58c9d9684029eec87c06d72234125e8fc7324837fad8b9357438124",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/tests/authoring_workflow_tests.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:0cd6c3c7af9465e575d70c79848ec6969de480bee1eed4a1710bc8d162c0f2c7",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/tests/authoring_workspace_tests.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:d1221281012bc8163c1f6aa06d32e6a96ae41568e3cc3314e9fc3e6366a15dd5",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/tests/build_service_tests.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:24f2dc11919b697c705d4976f07f7b9f653e99bebb395fe1756755a4b3f5f282",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/tests/fixtures.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:872c7b27a1d141eaf4f299031701d04496df5a50992ad0a71edfeca9f3b05d0a",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/tests/llm_patch_source_tests.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:8bd9411d84b5b5da407c4f47f0734b52786369c32d6cc190f7acc16a00fcb129",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/tests/mod.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:f81474b92d3eac87a6fdd31491095ad1f870f24de6ef5a86c5d0c52fa0dbbcbe",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/tests/play_service_tests.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:c6e89e721ae0eae2cfc1730f18690fbb7c0757db1a163b945a3a4a95e11fc0ef",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/tests/prefab_service_tests.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:8c5981fb2ed57460215b7456e5a3cffcfcfb6dfec5bbbaa571cc92b9ab8b40fe",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/tests/project_patch_tests.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:84dd8c9b02a59950b8e9cbd395a131009719ecc5ad58f7d78a49b44e3920e024",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/tests/project_service_tests.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:b346070e7e900bc02957562fbc842f29edbf4dd7142bfced090131955eb2fe8d",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/tests/runtime_service_tests.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:c87286892b3e4cc14592c09c3aece0887993a0b70eead07faf780d724bc25c3a",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/tests/scene_service_tests.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:1f47c97b27adcd73961929572af5d962ecdf98429b56fe4db5c168730a7ca2b0",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/tests/session_smoke_tests.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:4dd4e824c9a0ebf24ce351a95371f6fec55e50675c007b9a1d2077a070d40f4d",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/transaction.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:9e7d7eb22a45cd4d3d4a8c26edd1ed4e8e2da9aa31fedc13a4f31ec1f15f7252",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/ui_model_composer.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:c45d901acc1793b105be8b1140df37ac29d26373e3e8740253887b99b2980733",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_core/src/windows_executable_resources.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:da49e37c852617012e9d7e1bd1b634b7ce8b280c79488d7e3f486503d2a3cbe0",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_host/src/main.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:e91e1b4796083a201d68d38e0d4bc5d5d3602c74897e4bb99e6c94b822d612c5",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_input/src/lib.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:e51a410a6d76d9f2c75c76dbb95d31f34326d863c0bff0742b4a9d9c28fbfd32",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_ui_backend_egui/src/lib.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:17b34f6866b7ea8705957cda7fb9c4345ea461977892e09a40b7441c8c2a604b",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_ui_model/src/ai_panel.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:0deb761ada5624bfb4fe5b9b1670b935b87199e35d59a787b4a2f4642f737bf6",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_ui_model/src/asset_browser.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:100417744541cf6823e264a52b33247f7770fc2b1b6274dee6d370ce0be76929",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_ui_model/src/aui_scene_authoring.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:5dbdc4599568a6a5c370eb5f183f2d2110e5d62d3cf217bba81325abf3ed6b29",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_ui_model/src/authoring_workflow.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:454f1a33324a8f9caf3795854e6742b280e3d2b2587cff051bf493d58602ec37",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_ui_model/src/build_export.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:0d1d4ba207035e44a39e2bdfd42121c25812060f8ecf9e17a20fcef6e080f088",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_ui_model/src/command.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:a9158e5f5c440ee1e8e0b35adfc17c32b771928eecab161870e490a701250ed2",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_ui_model/src/console.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:74b19670325d8f04ce878d10ff33aa106c96ad810d19092e19afae496fe92019",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_ui_model/src/diagnostics.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:f0a9f4a27adc3e3e2764b61f3b896c749cd1e0c188a723d5c87b235360fe5310",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_ui_model/src/hierarchy.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:821444d00e177db84bdefff6cea4e895a061ebf6ad066f90cfed6c2ea9e614f3",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_ui_model/src/input_mapping.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:74ffe6a470abee5588cbd9d1a5b4fc3d22baff67729ec62e96f887202979791d",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_ui_model/src/inspector.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:1f7a53a0fe7a488f5fc64759d2480a3c39b4e8d33c00ba0b3c34ae0e682e87f4",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_ui_model/src/launcher.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:fc03f240f7577421ebff8ab96683110738a47a80ebedfc4debd9508c118b11cf",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_ui_model/src/layout.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:9050894f98f9281b3f31e7df1a686d9e502c24acef60a5854e5a6c3f68ebdb8a",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_ui_model/src/lib.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:a64e42b539e4eb57171bd3b6bcc2ac51341100f3498dcae71f4ab15e9593ecc8",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_ui_model/src/manual_walkthrough.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:6caca18c4fed71fe57622785767dbc7fe60b62eb9057cd1c32fefc0094a49cc9",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_ui_model/src/model.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:e7b4620cad06d8a9b6fb2b1046fb5363768ae0c3a6a96b5aa9157620c033fdae",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_ui_model/src/project_browser.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:820cfa818b832a1d29bdfaa66038a4003ed720c633ee6af5a7b799596a22690c",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_ui_model/src/report_panel.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:3048c6c8fe553942c539a6686d2704d2b3bfe511c2c8111840ad4281e9f385c2",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_ui_model/src/rule_authoring.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:5bdf3d224c20102efcfe2f9d07391474e4fac847004cf6b6e553f482fffb3503",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_ui_model/src/runtime_trace.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:1975a407c5ad2f3e23b06e9f6c196f42280ad6500a8279095594f5ac725853b8",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_ui_model/src/tests.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:51d1bdc1c40ef4be13c73b381d67d02bef18354dd963e14223e8fa91dc741441",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_ui_model/src/toolbar.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:91c94b46ba4ea4f2c1dd5ef3d4b187ac351fc416ad5e473403de169220caf1ba",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_ui_model/src/viewport.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:05a02813e87eb3a64e0079b3847f0246f3012578e3da2a2a813c7fd858535074",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_ui_model/src/workflow_command.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:e283cf9b67a341d29a177d80a82adfd1713bab7b28df41f9c851546c2a825919",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_ui_model/src/workspace.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:7422a9d67f7a8e9ce9f31a2a80b1658f1e49fc0e560fed9485658756d91f46c4",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_ui_renderer/src/draw_list.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:fcf2b7237ca7e0ef9a7e8260e01a14759fd5b25cea34cd78dfc980e672b93918",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_ui_renderer/src/hit_test.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:841d6e4c2efe6403829ff9090b1ff0fbfc4cc8cdbdb95f14ae0d9f0f90983d7a",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_ui_renderer/src/layout.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:ab3d43a5bd5491be9700e8981c18e7510d1989bf67b7e07d568c6236c53dbee4",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_ui_renderer/src/lib.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:983175f6f3163ba208814b31e7a65e99135a97bc0f3bcaccfbd13f08d7e83d1e",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_ui_renderer/src/panels/ai_panel.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:7d45df30d05c339daf9b79140e4b894be16ae927f45575ea17bb18295aee66c0",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_ui_renderer/src/panels/build_export.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:d7d3e89374e17c42d2e341455bc20ef2df05450aa696d29fd2bd70b64c6ff221",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_ui_renderer/src/panels/console.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:cb462bddf606fe2ea61911f5784117aaf0808108c5b293f48695a7ce78ab5d47",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_ui_renderer/src/panels/hierarchy.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:65c006e7eebc4f3e4e6e04a41c802f8681bff915877e7540a74ff13837ef08e0",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_ui_renderer/src/panels/inspector.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:8a1763d6abd6fa99f798c44acd98409bb45ea9cec87dd2d3b2e793b4aa483647",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_ui_renderer/src/panels/launcher.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:c0184499e722d6bf56e7c0b9fb18cb12bd3f5f967182155ec0453dbc5a837705",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_ui_renderer/src/panels/mod.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:c3e05d1260e26e0e3ebfb4eaa0148cefc58fb677e8a812d2efc225d2ca624ee2",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_ui_renderer/src/panels/project_browser.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:ab1c0148f55faf987be835b18819c5bc3babeaef9da421f3036cf15f01275ef1",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_ui_renderer/src/panels/runtime_trace.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:af0d0b5b3ac4acc62ad79d98d950e4c9fcdda8e390aaa31a3f6e683933f6f6bc",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_ui_renderer/src/panels/toolbar.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:654c362da74cf89bccd2a9cbe310c761a5a012f88b6f2c4067565b5f4df04212",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_ui_renderer/src/panels/viewport.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:a2a443a50ad6f5db6d81a257acd3b186a82ba35ced4469ccd4504dfa5f14517f",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_ui_renderer/src/panels/workspace.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:d1ed57f411634231a5827ee3710cfa33d01fcc7673a1f505e46a61c861a50867",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_ui_renderer/src/renderer.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:7643acd885ed57254c4b9b2e6838a5b20a00ec5b7d9da0911d5e2c7b6835c991",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_ui_renderer/src/tests.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:b7b6e2bf53691edc3747c8c90750bd8fab7590060d709a19496691e889f87640",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_ui_renderer/src/theme.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:873bf0462e1fab1d5b074249170150f0c8bfddf627dd72e5c508ca235642bee9",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_wgpu_renderer/src/diagnostics.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:9ba91e839bf901357d038b51fbe07e0ad361146b04ab02e44c05449772bbabed",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_wgpu_renderer/src/draw_plan.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:284af592cc567f4b0f2f34dd32431ca36ba3d96620aa4d69eb1e17eaebfd12aa",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_wgpu_renderer/src/font_system.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:53f7b5749014e16b66a454eee8a45b94b1d1c01292b15435ec3d87fe501bd803",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_wgpu_renderer/src/headless.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:d460996224ea09ee635418a07e26d90eaca5a121794ec1709db1b8d6a0289cab",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_wgpu_renderer/src/image_texture.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:2b471d010cbf68a0c63e014327825d15116331c94ee4074737226445262e9e18",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_wgpu_renderer/src/lib.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:f8bedcc1cd7c52699c719e81f89028da167ee80d268fdf08a2f85a42f45b0b8b",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_wgpu_renderer/src/real_wgpu.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:2b221a32b85de942d979c9fd849660ce58ef264b9909e3a7190f15bfd0ba70dc",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_wgpu_renderer/src/render_graph.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:1f6f7fc15659033c0d6390d287264469834cb465678b8ed9cbdfb03bb3150457",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_wgpu_renderer/src/shared_gpu.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:8bb7d01f1f583534558d6ecc938e87202c1cdd23c9fee0d091a9f1adcc26cf57",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_wgpu_renderer/src/surface.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:b6288f3fa5b3410dd2112ae7a7f6fce12d4d144547a956e5640a7125ce8bfa81",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_wgpu_renderer/src/tests.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:6213f24146bfbb32c9e91c5be65005fedc3d09d2e870ff9614db1da1a63f912b",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_wgpu_renderer/src/texture_atlas.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:a1d74757e9db6c9d5afe3300307e8cae83635bcc4ff066fcb4f459badf71531f",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_wgpu_renderer/src/viewport_texture.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:e24eee80e173b69bf6cc10fc9e1ba3ac49a5207f20133ac7ad99f7ce9bf79879",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_window_winit/src/application.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:046b4c9b6cdb2eb21f350b620af64fea4efbbdeaf35dd14b57669234c62e4391",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_window_winit/src/command_system.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:a8ff21dbbba75d4ba0a7557d22728d66d4718f83b34ee66eab720746f79e51b4",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_window_winit/src/composer.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:e1a7f0db54baff483b1a351779414813f556da1478d96e4938fe4df958d64b53",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_window_winit/src/config.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:a00db789bb2c9567483afde1207604ab60975d66570504f586b59706afe396e8",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_window_winit/src/continuous_runtime_window.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:c3f5c0bd8cebcc650eade4115c05dd14a5e24cb9e41ea70f9c7a43bbf7ff9f13",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_window_winit/src/dialog.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:0a77df891d67d873ead052e8410afa6152fd61465d432966bd2ec2557e97a823",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_window_winit/src/dock.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:a885d588a367497206c87662b5b7f110f1e6fab7d61ca46bf098bc2f16dc527d",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_window_winit/src/focus.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:9b2d3771db03f0a9b50d34f38fbbe0350e3886e5fbfdfd565a93d93a9f070a45",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_window_winit/src/gate_report.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:2dc8c3e558d1a21943dd424331753a5dda4e1c19e63c65c6598d65a32124dcab",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_window_winit/src/headless_app.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:c0a5bebff9c3f06b85711330e3f575491f905eb26b98f7051d2c3991eaf5b74f",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_window_winit/src/headless_window.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:348b4055d9a00798803378281eeece7168b9e3fee8c7c82b511141eb5c43d9ed",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_window_winit/src/input_route.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:a1e04e6d4e03682d8ce4358840d208892e7522c15eb0af828fb2a701037708f3",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_window_winit/src/interaction_gate.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:e4c57a0b20e959b37f5276e0589bbab80dca28e0585c296a17c5dc08c9b3ed7b",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_window_winit/src/lib.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:1e9b9f8c59b1646c279915d83548775838b00c2abe91e730e53d6dd91e12c390",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_window_winit/src/linked_project_runtimes.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:a8548a00d11bd45c006aee35a0ee05c4afc32cea0ab377f2ce54ba6b190472fb",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_window_winit/src/project_manager.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:e5043089422b761d75c6b50c077cb1177434c388112fd0361328b2703a3b6598",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_window_winit/src/real_window.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:9371432afccffcc61bfc005eba7c59b6138f0e34fc34f890e4ea0ba2c4aab1f0",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_window_winit/src/real_window_interaction_gate.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:d0a9235d8d4982abc59b30aa78c95803e20fdc3ba64b6ebd105e932648d4f089",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_window_winit/src/runtime_render.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:2643ae1224199b5757e5a465079caf4f9d03451a5b5bc8a5bf4e3438df2a912c",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_window_winit/src/surface.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:9df5f98b2a4ab6fdf48ecf37210d34a2116256c1a211bca2578dcb14f232af3c",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_window_winit/src/tests/gate_report.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:3c9f5ede1fb0a1d45fb61fa5a02a6c2ed4d14d30bc75ffe99c9dce1363c91465",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_window_winit/src/tests/input_runtime_loop.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:1fb3c0171e10eb41b0b69aaaf19a9de71a3b68e040da744d4c5d737c373f7180",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_window_winit/src/tests/mod.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:557ae92a3e2475a9427b2069e738c108a90ee565809271e611dd58e659d858d0",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_window_winit/src/tests/native_app.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:aa5ad9658120aecb32c5967194b4f26c1a4412f82bc45e3d0db9c09cf4e73967",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_window_winit/src/tests/native_interaction_gate.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:924aec1719b00f07b3ce4dd35f03a054ae2474bf61f33ea0b11b527f2805520e",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_window_winit/src/tests/native_real_window.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:53e0809375ab24679defca1a7ae2e66ea7665d26113befc0a6dc95a5098fd169",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_window_winit/src/tests/real_window_interaction_gate.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:e11c72d109db0fbfb6944eab5d43631b15f2beeb096e6c620c28c56e335c6e9d",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_window_winit/src/tests/support.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:8ff492b6dc22053a072ad8816876a64a6e0e73341ac5cc2836aa27c6d1fd0004",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_window_winit/src/tests/viewport_runtime.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:33094d797956c898410a8d9a3e5717529d9cd4685ee80e63a8293161829b8124",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_window_winit/src/tests/visual_regression_gate.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:bc817b113495f3ee45dd6f7b2f04a657e10e0ac916007b868a5c7082d02dee78",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_window_winit/src/tests/window_surface.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:9f0fdbf69eb150d2d8532923ecf5358d969bacaee91f740cab4f9bcdc43e8f50",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_window_winit/src/transaction.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:a4d5db1ed533ed39722fe91201fb1292b38e158975ef44cb5785ccd2ddcc604a",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_window_winit/src/viewport.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:33d1e5ae809f6bcf6ea5a67d5a1ba192eb839056b42551e48f03ddd822afdc43",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_window_winit/src/visual_regression_gate.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:904399d03b7625396d5cd98d8b1ca107668fa652075e9b925332ad91a1197698",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_window_winit/src/window_plan.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:ab1d4f1dfda324f8ae129125adb18c02bf8dfb7caee46f02b1bd0abec1edb4fe",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/editor_window_winit/src/windowed_runtime_present.rs",
+      "domain": "editor",
+      "owner": "editor-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:76170f28138958f59b6c0100244d8d340036cdb324bf080869169e47c949e08b",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_input/src/device_state.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:a0121e76b2d7cf7bdf9b794ee0e4fd7dc778390255a5353404d367887de9a904",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_input/src/input_action.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:2a6aab783ed3c4bc534ac1ffae78f834c6c455d8e7410f1ff0451013065756d4",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_input/src/input_mapping.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:1e99ce62f705a2e452b068943e0488678f220c11d3e56b438235bd93d7d301ec",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_input/src/lib.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:110f34643c1441c619994fa4fcbe439edfa26d00264a417d23ccf74cf665ac2f",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/archetype.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:25d6bc182642c8212224fb580c7a158b9b9599f5f95ccff552c29170b8aea5e1",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/atomic_directory_publish.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:29ac0d0dc1ae485bc3c70892099acb8d427554caede166002a180b8372bb97bc",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/atomic_file_replace.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:5165dd301183e5946dd2d03c6d7a2146bce9b6e1b752c53a411787094cef064a",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/aui.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:6dff71931e9b24372a8eeea254ba3f72a786bbabdc251607f5940c8ee104a49e",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/canonical_digest.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:2bcad17294a94dec6b516cb4aee7b20751d6df555ec4a7e803b381178019fc14",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/component_value.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:dc41735f8146b873cf8df1f55619169cd74d03aa3ca11254f5230f49adc7090e",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/components.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:34829b1a75cd453829a64715f8da62c617640deae3402f0ff4600ba21a8a6d78",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/default_game_run.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:8966a4818c472d6f5ee85d8a3c20ee10e24065846eae0e17f350b190dc21cdde",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/diagnostics.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:4ed918b51025714bf8dc6b99f53af7463c8dfe19092fd15cc11fe27fcf43b38f",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/domain/asset.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:b15d78b9a6eb2cada845a07e060fe55f1df7043de25eec8eb47c3c0f2ecc9d02",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/domain/ecs.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:c3d2733690dd8cd469ac286fcc17b7ed4ae07902ee42016c6967cb59693a8056",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/domain/frame_loop.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:849b8cea8949caf96e31326172c186606533e516631c65ce51c123f80f02ac38",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/domain/input.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:b6fb142e0022180a3a80841ca3e75eb4ad9546a11078ba38f396aacdac71300b",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/domain/logic.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:8dfa47d334ef3420280b33eb7582cf390d9773daa50e6feb0137a3878ed6669a",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/domain/mod.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:25c0362a17952cfeb228867fcc15400b3ed3fb5fcea2011eb2339d7ab23bf3de",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/domain/package.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:28317dbefd36fd01dcfbcb669b6f4092b900ff663d215f0617fa3e9773a5c76e",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/domain/physics.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:71cb3999967388679a6ff2773a0f152fcb983917312693bad2209786bca26118",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/domain/render.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:0c788694a77fcfc7095f2ac5342ee2f123412786bf550c7226b8f6ff0723e780",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/domain/validation.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:495bf4f4e15faf86f1b45765dc69e1028cee4276ea56b1a94848dab05d29d5ec",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/engine_host_loop.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:74d3fc17e3bc0e8a97fed78a4e4c96498e0a000965f2e91fa1443b0401ae72ce",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/engine_rhi.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:06a34f7a9225573bce1afc935c810ccb0347c1b4c4dbc7e82113f281bb8aefba",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/field_path.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:5a829d1a917a77a0a9b1ae77727a1aad6c8005e4a0caf6fec4c88653ac5d7865",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/frame_hash.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:a06fc20282555bc48509c60f90c9506373799f4d2fba95d0a2fd022cd0b2529f",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/frame_loop.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:6167421975f4f24827ca1d813cd1c11e8d4c7f1ff3892c64bcd5b3b6f6231d23",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/gameplay_command.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:01218b8cdcc763714b8968b268380dcf6749c9749d2598403687b63732576cf5",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/gameplay_rule_report.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:24b45ed87601890aaf31638dc682faefd3f06addea14d66abb11bb3024bf0f44",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/gameplay_trace.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:0f0bcab2d6d159ca7a5d7578e6b9dab994fa7e5680be933bbe07f78988a2dc89",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/golden.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:f4362dffc600def262209fa12196acd9fe1a106212b0a5d8453049d6966fb10f",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/gpu_texture_lifetime.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:297b12c887fe4f7d868dce6ba6eee7372c0543211a145181643d4f648d9629f2",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/headless_rhi_backend.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:e01bbe5c4c1e89c8a2a833eee111140bb248510a6e9e671fa580dccc4acf001f",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/ids.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:2ab337cf3fed088e579f1bfb0f63f16ade859428a30a0f5e7fb9c626676e0bad",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/input_action.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:8bbffe18b6296b61b3f62ee52a5c7c305e4493a76bfd5b390ece2b473cdd6448",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/input_mapping.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:749ba306f05b2ee6f0f891e2e20acba6df3fa3953828a60046e8acceca53c9f3",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/lib.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:5a84073fc0521e0a5c8c698238b689f789a3c655bfa069af583be03dea72277f",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/logic_executor.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:9218f1bcf998780b06f1ed743f15d49e7b3cab2cfd2f4a5e257d7e9e15e12005",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/m2_rule_demo.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:566175435d27e666eef3902792ee0b8dfbbb3ca4aa717f0808258505daede3bd",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/math.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:8ecace0b06e72226247c4a2b78c22334791713a7007901c0360c2d573723d21a",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/minimal_renderer.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:4a1d15c66dbf27d580dafd50018221b98fe47f7968b597d961b609508ba197f0",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/physics2d.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:421ba118c6fa8bbcea521d919f1e7f553422e53c75fb00e5e5cea46c43caa20a",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/project_logic.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:d408d43ec18f8bf2c03e52ef63f90ee7daa43b776e8ff6ee8605c9c81f4960a7",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/project_rule_asset.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:8bc076d75b51761c7defc5e387ea00c8338f2a90d4c9794224ba12b8431ef433",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/project_runtime_module.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:b162a4a989d42e8f56b5d23f9953137efe270f7a7b6ee12ddd75a0502b3727b7",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/projection.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:97a87067d28ccb0675fd01a067d63eabddd509222256798d7703a1d07a1ad133",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/query.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:0d7fe9e9acfda09477036e8e71eaee8cd461d027cec2ec5c5ee9f576cae130ec",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/release_package_manifest.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:42f22c2a14bc6103f355362e5379223e075229293009ae36994ff07c3c29ebf0",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/render_asset_bridge.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:8e9de51e023a8b05b58ec92eccd26a46029701f584f6d14776ba603506f67282",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/render_asset_production.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:cd92651b5e8eaa81705455518f9d266a6aab06af71b5e6d9acf335f39ff678ab",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/render_command.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:fb2ca56634181613218bedea1d785cc9181a74cfc91d64a8839eee5e2eb64a7c",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/render_extract.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:01b9f63ca0e42d89a38c2fa8c0ca213c22619fbe714204a1a9bbbd77abe19c20",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/render_graph.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:06e92f46ad1d08acadd87a930be5f07c814089aac8c9f71b5c5695010c9a8e2d",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/render_graph_report.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:adba53cb552b24c2c5c3da2060f4b529d48979292302014540b7fe4f6e8165af",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/render_resource.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:85898d4c814ee2bd710ac7702446ab29708cd15cc84214e071dc0c0a896007f2",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/render_snapshot.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:8aa065be802be81ebfd92dcc162838c55b5ff1ccf0f6de50c1fcff22cf27ecb5",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/render_state.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:54e74afbe59cc2fb3c15c5fc770abd63ceaf93b446482b941ef005f54f2bbdcf",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/render_thread.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:00b8270d9057a6efa2f077dd8b6b983c39f1050892b990f30dffa66e8428555a",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/render_thread_worker.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:46082bc1c1fccea8d1b52e606035a7fec85dc481b1f829093c415130f8098428",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/renderer_feature_builder.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:1d23525e8228f9d80283494241bc233714ebe1902b266c7cb4f8e1ab236f7c01",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/rhi_command_plan.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:9d2df8aed72d378a5eee94f8e7e54d51ffd0d5b1824d5ffcba07615ef1f39ace",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/rule_artifact.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:12afa7529218c054b38d8b7c4372206337d0eebf797c02e1c1815bfb23f6e913",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/rule_compiler.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:4d4393465ffdb849ca839653e74ed7db642d0130fa1faf842005f50cef01605d",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/rule_ir.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:bb88c4fd6fe7cb3645553ae255427ea0d00b8769ad112220a4846f6f76235d7b",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/rule_registry.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:9a12812524a69eae80a0ef1f2f95a677d6050420957371bcc4bb48e0657fc43e",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/runtime_asset.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:5199fc946d8127de8a7b4fb4f45c1a0cc1f9bf19a30aa0b99087677e33c6bb58",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/runtime_asset_diagnostics.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:adcb1df9544c28c16465df3d343619fa06187a01e7b92f198797de122398c626",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/runtime_asset_loader.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:b850729b07e484925fe1b3aa4a26ef9c8f6ab11afc50d59aa32c63ae8be40caf",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/runtime_entity_hydration.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:b156a704847ed203e70fa1100906dc4f2ca5e6fc5a82de48653e31b32f6153c3",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/runtime_instance.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:97eedf2073955385030ceb44ae2ba188f1b967119deeb6924dbb004f77d08e18",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/runtime_instance_diagnostics.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:18dc3e5baf5632c041facee9e79c201f68b380f79384f9d7254972289e409304",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/runtime_instance_loader.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:0656efdb25fe1d9dc0bb40b174478e0fe13e66e077e0a50430e67dfe8ee949e0",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/runtime_package.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:ea74a67fc02ddfedb30e00f1b8b4de9b03a5f48bf493376415aaf616d7c99613",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/runtime_package_builder.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:d7c8d20d6e25740619dcd02a842a8ecd2eed253efe5f829998d91a38576d28ce",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/runtime_package_path.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:f0acb6bea3e3a27a5dfdbc8b014a1234a7ff94c8d060654a1a8284688983901d",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/runtime_renderer.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:f3096d8def81638d53a3bbda77a4ec9fd3e188da41ff1cde7acce8d29cd14343",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/runtime_run.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:290c0779d321c4766d3f245e6814d426174c74557cb7775a656937d93e611b38",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/runtime_scene_hydration.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:65ab3c76967502c19d915f667fb387720fcc129473c242e6d7762e011b89b562",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/runtime_texture.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:f53c923abcce0a71e7df1161b5527633acb6c397c4bd77073e722c5c05ec2995",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/runtime_time.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:a97c88691ec29b7403e56ba8f19151fc38554558e1341b001cccd6b55611a1dd",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/runtime_trace.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:628bf5b43b164cbd57faeafbb9a5d5979ef9c3349a175a1a3614ab07551330a8",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/scene_loader.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:c0b1cc7a43686f17a87b328d677e6a3d436b64c3f7fc1037caf62e10c8e13bdc",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/sprite2d_render_pipeline.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:b0bb0a014e48c11dc6bb5c61bb168a5eafcd5dd0b3effcbd91b79e41ab064b02",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/wgpu_backend.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:cf3708e52a0ab1ba7defc95ad56e6ead3a02ef7b11090454bad406dd57c76680",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/windowed_continuous_runtime.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:cca314871a489780ba41b42aa0142c5970069c3ce09155137c93622ea07631ee",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/windowed_player.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:ae129ca7ea3fd697872c9d3fcce5e6eea981f84ec8a96bb7440e9aad056c3526",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/world.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:702d2bb8e88caeae8126a3708d1109c9fbe2655f1780f60c7de455173f2c29fa",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/engine_runtime/src/world_api.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:1d28509611ba498035946f2c2b713337d1e1ae443112ca68f7b68fd0ffa3072e",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/project_e2e_gate/src/assembly.rs",
+      "domain": "validation",
+      "owner": "engine-validation",
+      "status": "coverage_pending",
+      "context_digest": "sha256:1ec292a2fb34dc338af7ee5946b1e566658d9f585ee9a86e56e565ae068a33d5",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/project_e2e_gate/src/asset_browser_native.rs",
+      "domain": "validation",
+      "owner": "engine-validation",
+      "status": "coverage_pending",
+      "context_digest": "sha256:8dd6756fb9823cfc5d4460971684e58d30718e19d165382ab8f1ab25bc564bd3",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/project_e2e_gate/src/aui_authoring.rs",
+      "domain": "validation",
+      "owner": "engine-validation",
+      "status": "coverage_pending",
+      "context_digest": "sha256:452daeea73c7f3b02b3b316c71dbb249bea7fb23fd29d2cb7dfb763e017a3ad5",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/project_e2e_gate/src/aui_complex_controls.rs",
+      "domain": "validation",
+      "owner": "engine-validation",
+      "status": "coverage_pending",
+      "context_digest": "sha256:4621f4d2339b554fa4431dbffbe13870f00d11eceddcd1045496b5c3dfe75348",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/project_e2e_gate/src/aui_rectclip_scrollbar_navigation.rs",
+      "domain": "validation",
+      "owner": "engine-validation",
+      "status": "coverage_pending",
+      "context_digest": "sha256:754cea08db787ae800dd0dd83712ae3b1de052beff703a6f74e2da978db424eb",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/project_e2e_gate/src/aui_runtime_interaction.rs",
+      "domain": "validation",
+      "owner": "engine-validation",
+      "status": "coverage_pending",
+      "context_digest": "sha256:d082e441eb5508ba05126604d75ebd4fd9c1682f35ac1e005054436609febe5c",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/project_e2e_gate/src/aui_runtime_navigation_screenflow_textentry.rs",
+      "domain": "validation",
+      "owner": "engine-validation",
+      "status": "coverage_pending",
+      "context_digest": "sha256:adebeb4194438a82d0d412672fec3077cdb5c4c53dc0b03ea852d143450d43ae",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/project_e2e_gate/src/aui_scene_authoring.rs",
+      "domain": "validation",
+      "owner": "engine-validation",
+      "status": "coverage_pending",
+      "context_digest": "sha256:6399cd6054b55d2dfda77933efbf2d28abc75b856e7c9fd2cc34a4c877f2531e",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/project_e2e_gate/src/aui_template_reuse.rs",
+      "domain": "validation",
+      "owner": "engine-validation",
+      "status": "coverage_pending",
+      "context_digest": "sha256:44b7cadfb35d7c4f1f36084c3580e5b22e8d88890e7cc81a5894f08122df1062",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/project_e2e_gate/src/authoring_asset_completeness.rs",
+      "domain": "validation",
+      "owner": "engine-validation",
+      "status": "coverage_pending",
+      "context_digest": "sha256:83532daa1e3c897eae303161bfac5332aaaae73ca3503feee531a778b04a0c29",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/project_e2e_gate/src/bin/atomic_publish_fixture.rs",
+      "domain": "validation",
+      "owner": "engine-validation",
+      "status": "coverage_pending",
+      "context_digest": "sha256:6f4a8c395b0d3d53c50313f243fb7f3984f8f6f39e238d8d920c6c6aa144866c",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/project_e2e_gate/src/bin/project_e2e_gate.rs",
+      "domain": "validation",
+      "owner": "engine-validation",
+      "status": "coverage_pending",
+      "context_digest": "sha256:a070cc1d48cc3a9e18cc85c6ab76b6593ad586adf42d1f23b40b87fe81373c39",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/project_e2e_gate/src/bin/release_runtime_fixture.rs",
+      "domain": "validation",
+      "owner": "engine-validation",
+      "status": "coverage_pending",
+      "context_digest": "sha256:2d4d3fea4662bdad3aec9ec30899011558a214b05ab85de34873603ecea58392",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/project_e2e_gate/src/critical_correctness_safety.rs",
+      "domain": "validation",
+      "owner": "engine-validation",
+      "status": "coverage_pending",
+      "context_digest": "sha256:0e019cb5ea8c7d9d479997c379ab14def7bbec4bfb30760968b392bb8bc65652",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/project_e2e_gate/src/editor_build_and_run.rs",
+      "domain": "validation",
+      "owner": "engine-validation",
+      "status": "coverage_pending",
+      "context_digest": "sha256:ac2089106d8096d3a5825e9d1bb4091b8deb88c8ef1add6bff8c8262dad89787",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/project_e2e_gate/src/editor_gameview_play.rs",
+      "domain": "validation",
+      "owner": "engine-validation",
+      "status": "coverage_pending",
+      "context_digest": "sha256:b16c71970074daeb18da769b1410d96823610bf88778c54bea80bfe7db56f49b",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/project_e2e_gate/src/exported_windows_playable_golden.rs",
+      "domain": "validation",
+      "owner": "engine-validation",
+      "status": "coverage_pending",
+      "context_digest": "sha256:000a2a31775c593f836335088107a0a88381ea2204a551ff4e08eb71a72fae2c",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/project_e2e_gate/src/gameplay_rule_runtime.rs",
+      "domain": "validation",
+      "owner": "engine-validation",
+      "status": "coverage_pending",
+      "context_digest": "sha256:4b6a83e6a6de8a2d982af57c0d9d424c3235d59c3498bf0c71bf05c2aed988ee",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/project_e2e_gate/src/gate.rs",
+      "domain": "validation",
+      "owner": "engine-validation",
+      "status": "coverage_pending",
+      "context_digest": "sha256:dec7e42037c3d4d4db3e37cf824a0e306ba87b1f842339f5afe4fab7b310b9c5",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/project_e2e_gate/src/input_mapping_visual_authoring.rs",
+      "domain": "validation",
+      "owner": "engine-validation",
+      "status": "coverage_pending",
+      "context_digest": "sha256:53486bfe212cf8ae3d6f17fdcc9645a623747e7d2629437a542e33ea858e5097",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/project_e2e_gate/src/lib.rs",
+      "domain": "validation",
+      "owner": "engine-validation",
+      "status": "coverage_pending",
+      "context_digest": "sha256:0414d8c02e0ddf3ba68f99f924e41266faac8ff4d49dea184c3997b3afc360d6",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/project_e2e_gate/src/llm_worker_lifecycle.rs",
+      "domain": "validation",
+      "owner": "engine-validation",
+      "status": "coverage_pending",
+      "context_digest": "sha256:5bb6d15cd367320649b39f5c5a36383889c6140cb108574967be7ca5c6a6a969",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/project_e2e_gate/src/manual_walkthrough.rs",
+      "domain": "validation",
+      "owner": "engine-validation",
+      "status": "coverage_pending",
+      "context_digest": "sha256:ceb0164cb8c4209791446c2d9a793e83eafd77377bf941d9646eb55eeb8423e0",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/project_e2e_gate/src/prefab_authoring.rs",
+      "domain": "validation",
+      "owner": "engine-validation",
+      "status": "coverage_pending",
+      "context_digest": "sha256:3e88b93d4463215e99a05681af73513141e241d742dc612e1c83c84327f0d96a",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/project_e2e_gate/src/prefab_runtime_bake.rs",
+      "domain": "validation",
+      "owner": "engine-validation",
+      "status": "coverage_pending",
+      "context_digest": "sha256:2c85849c91de6a66ffac421c2436e3d4ab7086e2cb7aec87d3f21370566473cb",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/project_e2e_gate/src/project_patch.rs",
+      "domain": "validation",
+      "owner": "engine-validation",
+      "status": "coverage_pending",
+      "context_digest": "sha256:79ff50773ac920c9f593fecbeff68a8b72bc969711dc6ba068c2bbcd75a5b812",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/project_e2e_gate/src/project_rule_driven_ui_state.rs",
+      "domain": "validation",
+      "owner": "engine-validation",
+      "status": "coverage_pending",
+      "context_digest": "sha256:6006b92fbbe140d7a17878bd5b9eb9cecdab8ca94913b8d91c7e9c778e1fa099",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/project_e2e_gate/src/project_write_containment.rs",
+      "domain": "validation",
+      "owner": "engine-validation",
+      "status": "coverage_pending",
+      "context_digest": "sha256:1d8ae76946daae16d330f3caaa7b9fe563db783aafd1d716233e6d899a7833ec",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/project_e2e_gate/src/real_texture_present.rs",
+      "domain": "validation",
+      "owner": "engine-validation",
+      "status": "coverage_pending",
+      "context_digest": "sha256:e705aa14429c1b9956f88968e45f5e99f9c3ded370f2d62a32b8a5ab596ada5f",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/project_e2e_gate/src/release_package.rs",
+      "domain": "validation",
+      "owner": "engine-validation",
+      "status": "coverage_pending",
+      "context_digest": "sha256:0dbb72e51f4d59eafa1641de23d64aa4c07420a47436f86545fc4749124fb74c",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/project_e2e_gate/src/report.rs",
+      "domain": "validation",
+      "owner": "engine-validation",
+      "status": "coverage_pending",
+      "context_digest": "sha256:a1be7853df7884e311770c9e5bc98a348bc1aabaf11ced8cf704809b3728bcaf",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/project_e2e_gate/src/rule_authoring.rs",
+      "domain": "validation",
+      "owner": "engine-validation",
+      "status": "coverage_pending",
+      "context_digest": "sha256:805f5cacc2cb77f276d02997af55ed6dd7154a943e9e0749610a2a8db530dcf8",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/project_e2e_gate/src/rule_card_authoring.rs",
+      "domain": "validation",
+      "owner": "engine-validation",
+      "status": "coverage_pending",
+      "context_digest": "sha256:59030245fd1cdb71a6b1478eab9e6b63d302337f501b61ee9bc543d28b3a0998",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/project_e2e_gate/src/sample_project.rs",
+      "domain": "validation",
+      "owner": "engine-validation",
+      "status": "coverage_pending",
+      "context_digest": "sha256:2f83cbdafb5c73e2e878b863cdf08d2fe35e81045785882cc6a1df721f983e7a",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/project_e2e_gate/src/save_reload_rebuild.rs",
+      "domain": "validation",
+      "owner": "engine-validation",
+      "status": "coverage_pending",
+      "context_digest": "sha256:3887d5f49ed33768a7401fa51b5129f499352f1e023ee8818c5c6041afc98b1c",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/project_e2e_gate/src/second_project_runtime.rs",
+      "domain": "validation",
+      "owner": "engine-validation",
+      "status": "coverage_pending",
+      "context_digest": "sha256:68f930ccaf6706904ef47fa8d7b9161caa4e3bb257a41ab0e06b485fd8931388",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/project_e2e_gate/src/tests.rs",
+      "domain": "validation",
+      "owner": "engine-validation",
+      "status": "coverage_pending",
+      "context_digest": "sha256:bbe42789fc33aeb4e75114108e4e63807366ecb01842b28e4de98cadbb242e15",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/project_e2e_gate/src/unified_report_panel.rs",
+      "domain": "validation",
+      "owner": "engine-validation",
+      "status": "coverage_pending",
+      "context_digest": "sha256:bcf2f1b78a0f923291df59f1b2a2536dcd467506caa52be5e4bb9b503c1515e6",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/project_e2e_gate/src/vertical_slice.rs",
+      "domain": "validation",
+      "owner": "engine-validation",
+      "status": "coverage_pending",
+      "context_digest": "sha256:041796b63f301d0aa49c6f7a93cedacf1ffb6a09d521bc89e0f5c9706615588a",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/project_e2e_gate/tests/atomic_publish.rs",
+      "domain": "validation",
+      "owner": "engine-validation",
+      "status": "coverage_pending",
+      "context_digest": "sha256:2fa9064b772be5e83c572c02e55f2cea4980d8a3ab77db61d04167fe35cc7bbd",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/project_e2e_gate/tests/pe_contract.rs",
+      "domain": "validation",
+      "owner": "engine-validation",
+      "status": "coverage_pending",
+      "context_digest": "sha256:fc3f1d277cc74d6576c8ec1ed7dda0817c75a7bf7dd16ecd60cbb40fba4f971e",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/project_e2e_gate/tests/release_package.rs",
+      "domain": "validation",
+      "owner": "engine-validation",
+      "status": "coverage_pending",
+      "context_digest": "sha256:5909c2fb9e3c9dd65b62adf08b70dd378865d365a2e3efaad56232b0358574e4",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/project_e2e_gate/tests/save_reload_rebuild_consistency.rs",
+      "domain": "validation",
+      "owner": "engine-validation",
+      "status": "coverage_pending",
+      "context_digest": "sha256:cf35e7940f1be2471fff6db7aa5f61ca6877ed2f7b1b4a083a2e17e425cbf2d4",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/quality_gate/src/architecture_artifact.rs",
+      "domain": "quality-tooling",
+      "owner": "engine-quality",
+      "status": "coverage_pending",
+      "context_digest": "sha256:5e3ceed2567b1cccff7e5389f3251fcbf1c888593c0b39af37f56efdd1494f08",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/quality_gate/src/architecture_bootstrap.rs",
+      "domain": "quality-tooling",
+      "owner": "engine-quality",
+      "status": "coverage_pending",
+      "context_digest": "sha256:c389557d21d12be7b01f65b73710630f7274a3fd8bbd687da401f2305e4d3a0e",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/quality_gate/src/architecture_coverage.rs",
+      "domain": "quality-tooling",
+      "owner": "engine-quality",
+      "status": "coverage_pending",
+      "context_digest": "sha256:9faedbcfc8f587dc14964bd9bc33def287fcc94edcf2706b24792c1adf009958",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/quality_gate/src/architecture_debt.rs",
+      "domain": "quality-tooling",
+      "owner": "engine-quality",
+      "status": "coverage_pending",
+      "context_digest": "sha256:22ae7dd8bbeafd0323fce92e65f64fb15f54b9d23797516e201ecd05dad5f0e8",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/quality_gate/src/architecture_inventory.rs",
+      "domain": "quality-tooling",
+      "owner": "engine-quality",
+      "status": "coverage_pending",
+      "context_digest": "sha256:34a3ab0070550632fca38bec32c9bb66eab764b7618d9b392baef0f887c1386c",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/quality_gate/src/architecture_policy.rs",
+      "domain": "quality-tooling",
+      "owner": "engine-quality",
+      "status": "coverage_pending",
+      "context_digest": "sha256:13f4f84041c2d833e07b52281bf39ec8afdfff6e3351e07529de7ac7846939db",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/quality_gate/src/architecture_review.rs",
+      "domain": "quality-tooling",
+      "owner": "engine-quality",
+      "status": "coverage_pending",
+      "context_digest": "sha256:5f7ec79e5d2b5bf242623275fa7633569ffbfb63dc927309aca206208bd37a00",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/quality_gate/src/cargo_json.rs",
+      "domain": "quality-tooling",
+      "owner": "engine-quality",
+      "status": "coverage_pending",
+      "context_digest": "sha256:9a11571bb8afc823564fc1fddebe431beaa7c040bca5ccd8b75c4d3220e46b38",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/quality_gate/src/change_scope.rs",
+      "domain": "quality-tooling",
+      "owner": "engine-quality",
+      "status": "coverage_pending",
+      "context_digest": "sha256:6e6ca02219475cf4be90b9f6f26b11e55eab88ada9ba2fcb6dcc2cccfc03b844",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/quality_gate/src/command.rs",
+      "domain": "quality-tooling",
+      "owner": "engine-quality",
+      "status": "coverage_pending",
+      "context_digest": "sha256:b78b7a51ed8402d3bb70b93f69b747f1e46f5a669371de5f7cf3c0e3f07dece1",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/quality_gate/src/lib.rs",
+      "domain": "quality-tooling",
+      "owner": "engine-quality",
+      "status": "coverage_pending",
+      "context_digest": "sha256:91f94149ce7090f252a1f8c0aab1bb532987579b1a8c81e41542a1d95c47bca1",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/quality_gate/src/lint_ledger.rs",
+      "domain": "quality-tooling",
+      "owner": "engine-quality",
+      "status": "coverage_pending",
+      "context_digest": "sha256:7971ae0cd22841155065ba3347c77843b5ce6205bf347e0a09e689751c3b319f",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/quality_gate/src/local_ci.rs",
+      "domain": "quality-tooling",
+      "owner": "engine-quality",
+      "status": "coverage_pending",
+      "context_digest": "sha256:e272b0a308b61e1bdead5aeeda019622f8ed37485748907245a93881f16b6434",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/quality_gate/src/main.rs",
+      "domain": "quality-tooling",
+      "owner": "engine-quality",
+      "status": "coverage_pending",
+      "context_digest": "sha256:8d8dbffca632f17e5224781a2266201c157eaa3539acc74b2cb35e39901354df",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/quality_gate/src/proposal.rs",
+      "domain": "quality-tooling",
+      "owner": "engine-quality",
+      "status": "coverage_pending",
+      "context_digest": "sha256:f8c0ea7a39db362f0642f9a2c00da05ea2a09cb6322ec85e0a9649ee179314ca",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/quality_gate/src/report.rs",
+      "domain": "quality-tooling",
+      "owner": "engine-quality",
+      "status": "coverage_pending",
+      "context_digest": "sha256:fffb7c2d125d5cb840a0eb5565dbbb02068448996073a8e1b267ecf6a201b4aa",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/quality_gate/src/runner.rs",
+      "domain": "quality-tooling",
+      "owner": "engine-quality",
+      "status": "coverage_pending",
+      "context_digest": "sha256:96f58a89e11e9678f42347102ab56d16638c98ddccb0172e2efd41152e85968b",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/quality_gate/src/suppression.rs",
+      "domain": "quality-tooling",
+      "owner": "engine-quality",
+      "status": "coverage_pending",
+      "context_digest": "sha256:606aebb573dd1055429c8160e53b9e5f42b334b086759304cb84927720fada2f",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/quality_gate/src/toolchain.rs",
+      "domain": "quality-tooling",
+      "owner": "engine-quality",
+      "status": "coverage_pending",
+      "context_digest": "sha256:8553926ec5da206d5493160ee61e335fbb5add702a2d816e28f67d488df98f88",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/quality_gate/src/workspace.rs",
+      "domain": "quality-tooling",
+      "owner": "engine-quality",
+      "status": "coverage_pending",
+      "context_digest": "sha256:08bf95a95d5b1621f4d5d0830c4ae493dc3acf584fed9165482c3176ed2765c4",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/quality_gate/tests/architecture_gate_matrix.rs",
+      "domain": "quality-tooling",
+      "owner": "engine-quality",
+      "status": "coverage_pending",
+      "context_digest": "sha256:99699541219fc0f723bc74226888391ef69af78dcaec302b97761ca88294d433",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/quality_gate/tests/architecture_policy.rs",
+      "domain": "quality-tooling",
+      "owner": "engine-quality",
+      "status": "coverage_pending",
+      "context_digest": "sha256:1df5f4cf0f50924c8e3438ca535eb5de7e212bbe0f51e6031a1a3a0436043686",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/quality_gate/tests/ci_contract.rs",
+      "domain": "quality-tooling",
+      "owner": "engine-quality",
+      "status": "coverage_pending",
+      "context_digest": "sha256:21d03d814b92d0eb0891017059fad352d516879930f5899d64e8a1c50a0437cb",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/quality_gate/tests/lint_budget_matrix.rs",
+      "domain": "quality-tooling",
+      "owner": "engine-quality",
+      "status": "coverage_pending",
+      "context_digest": "sha256:5d9bf42d8170c1f1972ed8224f70dc14cecc7634757847f986c0ae6ea610fa48",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/quality_gate/tests/report_compatibility.rs",
+      "domain": "quality-tooling",
+      "owner": "engine-quality",
+      "status": "coverage_pending",
+      "context_digest": "sha256:ee8dd74b17ff6107537d80a577384da707a815afee11bdf6d3b5e9da30a90a66",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/runtime_cli/src/bin/bounded_output_fixture.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:44563a479c5c855c24bb3f7c9b17a7eccd802cc9d57d14b38055156144479dce",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/runtime_cli/src/bounded_child_process.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:acdf0027fb4baf1206194b53faf38173461710febcc2129204b8d551736cbd9a",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/runtime_cli/src/exported_player_verification.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:daa2f24707ae87719b44c61d7fe943fc1c15b43c6578d7e852250c58281b0390",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/runtime_cli/src/lib.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:f5caba0f12a119e157584ef419ef74d5f37b92b1693fc509a13f8613d512a754",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/runtime_cli/src/main.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:2d4d3fea4662bdad3aec9ec30899011558a214b05ab85de34873603ecea58392",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/runtime_cli/tests/bounded_child_process.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:209011f61ef1fba71bf02c569688ea91930226ac764a64e2b9743a0adbbd330e",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/runtime_cli/tests/exported_player_process_verification.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:003a7cd804b957225c400dd4c3d3f3cf0620224db2e2c411ef9626b4aacf55d6",
+      "artifact_digest": null,
+      "reviewed_at": null
+    },
+    {
+      "subject": "crates/runtime_player_winit/src/lib.rs",
+      "domain": "runtime",
+      "owner": "runtime-platform",
+      "status": "coverage_pending",
+      "context_digest": "sha256:145b60f2aa616235c94eca849c471051125954e9f995529896c7f9263a650803",
+      "artifact_digest": null,
+      "reviewed_at": null
+    }
+  ]
+}

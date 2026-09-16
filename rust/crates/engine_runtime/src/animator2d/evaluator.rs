@@ -11,6 +11,17 @@ use std::collections::{BTreeMap, BTreeSet};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Animator2DCommand {
+    Play {
+        entity_id: EntityId,
+        state_id: String,
+    },
+    Resume {
+        entity_id: EntityId,
+    },
+    SetPaused {
+        entity_id: EntityId,
+        paused: bool,
+    },
     SetBool {
         entity_id: EntityId,
         parameter_id: String,
@@ -30,6 +41,9 @@ impl Animator2DCommand {
     pub fn entity_id(&self) -> &EntityId {
         match self {
             Self::SetBool { entity_id, .. }
+            | Self::Play { entity_id, .. }
+            | Self::Resume { entity_id }
+            | Self::SetPaused { entity_id, .. }
             | Self::SetTrigger { entity_id, .. }
             | Self::ResetTrigger { entity_id, .. } => entity_id,
         }
@@ -79,6 +93,8 @@ pub struct Animator2DEntityState {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct Animator2DInstanceMemory {
+    explicit_play: bool,
+    paused: bool,
     runtime_entity_id: RuntimeEntityId,
     controller_index: u32,
     registry_digest: String,
@@ -248,11 +264,13 @@ impl Animator2DModule {
             let attached = reset;
             let entity_commands = commands_by_entity.remove(&entity_id).unwrap_or_default();
             let mut command_failed = false;
+            let mut explicit_started = false;
             {
                 let memory = self.instances.get_mut(&entity_id).expect("attached memory");
                 for command in entity_commands {
-                    if apply_command(memory, &controller, command).is_err() {
-                        command_failed = true;
+                    match apply_command(memory, &controller, command) {
+                        Ok(started) => explicit_started |= started,
+                        Err(()) => command_failed = true,
                     }
                 }
             }
@@ -264,20 +282,30 @@ impl Animator2DModule {
                     &entity_id,
                     runtime_entity_id.generation,
                     "animator2d.command_parameter_invalid",
-                    "Animator2D command parameter is missing or has the wrong kind.",
+                    "Animator2D command parameter/state is missing or has the wrong kind.",
                 );
             }
 
             let registry = &self.registry;
             let memory = self.instances.get_mut(&entity_id).expect("attached memory");
-            let immediate =
-                select_transition(&controller, memory, Animator2DTransitionTiming::Immediate);
+            let was_explicit = memory.explicit_play;
+            if memory.explicit_play && !memory.paused && !explicit_started && !attached {
+                advance_memory(registry, &controller, memory);
+                if memory.completed {
+                    memory.explicit_play = false;
+                }
+            }
+            let immediate = if memory.paused || memory.explicit_play {
+                None
+            } else {
+                select_transition(&controller, memory, Animator2DTransitionTiming::Immediate)
+            };
             let mut winning_transition = None;
             if let Some(transition) = immediate {
                 winning_transition = Some(transition.id.clone());
                 perform_transition(memory, transition);
                 result.transition_count += 1;
-            } else if !attached {
+            } else if !attached && !memory.paused && !was_explicit && !explicit_started {
                 let crossed_end = advance_memory(registry, &controller, memory);
                 if crossed_end {
                     if let Some(transition) =
@@ -403,6 +431,8 @@ fn attach_memory(
         })
         .collect();
     Animator2DInstanceMemory {
+        explicit_play: false,
+        paused: false,
         runtime_entity_id,
         controller_index: component.controller_index,
         registry_digest: component.registry_digest.clone(),
@@ -420,7 +450,35 @@ fn apply_command(
     memory: &mut Animator2DInstanceMemory,
     controller: &CookedAnimatorController2D,
     command: Animator2DCommand,
-) -> Result<(), ()> {
+) -> Result<bool, ()> {
+    match &command {
+        Animator2DCommand::Play { state_id, .. } => {
+            let state = controller
+                .states
+                .iter()
+                .position(|state| state.id == *state_id)
+                .ok_or(())? as u32;
+            if memory.explicit_play && memory.state_index == state {
+                return Ok(false);
+            }
+            memory.state_index = state;
+            memory.frame_index = 0;
+            memory.ticks_in_frame = 0;
+            memory.speed_accumulator = 0;
+            memory.completed = false;
+            memory.explicit_play = true;
+            return Ok(true);
+        }
+        Animator2DCommand::Resume { .. } => {
+            memory.explicit_play = false;
+            return Ok(false);
+        }
+        Animator2DCommand::SetPaused { paused, .. } => {
+            memory.paused = *paused;
+            return Ok(false);
+        }
+        _ => {}
+    }
     let (parameter_id, expected_kind) = match &command {
         Animator2DCommand::SetBool { parameter_id, .. } => {
             (parameter_id, Animator2DParameterKind::Bool)
@@ -429,6 +487,7 @@ fn apply_command(
         | Animator2DCommand::ResetTrigger { parameter_id, .. } => {
             (parameter_id, Animator2DParameterKind::Trigger)
         }
+        _ => unreachable!("handled playback command"),
     };
     let Some(index) = controller
         .parameters
@@ -445,8 +504,9 @@ fn apply_command(
         Animator2DCommand::ResetTrigger { .. } => {
             memory.triggers.remove(&(index as u32));
         }
+        _ => unreachable!("handled playback command"),
     }
-    Ok(())
+    Ok(false)
 }
 
 fn select_transition<'a>(

@@ -1,26 +1,35 @@
 [workspace]
 members = [
+  "crates/code_hygiene",
+  "crates/quality_gate",
+  "crates/architecture_review",
+  "crates/authoring_project_context",
+  "crates/project_authoring_execution",
   "crates/engine_input",
   "crates/project_runtime_abi",
+  "crates/engine_public_api",
   "crates/project_runtime_sdk",
+  "crates/project_game_sdk",
   "crates/engine_runtime",
+  "crates/engine_runtime_host",
   "crates/editor_ui_model",
   "crates/editor_core",
-  "crates/ai_tool_gateway",
+  "crates/engine_tool_provider",
   "crates/editor_ui_backend_egui",
   "crates/editor_ui_renderer",
   "crates/editor_wgpu_renderer",
   "crates/editor_input",
   "crates/editor_window_winit",
   "crates/editor_host",
+  "crates/project_e2e_gate",
   "crates/runtime_cli",
   "crates/runtime_player_winit",
   "crates/runtime_player_android",
+  "project_players/empty",
 ]
 resolver = "2"
 
 [workspace.package]
-version = "0.0.3"
 edition = "2021"
 license = "UNLICENSED"
 publish = false

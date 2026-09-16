@@ -50,14 +50,14 @@ fn open_legacy_switch_puzzle() -> (EditorSession, TestProjectRoot) {
 }
 
 fn save_active_scene(session: &mut EditorSession, path: Option<&Path>) -> crate::SceneSaveReport {
-    let scope = session
+    let authoring_session = session
         .active_project_session()
-        .unwrap()
-        .write_scope()
-        .clone();
-    SceneSavePipeline::save_in_scope(
+        .map(|project| project.authoring_session().clone())
+        .unwrap();
+    let mut authoring = authoring_session.lock().unwrap();
+    SceneSavePipeline::save_in_context(
         session.editor_scene_document.as_mut().unwrap(),
-        &scope,
+        &mut authoring,
         path,
     )
 }
@@ -76,7 +76,12 @@ fn clean_same_path_save_preserves_legacy_scene_bytes_mtime_and_project_digest() 
     let save = session.execute_command(command_for_test(UiCommandPayload::SaveSceneDocument {
         path: None,
     }));
-    assert_eq!(save.status, CommandStatus::Committed);
+    assert_eq!(
+        save.status,
+        CommandStatus::Committed,
+        "SaveScene diagnostics: {:?}",
+        save.diagnostics
+    );
     assert!(save
         .diagnostics
         .iter()
@@ -204,4 +209,106 @@ fn clean_save_recreates_a_missing_current_target() {
     assert_eq!(report.status, SceneSaveStatus::Saved);
     assert!(scene_path.exists());
     assert_eq!(session.scene_dirty(), Some(false));
+}
+
+#[test]
+fn two_editor_contexts_use_last_completed_full_document_save() {
+    let (mut first, project_root) = open_legacy_switch_puzzle();
+    let scene_path = project_root.0.join("Scenes/Main.scene.json");
+    let mut second = fixtures::session_with_linked_project_runtime("sample.switch-puzzle.runtime");
+    let open = second.execute_command(command_for_test(UiCommandPayload::OpenProject {
+        path: project_root.0.display().to_string(),
+    }));
+    assert_eq!(open.status, CommandStatus::Committed);
+
+    first.editor_scene_document.as_mut().unwrap().name = "First full document".to_string();
+    first
+        .editor_scene_document
+        .as_mut()
+        .unwrap()
+        .mark_dirty("first-full-document");
+    assert_eq!(
+        first
+            .execute_command(command_for_test(UiCommandPayload::SaveSceneDocument {
+                path: None,
+            }))
+            .status,
+        CommandStatus::Committed
+    );
+
+    second.editor_scene_document.as_mut().unwrap().name = "Second full document".to_string();
+    second
+        .editor_scene_document
+        .as_mut()
+        .unwrap()
+        .mark_dirty("second-full-document");
+    assert_eq!(
+        second
+            .execute_command(command_for_test(UiCommandPayload::SaveSceneDocument {
+                path: None,
+            }))
+            .status,
+        CommandStatus::Committed
+    );
+
+    let saved = EditorSceneDocument::load_from_path(&scene_path).unwrap();
+    assert_eq!(saved.name, "Second full document");
+}
+
+#[test]
+fn clean_save_does_not_overwrite_external_bytes() {
+    let (mut session, project_root) = open_legacy_switch_puzzle();
+    let scene_path = project_root.0.join("Scenes/Main.scene.json");
+    let external = b"external-last-writer";
+    fs::write(&scene_path, external).unwrap();
+
+    let result = session.execute_command(command_for_test(UiCommandPayload::SaveSceneDocument {
+        path: None,
+    }));
+
+    assert_eq!(result.status, CommandStatus::Committed);
+    assert!(result
+        .diagnostics
+        .iter()
+        .any(|entry| entry.code == "editor.scene_document.unchanged"));
+    assert_eq!(fs::read(scene_path).unwrap(), external);
+}
+
+#[test]
+fn failed_context_save_keeps_dirty_scene() {
+    let (mut session, project_root) = open_legacy_switch_puzzle();
+    session.editor_scene_document.as_mut().unwrap().name = "Dirty".to_string();
+    session
+        .editor_scene_document
+        .as_mut()
+        .unwrap()
+        .mark_dirty("failed-save");
+    let outside = project_root.0.parent().unwrap().join("outside.scene.json");
+
+    let result = session.execute_command(command_for_test(UiCommandPayload::SaveSceneDocument {
+        path: Some(outside.display().to_string()),
+    }));
+
+    assert_eq!(result.status, CommandStatus::Failed);
+    assert_eq!(session.scene_dirty(), Some(true));
+    assert!(!outside.exists());
+}
+
+#[test]
+fn scene_open_uses_current_context_snapshot_bytes() {
+    let (mut session, project_root) = open_legacy_switch_puzzle();
+    let scene_path = project_root.0.join("Scenes/Main.scene.json");
+    let mut external = session.editor_scene_document().unwrap().clone();
+    external.name = "Context snapshot scene".to_string();
+    fs::write(&scene_path, external.to_stable_json().unwrap()).unwrap();
+
+    let result = session.execute_command(command_for_test(UiCommandPayload::OpenSceneDocument {
+        path: scene_path.display().to_string(),
+    }));
+
+    assert_eq!(result.status, CommandStatus::Committed);
+    assert_eq!(
+        session.editor_scene_document().unwrap().name,
+        "Context snapshot scene"
+    );
 }

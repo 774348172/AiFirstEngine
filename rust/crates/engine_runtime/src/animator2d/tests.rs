@@ -6,6 +6,82 @@ use crate::world::World;
 use std::collections::BTreeMap;
 
 #[test]
+fn animator2d_explicit_once_preserves_progress_pauses_and_returns_to_rules() {
+    let base = bool_registry();
+    let mut clips = base.clips;
+    clips[0] = clip("attack", Animator2DPlayback::Once, ["attack-0", "attack-1"]);
+    let registry = CookedAnimator2DRegistry::from_parts(clips, base.controllers).unwrap();
+    let run = || {
+        let mut world = world_fixture(&registry.registry_digest);
+        let mut module = Animator2DModule::load(registry.clone()).unwrap();
+        let entity_id = EntityId::from("animated");
+        let mut frames = Vec::new();
+        for tick in 1..=8 {
+            if tick <= 3 {
+                module.apply([Animator2DCommand::Play {
+                    entity_id: entity_id.clone(),
+                    state_id: "attack".into(),
+                }]);
+            }
+            if tick == 4 {
+                module.apply([Animator2DCommand::SetPaused {
+                    entity_id: entity_id.clone(),
+                    paused: true,
+                }]);
+            }
+            if tick == 6 {
+                module.apply([Animator2DCommand::SetPaused {
+                    entity_id: entity_id.clone(),
+                    paused: false,
+                }]);
+            }
+            let report = module.tick(&mut world, tick, Animator2DReportLevel::Trace);
+            assert_eq!(report.failed_entity_count, 0);
+            frames.push(sprite(&world).to_string());
+        }
+        assert_eq!(
+            frames,
+            vec![
+                "attack-0", "attack-0", "attack-1", "attack-1", "attack-1", "attack-1", "idle-0",
+                "idle-0"
+            ]
+        );
+        module.apply([Animator2DCommand::Play {
+            entity_id: entity_id.clone(),
+            state_id: "missing".into(),
+        }]);
+        assert_eq!(
+            module
+                .tick(&mut world, 9, Animator2DReportLevel::Trace)
+                .failed_entity_count,
+            1
+        );
+        assert_eq!(module.entity_state(&entity_id).unwrap().state_id, "idle");
+        frames
+    };
+    assert_eq!(run(), run());
+}
+
+#[test]
+fn animator2d_explicit_loop_resumes_without_changing_legacy_rules() {
+    let registry = bool_registry();
+    let mut world = world_fixture(&registry.registry_digest);
+    let mut module = Animator2DModule::load(registry).unwrap();
+    let entity_id = EntityId::from("animated");
+    module.apply([Animator2DCommand::Play {
+        entity_id: entity_id.clone(),
+        state_id: "attack".into(),
+    }]);
+    for tick in 1..=6 {
+        module.tick(&mut world, tick, Animator2DReportLevel::Off);
+        assert_eq!(sprite(&world), "attack-0");
+    }
+    module.apply([Animator2DCommand::Resume { entity_id }]);
+    module.tick(&mut world, 7, Animator2DReportLevel::Trace);
+    assert_eq!(sprite(&world), "idle-0");
+}
+
+#[test]
 fn animator2d_evaluator_entry_frame_and_duration_boundary_are_deterministic() {
     let (mut world, registry) = world_and_registry(1000, Animator2DPlayback::Loop);
     let mut module = Animator2DModule::load(registry).unwrap();

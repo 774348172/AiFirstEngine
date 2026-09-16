@@ -1,0 +1,37 @@
+{
+  "schemaVersion": "construction-validation.catalog.v1",
+  "verifiers": [
+    {
+      "id": "quality_gate.owner",
+      "ownerDomains": ["quality_gate"],
+      "consumerDomains": ["quality_gate_cli"],
+      "proves": ["development.owner"],
+      "producerId": "quality_gate.owner_tests",
+      "environment": {},
+      "subsumes": [],
+      "costClass": "low",
+      "defaultTimeoutSeconds": 300,
+      "historicalDurationSeconds": 60,
+      "cleanupReserveSeconds": 0,
+      "externalEffects": [],
+      "requiredAuthorization": [],
+      "consumedIdentityKinds": ["product_source", "verification_harness"]
+    },
+    {
+      "id": "quality_gate.affected",
+      "ownerDomains": ["quality_gate_cli"],
+      "consumerDomains": ["rust_workspace"],
+      "proves": ["integration.affected"],
+      "producerId": "quality_gate.crate_tests",
+      "environment": {},
+      "subsumes": [],
+      "costClass": "medium",
+      "defaultTimeoutSeconds": 900,
+      "historicalDurationSeconds": 180,
+      "cleanupReserveSeconds": 0,
+      "externalEffects": [],
+      "requiredAuthorization": [],
+      "consumedIdentityKinds": ["product_source", "verification_harness", "platform_toolchain"]
+    }
+  ]
+}

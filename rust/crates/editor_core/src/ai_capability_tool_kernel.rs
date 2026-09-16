@@ -929,7 +929,7 @@ pub struct ProjectCreateToolReceipt {
     pub project_name: String,
     pub project_identity: String,
     pub project_digest: String,
-    pub read_generation: u64,
+    pub project_revision_generation: u64,
     pub opened_in_editor: bool,
     pub replayed: bool,
 }
@@ -1161,7 +1161,7 @@ impl AiCapabilityToolKernel {
     ) -> String {
         let authority_identity = match &invocation.payload {
             AiToolInvocationPayload::BoundGoalMutation(bound) => {
-                format!("{}|{}", bound.client_session_id, bound.goal_digest)
+                format!("{}|{}", bound.provider_session_id, bound.goal_digest)
             }
             _ => grant_digest.to_string(),
         };
@@ -1180,7 +1180,7 @@ impl AiCapabilityToolKernel {
         &mut self,
         session: &mut EditorSession,
         invocation: AiToolInvocation,
-        read_generation: u64,
+        project_revision_generation: u64,
     ) -> AiToolResult {
         let started = Instant::now();
         let invocation_digest = digest_serializable(&invocation, "project.create invocation")
@@ -1294,7 +1294,7 @@ impl AiCapabilityToolKernel {
             project_name: created.project_name,
             project_identity: binding.project_id.clone(),
             project_digest: binding.project_digest.clone(),
-            read_generation,
+            project_revision_generation,
             opened_in_editor: true,
             replayed: false,
         };
@@ -1383,7 +1383,7 @@ impl AiCapabilityToolKernel {
             basis: crate::AiToolAvailabilityBasis {
                 project_identity: Some(project.manifest.project_id.clone()),
                 project_digest: None,
-                read_generation: None,
+                project_revision_generation: None,
                 runtime_binding_digest,
                 access_generation: None,
                 operation_generation: Some(self.operations.len() as u64),
@@ -4686,7 +4686,7 @@ fn project_create_result_schema() -> Value {
         "additionalProperties": false,
         "required": [
             "status", "receiptId", "requestedProjectRoot", "canonicalProjectRoot",
-            "projectName", "projectIdentity", "projectDigest", "readGeneration",
+            "projectName", "projectIdentity", "projectDigest", "projectRevisionGeneration",
             "openedInEditor", "replayed"
         ],
         "properties": {
@@ -4697,7 +4697,7 @@ fn project_create_result_schema() -> Value {
             "projectName": {"type": "string", "minLength": 1},
             "projectIdentity": {"type": "string", "minLength": 1},
             "projectDigest": {"type": "string", "minLength": 1},
-            "readGeneration": {"type": "string", "pattern": "^[1-9][0-9]*$"},
+            "projectRevisionGeneration": {"type": "string", "pattern": "^[1-9][0-9]*$"},
             "openedInEditor": {"const": "true"},
             "replayed": {"enum": ["true", "false"]}
         }
@@ -4822,8 +4822,8 @@ fn project_create_completed_result(
     );
     facts.insert("projectDigest".to_string(), receipt.project_digest);
     facts.insert(
-        "readGeneration".to_string(),
-        receipt.read_generation.to_string(),
+        "projectRevisionGeneration".to_string(),
+        receipt.project_revision_generation.to_string(),
     );
     facts.insert(
         "openedInEditor".to_string(),

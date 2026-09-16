@@ -92,12 +92,24 @@ pub struct CookedFontBundleAsset {
 pub struct RuntimePackageSourceFontBundle {
     pub metadata: CookedFontBundleAsset,
     pub page_payloads: Vec<Vec<u8>>,
+    #[serde(default)]
+    pub font_face_sources: Vec<RuntimePackageSourceFontFace>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct RuntimePackageSourceFontFace {
+    pub font_face_id: String,
+    pub face_index: u32,
+    pub source_digest: String,
+    pub bytes: Vec<u8>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RuntimeLoadedFontBundle {
     pub metadata: CookedFontBundleAsset,
     pub page_payloads: Vec<Vec<u8>>,
+    pub font_face_sources: Vec<RuntimePackageSourceFontFace>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -171,6 +183,20 @@ pub struct RuntimeFontRegistry<'a> {
 impl<'a> RuntimeFontRegistry<'a> {
     pub fn new(bundles: &'a RuntimeFontBundleRegistry) -> Self {
         Self { bundles }
+    }
+
+    pub fn face_source(
+        &self,
+        bundle_id: Option<&str>,
+        face_id: &str,
+    ) -> Option<&RuntimePackageSourceFontFace> {
+        let bundle = bundle_id
+            .and_then(|id| self.bundles.bundles_by_id.get(id))
+            .or_else(|| self.bundles.default_bundle())?;
+        bundle
+            .font_face_sources
+            .iter()
+            .find(|source| source.font_face_id == face_id)
     }
 
     pub fn resolve(&self, request: RuntimeFontResolveRequest) -> Option<RuntimeResolvedFontGlyph> {
@@ -352,10 +378,22 @@ impl RuntimeFontBundleLoader {
                 "Recook metadata and all page payloads together.",
             ));
         }
+        for source in &source.font_face_sources {
+            let digest = sha256_prefixed(&source.bytes);
+            if digest != source.source_digest {
+                diagnostics.push(diagnostic(
+                    "FontFaceSourceDigestMismatch",
+                    &source.font_face_id,
+                    "font face source digest mismatch".to_string(),
+                    "Re-cook the FontBundle from the declared FontFace source.",
+                ));
+            }
+        }
         if diagnostics.is_empty() {
             Ok(RuntimeLoadedFontBundle {
                 metadata: source.metadata,
                 page_payloads: source.page_payloads,
+                font_face_sources: source.font_face_sources,
             })
         } else {
             Err(RuntimeFontBundleLoadFailure { diagnostics })
@@ -538,6 +576,7 @@ mod tests {
         RuntimePackageSourceFontBundle {
             metadata,
             page_payloads: vec![payload],
+            font_face_sources: Vec::new(),
         }
     }
 

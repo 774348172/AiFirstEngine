@@ -691,6 +691,8 @@ pub struct ProjectEditorCompositionBuildRequest {
     pub cargo_identity: String,
     #[serde(default = "default_composition_capture_limit_bytes")]
     pub capture_limit_bytes: usize,
+    #[serde(skip)]
+    pub prepared_runtime_glue: Option<project_authoring_execution::PreparedRuntimeGlue>,
 }
 
 impl ProjectEditorCompositionBuildRequest {
@@ -1260,6 +1262,7 @@ mod tests {
             cargo_executable: None,
             cargo_identity: "cargo 1.96.0".to_string(),
             capture_limit_bytes: DEFAULT_COMPOSITION_CAPTURE_LIMIT_BYTES,
+            prepared_runtime_glue: None,
         };
         request.validate().unwrap();
         let mut request_value = serde_json::to_value(&request).unwrap();
@@ -1597,7 +1600,7 @@ mod tests {
 
 [[package]]
 name = "{root_name}"
-version = "0.0.3"
+version = "0.1.0"
 dependencies = ["serde"]
 
 [[package]]

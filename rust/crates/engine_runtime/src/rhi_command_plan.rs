@@ -29,6 +29,13 @@ impl RhiCommandPlan {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "commandKind")]
 pub enum RhiCommand {
+    ReconcileParticles {
+        sources: Vec<crate::particle_render_contract::ParticleSourceFrame>,
+    },
+    SimulateParticles {
+        instance: u64,
+        step: crate::particle_render_contract::ParticleRenderStep,
+    },
     BeginFrame {
         target: String,
     },
@@ -51,6 +58,7 @@ pub enum RhiCommand {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum RhiDrawKind {
+    Particles,
     TestGeometry,
     MeshBasic,
     SpriteBasic,
@@ -62,6 +70,13 @@ pub enum RhiDrawKind {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "payloadKind")]
 pub enum RhiDrawPayload {
+    Particles {
+        instance: u64,
+        emitter: u32,
+        view: crate::particle_render_contract::ParticleRenderView,
+        texture: Option<RenderResourceHandle>,
+        mesh: Option<RenderResourceHandle>,
+    },
     TestGeometry {
         debug_label: String,
     },
@@ -140,6 +155,8 @@ pub fn compile_render_graph_to_rhi_plan(graph: &RenderGraph) -> RhiCommandPlan {
     for pass in &graph.passes {
         match pass.pass_kind {
             RenderPassKind::Clear
+            | RenderPassKind::ParticleSimulation
+            | RenderPassKind::DrawParticles
             | RenderPassKind::DrawTestGeometry
             | RenderPassKind::DrawMeshBasic
             | RenderPassKind::DrawSpriteBasic
@@ -151,6 +168,38 @@ pub fn compile_render_graph_to_rhi_plan(graph: &RenderGraph) -> RhiCommandPlan {
 
         for command in &pass.commands {
             match command {
+                RenderPassCommand::ReconcileParticles { sources, .. } => {
+                    commands.push(RhiCommand::ReconcileParticles {
+                        sources: sources.clone(),
+                    })
+                }
+                RenderPassCommand::SimulateParticles { instance, step, .. } => {
+                    commands.push(RhiCommand::SimulateParticles {
+                        instance: *instance,
+                        step: step.clone(),
+                    })
+                }
+                RenderPassCommand::DrawParticles {
+                    target,
+                    instance,
+                    emitter,
+                    view,
+                    texture,
+                    mesh,
+                } => {
+                    commands.push(RhiCommand::Draw {
+                        target: target.clone(),
+                        draw_kind: RhiDrawKind::Particles,
+                        vertex_count: 0,
+                        payload: RhiDrawPayload::Particles {
+                            instance: *instance,
+                            emitter: *emitter,
+                            view: view.clone(),
+                            texture: *texture,
+                            mesh: *mesh,
+                        },
+                    });
+                }
                 RenderPassCommand::Clear { target, color } => {
                     commands.push(RhiCommand::Clear {
                         target: target.clone(),

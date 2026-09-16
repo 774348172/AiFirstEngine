@@ -3,13 +3,12 @@ use engine_runtime::release_package_manifest::{
     validate_release_package_manifest, ReleasePackageFileRole, ReleasePackageManifest,
     RELEASE_PACKAGE_MANIFEST_FILE_NAME,
 };
-#[cfg(feature = "real-window")]
 use engine_runtime::runtime_package::load_runtime_package;
 use engine_runtime::runtime_package_path::safe_join_runtime_package;
 use engine_runtime::runtime_run::{RuntimeRunDiagnostic, RuntimeRunMode, RuntimeRunReport};
 use engine_runtime::windowed_player::{
-    WindowedPlayerHost, WindowedPlayerMode, WindowedPlayerRunReport, WindowedPlayerRunRequest,
-    WindowedPlayerRuntimeReportLevel, WindowedPlayerScreenshotSummary,
+    WindowedPlayerDiagnostic, WindowedPlayerHost, WindowedPlayerMode, WindowedPlayerRunReport,
+    WindowedPlayerRunRequest, WindowedPlayerRuntimeReportLevel, WindowedPlayerScreenshotSummary,
 };
 use runtime_player_winit::{
     NativePlayerInputScript, NativePlayerWindowRunRequest, NativeWindowPresentStatus,
@@ -19,12 +18,21 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 pub mod bounded_child_process;
+pub mod desktop_dev_package;
+#[cfg(windows)]
+pub mod engine_dll_loader;
 pub mod exported_player_verification;
+mod fixed_player;
+mod semantic_playtest;
 pub use bounded_child_process::{
     run_bounded_child_process, run_bounded_child_process_cancellable,
     BoundedChildProcessCancellation, BoundedChildProcessExitReason, BoundedChildProcessPriority,
     BoundedChildProcessPriorityEvidence, BoundedChildProcessRequest, BoundedChildProcessResult,
     BoundedProcessOwnershipEvidence, BoundedProcessOwnershipKind,
+};
+pub use desktop_dev_package::{
+    project_runtime_module_relative_path, validate_desktop_dev_manifest,
+    validate_desktop_dev_package, DesktopPackageManifest, DESKTOP_PACKAGE_MANIFEST_SCHEMA_VERSION,
 };
 pub use exported_player_verification::{
     verify_exported_player_process, verify_exported_player_process_with_options,
@@ -32,6 +40,12 @@ pub use exported_player_verification::{
     ExportedPlayerProcessVerificationReport, ExportedPlayerProcessVerificationRequest,
     ExportedPlayerProcessVerificationStatus,
     EXPORTED_PLAYER_PROCESS_VERIFICATION_REPORT_SCHEMA_VERSION,
+};
+pub use fixed_player::run_fixed_player_from_env;
+pub use semantic_playtest::{
+    read_semantic_playtest_evidence, retain_semantic_playtest_evidence,
+    run_bounded_semantic_playtest, runtime_package_digest, semantic_file_digest,
+    SemanticPlaytestEvidenceRef, SemanticPlaytestProcessReport, SemanticPlaytestProcessRequest,
 };
 
 pub fn run_from_env() -> i32 {
@@ -85,7 +99,21 @@ where
     I: IntoIterator<Item = S>,
     S: Into<String>,
 {
-    let cli = RuntimeCliArgs::parse(args.into_iter().map(Into::into).collect());
+    let args: Vec<String> = args.into_iter().map(Into::into).collect();
+    let semantic = match args.first().map(String::as_str) {
+        Some("playtest") => Some(semantic_playtest::run_cli(&args)),
+        Some("--semantic-playtest-worker") => {
+            Some(semantic_playtest::run_worker(&args, &linked_modules))
+        }
+        _ => None,
+    };
+    if let Some(result) = semantic {
+        return result.unwrap_or_else(|error| {
+            eprintln!("{error}");
+            1
+        });
+    }
+    let cli = RuntimeCliArgs::parse(args);
     match cli {
         Ok(cli) => run_cli(cli, linked_modules),
         Err(message) => {
@@ -159,6 +187,28 @@ fn run_native_player_cli_with_dirs(
     cwd: &Path,
     linked_modules: Arc<LinkedProjectRuntimeSet>,
 ) -> i32 {
+    let paths = resolve_native_player_paths(
+        cli.package.as_deref(),
+        cli.report.as_deref(),
+        cli.report_off,
+        exe_dir,
+        cwd,
+    );
+    if requires_engine_dll(exe_dir, &paths.package) {
+        let (report, report_path) = run_native_player_via_engine_dll(&paths, &cli, exe_dir);
+        let exit_code = report.exit_code.unwrap_or(1);
+        if let Some(report_path) = report_path {
+            if let Err(error) = write_windowed_player_report(&report_path, &report) {
+                eprintln!(
+                    "failed to write native player report {}: {}",
+                    report_path.display(),
+                    error
+                );
+                return 1;
+            }
+        }
+        return exit_code;
+    }
     let (report, report_path) = run_native_player_with_dirs(&cli, exe_dir, cwd, linked_modules);
     let exit_code = report.exit_code.unwrap_or(1);
     if let Some(report_path) = report_path {
@@ -174,6 +224,148 @@ fn run_native_player_cli_with_dirs(
     exit_code
 }
 
+pub(crate) fn requires_engine_dll(exe_dir: &Path, package: &Path) -> bool {
+    let manifest_path = exe_dir.join("package-manifest.json");
+    let manifest_schema = fs::read(&manifest_path)
+        .ok()
+        .and_then(|bytes| serde_json::from_slice::<PackagedManifestSchemaProbe>(&bytes).ok());
+    let is_release = manifest_schema.as_ref().is_some_and(|manifest| {
+        manifest.schema_version
+            == engine_runtime::release_package_manifest::RELEASE_PACKAGE_MANIFEST_SCHEMA_VERSION
+    });
+    (manifest_path.is_file() && !is_release)
+        || std::env::var_os("AIFE_REQUIRE_ENGINE_DLL").is_some()
+        || (exe_dir
+            .join("data/runtime_package")
+            .canonicalize()
+            .ok()
+            .zip(package.canonicalize().ok())
+            .is_some_and(|(left, right)| left == right)
+            && exe_dir.join("engine_runtime.dll").is_file())
+}
+
+fn native_request_for_cli(package: &Path, cli: &RuntimeCliArgs) -> NativePlayerWindowRunRequest {
+    let mut request = if matches!(cli.mode.as_deref(), Some("headless" | "headless-gate")) {
+        NativePlayerWindowRunRequest::headless_surface_gate(package)
+    } else {
+        NativePlayerWindowRunRequest::windowed(package)
+    };
+    if let Some(target) = load_runtime_package(package)
+        .value
+        .and_then(|runtime| runtime.manifest.project.game_view_target)
+    {
+        request = request.with_game_view_target(target);
+    }
+    request.frame_limit = cli.frames;
+    configure_native_evidence_request(&mut request, cli);
+    if let Some(path) = &cli.screenshot_path {
+        request = request.with_screenshot(path);
+    } else if cli.screenshot {
+        request = request.with_screenshot(
+            package
+                .parent()
+                .unwrap_or(package)
+                .join("reports/windowed-player-screenshot.png"),
+        );
+    }
+    request
+}
+
+fn run_native_player_via_engine_dll(
+    paths: &NativePlayerResolvedPaths,
+    cli: &RuntimeCliArgs,
+    exe_dir: &Path,
+) -> (WindowedPlayerRunReport, Option<PathBuf>) {
+    let request = native_request_for_cli(&paths.package, cli);
+    let report_path = paths.report.clone().unwrap_or_else(|| {
+        let nonce = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_nanos();
+        std::env::temp_dir().join(format!(
+            "aife-engine-report-{}-{nonce}.json",
+            std::process::id()
+        ))
+    });
+    let mode = match request.mode {
+        runtime_player_winit::NativePlayerWindowRunMode::HeadlessSurfaceGate => {
+            WindowedPlayerMode::HeadlessGate
+        }
+        runtime_player_winit::NativePlayerWindowRunMode::Windowed => WindowedPlayerMode::Windowed,
+    };
+    let result = execute_packaged_request(
+        exe_dir,
+        runtime_player_winit::engine_dll_execution::EngineRuntimeExecutionRequest {
+            request: request.clone(),
+            scenario: None,
+            report_path: report_path.clone(),
+            capture_directory: None,
+        },
+    );
+    let native = result.unwrap_or_else(|error| {
+        let mut report = runtime_player_winit::NativeWindowHostReport::base(&request);
+        report.exit_code = 1;
+        report
+            .diagnostics
+            .push(runtime_player_winit::NativeWindowHostDiagnostic::error(
+                "engine_runtime.execution_failed",
+                "engine_runtime.dll",
+                error,
+            ));
+        report
+    });
+    let report = native_window_report(&paths.package, cli.frames, mode, native);
+    if paths.report.is_none() {
+        let _ = fs::remove_file(&report_path);
+    }
+    (report, paths.report.clone())
+}
+
+pub(crate) fn execute_packaged_request(
+    exe_dir: &Path,
+    request: runtime_player_winit::engine_dll_execution::EngineRuntimeExecutionRequest,
+) -> Result<runtime_player_winit::NativeWindowHostReport, String> {
+    // Formal dev packages retain the same static identity contract for both
+    // ordinary runs and semantic workers. Old non-packaged owner tests bypass it.
+    if exe_dir.join("package-manifest.json").is_file() {
+        let bytes = fs::read(exe_dir.join("package-manifest.json")).map_err(|e| e.to_string())?;
+        let manifest: serde_json::Value =
+            serde_json::from_slice(&bytes).map_err(|e| e.to_string())?;
+        if manifest["schemaVersion"] == DESKTOP_PACKAGE_MANIFEST_SCHEMA_VERSION {
+            validate_desktop_dev_package(exe_dir)
+                .map_err(|e| format!("{}: {}", e.code, e.message))?;
+            if exe_dir
+                .join("data/runtime_package")
+                .canonicalize()
+                .map_err(|e| e.to_string())?
+                != request
+                    .request
+                    .runtime_package_path
+                    .canonicalize()
+                    .map_err(|e| e.to_string())?
+            {
+                return Err(
+                    "desktop_dev_package_mismatch: requested payload is outside this delivery"
+                        .into(),
+                );
+            }
+        } else if manifest["schemaVersion"]
+            != engine_runtime::release_package_manifest::RELEASE_PACKAGE_MANIFEST_SCHEMA_VERSION
+        {
+            return Err("desktop_dev_package_invalid: unsupported package manifest schema".into());
+        }
+    }
+    #[cfg(windows)]
+    {
+        engine_dll_loader::execute(&exe_dir.join("engine_runtime.dll"), &request)
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = request;
+        Err("Engine DLL execution is only supported on Windows".into())
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PackagedEntrypoint {
     pub package_root: PathBuf,
@@ -182,20 +374,10 @@ pub struct PackagedEntrypoint {
     pub user_frame_limit: Option<u64>,
 }
 
-const DESKTOP_PACKAGE_MANIFEST_SCHEMA_VERSION: &str = "desktop-package-manifest.v1";
-
 #[derive(serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct PackagedManifestSchemaProbe {
     schema_version: String,
-}
-
-#[derive(serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct DesktopDevPackageManifest {
-    schema_version: String,
-    target: String,
-    profile: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -325,22 +507,38 @@ fn resolve_desktop_dev_packaged_entrypoint(
     manifest_path: &Path,
     text: &str,
 ) -> Result<PackagedEntrypoint, PackagedEntrypointError> {
-    let manifest: DesktopDevPackageManifest = serde_json::from_str(text).map_err(|error| {
-        packaged_error("release_manifest_invalid", manifest_path, error.to_string())
-    })?;
-    if manifest.schema_version != DESKTOP_PACKAGE_MANIFEST_SCHEMA_VERSION
-        || manifest.target != "windows"
-        || manifest.profile != "dev"
-    {
-        return Err(packaged_error(
-            "release_manifest_invalid",
+    let manifest: DesktopPackageManifest = serde_json::from_str(text).map_err(|error| {
+        packaged_error(
+            "desktop_dev_manifest_invalid",
             manifest_path,
-            "desktop package manifest must target windows/dev",
-        ));
-    }
-    fs::canonicalize(executable).map_err(|error| {
+            error.to_string(),
+        )
+    })?;
+    validate_desktop_dev_manifest(&package_root, &manifest).map_err(|diagnostic| {
+        packaged_error(
+            "desktop_dev_manifest_invalid",
+            manifest_path,
+            format!(
+                "{}: {} ({})",
+                diagnostic.code,
+                diagnostic.message,
+                diagnostic.path.as_deref().unwrap_or_default(),
+            ),
+        )
+    })?;
+    let current = fs::canonicalize(executable).map_err(|error| {
         packaged_error("release_entrypoint_missing", executable, error.to_string())
     })?;
+    let expected = fs::canonicalize(package_root.join("Game.exe")).map_err(|error| {
+        packaged_error("release_entrypoint_missing", executable, error.to_string())
+    })?;
+    if current != expected {
+        return Err(packaged_error(
+            "release_entrypoint_missing",
+            executable,
+            "desktop package entrypoint must be the current Game.exe",
+        ));
+    }
     let runtime_package = safe_join_runtime_package(&package_root, "data/runtime_package")
         .map_err(|error| packaged_error("release_path_escape", manifest_path, error.to_string()))?;
     if !runtime_package.join("manifest.json").is_file() {
@@ -438,6 +636,23 @@ fn run_native_player_with_dirs(
         Some("headless") | Some("headless-gate") => WindowedPlayerMode::HeadlessGate,
         _ => WindowedPlayerMode::Windowed,
     };
+    let linked_modules = match load_staged_project_runtime_module(&paths.package, linked_modules) {
+        Ok(modules) => modules,
+        Err(error) => {
+            eprintln!("project runtime module load failed: {error}");
+            let mut report = WindowedPlayerHost::run_headless_gate(
+                WindowedPlayerRunRequest::headless_gate(&paths.package),
+            );
+            report.exit_code = Some(1);
+            report.exit_reason = "project_runtime_module_load_failed".to_string();
+            report.diagnostics.push(WindowedPlayerDiagnostic::error(
+                "native_host.project_runtime.module_load_failed",
+                "project_runtime",
+                error,
+            ));
+            return (report, paths.report);
+        }
+    };
     if mode == WindowedPlayerMode::HeadlessGate {
         return (
             run_headless_native_player_with_host(
@@ -475,6 +690,56 @@ fn run_native_player_with_dirs(
     request.frame_limit = cli.frames;
     request.scenario_id = "native_player_productization_v1".to_string();
     (WindowedPlayerHost::run_headless_gate(request), paths.report)
+}
+
+fn load_staged_project_runtime_module(
+    package: &Path,
+    fallback: Arc<LinkedProjectRuntimeSet>,
+) -> Result<Arc<LinkedProjectRuntimeSet>, String> {
+    let dll = std::env::var_os("AIFE_PROJECT_RUNTIME_DLL")
+        .map(PathBuf::from)
+        .or_else(|| staged_project_runtime_dll(package));
+    let Some(dll) = dll else {
+        if std::env::var_os("AIFE_REQUIRE_ENGINE_DLL").is_some() {
+            return Err(format!(
+                "no Project RuntimeModule DLL found for staged package {}",
+                package.display()
+            ));
+        }
+        return Ok(fallback);
+    };
+    #[cfg(windows)]
+    {
+        let modules =
+            engine_runtime::project_runtime_native_adapter::linked_project_runtime_set_from_dll(
+                &dll,
+            )
+            .map_err(|error| format!("{}: {}", error.code, error.message))?;
+        return Ok(Arc::new(modules));
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = (package, dll);
+        Err("project runtime DLL loading is only supported on Windows".to_string())
+    }
+}
+
+fn staged_project_runtime_dll(package: &Path) -> Option<PathBuf> {
+    let module_id = load_runtime_package(package)
+        .value
+        .map(|runtime| runtime.manifest.project.runtime_module.module_id)?;
+    let file_stem = module_id
+        .chars()
+        .map(|ch| if ch.is_ascii_alphanumeric() { ch } else { '_' })
+        .collect::<String>();
+    let parent = package.parent().unwrap_or(package);
+    let candidates = [
+        parent.join("project_runtime.dll"),
+        parent.join("bin").join(format!("{file_stem}.dll")),
+        parent.join("bin").join("aife_generated_runtime_glue.dll"),
+        package.join("project_runtime.dll"),
+    ];
+    candidates.into_iter().find(|candidate| candidate.is_file())
 }
 
 #[cfg(feature = "real-window")]
@@ -561,13 +826,12 @@ fn native_window_report(
     mode: WindowedPlayerMode,
     native_report: runtime_player_winit::NativeWindowHostReport,
 ) -> WindowedPlayerRunReport {
-    // Build the shared package/asset/counter fields through the headless report path. A Windowed
-    // request here would deliberately emit native_window_host_required even though the native
-    // host has already run and supplied the authoritative window evidence below.
+    // Project execution already happened in the native owner. Report conversion
+    // must not start a second, statically linked headless runtime in this Host.
     let mut player_request = WindowedPlayerRunRequest::headless_gate(package);
     player_request.frame_limit = frames;
     player_request.scenario_id = "native_player_productization_v1".to_string();
-    let mut report = WindowedPlayerHost::run_headless_gate(player_request);
+    let mut report = WindowedPlayerRunReport::base(&player_request);
     report.mode = mode;
     report.status.package = native_report.package_status.clone();
     report.status.scene = native_report.scene_status.clone();
@@ -589,10 +853,13 @@ fn native_window_report(
     report.project_runtime_bind_receipt = native_report.project_runtime_bind_receipt.clone();
     report.frame_performance_summary = native_report.frame_performance_summary.clone();
     report.gameplay_trace_summary = native_report.gameplay_trace_summary.clone();
+    report.audio_summary = native_report.audio.clone();
     report.gameplay_trace_records = native_report.gameplay_trace_records.clone();
     report.exit_code = Some(native_report.exit_code);
     report.exit_reason = if native_report.exit_code == 0 {
         "completed".to_string()
+    } else if native_report.logic_status == "error" {
+        "runtime_logic_failed".to_string()
     } else {
         native_report.present_status.as_str().to_string()
     };
@@ -825,6 +1092,138 @@ pub fn failure_report_for_cli_error(message: impl Into<String>) -> RuntimeRunRep
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn dll_request_preserves_window_input_capture_and_frame_options() {
+        let cli = super::RuntimeCliArgs::parse(
+            vec![
+                "run-native-player",
+                "--package",
+                "missing-package",
+                "--mode",
+                "windowed",
+                "--frames",
+                "120",
+                "--screenshot-path",
+                "capture.png",
+                "--input-script",
+                "missing-input.json",
+                "--runtime-report-level",
+                "summary",
+                "--performance-warmup-frames",
+                "10",
+                "--performance-sample-frames",
+                "20",
+            ]
+            .into_iter()
+            .map(str::to_owned)
+            .collect(),
+        )
+        .unwrap();
+        let request = super::native_request_for_cli(std::path::Path::new("missing-package"), &cli);
+        assert_eq!(
+            request.mode,
+            runtime_player_winit::NativePlayerWindowRunMode::Windowed
+        );
+        assert_eq!(request.frame_limit, 120);
+        assert!(request.screenshot.enabled);
+        assert_eq!(
+            request.screenshot.path.as_deref(),
+            Some(std::path::Path::new("capture.png"))
+        );
+        // Malformed input remains an explicit invalid request for the native owner,
+        // rather than being silently discarded at the DLL boundary.
+        assert!(request
+            .input_script
+            .unwrap()
+            .schema_version
+            .starts_with("input_script_load_failed"));
+        assert_eq!(
+            request.runtime_report_level,
+            super::WindowedPlayerRuntimeReportLevel::Summary
+        );
+        assert_eq!(
+            (
+                request.performance_warmup_frames,
+                request.performance_sample_frames
+            ),
+            (10, 20)
+        );
+    }
+
+    #[test]
+    fn native_report_conversion_never_executes_a_missing_package() {
+        let path = std::path::Path::new("missing-package-must-not-be-loaded-for-report");
+        let mut native = runtime_player_winit::NativeWindowHostReport::base(
+            &super::NativePlayerWindowRunRequest::windowed(path),
+        );
+        native.exit_code = 0;
+        native.frames_completed = 7;
+        native.package_status = "ok".into();
+        let report =
+            super::native_window_report(path, 7, super::WindowedPlayerMode::Windowed, native);
+        assert_eq!(report.exit_code, Some(0));
+        assert_eq!(report.counters.frames_completed, 7);
+        assert!(report.diagnostics.is_empty(), "{:#?}", report.diagnostics);
+        assert!(report.package_summary.is_none());
+    }
+
+    #[test]
+    fn native_audio_report_conversion_preserves_trace_optional_field_and_errors() {
+        use engine_runtime::runtime_audio::{AudioDiagnostic, AudioTraceEvent, RuntimeAudio};
+        let path = Path::new("missing-audio-package-must-not-be-loaded-for-report");
+        let mut audio = RuntimeAudio::default().report();
+        audio.output_kind = "test-device".into();
+        audio.play_count = 1;
+        audio.trace = vec![AudioTraceEvent {
+            frame_index: 44,
+            elapsed_ms: 735,
+            entity_id: "speaker-jump".into(),
+            action: "play".into(),
+        }];
+        audio.diagnostics = vec![AudioDiagnostic {
+            code: "audio.output_failed".into(),
+            entity_id: Some("speaker-jump".into()),
+            message: "device disconnected".into(),
+        }];
+        for supplied_audio in [None, Some(audio.clone())] {
+            let mut native = runtime_player_winit::NativeWindowHostReport::base(
+                &NativePlayerWindowRunRequest::windowed(path),
+            );
+            native.audio = supplied_audio.clone();
+            native.exit_code = 1;
+            native.present_status = NativeWindowPresentStatus::Presented;
+            native.diagnostics.push(
+                runtime_player_winit::NativeWindowHostDiagnostic::error(
+                    "audio.output_failed",
+                    "runtime_audio",
+                    "device disconnected",
+                )
+                .with_path("speaker-jump"),
+            );
+            let report = native_window_report(path, 60, WindowedPlayerMode::Windowed, native);
+            assert_eq!(report.audio_summary, supplied_audio);
+            assert!(report.has_errors());
+            assert_eq!(report.exit_code, Some(1));
+            assert_eq!(
+                report.diagnostics[0].code,
+                "native_host.audio.output_failed"
+            );
+            assert_eq!(report.diagnostics[0].path.as_deref(), Some("speaker-jump"));
+            assert_eq!(report.diagnostics[0].message, "device disconnected");
+            let wire = serde_json::to_value(&report).unwrap();
+            if let Some(expected) = supplied_audio {
+                assert_eq!(
+                    wire["audioSummary"],
+                    serde_json::to_value(expected).unwrap()
+                );
+            } else {
+                assert!(wire.get("audioSummary").is_none());
+            }
+            let decoded: WindowedPlayerRunReport = serde_json::from_value(wire).unwrap();
+            assert_eq!(decoded.audio_summary, report.audio_summary);
+        }
+    }
+
     use super::*;
     use engine_runtime::canonical_digest::sha256_prefixed;
     use engine_runtime::release_package_manifest::{
@@ -990,6 +1389,11 @@ mod tests {
         let executable = root.join("Game.exe");
         fs::write(&executable, b"test-entrypoint").unwrap();
         let runtime_package = write_minimal_runtime_package(&root.join("data"), "runtime_package");
+        let engine_dll = root.join("engine_runtime.dll");
+        let project_dll = root.join(project_runtime_module_relative_path("engine.empty.runtime"));
+        fs::create_dir_all(project_dll.parent().unwrap()).unwrap();
+        fs::write(&engine_dll, b"test-engine").unwrap();
+        fs::write(&project_dll, b"test-project").unwrap();
         fs::write(
             root.join(RELEASE_PACKAGE_MANIFEST_FILE_NAME),
             serde_json::to_vec_pretty(&serde_json::json!({
@@ -1000,7 +1404,16 @@ mod tests {
                 "runtimePackageDir": "C:\\machine-bound\\export\\data\\runtime_package",
                 "reportsDir": "C:\\machine-bound\\export\\reports",
                 "playerExecutable": "C:\\machine-bound\\export\\Game.exe",
-                "playerExecutableStatus": "copied"
+                "playerExecutableStatus": "copied",
+                "playerArtifactHash": semantic_file_digest(&executable).unwrap(),
+                "engineRuntimeHash": semantic_file_digest(&engine_dll).unwrap(),
+                "projectRuntimeModuleHash": semantic_file_digest(&project_dll).unwrap(),
+                "runtimePackageDigest": runtime_package_digest(&runtime_package).unwrap(),
+                "playerModuleDescriptor": {
+                    "moduleId": "engine.empty.runtime",
+                    "interfaceVersion": "project-runtime-module.v2",
+                    "aotContentDigest": "sha256:engine-empty-runtime-v2"
+                }
             }))
             .unwrap(),
         )
@@ -1081,6 +1494,47 @@ mod tests {
             runtime_player_winit::run_headless_native_player_from_package(request);
         assert_eq!(native_report.exit_code, 0);
         native_report.surface_status = "ok".to_string();
+
+        let mut failed_native_report = native_report.clone();
+        failed_native_report.logic_status = "error".into();
+        failed_native_report.exit_code = 1;
+        failed_native_report.gameplay_trace_summary = Some(
+            engine_runtime::windowed_player::WindowedPlayerGameplayTraceSummary {
+                report_level:
+                    engine_runtime::windowed_player::WindowedPlayerRuntimeReportLevel::Summary,
+                failed_record_count: 1,
+                failure_details: vec![
+                    engine_runtime::windowed_player::WindowedPlayerRuntimeFailure {
+                        frame_index: 3,
+                        phase: "Update".into(),
+                        rule_id: "rule.fade".into(),
+                        operation: "write".into(),
+                        entity_id: Some("fx".into()),
+                        component_type: Some("engine.sprite_renderer2d".into()),
+                        field_path: Some("unsupportedColor".into()),
+                        error_code: Some("world.component.unsupported_field".into()),
+                        message: Some("Field is not writable".into()),
+                    },
+                ],
+                ..Default::default()
+            },
+        );
+        let failed = native_window_report(
+            &package,
+            3,
+            WindowedPlayerMode::Windowed,
+            failed_native_report,
+        );
+        assert_eq!(failed.status.present, "presented");
+        assert_eq!(failed.status.logic, "error");
+        assert_eq!(failed.exit_code, Some(1));
+        assert_eq!(failed.exit_reason, "runtime_logic_failed");
+        let json = serde_json::to_value(&failed).unwrap();
+        assert_eq!(
+            json["gameplayTraceSummary"]["failureDetails"][0]["fieldPath"],
+            "unsupportedColor"
+        );
+        assert!(json.get("gameplayTraceRecords").is_none());
 
         let report = native_window_report(&package, 3, WindowedPlayerMode::Windowed, native_report);
 
@@ -1215,6 +1669,35 @@ mod tests {
         assert_eq!(report.counters.frames_completed, 2);
     }
 
+    #[test]
+    fn packaged_execution_rejects_unknown_manifest_before_dll_or_static_run() {
+        use runtime_player_winit::engine_dll_execution::EngineRuntimeExecutionRequest;
+        let root = temp_root("dll-unknown-manifest");
+        fs::create_dir_all(&root).unwrap();
+        let external_package = root.join("outside-delivery");
+        for manifest in [r#"{"schemaVersion":"unknown"}"#, "{}"] {
+            fs::write(root.join("package-manifest.json"), manifest).unwrap();
+            assert!(requires_engine_dll(&root, &external_package));
+            let error = execute_packaged_request(
+                &root,
+                EngineRuntimeExecutionRequest {
+                    request: NativePlayerWindowRunRequest::windowed(&external_package),
+                    scenario: None,
+                    report_path: root.join("report.json"),
+                    capture_directory: None,
+                },
+            )
+            .unwrap_err();
+            assert!(
+                error.contains("unsupported package manifest schema"),
+                "{error}"
+            );
+            assert!(!root.join("report.json").exists());
+        }
+        fs::remove_file(root.join("package-manifest.json")).unwrap();
+        fs::remove_dir(root).unwrap();
+    }
+
     fn temp_root(name: &str) -> PathBuf {
         let stamp = SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -1237,7 +1720,7 @@ mod tests {
   "project": {
     "projectId": "project-runtime-cli-test",
     "name": "Runtime CLI Test",
-    "version": "0.0.3",
+    "version": "0.1.0",
     "runtimeModule": {
       "moduleId": "engine.empty.runtime",
       "interfaceVersion": "project-runtime-module.v2",

@@ -1,6 +1,6 @@
 [package]
 name = "runtime_player_winit"
-version.workspace = true
+version = "0.1.0"
 edition.workspace = true
 license.workspace = true
 publish.workspace = true
@@ -20,11 +20,16 @@ winit = { version = "0.30", optional = true }
 wgpu = { version = "26", optional = true }
 pollster = { version = "0.4", optional = true }
 
+[dev-dependencies]
+project_game_sdk = { path = "../project_game_sdk" }
+png = "0.17"
+
 [features]
 default = []
-real-window = ["dep:winit", "dep:wgpu", "dep:pollster", "engine_runtime/real-wgpu"]
+real-window = ["dep:winit", "dep:wgpu", "dep:pollster", "engine_runtime/real-wgpu", "dep:rodio"]
 
 [target.'cfg(windows)'.dependencies]
+rodio = { version = "0.21.1", default-features = false, features = ["playback"], optional = true }
 windows-sys = { version = "0.59", features = [
     "Win32_Foundation",
     "Win32_Graphics_Gdi",

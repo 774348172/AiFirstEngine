@@ -9,7 +9,9 @@ use crate::component_value::RuntimeValue;
 use crate::components::{ComponentTypeId, Transform};
 use crate::field_path::FieldPath;
 use crate::ids::EntityId;
-use crate::logic_executor::{ExecutorKind, LogicContext, LogicResult};
+use crate::logic_executor::{
+    ExecutorKind, LogicContext, LogicError, LogicFailureLocation, LogicResult, LogicStatus,
+};
 use crate::math::Vec3;
 use crate::project_observation::ProjectObservationValue;
 use crate::project_runtime_module::{
@@ -47,7 +49,70 @@ use project_runtime_sdk::{
 use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock, Weak};
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct NativeRuleDescriptor {
+    rule_id: String,
+    artifact_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct NativeModuleDescriptor {
+    module_id: String,
+    interface_version: String,
+    aot_content_digest: String,
+    ui_state_producer_id: String,
+    rules: Vec<NativeRuleDescriptor>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum NativeCallStatus {
+    Applied,
+    NoOp,
+    Unhandled,
+    Rejected,
+    Faulted,
+}
+
+impl From<ProjectRuntimeStatus> for NativeCallStatus {
+    fn from(status: ProjectRuntimeStatus) -> Self {
+        match status {
+            ProjectRuntimeStatus::Applied => Self::Applied,
+            ProjectRuntimeStatus::NoOp => Self::NoOp,
+            ProjectRuntimeStatus::Unhandled => Self::Unhandled,
+            ProjectRuntimeStatus::Rejected => Self::Rejected,
+            ProjectRuntimeStatus::Faulted => Self::Faulted,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct NativeAdapterError {
+    operation: String,
+    message: String,
+}
+
+impl NativeAdapterError {
+    fn failed(message: impl Into<String>) -> Self {
+        Self {
+            operation: "native-module".to_string(),
+            message: message.into(),
+        }
+    }
+}
+
+impl From<NativeAdapterError> for project_runtime_sdk::ProjectRuntimeSdkError {
+    fn from(error: NativeAdapterError) -> Self {
+        Self {
+            status: ProjectRuntimeAbiStatus::FAILED,
+            message: format!("{}: {}", error.operation, error.message),
+        }
+    }
+}
+fn sdk_error(error: NativeAdapterError) -> project_runtime_sdk::ProjectRuntimeSdkError {
+    error.into()
+}
 
 const NATIVE_CALL_FAILED: &str = "project_runtime.native_module_call_failed";
 const NATIVE_TERMINAL_FAULT: &str = "project_runtime.native_module_terminal_fault";
@@ -56,7 +121,7 @@ const NATIVE_TERMINAL_FAULT: &str = "project_runtime.native_module_terminal_faul
 pub struct LoadedProjectRuntimeModuleAdapter {
     api: Arc<ProjectRuntimeApi>,
     descriptor: ProjectRuntimeModuleDescriptor,
-    rules: Vec<project_runtime_sdk::ProjectRuntimeRuleDescriptor>,
+    native_descriptor: NativeModuleDescriptor,
     producer_id: String,
     _lifetime_guard: Option<Arc<dyn Send + Sync>>,
 }
@@ -93,14 +158,28 @@ impl LoadedProjectRuntimeModuleAdapter {
         )
         .map_err(|error| abi_error("descriptor", error.message))?;
         validate_descriptor(&descriptor)?;
+        let native_descriptor = NativeModuleDescriptor {
+            module_id: descriptor.module_id.clone(),
+            interface_version: descriptor.interface_version.clone(),
+            aot_content_digest: descriptor.aot_content_digest.clone(),
+            ui_state_producer_id: descriptor.ui_state_producer_id.clone(),
+            rules: descriptor
+                .rules
+                .iter()
+                .map(|rule| NativeRuleDescriptor {
+                    rule_id: rule.rule_id.clone(),
+                    artifact_id: rule.artifact_id.clone(),
+                })
+                .collect(),
+        };
         Ok(Self {
             descriptor: ProjectRuntimeModuleDescriptor {
-                module_id: descriptor.module_id,
-                interface_version: descriptor.interface_version,
-                aot_content_digest: descriptor.aot_content_digest,
+                module_id: native_descriptor.module_id.clone(),
+                interface_version: native_descriptor.interface_version.clone(),
+                aot_content_digest: native_descriptor.aot_content_digest.clone(),
             },
-            rules: descriptor.rules,
-            producer_id: descriptor.ui_state_producer_id,
+            producer_id: native_descriptor.ui_state_producer_id.clone(),
+            native_descriptor,
             api,
             _lifetime_guard: lifetime_guard,
         })
@@ -113,6 +192,82 @@ pub fn linked_project_runtime_set_from_api(
     LinkedProjectRuntimeSet::singleton(Arc::new(LoadedProjectRuntimeModuleAdapter::new(api)?))
 }
 
+#[cfg(windows)]
+pub fn linked_project_runtime_set_from_dll(
+    path: &std::path::Path,
+) -> Result<LinkedProjectRuntimeSet, ProjectRuntimeError> {
+    use std::os::windows::ffi::OsStrExt;
+    use windows_sys::Win32::System::LibraryLoader::{
+        GetProcAddress, LoadLibraryExW, LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR,
+        LOAD_LIBRARY_SEARCH_SYSTEM32,
+    };
+    let wide = path
+        .as_os_str()
+        .encode_wide()
+        .chain(std::iter::once(0))
+        .collect::<Vec<_>>();
+    let handle = unsafe {
+        LoadLibraryExW(
+            wide.as_ptr(),
+            std::ptr::null_mut(),
+            LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_SYSTEM32,
+        )
+    };
+    if handle.is_null() {
+        return Err(ProjectRuntimeError::new(
+            "project_runtime.native_module_load_failed",
+            "load_library",
+            "LoadLibraryExW failed.",
+            "Repair the staged project module DLL.",
+        ));
+    }
+    let guard = Arc::new(NativeLibraryGuard(handle));
+    let symbol = unsafe {
+        GetProcAddress(
+            handle,
+            project_runtime_abi::PROJECT_RUNTIME_ENTRY_SYMBOL.as_ptr(),
+        )
+    };
+    let Some(symbol) = symbol else {
+        return Err(ProjectRuntimeError::new(
+            "project_runtime.native_module_symbol_missing",
+            "resolve_symbol",
+            "Project module entry symbol is missing.",
+            "Rebuild the project module with the v1 ABI entry.",
+        ));
+    };
+    let entry: project_runtime_abi::ProjectRuntimeEntry = unsafe { std::mem::transmute(symbol) };
+    let api = unsafe { entry() };
+    if api.is_null() {
+        return Err(ProjectRuntimeError::new(
+            "project_runtime.native_module_entry_null",
+            "validate_api",
+            "Project module entry returned null.",
+            "Repair the project module ABI facade.",
+        ));
+    }
+    let api = unsafe { *api };
+    LinkedProjectRuntimeSet::singleton(Arc::new(
+        LoadedProjectRuntimeModuleAdapter::new_with_lifetime_guard(api, guard)?,
+    ))
+}
+
+#[cfg(windows)]
+struct NativeLibraryGuard(windows_sys::Win32::Foundation::HMODULE);
+
+#[cfg(windows)]
+unsafe impl Send for NativeLibraryGuard {}
+
+#[cfg(windows)]
+unsafe impl Sync for NativeLibraryGuard {}
+
+#[cfg(windows)]
+impl Drop for NativeLibraryGuard {
+    fn drop(&mut self) {
+        unsafe { windows_sys::Win32::Foundation::FreeLibrary(self.0) };
+    }
+}
+
 impl ProjectRuntimeModule for LoadedProjectRuntimeModuleAdapter {
     fn descriptor(&self) -> &ProjectRuntimeModuleDescriptor {
         &self.descriptor
@@ -122,17 +277,25 @@ impl ProjectRuntimeModule for LoadedProjectRuntimeModuleAdapter {
         &self,
         registration: &mut ProjectRuntimeRegistration,
     ) -> Result<(), ProjectRuntimeError> {
-        for rule in &self.rules {
-            let api = Arc::clone(&self.api);
-            let lifetime_guard = self._lifetime_guard.clone();
+        // One registration becomes one bound runtime; rules borrow its existing session lease.
+        let rule_session = Arc::new(OnceLock::<Weak<NativeProjectRuntimeSessionLease>>::new());
+        for rule in &self.native_descriptor.rules {
+            let rule_session = Arc::clone(&rule_session);
             let rule_id = rule.rule_id.clone();
             let callback_rule_id = rule_id.clone();
             registration.register_rust_aot_rule(
                 rule_id,
                 rule.artifact_id.clone(),
                 move |context| {
-                    let _keep_library_loaded = &lifetime_guard;
-                    invoke_rule(&api, &callback_rule_id, context)
+                    let Some(lease) = rule_session.get().and_then(Weak::upgrade) else {
+                        return LogicResult::failed(
+                            &callback_rule_id,
+                            ExecutorKind::RustAot,
+                            NATIVE_CALL_FAILED,
+                            "native rule session is not alive",
+                        );
+                    };
+                    invoke_rule(&lease.api, lease.handle, &callback_rule_id, context)
                 },
             )?;
         }
@@ -147,6 +310,7 @@ impl ProjectRuntimeModule for LoadedProjectRuntimeModuleAdapter {
                 producer_id.clone(),
                 context.project_id,
                 context.module_id,
+                &rule_session,
             )
         })
     }
@@ -178,6 +342,7 @@ impl LoadedProjectRuntimeSession {
         producer_id: String,
         project_id: &str,
         module_id: &str,
+        rule_session: &OnceLock<Weak<NativeProjectRuntimeSessionLease>>,
     ) -> Result<ProjectRuntimeSessionBundle, ProjectRuntimeSessionFactoryError> {
         let call = required_call(api.create_session, "create_session")
             .map_err(|error| ProjectRuntimeSessionFactoryError::new(error.message))?;
@@ -219,6 +384,9 @@ impl LoadedProjectRuntimeSession {
             _lifetime_guard: lifetime_guard,
             handle,
         });
+        rule_session.set(Arc::downgrade(&lease)).map_err(|_| {
+            ProjectRuntimeSessionFactoryError::new("native rule registration already has a session")
+        })?;
         let session = Self {
             lease: Arc::clone(&lease),
             session_id,
@@ -491,6 +659,7 @@ impl ProjectUiStateSnapshotProducer for LoadedProjectUiStateProducer {
 
 fn invoke_rule(
     api: &ProjectRuntimeApi,
+    session: ProjectRuntimeOpaqueHandle,
     rule_id: &str,
     context: &mut LogicContext<'_>,
 ) -> LogicResult {
@@ -521,7 +690,11 @@ fn invoke_rule(
                         engine_input::ActionValue::Axis2 { value } => {
                             (None, None, Some([value.x, value.y]))
                         }
-                        engine_input::ActionValue::Pointer { .. } => (None, None, None),
+                        engine_input::ActionValue::Pointer { position } => (
+                            Some("pointer".to_string()),
+                            None,
+                            Some([position.x, position.y]),
+                        ),
                     };
                     ProjectRuntimeInputAction {
                         action_id: action.action_id.clone(),
@@ -549,7 +722,7 @@ fn invoke_rule(
             call_json(
                 call,
                 api.module_context,
-                ProjectRuntimeOpaqueHandle::NULL,
+                session,
                 Some(&call_context),
                 &ProjectRuntimeRuleRequest {
                     rule_id: rule_id.to_string(),
@@ -559,15 +732,19 @@ fn invoke_rule(
                 },
             )
         });
-    let Ok(response) = response else {
-        return LogicResult::failed(
-            rule_id,
-            ExecutorKind::RustAot,
-            NATIVE_CALL_FAILED,
-            "native rule callback failed",
-        );
+    let response = match response {
+        Ok(response) => response,
+        Err(error) => {
+            return LogicResult::failed(
+                rule_id,
+                ExecutorKind::RustAot,
+                NATIVE_CALL_FAILED,
+                error.message,
+            )
+        }
     };
-    if response.status == ProjectRuntimeStatus::Faulted {
+    let status = NativeCallStatus::from(response.status);
+    if status == NativeCallStatus::Faulted {
         return LogicResult::failed(
             rule_id,
             ExecutorKind::RustAot,
@@ -575,7 +752,7 @@ fn invoke_rule(
             response.diagnostics.join("; "),
         );
     }
-    if response.status == ProjectRuntimeStatus::Rejected {
+    if status == NativeCallStatus::Rejected {
         return LogicResult::failed(
             rule_id,
             ExecutorKind::RustAot,
@@ -583,24 +760,19 @@ fn invoke_rule(
             response.diagnostics.join("; "),
         );
     }
-    if matches!(
-        response.status,
-        ProjectRuntimeStatus::NoOp | ProjectRuntimeStatus::Unhandled
-    ) {
+    if matches!(status, NativeCallStatus::NoOp | NativeCallStatus::Unhandled) {
         return LogicResult::skipped(rule_id, ExecutorKind::RustAot);
     }
     let mut result = LogicResult::applied(rule_id, ExecutorKind::RustAot);
     for mutation in response.mutations {
-        match apply_rule_mutation(host.context, mutation) {
+        match apply_rule_mutation(host.context, &mutation) {
             Ok(Some(write)) => result.writes.push(write),
             Ok(None) => {}
-            Err(message) => {
-                return LogicResult::failed(
-                    rule_id,
-                    ExecutorKind::RustAot,
-                    NATIVE_CALL_FAILED,
-                    message,
-                )
+            Err(error) => {
+                result.status = LogicStatus::Failed;
+                result.errors.push(error);
+                result.failure_location = mutation_failure_location(&mutation);
+                return result;
             }
         }
     }
@@ -612,32 +784,25 @@ fn convert_session_output(
 ) -> Result<ProjectRuntimeSessionOutput, project_runtime_sdk::ProjectRuntimeSdkError> {
     let mut mutations = ProjectRuntimeMutationBuffer::new();
     for mutation in output.mutations {
-        append_deferred_mutation(&mut mutations, mutation).map_err(|message| {
-            project_runtime_sdk::ProjectRuntimeSdkError {
-                status: ProjectRuntimeAbiStatus::FAILED,
-                message,
-            }
-        })?;
+        append_deferred_mutation(&mut mutations, mutation)
+            .map_err(|message| sdk_error(NativeAdapterError::failed(message)))?;
     }
     Ok(ProjectRuntimeSessionOutput {
         status: session_status(output.status),
         handled_action_count: usize::try_from(output.handled_action_count).map_err(|_| {
-            project_runtime_sdk::ProjectRuntimeSdkError {
-                status: ProjectRuntimeAbiStatus::FAILED,
-                message: "handled action count exceeds host range".to_string(),
-            }
+            sdk_error(NativeAdapterError::failed(
+                "handled action count exceeds host range",
+            ))
         })?,
         unhandled_action_count: usize::try_from(output.unhandled_action_count).map_err(|_| {
-            project_runtime_sdk::ProjectRuntimeSdkError {
-                status: ProjectRuntimeAbiStatus::FAILED,
-                message: "unhandled action count exceeds host range".to_string(),
-            }
+            sdk_error(NativeAdapterError::failed(
+                "unhandled action count exceeds host range",
+            ))
         })?,
         rejected_action_count: usize::try_from(output.rejected_action_count).map_err(|_| {
-            project_runtime_sdk::ProjectRuntimeSdkError {
-                status: ProjectRuntimeAbiStatus::FAILED,
-                message: "rejected action count exceeds host range".to_string(),
-            }
+            sdk_error(NativeAdapterError::failed(
+                "rejected action count exceeds host range",
+            ))
         })?,
         mutations,
         diagnostics: if output.diagnostics.is_empty() {
@@ -648,11 +813,130 @@ fn convert_session_output(
     })
 }
 
+#[cfg(test)]
+mod particle_intent_tests {
+    use super::*;
+    #[test]
+    fn particle_native_wire_controls_commit_once_with_captured_generation() {
+        use crate::{
+            archetype::ComponentValue,
+            components::Hierarchy,
+            runtime_particles::{ParticleAction, ParticleEffect},
+        };
+        let mut world = crate::world::World::new();
+        world.spawn_entity(
+            "effect".into(),
+            "Effect",
+            "particle",
+            true,
+            Hierarchy {
+                parent_id: None,
+                sibling_order: 0,
+            },
+        );
+        world.insert_component_value(
+            "effect".into(),
+            ComponentValue::ParticleEffect(ParticleEffect {
+                effect_ref: crate::runtime_package::RuntimeAssetRef {
+                    id: "effect".into(),
+                    asset_type: "particle-effect".into(),
+                    guid: None,
+                    sub_asset: None,
+                },
+                play_on_awake: false,
+                paused: false,
+                parameters: Default::default(),
+            }),
+        );
+        let mut buffer = ProjectRuntimeMutationBuffer::new();
+        for intent in [
+            serde_json::json!({"operation":"play"}),
+            serde_json::json!({"operation":"restart"}),
+            serde_json::json!({"operation":"stop_emitting"}),
+            serde_json::json!({"operation":"clear"}),
+            serde_json::json!({"operation":"set_paused","paused":true}),
+            serde_json::json!({"operation":"set_parameter","name":"speed","value":{"type":"float","value":2.0}}),
+        ] {
+            let wire = serde_json::json!({"kind":"particle_effect","entity_id":"effect","generation":0,"intent":intent});
+            append_deferred_mutation(&mut buffer, serde_json::from_value(wire).unwrap()).unwrap();
+        }
+        let report = buffer.prepare(&world).unwrap().commit(&mut world).unwrap();
+        assert_eq!(report.committed_count, 6);
+        assert_eq!(report.particle_commands.len(), 6);
+        assert_eq!(report.particle_commands[0].action, ParticleAction::Play);
+        assert_eq!(report.particle_commands[3].action, ParticleAction::Clear);
+        assert!(
+            serde_json::from_value::<project_runtime_sdk::ProjectRuntimeParticleValue>(
+                serde_json::json!({"type":"float","value":"wrong"})
+            )
+            .is_err()
+        );
+        assert!(
+            serde_json::from_value::<project_runtime_sdk::ProjectRuntimeParticleIntent>(
+                serde_json::json!({"operation":"play","unknown":true})
+            )
+            .is_err()
+        );
+        assert!(report
+            .particle_commands
+            .iter()
+            .all(|c| Some(c.runtime_id) == world.runtime_id_for_source(&"effect".into())));
+    }
+}
+
 fn append_deferred_mutation(
     output: &mut ProjectRuntimeMutationBuffer,
     mutation: ProjectRuntimeDeferredMutation,
 ) -> Result<(), String> {
     match mutation {
+        ProjectRuntimeDeferredMutation::ParticleEffect {
+            entity_id,
+            generation,
+            intent,
+        } => {
+            use crate::runtime_particles::ParticleAction as A;
+            use project_runtime_sdk::ProjectRuntimeParticleIntent as I;
+            let action = match intent {
+                I::Play {} => A::Play,
+                I::Restart {} => A::Restart,
+                I::StopEmitting {} => A::StopEmitting,
+                I::Clear {} => A::Clear,
+                I::SetPaused { paused } => A::SetPaused(paused),
+                I::SetParameter { name, value } => A::SetParameter {
+                    name,
+                    value: serde_json::to_string(&value).map_err(|e| e.to_string())?,
+                },
+            };
+            output.particle_command(EntityId::from(entity_id), generation, action);
+        }
+        ProjectRuntimeDeferredMutation::AudioSource { entity_id, intent } => {
+            use crate::runtime_audio::AudioSourceAction as Action;
+            use project_runtime_sdk::ProjectRuntimeAudioSourceIntent as Intent;
+            let action = match intent {
+                Intent::Play {} => Action::Play,
+                Intent::Stop {} => Action::Stop,
+                Intent::SetPaused { paused } => Action::SetPaused(paused),
+            };
+            output.audio_source_command(EntityId::from(entity_id), action);
+        }
+        ProjectRuntimeDeferredMutation::Animator2D { entity_id, intent } => {
+            use crate::animator2d::Animator2DCommand as Command;
+            use project_runtime_sdk::ProjectRuntimeAnimator2DIntent as Intent;
+            let entity_id = EntityId::from(entity_id);
+            output.animator2d_command(match intent {
+                Intent::SetBool { name, value } => Command::SetBool {
+                    entity_id,
+                    parameter_id: name,
+                    value,
+                },
+                Intent::Play { name } => Command::Play {
+                    entity_id,
+                    state_id: name,
+                },
+                Intent::Resume => Command::Resume { entity_id },
+                Intent::SetPaused { paused } => Command::SetPaused { entity_id, paused },
+            });
+        }
         ProjectRuntimeDeferredMutation::WriteTransform {
             entity_id,
             transform,
@@ -690,7 +974,10 @@ fn append_deferred_mutation(
                 },
             );
         }
-        ProjectRuntimeDeferredMutation::InstantiatePrefab { prefab_id } => {
+        ProjectRuntimeDeferredMutation::InstantiatePrefab {
+            prefab_id,
+            position,
+        } => {
             output.push_gameplay_command(
                 crate::gameplay_command::GameplayCommand::InstantiatePrefab {
                     prefab_ref: crate::runtime_package::RuntimeAssetRef {
@@ -701,6 +988,7 @@ fn append_deferred_mutation(
                     },
                     parent_entity: None,
                     target_scene_instance: None,
+                    position: position.map(|[x, y, z]| crate::math::Vec3 { x, y, z }),
                 },
             );
         }
@@ -713,22 +1001,127 @@ fn append_deferred_mutation(
     Ok(())
 }
 
+#[cfg(test)]
+mod animator_intent_tests {
+    use super::*;
+
+    #[test]
+    fn audio_source_sdk_json_intents_capture_identity_and_commit_in_order() {
+        use crate::audio::AudioSource;
+        use crate::components::Hierarchy;
+        use crate::runtime_audio::AudioSourceAction as Action;
+        use crate::world::World;
+        let mut world = World::new();
+        let entity_id = EntityId::from("speaker");
+        let runtime_id = world.spawn_entity(
+            entity_id.clone(),
+            "Speaker",
+            "audio",
+            true,
+            Hierarchy {
+                parent_id: None,
+                sibling_order: 0,
+            },
+        );
+        world.insert_component_value(
+            entity_id.clone(),
+            ComponentValue::AudioSource(AudioSource {
+                clip_ref: crate::runtime_package::RuntimeAssetRef {
+                    id: "audio-test".into(),
+                    asset_type: "audio".into(),
+                    guid: None,
+                    sub_asset: None,
+                },
+                volume: 0.5,
+            }),
+        );
+        let dirty_before = world.dirty_records().len();
+        let mut output = ProjectRuntimeMutationBuffer::new();
+        for intent in [
+            serde_json::json!({"operation":"play"}),
+            serde_json::json!({"operation":"set_paused","paused":true}),
+            serde_json::json!({"operation":"set_paused","paused":false}),
+            serde_json::json!({"operation":"stop"}),
+        ] {
+            let wire =
+                serde_json::json!({"kind":"audio_source","entity_id":"speaker","intent":intent});
+            append_deferred_mutation(&mut output, serde_json::from_value(wire).unwrap()).unwrap();
+        }
+        let prepared = output.prepare(&world).unwrap();
+        assert_eq!(world.dirty_records().len(), dirty_before);
+        let report = prepared.commit(&mut world).unwrap();
+        assert_eq!(report.committed_count, 4);
+        assert_eq!(
+            report
+                .audio_source_commands
+                .iter()
+                .map(|command| command.action.clone())
+                .collect::<Vec<_>>(),
+            vec![
+                Action::Play,
+                Action::SetPaused(true),
+                Action::SetPaused(false),
+                Action::Stop
+            ]
+        );
+        assert!(report
+            .audio_source_commands
+            .iter()
+            .all(|command| command.entity_id == entity_id && command.runtime_id == runtime_id));
+        assert_eq!(world.dirty_records().len(), dirty_before);
+    }
+
+    #[test]
+    fn animator2d_sdk_json_intents_reach_existing_session_commit_in_order() {
+        let mut output = ProjectRuntimeMutationBuffer::new();
+        for intent in [
+            serde_json::json!({"operation":"set_bool","name":"moving","value":true}),
+            serde_json::json!({"operation":"play","name":"attack"}),
+            serde_json::json!({"operation":"set_paused","paused":true}),
+            serde_json::json!({"operation":"resume"}),
+        ] {
+            let wire = serde_json::json!({"kind":"animator2d","entity_id":"robot","intent":intent});
+            append_deferred_mutation(&mut output, serde_json::from_value(wire).unwrap()).unwrap();
+        }
+        let mut world = crate::world::World::new();
+        let report = output.prepare(&world).unwrap().commit(&mut world).unwrap();
+        use crate::animator2d::Animator2DCommand as C;
+        assert!(
+            matches!(&report.animator2d_commands[..],[C::SetBool {value:true,..},C::Play {state_id,..},C::SetPaused {paused:true,..},C::Resume {..}] if state_id == "attack")
+        );
+    }
+}
+
 fn apply_rule_mutation(
     context: &mut LogicContext<'_>,
-    mutation: ProjectRuntimeDeferredMutation,
-) -> Result<Option<crate::logic_executor::LogicWrite>, String> {
+    mutation: &ProjectRuntimeDeferredMutation,
+) -> Result<Option<crate::logic_executor::LogicWrite>, LogicError> {
     match mutation {
+        ProjectRuntimeDeferredMutation::ParticleEffect { .. } => Err(LogicError {
+            code: "particle_effect.session_callback_required",
+            message: "Submit ParticleEffect intents from a FixedUpdate or AUI session callback."
+                .into(),
+        }),
+        ProjectRuntimeDeferredMutation::AudioSource { .. } => Err(LogicError {
+            code: "audio_source.session_callback_required",
+            message: "Submit AudioSource intents from a FixedUpdate or AUI session callback."
+                .into(),
+        }),
+        ProjectRuntimeDeferredMutation::Animator2D { .. } => Err(LogicError {
+            code: "animator2d.session_callback_required",
+            message: "Submit Animator2D intents from a FixedUpdate or AUI session callback.".into(),
+        }),
         ProjectRuntimeDeferredMutation::WriteTransform {
             entity_id,
             transform,
         } => context
             .write_component(
-                EntityId::from(entity_id),
+                EntityId::from(entity_id.as_str()),
                 ComponentTypeId::transform(),
-                ComponentValue::Transform(engine_transform(transform)),
+                ComponentValue::Transform(engine_transform(transform.clone())),
             )
             .map(Some)
-            .map_err(|error| error.message),
+            .map_err(LogicError::from),
         ProjectRuntimeDeferredMutation::WriteComponentField {
             entity_id,
             component_type,
@@ -736,33 +1129,71 @@ fn apply_rule_mutation(
             value,
         } => context
             .write_component_field(
-                EntityId::from(entity_id),
-                ComponentTypeId::from(component_type),
-                &FieldPath::parse(field_path).map_err(|error| error.code.to_string())?,
-                runtime_value(value)?,
+                EntityId::from(entity_id.as_str()),
+                ComponentTypeId::from(component_type.as_str()),
+                &FieldPath::parse(field_path.clone()).map_err(|error| LogicError {
+                    code: error.code,
+                    message: error.code.into(),
+                })?,
+                runtime_value(value.clone()).map_err(|message| LogicError {
+                    code: NATIVE_CALL_FAILED,
+                    message,
+                })?,
             )
             .map(Some)
-            .map_err(|error| error.message),
-        ProjectRuntimeDeferredMutation::ReplaceDynamicComponent { .. } => {
-            Err("replace_dynamic_component is session-deferred only".to_string())
-        }
-        ProjectRuntimeDeferredMutation::InstantiatePrefab { prefab_id } => {
-            context.request_instantiate_prefab(
-                crate::runtime_package::RuntimeAssetRef {
-                    id: prefab_id,
-                    asset_type: "prefab".to_string(),
-                    guid: None,
-                    sub_asset: None,
+            .map_err(LogicError::from),
+        ProjectRuntimeDeferredMutation::ReplaceDynamicComponent { .. } => Err(LogicError {
+            code: NATIVE_CALL_FAILED,
+            message: "replace_dynamic_component is session-deferred only".into(),
+        }),
+        ProjectRuntimeDeferredMutation::InstantiatePrefab {
+            prefab_id,
+            position,
+        } => {
+            context.enqueue_command(
+                crate::gameplay_command::GameplayCommand::InstantiatePrefab {
+                    prefab_ref: crate::runtime_package::RuntimeAssetRef {
+                        id: prefab_id.clone(),
+                        asset_type: "prefab".to_string(),
+                        guid: None,
+                        sub_asset: None,
+                    },
+                    parent_entity: None,
+                    target_scene_instance: None,
+                    position: position.map(|[x, y, z]| crate::math::Vec3 { x, y, z }),
                 },
-                None,
-                None,
             );
             Ok(None)
         }
         ProjectRuntimeDeferredMutation::DespawnEntity { entity_id } => {
-            context.request_despawn_entity(EntityId::from(entity_id));
+            context.request_despawn_entity(EntityId::from(entity_id.as_str()));
             Ok(None)
         }
+    }
+}
+
+fn mutation_failure_location(
+    mutation: &ProjectRuntimeDeferredMutation,
+) -> Option<LogicFailureLocation> {
+    match mutation {
+        ProjectRuntimeDeferredMutation::WriteComponentField {
+            entity_id,
+            component_type,
+            field_path,
+            ..
+        } => Some(LogicFailureLocation {
+            entity_id: entity_id.as_str().into(),
+            component_type: component_type.as_str().into(),
+            field_path: Some(field_path.clone()),
+        }),
+        ProjectRuntimeDeferredMutation::WriteTransform { entity_id, .. } => {
+            Some(LogicFailureLocation {
+                entity_id: entity_id.as_str().into(),
+                component_type: ComponentTypeId::transform(),
+                field_path: None,
+            })
+        }
+        _ => None,
     }
 }
 
@@ -781,14 +1212,7 @@ fn validate_api(api: &ProjectRuntimeApi) -> Result<(), ProjectRuntimeError> {
             "native module ABI/SDK digest mismatch",
         ));
     }
-    let required_capabilities = project_runtime_abi::PROJECT_RUNTIME_CAP_RULES
-        | project_runtime_abi::PROJECT_RUNTIME_CAP_SESSIONS
-        | project_runtime_abi::PROJECT_RUNTIME_CAP_AUI_ACTIONS
-        | project_runtime_abi::PROJECT_RUNTIME_CAP_FIXED_UPDATE
-        | project_runtime_abi::PROJECT_RUNTIME_CAP_UI_STATE
-        | project_runtime_abi::PROJECT_RUNTIME_CAP_OBSERVATIONS
-        | project_runtime_abi::PROJECT_RUNTIME_CAP_WORLD_READ
-        | project_runtime_abi::PROJECT_RUNTIME_CAP_DEFERRED_MUTATIONS;
+    let required_capabilities = project_runtime_abi::PROJECT_RUNTIME_CAP_SESSIONS;
     if api.capabilities & required_capabilities != required_capabilities {
         return Err(abi_error(
             "validate_api",
@@ -800,13 +1224,43 @@ fn validate_api(api: &ProjectRuntimeApi) -> Result<(), ProjectRuntimeError> {
         ("create_session", api.create_session),
         ("destroy_session", api.destroy_session),
         ("session_id", api.session_id),
-        ("invoke_rule", api.invoke_rule),
-        ("handle_aui_actions", api.handle_aui_actions),
-        ("fixed_update", api.fixed_update),
-        ("resolve_ui_state", api.resolve_ui_state),
-        ("observe", api.observe),
     ] {
         required_call(call, name)?;
+    }
+    for (name, capability, call) in [
+        (
+            "invoke_rule",
+            project_runtime_abi::PROJECT_RUNTIME_CAP_RULES,
+            api.invoke_rule,
+        ),
+        (
+            "handle_aui_actions",
+            project_runtime_abi::PROJECT_RUNTIME_CAP_AUI_ACTIONS,
+            api.handle_aui_actions,
+        ),
+        (
+            "fixed_update",
+            project_runtime_abi::PROJECT_RUNTIME_CAP_FIXED_UPDATE,
+            api.fixed_update,
+        ),
+        (
+            "resolve_ui_state",
+            project_runtime_abi::PROJECT_RUNTIME_CAP_UI_STATE,
+            api.resolve_ui_state,
+        ),
+        (
+            "observe",
+            project_runtime_abi::PROJECT_RUNTIME_CAP_OBSERVATIONS,
+            api.observe,
+        ),
+    ] {
+        let declared = api.capabilities & capability != 0;
+        if declared != call.is_some() {
+            return Err(abi_error(
+                "validate_api",
+                format!("native module capability and callback '{name}' do not match"),
+            ));
+        }
     }
     Ok(())
 }
@@ -1315,6 +1769,152 @@ mod tests {
     use std::time::{SystemTime, UNIX_EPOCH};
 
     const MODULE_ID: &str = "sample.test.runtime";
+
+    #[test]
+    fn native_call_status_maps_all_sdk_statuses() {
+        let cases = [
+            (ProjectRuntimeStatus::Applied, NativeCallStatus::Applied),
+            (ProjectRuntimeStatus::NoOp, NativeCallStatus::NoOp),
+            (ProjectRuntimeStatus::Unhandled, NativeCallStatus::Unhandled),
+            (ProjectRuntimeStatus::Rejected, NativeCallStatus::Rejected),
+            (ProjectRuntimeStatus::Faulted, NativeCallStatus::Faulted),
+        ];
+        for (sdk, native) in cases {
+            assert_eq!(NativeCallStatus::from(sdk), native);
+        }
+    }
+
+    unsafe extern "C" fn write_then_fail_rule(
+        _module: ProjectRuntimeOpaqueHandle,
+        _session: ProjectRuntimeOpaqueHandle,
+        _context: *const ProjectRuntimeCallContext,
+        _request: ProjectRuntimeByteSlice,
+        output: *mut ProjectRuntimeByteBuffer,
+    ) -> ProjectRuntimeAbiStatus {
+        write(
+            output,
+            ProjectRuntimeRuleOutput {
+                status: ProjectRuntimeStatus::Applied,
+                mutations: vec![
+                    ProjectRuntimeDeferredMutation::WriteTransform {
+                        entity_id: "failure-fx".into(),
+                        transform: ProjectRuntimeTransform {
+                            position: [1.0, 0.0, 0.0],
+                            rotation: [0.0; 3],
+                            scale: [1.0; 3],
+                        },
+                    },
+                    ProjectRuntimeDeferredMutation::WriteComponentField {
+                        entity_id: "failure-fx".into(),
+                        component_type: "engine.sprite_renderer2d".into(),
+                        field_path: "unsupportedColor".into(),
+                        value: ProjectRuntimeValue::Color([1.0; 4]),
+                    },
+                ],
+                diagnostics: Vec::new(),
+            },
+        )
+    }
+
+    #[test]
+    fn native_failed_field_keeps_original_code_location_and_prior_write() {
+        let mut api = fake_api();
+        api.invoke_rule = Some(write_then_fail_rule);
+        let mut world = World::new();
+        let id = EntityId::from("failure-fx");
+        world.spawn_entity(
+            id.clone(),
+            "FX",
+            "visual",
+            true,
+            Hierarchy {
+                parent_id: None,
+                sibling_order: 0,
+            },
+        );
+        world.insert_transform(id.clone(), Transform::identity());
+        world
+            .try_insert_sprite_renderer2d(
+                id.clone(),
+                crate::components::SpriteRenderer2D::default(),
+            )
+            .unwrap();
+        let mut context = LogicContext::new(
+            7,
+            1.0 / 60.0,
+            crate::logic_executor::RulePhase::FrameUpdate,
+            crate::world_api::WorldWriteApi::new(&mut world),
+        );
+        let result = invoke_rule(
+            &api,
+            ProjectRuntimeOpaqueHandle {
+                value: 41,
+                generation: 3,
+            },
+            "rule.fade",
+            &mut context,
+        );
+        assert_eq!(result.status, LogicStatus::Failed);
+        assert_eq!(result.errors[0].code, "world.component.unsupported_field");
+        assert_eq!(
+            result.writes.len(),
+            1,
+            "a failure does not undo or erase the preceding write"
+        );
+        let location = result.failure_location.as_ref().unwrap();
+        assert_eq!(location.entity_id, id);
+        assert_eq!(
+            location.component_type,
+            ComponentTypeId::sprite_renderer2d()
+        );
+        assert_eq!(location.field_path.as_deref(), Some("unsupportedColor"));
+        let mut trace = crate::runtime_trace::RuntimeTrace::new();
+        trace.record_logic_result(7, "Update", &result);
+        let failure = trace
+            .gameplay_records
+            .iter()
+            .find(|r| r.result == "failed")
+            .unwrap();
+        assert_eq!(failure.entity_id.as_ref(), Some(&id));
+        assert_eq!(failure.field_path.as_deref(), Some("unsupportedColor"));
+    }
+
+    unsafe extern "C" fn panicked_rule(
+        _module: ProjectRuntimeOpaqueHandle,
+        _session: ProjectRuntimeOpaqueHandle,
+        _context: *const ProjectRuntimeCallContext,
+        _request: ProjectRuntimeByteSlice,
+        _output: *mut ProjectRuntimeByteBuffer,
+    ) -> ProjectRuntimeAbiStatus {
+        ProjectRuntimeAbiStatus::PANICKED
+    }
+
+    #[test]
+    fn native_callback_failure_keeps_abi_status_diagnostic() {
+        let mut api = fake_api();
+        api.invoke_rule = Some(panicked_rule);
+        let mut world = World::new();
+        let mut context = LogicContext::new(
+            1,
+            1.0 / 60.0,
+            crate::logic_executor::RulePhase::FrameUpdate,
+            crate::world_api::WorldWriteApi::new(&mut world),
+        );
+        let result = invoke_rule(
+            &api,
+            ProjectRuntimeOpaqueHandle {
+                value: 41,
+                generation: 3,
+            },
+            "rule.panics",
+            &mut context,
+        );
+        assert_eq!(result.status, LogicStatus::Failed);
+        assert_eq!(result.errors[0].code, NATIVE_CALL_FAILED);
+        assert!(result.errors[0]
+            .message
+            .contains(&format!("status {}", ProjectRuntimeAbiStatus::PANICKED.0)));
+    }
     const AOT_DIGEST: &str = "sha256:test-runtime-v1";
     const ENTITY_ID: &str = "entity-native-adapter";
     static DESTROY_COUNT: AtomicU64 = AtomicU64::new(0);
@@ -1354,7 +1954,7 @@ mod tests {
     }
 
     unsafe extern "C" fn create_session(
-        _module: ProjectRuntimeOpaqueHandle,
+        module: ProjectRuntimeOpaqueHandle,
         _session: ProjectRuntimeOpaqueHandle,
         _context: *const ProjectRuntimeCallContext,
         request: ProjectRuntimeByteSlice,
@@ -1371,7 +1971,7 @@ mod tests {
         write(
             output,
             ProjectRuntimeSessionCreateResponse {
-                handle_value: 41,
+                handle_value: if module.value == 42 { 42 } else { 41 },
                 handle_generation: 3,
             },
         )
@@ -1384,7 +1984,7 @@ mod tests {
         _request: ProjectRuntimeByteSlice,
         output: *mut ProjectRuntimeByteBuffer,
     ) -> ProjectRuntimeAbiStatus {
-        if session.value != 41 || session.generation != 3 {
+        if !matches!(session.value, 41 | 42) || session.generation != 3 {
             return ProjectRuntimeAbiStatus::INVALID_HANDLE;
         }
         DESTROY_COUNT.fetch_add(1, Ordering::SeqCst);
@@ -1398,7 +1998,7 @@ mod tests {
         _request: ProjectRuntimeByteSlice,
         output: *mut ProjectRuntimeByteBuffer,
     ) -> ProjectRuntimeAbiStatus {
-        if session.value != 41 || session.generation != 3 {
+        if !matches!(session.value, 41 | 42) || session.generation != 3 {
             return ProjectRuntimeAbiStatus::INVALID_HANDLE;
         }
         write(output, "test.native.session")
@@ -1441,12 +2041,16 @@ mod tests {
     }
 
     unsafe extern "C" fn invoke_rule_call(
-        _module: ProjectRuntimeOpaqueHandle,
-        _session: ProjectRuntimeOpaqueHandle,
+        module: ProjectRuntimeOpaqueHandle,
+        session: ProjectRuntimeOpaqueHandle,
         context: *const ProjectRuntimeCallContext,
         request: ProjectRuntimeByteSlice,
         output: *mut ProjectRuntimeByteBuffer,
     ) -> ProjectRuntimeAbiStatus {
+        let expected = if module.value == 42 { 42 } else { 41 };
+        if session.value != expected || session.generation != 3 {
+            return ProjectRuntimeAbiStatus::INVALID_HANDLE;
+        }
         let Ok(context) = require_context(context) else {
             return ProjectRuntimeAbiStatus::INVALID_ARGUMENT;
         };
@@ -1463,6 +2067,10 @@ mod tests {
                 action.action_id == "action.move" && action.axis2 == Some([0.25, -0.5])
             }) && request.input_actions.iter().any(|action| {
                 action.action_id == "action.fire" && action.phase.as_deref() == Some("pressed")
+            }) && request.input_actions.iter().any(|action| {
+                action.action_id == "action.pointer"
+                    && action.phase.as_deref() == Some("pointer")
+                    && action.axis2 == Some([880.0, 622.0])
             }) && request.collision_pairs.iter().any(|pair| {
                 pair.entity_a == "collision-a"
                     && pair.entity_b == "collision-b"
@@ -1484,6 +2092,7 @@ mod tests {
         mutations.extend([
             ProjectRuntimeDeferredMutation::InstantiatePrefab {
                 prefab_id: "prefab-native".to_string(),
+                position: None,
             },
             ProjectRuntimeDeferredMutation::DespawnEntity {
                 entity_id: "entity-native-despawn".to_string(),
@@ -1661,7 +2270,7 @@ mod tests {
         let mut input = RuntimePackageBuildInput::new(RuntimeProjectInfo::new(
             "project-test",
             "Test Project",
-            "0.0.3",
+            "0.1.0",
             RuntimeProjectModuleRef::new(
                 MODULE_ID,
                 PROJECT_RUNTIME_MODULE_INTERFACE_VERSION,
@@ -1678,6 +2287,12 @@ mod tests {
             entities: Vec::new(),
         });
         let input_none = InputMappingAsset::explicit_empty("input.none");
+        input.rule_manifest = Some(serde_json::from_value(serde_json::json!({
+            "schemaVersion":"runtime-rule-manifest.v1", "mode":"rust-aot",
+            "rules":[{"ruleId":"project.test.native_rule","phase":"Update","enabled":true,
+                "executor":"rustAot","artifactId":"rule-artifact:project.test.native_rule:hash","irHash":"hash","irSource":"fixture"}],
+            "modules":[{"artifactId":"rule-artifact:project.test.native_rule:hash","moduleKind":"staticRegistry","path":"fixture"}]
+        })).unwrap());
         input.input_mappings.push(RuntimePackageSourceJson {
             id: input_none.asset_id.clone(),
             document: serde_json::to_value(input_none).unwrap(),
@@ -1743,6 +2358,7 @@ mod tests {
             2,
             vec![
                 InputActionState::axis2("action.move", 0.25, -0.5),
+                InputActionState::pointer("action.pointer", 880.0, 622.0),
                 InputActionState::button("action.fire", ActionPhase::Pressed),
             ],
         );
@@ -1761,7 +2377,15 @@ mod tests {
         )
         .with_action_snapshot(Some(&actions))
         .with_collision_pairs(&collisions);
-        let rule = invoke_rule(&fake_api(), "project.test.native_rule", &mut logic_context);
+        let rule = invoke_rule(
+            &fake_api(),
+            ProjectRuntimeOpaqueHandle {
+                value: 41,
+                generation: 3,
+            },
+            "project.test.native_rule",
+            &mut logic_context,
+        );
         assert_eq!(rule.status, crate::logic_executor::LogicStatus::Applied);
         assert_eq!(rule.writes.len(), 1);
         assert!(RULE_WIRE_VALID.load(Ordering::SeqCst));
@@ -1887,9 +2511,40 @@ mod tests {
         assert_eq!(reentry.status, ProjectRuntimeSessionStatus::Faulted);
         assert_eq!(FIXED_COUNT.load(Ordering::SeqCst), fixed_calls);
 
-        assert_eq!(DESTROY_COUNT.load(Ordering::SeqCst), 0);
-        drop(parts);
+        let mut second_api = fake_api();
+        second_api.module_context = ProjectRuntimeOpaqueHandle {
+            value: 42,
+            generation: 3,
+        };
+        let second_linked = linked_project_runtime_set_from_api(second_api).unwrap();
+        let second = ProjectRuntimeBootstrap::bind(&package, &second_linked)
+            .unwrap()
+            .into_parts();
+        let mut trace = crate::runtime_trace::RuntimeTrace::default();
+        for runner in [&second.project_logic, &parts.project_logic] {
+            let results =
+                runner.run_frame_update_with_input(8, &mut world, &mut trace, Some(&actions));
+            assert_eq!(results.len(), 1);
+            assert_eq!(
+                results[0].status,
+                crate::logic_executor::LogicStatus::Applied
+            );
+        }
+        drop(second);
         assert_eq!(DESTROY_COUNT.load(Ordering::SeqCst), 1);
+        drop(parts.project_runtime_session);
+        drop(parts.ui_state_producer);
+        assert_eq!(DESTROY_COUNT.load(Ordering::SeqCst), 2);
+        let expired = parts.project_logic.run_frame_update_with_input(
+            9,
+            &mut world,
+            &mut trace,
+            Some(&actions),
+        );
+        assert_eq!(
+            expired[0].status,
+            crate::logic_executor::LogicStatus::Failed
+        );
         assert_eq!(ACTION_COUNT.load(Ordering::SeqCst), 1);
     }
 
@@ -1901,5 +2556,22 @@ mod tests {
             .err()
             .expect("digest mismatch must fail closed");
         assert_eq!(error.stage, "validate_api");
+    }
+
+    #[test]
+    fn project_runtime_native_adapter_accepts_absent_optional_handlers_and_rejects_mismatch() {
+        let mut api = fake_api();
+        api.capabilities = project_runtime_abi::PROJECT_RUNTIME_CAP_SESSIONS;
+        api.invoke_rule = None;
+        api.handle_aui_actions = None;
+        api.fixed_update = None;
+        api.resolve_ui_state = None;
+        api.observe = None;
+        validate_api(&api).expect("sessions-only API with absent optional callbacks");
+
+        api.capabilities |= project_runtime_abi::PROJECT_RUNTIME_CAP_FIXED_UPDATE;
+        let error = validate_api(&api).expect_err("declared capability requires its callback");
+        assert_eq!(error.stage, "validate_api");
+        assert!(error.message.contains("fixed_update"));
     }
 }

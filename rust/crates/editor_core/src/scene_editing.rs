@@ -1261,6 +1261,149 @@ pub struct PreviewWorldSyncReport {
 pub struct SceneSavePipeline;
 
 impl SceneSavePipeline {
+    pub fn save_in_context(
+        document: &mut EditorSceneDocument,
+        session: &mut project_authoring_execution::ProjectAuthoringSession,
+        path: Option<impl AsRef<Path>>,
+    ) -> SceneSaveReport {
+        let target_path = match path {
+            Some(path) => path.as_ref().to_path_buf(),
+            None => match document.scene_path.clone() {
+                Some(path) => path,
+                None => {
+                    return SceneSaveReport::failed(
+                        &document.scene_id,
+                        PathBuf::new(),
+                        "scene.save.path_required",
+                        "SaveScene requires a path for documents that were not loaded from disk.",
+                        document.dirty_state.dirty,
+                    );
+                }
+            },
+        };
+        let project_root = session.project_root().to_path_buf();
+        let project_root = normalize_path(&project_root);
+        let normalized_target = normalize_path(&target_path);
+        let comparison_target = target_path
+            .canonicalize()
+            .or_else(|_| {
+                target_path
+                    .parent()
+                    .and_then(|parent| parent.canonicalize().ok())
+                    .and_then(|parent| target_path.file_name().map(|name| parent.join(name)))
+                    .ok_or_else(|| std::io::Error::from(std::io::ErrorKind::NotFound))
+            })
+            .unwrap_or_else(|_| normalized_target.clone());
+        let comparison_target = normalize_path(&comparison_target);
+        if !comparison_target.starts_with(&project_root) {
+            return SceneSaveReport::failed(
+                &document.scene_id,
+                target_path,
+                "scene.save.path_outside_project",
+                "Scene save path must be inside the project root.",
+                document.dirty_state.dirty,
+            );
+        }
+        if normalized_target.components().any(|component| {
+            matches!(component, Component::Normal(value) if {
+                let lower = value.to_string_lossy().to_ascii_lowercase();
+                lower == "runtime-package" || lower == "runtime_package"
+            })
+        }) {
+            return SceneSaveReport::failed(
+                &document.scene_id,
+                target_path,
+                "scene.save.runtime_package_output",
+                "Scene source files cannot be saved into Runtime Package output directories.",
+                document.dirty_state.dirty,
+            );
+        }
+        let diagnostics = document.validate();
+        if diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.severity == SceneEditDiagnosticSeverity::Error)
+        {
+            return SceneSaveReport {
+                scene_id: document.scene_id.clone(),
+                path: target_path,
+                status: SceneSaveStatus::Failed,
+                diagnostics,
+                dirty_after: document.dirty_state.dirty,
+            };
+        }
+        let text = match document.to_stable_json() {
+            Ok(text) => text,
+            Err(error) => {
+                return SceneSaveReport::failed(
+                    &document.scene_id,
+                    target_path,
+                    "scene.save.serialize_failed",
+                    format!("Failed to serialize scene: {error}"),
+                    document.dirty_state.dirty,
+                );
+            }
+        };
+        let relative_target = match comparison_target.strip_prefix(&project_root) {
+            Ok(relative) if !relative.as_os_str().is_empty() => {
+                relative.to_string_lossy().replace('\\', "/")
+            }
+            _ => {
+                return SceneSaveReport::failed(
+                    &document.scene_id,
+                    target_path,
+                    "scene.save.path_invalid",
+                    "Scene save path must identify a file inside the project root.",
+                    document.dirty_state.dirty,
+                );
+            }
+        };
+        let same_current_path = document.scene_path.as_deref().is_some_and(|current| {
+            let normalized_current = normalize_path(current);
+            normalized_current == normalized_target
+                || current
+                    .canonicalize()
+                    .ok()
+                    .map(|current| normalize_path(&current) == comparison_target)
+                    .unwrap_or(false)
+        });
+        if same_current_path && !document.dirty_state.dirty {
+            if let Err(error) = session.refresh() {
+                return context_save_failed(document, target_path, error);
+            }
+            match session.snapshot(vec![relative_target.clone()]) {
+                Ok(_) => {
+                    return SceneSaveReport::unchanged(&document.scene_id, normalized_target);
+                }
+                Err(error)
+                    if error.diagnostic.code == "authoring_context.snapshot_path_missing" => {}
+                Err(error) => return context_save_failed(document, target_path, error),
+            }
+        }
+        let request = authoring_project_context::DocumentWriteRequest {
+            relative_path: relative_target,
+            domain: "scene".to_string(),
+            schema_version: document.schema_version.clone(),
+            bytes: text.into_bytes(),
+        };
+        let report = match session.save_document(request) {
+            Ok(report) => report,
+            Err(error) => return context_save_failed(document, target_path, error),
+        };
+        document.scene_path = Some(normalized_target.clone());
+        document.clear_dirty();
+        let status = match report.status {
+            authoring_project_context::DocumentWriteStatus::Saved => SceneSaveStatus::Saved,
+            authoring_project_context::DocumentWriteStatus::Unchanged => SceneSaveStatus::Unchanged,
+        };
+        SceneSaveReport {
+            scene_id: document.scene_id.clone(),
+            path: normalized_target,
+            status,
+            diagnostics: Vec::new(),
+            dirty_after: document.dirty_state.dirty,
+        }
+    }
+
     pub fn save(
         document: &mut EditorSceneDocument,
         project_root: impl AsRef<Path>,
@@ -1388,6 +1531,26 @@ impl SceneSavePipeline {
             diagnostics: Vec::new(),
             dirty_after: document.dirty_state.dirty,
         }
+    }
+}
+
+fn context_save_failed(
+    document: &EditorSceneDocument,
+    path: PathBuf,
+    error: authoring_project_context::ContextError,
+) -> SceneSaveReport {
+    let diagnostic = SceneEditDiagnostic::error(
+        error.diagnostic.code,
+        "scene.save",
+        error.diagnostic.message,
+    )
+    .with_path(path.display().to_string());
+    SceneSaveReport {
+        scene_id: document.scene_id.clone(),
+        path,
+        status: SceneSaveStatus::Failed,
+        diagnostics: vec![diagnostic],
+        dirty_after: document.dirty_state.dirty,
     }
 }
 

@@ -1,0 +1,26 @@
+[package]
+name = "engine_runtime_host"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lib]
+name = "engine_runtime"
+crate-type = ["cdylib"]
+
+[features]
+default = ["real-window"]
+real-window = ["runtime_player_winit/real-window"]
+
+[lints]
+workspace = true
+
+[dependencies]
+engine_runtime = { path = "../engine_runtime" }
+runtime_player_winit = { path = "../runtime_player_winit" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_System_LibraryLoader"] }

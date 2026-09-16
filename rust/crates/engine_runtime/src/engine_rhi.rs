@@ -73,6 +73,15 @@ pub trait EngineRhiBackend {
     fn begin_frame(&mut self, frame: EngineRhiFrame);
     fn clear(&mut self, target_id: &str, color: [OrderedF32; 4]);
     fn draw(&mut self, draw_call: EngineRhiDrawCall);
+    fn reconcile_particles(
+        &mut self,
+        sources: &[crate::particle_render_contract::ParticleSourceFrame],
+    );
+    fn particle_step(
+        &mut self,
+        instance: u64,
+        step: &crate::particle_render_contract::ParticleRenderStep,
+    );
     fn submit(&mut self);
     fn present(&mut self, target_id: &str);
     fn finish_report(&mut self, plan: &RhiCommandPlan) -> RhiBackendReport;
@@ -80,6 +89,10 @@ pub trait EngineRhiBackend {
     fn execute_plan(&mut self, plan: &RhiCommandPlan) -> RhiBackendReport {
         for command in &plan.commands {
             match command {
+                RhiCommand::ReconcileParticles { sources } => self.reconcile_particles(sources),
+                RhiCommand::SimulateParticles { instance, step } => {
+                    self.particle_step(*instance, step)
+                }
                 RhiCommand::BeginFrame { target } => self.begin_frame(EngineRhiFrame {
                     frame_index: plan.frame_index,
                     target_id: target.clone(),

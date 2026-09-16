@@ -282,27 +282,63 @@ fn resolve_package_contract(
     Vec<ExportedPlayerProcessVerificationDiagnostic>,
 ) {
     let legacy_entrypoint = if cfg!(windows) { "Game.exe" } else { "Game" };
-    let legacy = || {
+    let unresolved = |diagnostic| {
         (
-            "legacy-dev".to_string(),
+            "invalid".to_string(),
             legacy_entrypoint.to_string(),
             exported_package_dir.join(legacy_entrypoint),
             exported_package_dir.join("data").join("runtime_package"),
-            Vec::new(),
+            vec![diagnostic],
         )
     };
-    let Ok(text) = fs::read_to_string(package_manifest_path) else {
-        return legacy();
+    let text = match fs::read_to_string(package_manifest_path) {
+        Ok(text) => text,
+        Err(error) => {
+            return unresolved(
+                ExportedPlayerProcessVerificationDiagnostic::error(
+                    "package_manifest_invalid",
+                    format!("Cannot read package manifest: {error}"),
+                )
+                .with_path(package_manifest_path.display().to_string()),
+            )
+        }
     };
-    let Ok(value) = serde_json::from_str::<serde_json::Value>(&text) else {
-        return legacy();
+    let value = match serde_json::from_str::<serde_json::Value>(&text) {
+        Ok(value) => value,
+        Err(error) => {
+            return unresolved(
+                ExportedPlayerProcessVerificationDiagnostic::error(
+                    "package_manifest_invalid",
+                    format!("Cannot parse package manifest: {error}"),
+                )
+                .with_path(package_manifest_path.display().to_string()),
+            )
+        }
     };
-    if value
+    let schema = value
         .get("schemaVersion")
-        .and_then(serde_json::Value::as_str)
-        != Some(RELEASE_PACKAGE_MANIFEST_SCHEMA_VERSION)
-    {
-        return legacy();
+        .and_then(serde_json::Value::as_str);
+    if schema == Some(crate::DESKTOP_PACKAGE_MANIFEST_SCHEMA_VERSION) {
+        let diagnostics = crate::validate_desktop_dev_package(exported_package_dir)
+            .err()
+            .into_iter()
+            .collect();
+        return (
+            "desktop-dev".to_string(),
+            "Game.exe".to_string(),
+            exported_package_dir.join("Game.exe"),
+            exported_package_dir.join("data/runtime_package"),
+            diagnostics,
+        );
+    }
+    if schema != Some(RELEASE_PACKAGE_MANIFEST_SCHEMA_VERSION) {
+        return unresolved(
+            ExportedPlayerProcessVerificationDiagnostic::error(
+                "package_manifest_schema_unsupported",
+                "Unsupported package manifest schema; export the project again.",
+            )
+            .with_path(package_manifest_path.display().to_string()),
+        );
     }
     let manifest = match serde_json::from_value::<ReleasePackageManifest>(value) {
         Ok(manifest) => manifest,

@@ -1,17 +1,21 @@
 use editor_ui_model::RecentProjectEntry;
 use engine_input::InputMappingAsset;
 use engine_runtime::game_view_presentation::GameViewTargetSpec;
+use project_authoring_execution::ProjectAuthoringSession;
+pub use project_authoring_execution::{
+    ProjectManifest, ProjectRuntimeModuleBuildSpec, ProjectRuntimeSourceKind,
+    LEGACY_PROJECT_MANIFEST_SCHEMA_VERSION, PROJECT_MANIFEST_SCHEMA_VERSION,
+    PROJECT_RUNTIME_MODULE_INTERFACE_VERSION,
+};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use crate::{ProjectRelativePath, ProjectWriteScope};
+use crate::ProjectWriteScope;
 
-pub const LEGACY_PROJECT_MANIFEST_SCHEMA_VERSION: &str = "aife-project.v1";
-pub const PROJECT_MANIFEST_SCHEMA_VERSION: &str = "aife-project.v2";
-pub const PROJECT_RUNTIME_MODULE_INTERFACE_VERSION: &str = "project-runtime-module.v2";
 pub const PROJECT_SETTINGS_SCHEMA_VERSION: &str = "aife-project-settings.v1";
 pub const PROJECT_LAUNCHER_EVENT_SCHEMA_VERSION: &str = "project-launcher-event.v1";
 pub const EDITOR_RECENT_PROJECTS_SCHEMA_VERSION: &str = "editor-recent-projects.v1";
@@ -77,112 +81,6 @@ impl ProjectSettingsDocument {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct ProjectManifest {
-    #[serde(rename = "schemaVersion")]
-    pub schema_version: String,
-    #[serde(rename = "projectId")]
-    pub project_id: String,
-    #[serde(rename = "projectName")]
-    pub project_name: String,
-    #[serde(rename = "engineVersion")]
-    pub engine_version: String,
-    #[serde(rename = "createdAt")]
-    pub created_at: String,
-    #[serde(rename = "lastOpenedAt")]
-    pub last_opened_at: Option<String>,
-    #[serde(rename = "defaultScene")]
-    pub default_scene: String,
-    #[serde(rename = "assetRoot")]
-    pub asset_root: String,
-    #[serde(rename = "settingsVersion")]
-    pub settings_version: String,
-    #[serde(rename = "runtimeModule")]
-    pub runtime_module: ProjectRuntimeModuleBuildSpec,
-    #[serde(
-        rename = "observationContract",
-        default,
-        skip_serializing_if = "Option::is_none"
-    )]
-    pub observation_contract: Option<String>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
-pub struct ProjectRuntimeModuleBuildSpec {
-    #[serde(
-        rename = "sourceKind",
-        default,
-        skip_serializing_if = "Option::is_none"
-    )]
-    pub source_kind: Option<ProjectRuntimeSourceKind>,
-    pub module_id: String,
-    pub interface_version: String,
-    pub cargo_manifest: String,
-    pub cargo_package: String,
-    pub player_binary: String,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub enum ProjectRuntimeSourceKind {
-    BuiltInEmpty,
-    ProjectRust,
-}
-
-impl ProjectRuntimeModuleBuildSpec {
-    pub fn explicit_empty() -> Self {
-        Self {
-            source_kind: Some(ProjectRuntimeSourceKind::BuiltInEmpty),
-            module_id: "engine.empty.runtime".to_string(),
-            interface_version: PROJECT_RUNTIME_MODULE_INTERFACE_VERSION.to_string(),
-            cargo_manifest: "RuntimeModule/Cargo.toml".to_string(),
-            cargo_package: "empty_project_runtime".to_string(),
-            player_binary: "empty_project_player".to_string(),
-        }
-    }
-
-    pub fn validate(&self) -> Result<(), String> {
-        if self.module_id.trim().is_empty()
-            || self.interface_version.trim().is_empty()
-            || self.cargo_package.trim().is_empty()
-            || self.player_binary.trim().is_empty()
-        {
-            return Err(
-                "project_runtime.project_manifest_runtime_module_fields_required".to_string(),
-            );
-        }
-        match self.resolved_source_kind() {
-            ProjectRuntimeSourceKind::BuiltInEmpty => {
-                if self.module_id != "engine.empty.runtime" {
-                    return Err("project_runtime.builtin_empty_module_id_mismatch".to_string());
-                }
-            }
-            ProjectRuntimeSourceKind::ProjectRust => {
-                if self.module_id == "engine.empty.runtime" {
-                    return Err(
-                        "project_runtime.project_rust_cannot_use_empty_module_id".to_string()
-                    );
-                }
-                ProjectRelativePath::parse(&self.cargo_manifest).map_err(|error| {
-                    format!("project_runtime.invalid_cargo_manifest_path: {error}")
-                })?;
-            }
-        }
-        Ok(())
-    }
-
-    pub fn resolved_source_kind(&self) -> ProjectRuntimeSourceKind {
-        self.source_kind.unwrap_or_else(|| {
-            if self.module_id == "engine.empty.runtime" {
-                ProjectRuntimeSourceKind::BuiltInEmpty
-            } else {
-                ProjectRuntimeSourceKind::ProjectRust
-            }
-        })
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ProjectLauncherEventKind {
     OpenProject,
     CreateProject,
@@ -212,11 +110,16 @@ pub struct ProjectSession {
     pub manifest: ProjectManifest,
     pub settings: ProjectSettingsDocument,
     write_scope: ProjectWriteScope,
+    authoring_session: Arc<Mutex<ProjectAuthoringSession>>,
 }
 
 impl ProjectSession {
     pub fn write_scope(&self) -> &ProjectWriteScope {
         &self.write_scope
+    }
+
+    pub(crate) fn authoring_session(&self) -> &Arc<Mutex<ProjectAuthoringSession>> {
+        &self.authoring_session
     }
 }
 
@@ -387,7 +290,7 @@ const PROJECT_CREATE_CLAIM_FILE: &str = ".aife-project-create-claim";
 
 impl Default for ProjectLauncherState {
     fn default() -> Self {
-        Self::new("0.0.3")
+        Self::new("0.1.0")
     }
 }
 
@@ -554,12 +457,14 @@ impl ProjectLauncherState {
             write_default_scene(&write_scope, &manifest.default_scene)?;
             fs::remove_file(canonical_project_root.join(PROJECT_CREATE_CLAIM_FILE))
                 .map_err(|error| format!("Could not release project create claim: {error}"))?;
+            let authoring_session = open_authoring_session(&canonical_project_root)?;
 
             Ok(ProjectSession {
                 project_root: canonical_project_root.clone(),
                 manifest,
                 settings,
                 write_scope,
+                authoring_session,
             })
         })();
         let session = match build_result {
@@ -683,11 +588,13 @@ impl ProjectLauncherState {
             );
             return Err(message);
         }
+        let authoring_session = open_authoring_session(project_root)?;
         let session = ProjectSession {
             project_root: project_root.to_path_buf(),
             manifest,
             settings,
             write_scope,
+            authoring_session,
         };
         self.add_recent_project(&session);
         self.record_event(
@@ -1047,6 +954,14 @@ pub fn validate_project_root(
     crate::ProjectReadiness::inspect(project_root, current_engine_version).launcher_status()
 }
 
+fn open_authoring_session(
+    project_root: &Path,
+) -> Result<Arc<Mutex<ProjectAuthoringSession>>, String> {
+    ProjectAuthoringSession::open(project_root)
+        .map(|session| Arc::new(Mutex::new(session)))
+        .map_err(|error| error.to_string())
+}
+
 fn write_json_pretty(path: impl AsRef<Path>, value: &impl Serialize) -> Result<(), String> {
     let text = serde_json::to_string_pretty(value).map_err(|err| err.to_string())?;
     fs::write(path.as_ref(), text).map_err(|err| err.to_string())
@@ -1114,7 +1029,7 @@ mod tests {
     #[test]
     fn create_project_writes_minimum_project_skeleton() {
         let root = unique_temp_dir("project-launcher-create");
-        let mut launcher = ProjectLauncherState::new("0.0.3");
+        let mut launcher = ProjectLauncherState::new("0.1.0");
 
         let session = launcher
             .create_project(&root, "PlaneGame")
@@ -1134,7 +1049,7 @@ mod tests {
         fs::create_dir_all(&root).unwrap();
         let sentinel = root.join("caller-owned.txt");
         fs::write(&sentinel, b"unchanged").unwrap();
-        let mut launcher = ProjectLauncherState::new("0.0.3");
+        let mut launcher = ProjectLauncherState::new("0.1.0");
 
         let error = launcher
             .create_project(&root, "MustNotOverwrite")
@@ -1147,7 +1062,7 @@ mod tests {
 
     #[test]
     fn project_create_rejects_non_absolute_root_and_missing_parent() {
-        let mut launcher = ProjectLauncherState::new("0.0.3");
+        let mut launcher = ProjectLauncherState::new("0.1.0");
         let relative_error = launcher
             .create_project("relative/project", "Relative")
             .expect_err("relative target must be rejected");
@@ -1166,7 +1081,7 @@ mod tests {
     fn project_create_rejects_target_file_and_invalid_name_without_writing() {
         let target = unique_temp_dir("project-launcher-target-file");
         fs::write(&target, b"caller-owned").unwrap();
-        let mut launcher = ProjectLauncherState::new("0.0.3");
+        let mut launcher = ProjectLauncherState::new("0.1.0");
 
         let file_error = launcher
             .create_project(&target, "TargetFile")
@@ -1193,7 +1108,7 @@ mod tests {
                 let target = target.clone();
                 let barrier = barrier.clone();
                 std::thread::spawn(move || {
-                    let mut launcher = ProjectLauncherState::new("0.0.3");
+                    let mut launcher = ProjectLauncherState::new("0.1.0");
                     barrier.wait();
                     launcher.create_project(&target, format!("Owner{index}"))
                 })
@@ -1219,7 +1134,7 @@ mod tests {
     #[test]
     fn project_create_initialization_failure_removes_owned_target() {
         let target = unique_temp_dir("project-launcher-owned-cleanup");
-        let mut launcher = ProjectLauncherState::new("0.0.3");
+        let mut launcher = ProjectLauncherState::new("0.1.0");
         launcher.template_registry.templates[0].default_scene = "../escape.scene.json".to_string();
 
         let error = launcher
@@ -1253,7 +1168,7 @@ mod tests {
     #[test]
     fn open_project_validates_manifest_and_updates_recent_list() {
         let root = unique_temp_dir("project-launcher-open");
-        let mut launcher = ProjectLauncherState::new("0.0.3");
+        let mut launcher = ProjectLauncherState::new("0.1.0");
         launcher.create_project(&root, "OpenMe").unwrap();
         launcher.recent_projects.clear();
 
@@ -1270,7 +1185,7 @@ mod tests {
     #[test]
     fn open_project_keeps_manifest_bytes_unchanged_and_updates_editor_recent_state() {
         let root = unique_temp_dir("project-launcher-open-read-only");
-        let mut launcher = ProjectLauncherState::new("0.0.3");
+        let mut launcher = ProjectLauncherState::new("0.1.0");
         launcher.create_project(&root, "ReadOnlyOpen").unwrap();
         let manifest_path = root.join("project.aife.json");
         let manifest_before = fs::read(&manifest_path).unwrap();
@@ -1293,7 +1208,7 @@ mod tests {
     #[test]
     fn project_settings_game_view_target_legacy_default_and_invalid_target_are_explicit() {
         let root = unique_temp_dir("project-launcher-game-view-settings");
-        let mut launcher = ProjectLauncherState::new("0.0.3");
+        let mut launcher = ProjectLauncherState::new("0.1.0");
         let created = launcher.create_project(&root, "GameViewSettings").unwrap();
         assert_eq!(
             created.settings.resolved_game_view_target(),
@@ -1325,14 +1240,14 @@ mod tests {
 
     #[test]
     fn refresh_recent_projects_marks_missing_project_invalid() {
-        let mut launcher = ProjectLauncherState::new("0.0.3");
+        let mut launcher = ProjectLauncherState::new("0.1.0");
         launcher.recent_projects.push(RecentProjectEntry {
             name: "Missing".to_string(),
             path: unique_temp_dir("project-launcher-missing")
                 .join("deleted")
                 .display()
                 .to_string(),
-            engine_version: "0.0.3".to_string(),
+            engine_version: "0.1.0".to_string(),
             last_opened_at: None,
             last_modified_at: None,
             valid: true,
@@ -1352,7 +1267,7 @@ mod tests {
         let document = ProjectRecentProjectsDocument::new(vec![RecentProjectEntry {
             name: "StoredProject".to_string(),
             path: "D:/Projects/StoredProject".to_string(),
-            engine_version: "0.0.3".to_string(),
+            engine_version: "0.1.0".to_string(),
             last_opened_at: Some("1".to_string()),
             last_modified_at: Some("1".to_string()),
             valid: true,
@@ -1369,12 +1284,12 @@ mod tests {
     #[test]
     fn launcher_loads_and_validates_recent_projects() {
         let project_root = unique_temp_dir("project-launcher-valid-recent");
-        let mut setup = ProjectLauncherState::new("0.0.3");
+        let mut setup = ProjectLauncherState::new("0.1.0");
         setup.create_project(&project_root, "ValidProject").unwrap();
         let store_path = unique_temp_dir("project-launcher-store").join("recent.json");
         setup.save_recent_projects(&store_path).unwrap();
 
-        let mut launcher = ProjectLauncherState::new("0.0.3");
+        let mut launcher = ProjectLauncherState::new("0.1.0");
         launcher.load_recent_projects(&store_path).unwrap();
 
         assert_eq!(launcher.recent_projects.len(), 1);
@@ -1386,7 +1301,7 @@ mod tests {
     #[test]
     fn launcher_collapses_windows_verbatim_and_display_paths_for_the_same_project() {
         let project_root = unique_temp_dir("project-launcher-verbatim-recent");
-        let mut setup = ProjectLauncherState::new("0.0.3");
+        let mut setup = ProjectLauncherState::new("0.1.0");
         setup.create_project(&project_root, "SameProject").unwrap();
         let display_path = project_root.display().to_string();
         let verbatim_path = format!(r"\\?\{display_path}");
@@ -1397,7 +1312,7 @@ mod tests {
         newer.path = verbatim_path;
         newer.last_opened_at = Some("20".to_string());
 
-        let mut launcher = ProjectLauncherState::new("0.0.3");
+        let mut launcher = ProjectLauncherState::new("0.1.0");
         launcher.apply_recent_projects(vec![older, newer]);
 
         assert_eq!(launcher.recent_projects.len(), 1);
@@ -1418,7 +1333,7 @@ mod tests {
         fs::create_dir_all(&root).unwrap();
         fs::write(root.join("project.aife.json"), "{not-json").unwrap();
 
-        let status = validate_project_root(&root, "0.0.3");
+        let status = validate_project_root(&root, "0.1.0");
 
         assert_eq!(status, ProjectValidationStatus::InvalidManifest);
         assert!(!status.valid());

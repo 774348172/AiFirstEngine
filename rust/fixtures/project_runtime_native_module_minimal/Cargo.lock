@@ -85,14 +85,14 @@ dependencies = [
 
 [[package]]
 name = "project_runtime_abi"
-version = "0.0.3"
+version = "0.1.0"
 dependencies = [
  "sha2",
 ]
 
 [[package]]
 name = "project_runtime_native_module_minimal"
-version = "0.0.3"
+version = "0.1.0"
 dependencies = [
  "project_runtime_abi",
  "project_runtime_sdk",
@@ -101,7 +101,7 @@ dependencies = [
 
 [[package]]
 name = "project_runtime_sdk"
-version = "0.0.3"
+version = "0.1.0"
 dependencies = [
  "project_runtime_abi",
  "serde",
@@ -174,9 +174,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "3.0.4"
+version = "3.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e6275cddf4610d1775e6d1fe9469b2e77d0f39fd98fb7450901b821e0c53649f"
+checksum = "53e9bae58849f64dfa4f5d5ae372c8341f7305f82a3868709269343628b659a3"
 dependencies = [
  "proc-macro2",
  "quote",

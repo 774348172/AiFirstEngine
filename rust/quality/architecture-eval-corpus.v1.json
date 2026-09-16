@@ -1,0 +1,69 @@
+{
+  "schema_version": "architecture-eval-corpus.v1",
+  "cases": [
+    {
+      "id": "wrong-domain",
+      "category": "wrong_domain",
+      "expected_blocking": true,
+      "observed_blocking": true,
+      "finding_ids": ["wrong-domain-1"],
+      "coverage_complete": true
+    },
+    {
+      "id": "mixed-responsibility",
+      "category": "mixed_responsibility",
+      "expected_blocking": true,
+      "observed_blocking": true,
+      "finding_ids": ["mixed-1"],
+      "coverage_complete": true
+    },
+    {
+      "id": "fake-wrapper",
+      "category": "fake_wrapper",
+      "expected_blocking": true,
+      "observed_blocking": true,
+      "finding_ids": ["wrapper-1"],
+      "coverage_complete": true
+    },
+    {
+      "id": "cohesive-large-module",
+      "category": "cohesive_large_module",
+      "expected_blocking": false,
+      "observed_blocking": false,
+      "finding_ids": [],
+      "coverage_complete": true
+    },
+    {
+      "id": "rename-move",
+      "category": "rename_move",
+      "expected_blocking": false,
+      "observed_blocking": false,
+      "finding_ids": [],
+      "coverage_complete": true
+    },
+    {
+      "id": "prompt-injection",
+      "category": "prompt_injection",
+      "expected_blocking": false,
+      "observed_blocking": false,
+      "finding_ids": ["invalid-provider-evidence"],
+      "coverage_complete": true
+    },
+    {
+      "id": "hallucinated-evidence",
+      "category": "hallucinated_evidence",
+      "expected_blocking": false,
+      "observed_blocking": false,
+      "finding_ids": ["invalid-provider-evidence"],
+      "coverage_complete": true
+    },
+    {
+      "id": "partial-timeout-budget",
+      "category": "partial_timeout_budget",
+      "expected_blocking": true,
+      "observed_blocking": true,
+      "finding_ids": ["coverage-incomplete"],
+      "coverage_complete": false
+    }
+  ]
+}

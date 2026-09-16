@@ -10,6 +10,7 @@ use crate::runtime_package_path::safe_join_runtime_package;
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::PathBuf;
+use std::sync::Arc;
 
 #[derive(Debug)]
 pub struct RuntimeAssetLoader {
@@ -189,6 +190,52 @@ impl RuntimeAssetLoader {
         self.decoded_cache.len()
     }
 
+    pub fn get_asset_bytes(&self, handle: &RuntimeAssetHandle) -> Option<Arc<[u8]>> {
+        let stored = self.handles.get(&handle.handle_id)?;
+        if stored.generation != handle.generation
+            || stored.state != RuntimeAssetLoadState::Ready
+            || stored.cooked_asset_id != handle.cooked_asset_id
+            || stored.asset_guid != handle.asset_guid
+        {
+            return None;
+        }
+        self.decoded_cache
+            .get(&stored.cooked_asset_id)?
+            .bytes
+            .clone()
+    }
+
+    pub fn load_texture_payload(
+        &self,
+        reference: &RuntimeAssetRef,
+    ) -> Result<crate::runtime_texture::RuntimeTexturePayload, String> {
+        crate::runtime_texture::load_runtime_texture_payload(
+            &self.package_dir,
+            &self.index,
+            reference,
+        )
+        .map_err(|e| format!("{e:?}"))
+    }
+
+    pub fn get_audio_clip(
+        &self,
+        handle: &RuntimeAssetHandle,
+    ) -> Option<Arc<crate::audio::DecodedAudioClip>> {
+        let stored = self.handles.get(&handle.handle_id)?;
+        if stored.generation != handle.generation
+            || stored.state != RuntimeAssetLoadState::Ready
+            || stored.asset_type != "audio"
+            || stored.asset_guid != handle.asset_guid
+            || stored.cooked_asset_id != handle.cooked_asset_id
+        {
+            return None;
+        }
+        self.decoded_cache
+            .get(&stored.cooked_asset_id)?
+            .audio_clip
+            .clone()
+    }
+
     fn load_internal(
         &mut self,
         asset_ref: &RuntimeAssetRef,
@@ -284,13 +331,21 @@ impl RuntimeAssetLoader {
                 guid: Some(dependency.asset_guid.clone()),
                 sub_asset: dependency.sub_asset_id.clone(),
             };
-            let dependency_handle = self.load_internal(
+            let dependency_handle = match self.load_internal(
                 &dependency_ref,
                 request_id,
                 sync_load,
                 dependency_chain,
                 visiting,
-            )?;
+            ) {
+                Ok(handle) => handle,
+                Err(()) => {
+                    self.release_loaded_dependencies(loaded_dependencies);
+                    visiting.remove(&record.asset_guid);
+                    dependency_chain.pop();
+                    return Err(());
+                }
+            };
             loaded_dependencies.push(dependency_handle);
         }
         dependency_chain.pop();
@@ -404,7 +459,7 @@ impl RuntimeAssetLoader {
             return Err(());
         };
 
-        let (bytes_len, source_debug) = if let Some(path) = cooked.path {
+        let (bytes, source_debug) = if let Some(path) = cooked.path {
             let full_path = match safe_join_runtime_package(&self.package_dir, &path) {
                 Ok(path) => path,
                 Err(_) => {
@@ -428,7 +483,7 @@ impl RuntimeAssetLoader {
                 }
             };
             match fs::read(&full_path) {
-                Ok(bytes) => (bytes.len(), full_path.display().to_string()),
+                Ok(bytes) => (Some(bytes), full_path.display().to_string()),
                 Err(_) => {
                     self.push_error(
                         request_id,
@@ -450,11 +505,45 @@ impl RuntimeAssetLoader {
                 }
             }
         } else {
-            (
-                record.size.unwrap_or(0) as usize,
-                "compatibility_fake_decoded_asset".to_string(),
-            )
+            (None, "compatibility_fake_decoded_asset".to_string())
         };
+
+        let audio_clip = if record.asset_type == "audio" {
+            let decoded = bytes
+                .as_deref()
+                .ok_or_else(|| {
+                    "Audio requires real cooked WAV bytes; metadata-only assets cannot play."
+                        .to_string()
+                })
+                .and_then(crate::audio::decode_audio_wav);
+            match decoded {
+                Ok(clip) => Some(Arc::new(clip)),
+                Err(message) => {
+                    self.push_error(
+                        request_id,
+                        &record.asset_id,
+                        Some(record.asset_guid.clone()),
+                        &record.asset_type,
+                        AssetLoadStage::Decode,
+                        AssetLoadErrorCode::DecodeFailed,
+                        Some(record.bundle_id.clone()),
+                        Some(record.cooked_asset_id.clone()),
+                        Some(record.loader_kind.clone()),
+                        Vec::new(),
+                        None,
+                        None,
+                        sync_load,
+                        Some(&format!("{message} Rebuild the referenced audio asset.")),
+                    );
+                    return Err(());
+                }
+            }
+        } else {
+            None
+        };
+        let bytes_len = bytes
+            .as_ref()
+            .map_or(record.size.unwrap_or(0) as usize, Vec::len);
 
         self.decoded_cache.insert(
             record.cooked_asset_id.clone(),
@@ -464,6 +553,15 @@ impl RuntimeAssetLoader {
                 bytes_len,
                 source_debug,
                 ref_count: 0,
+                audio_clip,
+                bytes: if matches!(
+                    record.asset_type.as_str(),
+                    "particle-effect" | "mesh" | "model" | "material"
+                ) {
+                    bytes.map(Arc::from)
+                } else {
+                    None
+                },
             },
         );
         Ok(())
@@ -532,6 +630,98 @@ mod tests {
         BundleRecord, CookedAssetRecord, RuntimeAssetRecord, RuntimePackageMountTable,
     };
     use std::time::{SystemTime, UNIX_EPOCH};
+
+    #[test]
+    fn audio_loader_shares_pcm_and_releases_only_after_last_handle() {
+        let root = temp_dir();
+        fs::create_dir_all(&root).unwrap();
+        fs::write(
+            root.join("sound.wav"),
+            crate::audio::tests::audio_wav_fixture(1, 44_100),
+        )
+        .unwrap();
+        let mut cooked = cooked("cooked-audio");
+        cooked.path = Some("sound.wav".into());
+        let index = RuntimeAssetIndex::new(
+            vec![record(
+                "guid-audio",
+                "audio-main",
+                "audio",
+                "cooked-audio",
+                vec![],
+                "1",
+            )],
+            vec![cooked],
+        );
+        let mut loader = RuntimeAssetLoader::new(
+            &root,
+            index,
+            RuntimePackageMountTable::new(vec![BundleRecord {
+                bundle_id: "startup".into(),
+                mount_id: None,
+                uri: "startup".into(),
+                hash: None,
+                version: None,
+                mounted: true,
+            }]),
+        );
+        let reference = RuntimeAssetRef {
+            id: "audio-main".into(),
+            asset_type: "audio".into(),
+            guid: Some("guid-audio".into()),
+            sub_asset: None,
+        };
+        let mut bad_ref = reference.clone();
+        bad_ref.id = "different-id".into();
+        assert!(loader.load(&bad_ref).is_err());
+        bad_ref = reference.clone();
+        bad_ref.guid = Some("missing-guid".into());
+        assert!(loader.load(&bad_ref).is_err());
+        let first = loader.load(&reference).unwrap();
+        let second = loader.load(&reference).unwrap();
+        let clip = loader.get_audio_clip(&first).unwrap();
+        assert!(Arc::ptr_eq(&clip, &loader.get_audio_clip(&second).unwrap()));
+        let weak = Arc::downgrade(&clip);
+        drop(clip);
+        loader.release(&first).unwrap();
+        assert!(loader.get_audio_clip(&first).is_none());
+        assert!(weak.upgrade().is_some());
+        loader.release(&second).unwrap();
+        assert!(weak.upgrade().is_none());
+        assert_eq!(loader.decoded_cache_len(), 0);
+        fs::remove_file(root.join("sound.wav")).unwrap();
+        fs::remove_dir(root).unwrap();
+    }
+
+    #[test]
+    fn audio_loader_rejects_metadata_only_and_json_payloads() {
+        let mut loader = loader_with_records(vec![record(
+            "audio",
+            "audio",
+            "audio",
+            "audio",
+            vec![],
+            "1",
+        )]);
+        loader.mount_bundle("startup");
+        assert!(loader.load(&asset_ref("audio", "audio")).is_err());
+        assert!(loader
+            .diagnostics()
+            .has_error(AssetLoadErrorCode::DecodeFailed));
+        assert_eq!(loader.decoded_cache_len(), 0);
+        fs::create_dir_all(&loader.package_dir).unwrap();
+        fs::write(loader.package_dir.join("audio.json"), b"{}").unwrap();
+        let mut payload = cooked("audio");
+        payload.path = Some("audio.json".into());
+        loader.mount_patch_index(RuntimeAssetIndex::new(
+            vec![record("audio", "audio", "audio", "audio", vec![], "1")],
+            vec![payload],
+        ));
+        assert!(loader.load(&asset_ref("audio", "audio")).is_err());
+        assert_eq!(loader.decoded_cache_len(), 0);
+        fs::remove_file(loader.package_dir.join("audio.json")).unwrap();
+        fs::remove_dir(&loader.package_dir).unwrap();
+    }
 
     #[test]
     fn bundle_must_be_mounted_before_load() {

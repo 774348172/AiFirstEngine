@@ -29,8 +29,6 @@ mod support;
 use support::*;
 mod animator2d;
 mod gate_report;
-mod gateway_goal_mutation;
-mod gateway_reconnect;
 mod input_runtime_loop;
 mod native_app;
 mod native_interaction_gate;

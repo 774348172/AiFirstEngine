@@ -246,11 +246,28 @@ fn prepare_inner(
             )
         },
     )?;
+    if let Some(glue) = &request.prepared_runtime_glue {
+        glue.materialize(
+            &staging_root.join("RuntimeGlue"),
+            &sdk_root,
+            Path::new("../RuntimeModuleBuild"),
+        )
+        .map_err(|error| {
+            CompositionBuildError::new(
+                &error.code,
+                "materialize_generated_runtime_glue",
+                error.message,
+                Some(&staging_root.join("RuntimeGlue")),
+                &error.next_action,
+            )
+        })?;
+    }
     write_generated_composition(
         &staging_root,
         &sdk_root,
         &plan.manifest.runtime_module.cargo_package,
         &request.expected_identity,
+        request.prepared_runtime_glue.is_some(),
     )?;
 
     let cargo = request
@@ -261,7 +278,21 @@ fn prepare_inner(
     let generated_root = staging_root.join("GeneratedEditor");
     progress(ProjectEditorCompositionPreparationPhase::Compiling);
     let lock_input = generated_lock_input(request, &plan, &generated_root)?;
-    let lock_input_digest = lock_input.digest().map_err(contract_build_error)?;
+    let base_lock_input_digest = lock_input.digest().map_err(contract_build_error)?;
+    let lock_input_digest = request
+        .prepared_runtime_glue
+        .as_ref()
+        .map(|glue| {
+            sha256_prefixed(
+                format!(
+                    "generated-composition-lock-input.v1\0{}\0{}",
+                    base_lock_input_digest,
+                    glue.generation_digest()
+                )
+                .as_bytes(),
+            )
+        })
+        .unwrap_or(base_lock_input_digest);
     let lineage = prepare_generated_lock_lineage(
         &cache_root,
         &generated_root,
@@ -850,6 +881,7 @@ fn write_generated_composition(
     sdk_root: &Path,
     project_package: &str,
     identity: &ProjectEditorCompositionIdentity,
+    uses_generated_runtime_glue: bool,
 ) -> Result<(), CompositionBuildError> {
     let generated = staging_root.join("GeneratedEditor");
     fs::create_dir_all(generated.join("src")).map_err(|error| {
@@ -865,7 +897,7 @@ fn write_generated_composition(
     let mut manifest = toml::map::Map::new();
     let package_name = generated_package_name(identity)?;
     let mut package = toml::toml! {
-        version = "0.0.3"
+        version = "0.1.0"
         edition = "2021"
         publish = false
     };
@@ -883,8 +915,16 @@ fn write_generated_composition(
     dependencies.insert(
         "project_runtime".to_string(),
         path_dependency(
-            &staging_root.join("RuntimeModuleBuild"),
-            Some(project_package),
+            &staging_root.join(if uses_generated_runtime_glue {
+                "RuntimeGlue"
+            } else {
+                "RuntimeModuleBuild"
+            }),
+            Some(if uses_generated_runtime_glue {
+                "aife_generated_runtime_glue"
+            } else {
+                project_package
+            }),
             &[],
         ),
     );
@@ -1928,8 +1968,8 @@ mod tests {
             .join("../..")
             .canonicalize()
             .unwrap();
-        let engine_runtime = sdk
-            .join("crates/engine_runtime")
+        let project_game_sdk = sdk
+            .join("crates/project_game_sdk")
             .canonicalize()
             .unwrap()
             .display()
@@ -1938,40 +1978,26 @@ mod tests {
         fs::write(
             runtime.join("Cargo.toml"),
             format!(
-                "[package]\nname='fixture_editor_runtime'\nversion='0.0.3'\nedition='2021'\npublish=false\n\n[dependencies]\nengine_runtime={{path='{engine_runtime}'}}\n"
+                "[package]\nname='fixture_editor_runtime'\nversion='0.1.0'\nedition='2021'\npublish=false\n\n[dependencies]\nproject_game_sdk={{path='{project_game_sdk}'}}\n"
             ),
         )
         .unwrap();
         fs::write(
             runtime.join("src/lib.rs"),
-            format!(
-                r#"use engine_runtime::project_runtime_module::{{
-    EmptyProjectRuntimeModule, LinkedProjectRuntimeSet, ProjectRuntimeError,
-    ProjectRuntimeModule, ProjectRuntimeModuleDescriptor, ProjectRuntimeRegistration,
-}};
-use std::sync::{{Arc, OnceLock}};
+            r#"use project_game_sdk::{GameResult, ProjectGameDefinition, ProjectGameSession, SessionCreateRequest};
 
-pub struct FixtureProjectRuntimeModule;
+pub struct FixtureSession;
 
-impl ProjectRuntimeModule for FixtureProjectRuntimeModule {{
-    fn descriptor(&self) -> &ProjectRuntimeModuleDescriptor {{
-        static DESCRIPTOR: OnceLock<ProjectRuntimeModuleDescriptor> = OnceLock::new();
-        DESCRIPTOR.get_or_init(|| ProjectRuntimeModuleDescriptor::new(
-            "fixture.editor.runtime",
-            "sha256:{FIXTURE_AOT_HEX}",
-        ))
-    }}
+impl ProjectGameSession for FixtureSession {
+    fn session_id(&self) -> &str { "fixture.editor.session" }
+}
 
-    fn install(&self, registration: &mut ProjectRuntimeRegistration) -> Result<(), ProjectRuntimeError> {{
-        EmptyProjectRuntimeModule::new().install(registration)
-    }}
-}}
+fn create(_: &SessionCreateRequest) -> GameResult<FixtureSession> { Ok(FixtureSession) }
 
-pub fn linked_set() -> Result<LinkedProjectRuntimeSet, ProjectRuntimeError> {{
-    LinkedProjectRuntimeSet::singleton(Arc::new(FixtureProjectRuntimeModule))
-}}
-"#
-            ),
+pub fn project_game() -> ProjectGameDefinition<FixtureSession> {
+    ProjectGameDefinition::new(create)
+}
+"#,
         )
         .unwrap();
         fs::write(
@@ -1980,7 +2006,7 @@ pub fn linked_set() -> Result<LinkedProjectRuntimeSet, ProjectRuntimeError> {{
                 "schemaVersion": "aife-project.v2",
                 "projectId": "fixture.editor.project",
                 "projectName": "Fixture Editor",
-                "engineVersion": "0.0.3",
+                "engineVersion": "0.1.0",
                 "createdAt": "0",
                 "lastOpenedAt": null,
                 "defaultScene": "Scenes/Main.scene.json",
@@ -1992,7 +2018,8 @@ pub fn linked_set() -> Result<LinkedProjectRuntimeSet, ProjectRuntimeError> {{
                     "interfaceVersion": "project-runtime-module.v2",
                     "cargoManifest": "RuntimeModule/Cargo.toml",
                     "cargoPackage": "fixture_editor_runtime",
-                    "playerBinary": "fixture_editor_player"
+                    "playerBinary": "fixture_editor_player",
+                    "projectGameSdk": "project-game-sdk.v1"
                 }
             }))
             .unwrap(),
@@ -2026,6 +2053,7 @@ pub fn linked_set() -> Result<LinkedProjectRuntimeSet, ProjectRuntimeError> {{
             cargo_executable: None,
             cargo_identity: "cargo-fixture".to_string(),
             capture_limit_bytes: 128 * 1024,
+            prepared_runtime_glue: None,
         };
         Fixture {
             root,
@@ -2036,7 +2064,8 @@ pub fn linked_set() -> Result<LinkedProjectRuntimeSet, ProjectRuntimeError> {{
     }
 
     #[test]
-    fn project_editor_composition_generated_source_is_deterministic_and_project_agnostic() {
+    fn project_editor_composition_generated_runtime_glue_source_is_deterministic_and_project_agnostic(
+    ) {
         let fixture = fixture("generated-source");
         let plan = ProjectRuntimeProductionStaging::plan(&fixture.project, &fixture.sdk).unwrap();
         let left = fixture.root.join("left");
@@ -2048,6 +2077,7 @@ pub fn linked_set() -> Result<LinkedProjectRuntimeSet, ProjectRuntimeError> {{
             &fixture.sdk,
             &plan.manifest.runtime_module.cargo_package,
             &fixture.request.expected_identity,
+            true,
         )
         .unwrap();
         write_generated_composition(
@@ -2055,6 +2085,7 @@ pub fn linked_set() -> Result<LinkedProjectRuntimeSet, ProjectRuntimeError> {{
             &fixture.sdk,
             &plan.manifest.runtime_module.cargo_package,
             &fixture.request.expected_identity,
+            true,
         )
         .unwrap();
         assert_eq!(
@@ -2094,6 +2125,15 @@ pub fn linked_set() -> Result<LinkedProjectRuntimeSet, ProjectRuntimeError> {{
             dependencies.keys().map(String::as_str).collect::<Vec<_>>(),
             ["editor_window_winit", "engine_runtime", "project_runtime"]
         );
+        assert_eq!(
+            dependencies["project_runtime"]["package"].as_str(),
+            Some("aife_generated_runtime_glue")
+        );
+        assert!(dependencies["project_runtime"]["path"]
+            .as_str()
+            .unwrap()
+            .replace('\\', "/")
+            .ends_with("/RuntimeGlue"));
     }
 
     #[test]
@@ -2390,7 +2430,7 @@ pub fn linked_set() -> Result<LinkedProjectRuntimeSet, ProjectRuntimeError> {{
         let input_digest = format!("sha256:{}", "1".repeat(64));
         let root_name = generated_package_name(&fixture.request.expected_identity).unwrap();
         let lock = format!(
-            "version = 3\n\n[[package]]\nname = \"{root_name}\"\nversion = \"0.0.3\"\n\n[[package]]\nname = \"fixture_dep\"\nversion = \"1.0.0\"\n"
+            "version = 3\n\n[[package]]\nname = \"{root_name}\"\nversion = \"0.1.0\"\n\n[[package]]\nname = \"fixture_dep\"\nversion = \"1.0.0\"\n"
         );
         let lineage =
             generated_composition_lock_lineage(lock.as_bytes(), &root_name, input_digest.clone())
@@ -2453,14 +2493,14 @@ pub fn linked_set() -> Result<LinkedProjectRuntimeSet, ProjectRuntimeError> {{
     fn project_editor_composition_lineage_store_manifest_template_is_path_independent() {
         let left = br#"[package]
 name = "generated"
-version = "0.0.3"
+version = "0.1.0"
 
 [dependencies]
 project_runtime = { path = "G:/run-a/RuntimeModuleBuild", package = "fixture" }
 "#;
         let right = br#"[package]
 name = "generated"
-version = "0.0.3"
+version = "0.1.0"
 
 [dependencies]
 project_runtime = { path = "G:/run-b/RuntimeModuleBuild", package = "fixture" }
@@ -2471,7 +2511,7 @@ project_runtime = { path = "G:/run-b/RuntimeModuleBuild", package = "fixture" }
         );
         let changed = br#"[package]
 name = "generated"
-version = "0.0.3"
+version = "0.1.0"
 
 [dependencies]
 project_runtime = { path = "G:/run-b/RuntimeModuleBuild", package = "fixture", features = ["extra"] }

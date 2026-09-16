@@ -1,76 +1,14 @@
 use crate::ProjectRelativePath;
+use authoring_project_context::{
+    legacy_project_digest, legacy_project_digest_cancellable, CanonicalSourceInventory,
+    CanonicalSourcePolicy, ContextError,
+};
 use serde::{Deserialize, Serialize};
-use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
-use std::io::{BufReader, Read};
-use std::path::{Component, Path, PathBuf};
+use std::path::{Path, PathBuf};
 
 pub const CANDIDATE_PROJECT_REVISION_SCHEMA_VERSION: &str = "candidate-project-revision.v1";
-const PROJECT_TREE_DIGEST_SCHEMA_VERSION: &str = "project-tree-digest.v1";
-const PROJECT_DIGEST_IO_BUFFER_BYTES: usize = 64 * 1024;
-
-#[derive(Debug)]
-struct ProjectSourceFile {
-    relative: String,
-    path: PathBuf,
-    length: u64,
-}
-
-struct ProjectDigestSourcePolicy;
-
-impl ProjectDigestSourcePolicy {
-    fn excludes_root_path(relative: &Path) -> bool {
-        let mut components = relative.components();
-        let Some(Component::Normal(first)) = components.next() else {
-            return false;
-        };
-        if first
-            .to_string_lossy()
-            .eq_ignore_ascii_case("RuntimeModule")
-            && components.next().is_some_and(|component| {
-                matches!(component, Component::Normal(value) if value.to_string_lossy().eq_ignore_ascii_case("target"))
-            })
-        {
-            return true;
-        }
-        matches!(
-            first.to_string_lossy().to_ascii_lowercase().as_str(),
-            "library" | "build" | "target" | ".git" | ".aife" | ".aife-candidates"
-        )
-    }
-
-    fn directory_is_cargo_root(directory: &Path) -> bool {
-        regular_file_without_reparse(&directory.join("Cargo.toml"))
-    }
-
-    fn excludes_directory(relative: &Path, path: &Path, inside_cargo_tree: bool) -> bool {
-        Self::excludes_root_path(relative)
-            || (inside_cargo_tree
-                && path
-                    .file_name()
-                    .is_some_and(|name| name.to_string_lossy().eq_ignore_ascii_case("target")))
-    }
-
-    fn excludes_change_path(project_root: &Path, relative: &Path) -> bool {
-        if Self::excludes_root_path(relative) {
-            return true;
-        }
-        let mut ancestor = project_root.to_path_buf();
-        let mut inside_cargo_tree = false;
-        for component in relative.components() {
-            let Component::Normal(value) = component else {
-                return false;
-            };
-            inside_cargo_tree = inside_cargo_tree || Self::directory_is_cargo_root(&ancestor);
-            if value.to_string_lossy().eq_ignore_ascii_case("target") && inside_cargo_tree {
-                return true;
-            }
-            ancestor.push(value);
-        }
-        false
-    }
-}
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "operation", rename_all = "snake_case", deny_unknown_fields)]
@@ -598,116 +536,43 @@ fn canonicalize_with_missing_suffix(path: &Path) -> Result<PathBuf, CandidatePro
 }
 
 fn project_tree_digest(root: &Path) -> Result<String, CandidateProjectRevisionError> {
-    project_tree_digest_cancellable(root, &|| false)
+    legacy_project_digest(root).map_err(map_context_error)
 }
 
 fn project_tree_digest_cancellable(
     root: &Path,
     is_cancelled: &impl Fn() -> bool,
 ) -> Result<String, CandidateProjectRevisionError> {
-    reject_cancelled(root, is_cancelled)?;
-    let files = project_source_files_cancellable(root, is_cancelled)?;
-    let mut hasher = Sha256::new();
-    hasher.update(PROJECT_TREE_DIGEST_SCHEMA_VERSION.as_bytes());
-    hasher.update([0]);
-    for file in files {
-        reject_cancelled(&file.path, is_cancelled)?;
-        hasher.update((file.relative.len() as u64).to_le_bytes());
-        hasher.update(file.relative.as_bytes());
-        hasher.update(file.length.to_le_bytes());
-        stream_file_into_digest_cancellable(&file, &mut hasher, is_cancelled)?;
-    }
-    Ok(format!("sha256:{:x}", hasher.finalize()))
-}
-
-fn project_source_files(
-    root: &Path,
-) -> Result<Vec<ProjectSourceFile>, CandidateProjectRevisionError> {
-    project_source_files_cancellable(root, &|| false)
-}
-
-fn project_source_files_cancellable(
-    root: &Path,
-    is_cancelled: &impl Fn() -> bool,
-) -> Result<Vec<ProjectSourceFile>, CandidateProjectRevisionError> {
-    let mut files = Vec::new();
-    collect_project_files(root, root, false, &mut files, is_cancelled)?;
-    files.sort_by(|left, right| left.relative.cmp(&right.relative));
-    Ok(files)
-}
-
-fn stream_file_into_digest(
-    file: &ProjectSourceFile,
-    hasher: &mut Sha256,
-) -> Result<(), CandidateProjectRevisionError> {
-    stream_file_into_digest_cancellable(file, hasher, &|| false)
-}
-
-fn stream_file_into_digest_cancellable(
-    file: &ProjectSourceFile,
-    hasher: &mut Sha256,
-    is_cancelled: &impl Fn() -> bool,
-) -> Result<(), CandidateProjectRevisionError> {
-    let source = fs::File::open(&file.path).map_err(|error| {
-        CandidateProjectRevisionError::new(
-            "candidate_revision.file_read_failed",
-            format!("Project file cannot be opened: {error}"),
-            Some(&file.path),
-            "Restore readable project source files before staging.",
-        )
-    })?;
-    let mut reader = BufReader::with_capacity(PROJECT_DIGEST_IO_BUFFER_BYTES, source);
-    let mut buffer = [0_u8; PROJECT_DIGEST_IO_BUFFER_BYTES];
-    let mut consumed = 0_u64;
-    loop {
-        reject_cancelled(&file.path, is_cancelled)?;
-        let read = reader.read(&mut buffer).map_err(|error| {
-            CandidateProjectRevisionError::new(
-                "candidate_revision.file_read_failed",
-                format!("Project file cannot be read: {error}"),
-                Some(&file.path),
-                "Restore readable project source files before staging.",
-            )
-        })?;
-        if read == 0 {
-            break;
-        }
-        consumed = consumed.saturating_add(read as u64);
-        hasher.update(&buffer[..read]);
-    }
-    let final_length = fs::metadata(&file.path)
-        .map(|metadata| metadata.len())
-        .map_err(|error| {
-            CandidateProjectRevisionError::new(
-                "candidate_revision.file_metadata_failed",
-                format!("Project file metadata cannot be re-read: {error}"),
-                Some(&file.path),
-                "Retry from a stable project source tree.",
-            )
-        })?;
-    if consumed != file.length || final_length != file.length {
-        return Err(CandidateProjectRevisionError::new(
-            "candidate_revision.file_changed_during_digest",
-            "Project file length changed while its digest was being computed.",
-            Some(&file.path),
-            "Retry after project source writes have completed.",
-        ));
-    }
-    Ok(())
+    legacy_project_digest_cancellable(root, is_cancelled).map_err(map_context_error)
 }
 
 fn project_file_hashes(
     root: &Path,
 ) -> Result<BTreeMap<String, String>, CandidateProjectRevisionError> {
-    project_source_files(root)?
-        .into_iter()
-        .map(|file| {
-            let relative = file.relative.clone();
-            let mut hasher = Sha256::new();
-            stream_file_into_digest(&file, &mut hasher)?;
-            Ok((relative, format!("sha256:{:x}", hasher.finalize())))
-        })
-        .collect()
+    let inventory = CanonicalSourceInventory::capture(root)
+        .map_err(map_context_error)?
+        .entries()
+        .iter()
+        .map(|entry| (entry.relative_path.clone(), entry.content_digest.clone()))
+        .collect::<BTreeMap<_, _>>();
+    Ok(inventory)
+}
+
+fn map_context_error(error: ContextError) -> CandidateProjectRevisionError {
+    let code = match error.diagnostic.code.as_str() {
+        "authoring_context.source_link_rejected" => "candidate_revision.source_link_rejected",
+        "authoring_context.digest_cancelled" => "candidate_revision.digest_cancelled",
+        "authoring_context.source_changed_during_refresh" => {
+            "candidate_revision.file_changed_during_digest"
+        }
+        _ => "candidate_revision.project_digest_failed",
+    };
+    CandidateProjectRevisionError {
+        code: code.to_string(),
+        message: error.diagnostic.message,
+        path: error.diagnostic.path,
+        next_action: error.diagnostic.next_action,
+    }
 }
 
 fn changed_paths_between(
@@ -726,115 +591,18 @@ fn changed_paths_between(
         .collect())
 }
 
-fn collect_project_files(
-    root: &Path,
-    directory: &Path,
-    inside_cargo_tree: bool,
-    files: &mut Vec<ProjectSourceFile>,
-    is_cancelled: &impl Fn() -> bool,
-) -> Result<(), CandidateProjectRevisionError> {
-    reject_cancelled(directory, is_cancelled)?;
-    let mut entries = fs::read_dir(directory)
-        .map_err(|error| {
-            CandidateProjectRevisionError::new(
-                "candidate_revision.directory_read_failed",
-                format!("Project directory cannot be read: {error}"),
-                Some(directory),
-                "Restore readable project directories before staging.",
-            )
-        })?
-        .collect::<Result<Vec<_>, _>>()
-        .map_err(|error| {
-            CandidateProjectRevisionError::new(
-                "candidate_revision.directory_entry_failed",
-                format!("Project directory entry cannot be read: {error}"),
-                Some(directory),
-                "Restore readable project directories before staging.",
-            )
-        })?;
-    entries.sort_by_key(|entry| entry.file_name());
-    let inside_cargo_tree =
-        inside_cargo_tree || ProjectDigestSourcePolicy::directory_is_cargo_root(directory);
-    for entry in entries {
-        let path = entry.path();
-        let relative = path.strip_prefix(root).map_err(|_| {
-            CandidateProjectRevisionError::new(
-                "candidate_revision.source_escaped_root",
-                "Project source escaped the project root.",
-                Some(&path),
-                "Resolve the project containment violation.",
-            )
-        })?;
-        let metadata = fs::symlink_metadata(&path).map_err(|error| {
-            CandidateProjectRevisionError::new(
-                "candidate_revision.source_metadata_failed",
-                format!("Project source metadata cannot be read: {error}"),
-                Some(&path),
-                "Restore a regular project source tree.",
-            )
-        })?;
-        if is_link_or_reparse(&metadata) {
-            return Err(CandidateProjectRevisionError::new(
-                "candidate_revision.source_link_rejected",
-                "Project candidate staging does not follow symbolic links or junctions.",
-                Some(&path),
-                "Replace the link with a project-owned regular file or directory.",
-            ));
-        }
-        if metadata.is_dir() {
-            if ProjectDigestSourcePolicy::excludes_directory(relative, &path, inside_cargo_tree) {
-                continue;
-            }
-            collect_project_files(root, &path, inside_cargo_tree, files, is_cancelled)?;
-        } else if metadata.is_file() {
-            if ProjectDigestSourcePolicy::excludes_root_path(relative) {
-                continue;
-            }
-            files.push(ProjectSourceFile {
-                relative: canonical_relative(relative)?,
-                path,
-                length: metadata.len(),
-            });
-        } else {
-            return Err(CandidateProjectRevisionError::new(
-                "candidate_revision.source_type_rejected",
-                "Project source contains an unsupported filesystem entry.",
-                Some(&path),
-                "Remove the unsupported filesystem entry.",
-            ));
-        }
-    }
-    Ok(())
-}
-
-fn reject_cancelled(
-    path: &Path,
-    is_cancelled: &impl Fn() -> bool,
-) -> Result<(), CandidateProjectRevisionError> {
-    if is_cancelled() {
-        return Err(CandidateProjectRevisionError::new(
-            "candidate_revision.digest_cancelled",
-            "Project digest computation was cancelled.",
-            Some(path),
-            "Retry opening the project when ready.",
-        ));
-    }
-    Ok(())
-}
-
 fn copy_project_tree(
     source_root: &Path,
     destination_root: &Path,
     source_directory: &Path,
 ) -> Result<(), CandidateProjectRevisionError> {
-    copy_project_tree_inner(source_root, destination_root, source_directory, false)
+    copy_project_tree_inner(source_root, destination_root, source_directory)
 }
 
 fn copy_project_tree_inner(
     source_root: &Path,
     destination_root: &Path,
     source_directory: &Path,
-    inside_cargo_tree: bool,
 ) -> Result<(), CandidateProjectRevisionError> {
     fs::create_dir_all(destination_root).map_err(|error| {
         CandidateProjectRevisionError::new(
@@ -863,8 +631,6 @@ fn copy_project_tree_inner(
             )
         })?;
     entries.sort_by_key(|entry| entry.file_name());
-    let inside_cargo_tree =
-        inside_cargo_tree || ProjectDigestSourcePolicy::directory_is_cargo_root(source_directory);
     for entry in entries {
         let source = entry.path();
         let relative = source.strip_prefix(source_root).map_err(|_| {
@@ -893,7 +659,7 @@ fn copy_project_tree_inner(
         }
         let destination = destination_root.join(relative);
         if metadata.is_dir() {
-            if ProjectDigestSourcePolicy::excludes_directory(relative, &source, inside_cargo_tree) {
+            if !CanonicalSourcePolicy::allows_change(source_root, relative) {
                 continue;
             }
             fs::create_dir_all(&destination).map_err(|error| {
@@ -904,9 +670,9 @@ fn copy_project_tree_inner(
                     "Check candidate store permissions.",
                 )
             })?;
-            copy_project_tree_inner(source_root, destination_root, &source, inside_cargo_tree)?;
+            copy_project_tree_inner(source_root, destination_root, &source)?;
         } else if metadata.is_file() {
-            if ProjectDigestSourcePolicy::excludes_root_path(relative) {
+            if !CanonicalSourcePolicy::allows_change(source_root, relative) {
                 continue;
             }
             if let Some(parent) = destination.parent() {
@@ -945,7 +711,7 @@ fn apply_changes(
                 "Use a canonical project-relative change path.",
             )
         })?;
-        if ProjectDigestSourcePolicy::excludes_change_path(candidate_root, relative.as_path()) {
+        if !CanonicalSourcePolicy::allows_change(candidate_root, relative.as_path()) {
             return Err(CandidateProjectRevisionError::new(
                 "candidate_revision.change_generated_path_rejected",
                 "Candidate changes cannot target generated or revision metadata directories.",
@@ -1022,36 +788,6 @@ fn is_link_or_reparse(metadata: &fs::Metadata) -> bool {
     metadata.file_type().is_symlink()
 }
 
-fn regular_file_without_reparse(path: &Path) -> bool {
-    fs::symlink_metadata(path)
-        .ok()
-        .is_some_and(|metadata| metadata.is_file() && !is_link_or_reparse(&metadata))
-}
-
-fn canonical_relative(path: &Path) -> Result<String, CandidateProjectRevisionError> {
-    let mut parts = Vec::new();
-    for component in path.components() {
-        let Component::Normal(value) = component else {
-            return Err(CandidateProjectRevisionError::new(
-                "candidate_revision.relative_path_invalid",
-                "Project source path is not canonical relative syntax.",
-                Some(path),
-                "Normalize the project source tree.",
-            ));
-        };
-        let value = value.to_str().ok_or_else(|| {
-            CandidateProjectRevisionError::new(
-                "candidate_revision.non_utf8_path_rejected",
-                "Project source contains a non-UTF-8 path.",
-                Some(path),
-                "Rename the path using valid UTF-8 characters.",
-            )
-        })?;
-        parts.push(value);
-    }
-    Ok(parts.join("/"))
-}
-
 #[cfg(windows)]
 fn comparable_path(path: &Path) -> String {
     let normalized = path.to_string_lossy().replace('/', "\\").to_lowercase();
@@ -1092,7 +828,11 @@ fn paths_equal_lexical(left: &Path, right: &Path) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use sha2::{Digest, Sha256};
     use std::time::{SystemTime, UNIX_EPOCH};
+
+    const PROJECT_TREE_DIGEST_SCHEMA_VERSION: &str = "project-tree-digest.v1";
+    const PROJECT_DIGEST_IO_BUFFER_BYTES: usize = 64 * 1024;
 
     #[test]
     fn digest_is_stable_and_excludes_generated_directories() {
@@ -1132,7 +872,7 @@ mod tests {
         fs::create_dir_all(cargo_root.join("src")).unwrap();
         fs::write(
             cargo_root.join("Cargo.toml"),
-            b"[package]\nname = \"feature_harness\"\nversion = \"0.0.3\"\n",
+            b"[package]\nname = \"feature_harness\"\nversion = \"0.1.0\"\n",
         )
         .unwrap();
         fs::write(cargo_root.join("src/lib.rs"), b"pub fn source() {}\n").unwrap();
@@ -1172,7 +912,15 @@ mod tests {
 
         assert_eq!(
             project_tree_digest(&root).unwrap(),
-            in_memory_project_tree_digest_for_test(&root)
+            in_memory_project_tree_digest_for_test(vec![
+                (
+                    "Assets/Large/payload.bin",
+                    vec![0x3c; PROJECT_DIGEST_IO_BUFFER_BYTES * 3 + 17],
+                ),
+                ("Input/input.none.json", b"input".to_vec()),
+                ("Scenes/Main.scene.json", b"scene".to_vec()),
+                ("project.aife.json", b"{}".to_vec()),
+            ])
         );
     }
 
@@ -1447,15 +1195,13 @@ mod tests {
         std::env::temp_dir().join(format!("aife-candidate-{label}-{stamp}"))
     }
 
-    fn in_memory_project_tree_digest_for_test(root: &Path) -> String {
-        let files = project_source_files(root).unwrap();
+    fn in_memory_project_tree_digest_for_test(files: Vec<(&str, Vec<u8>)>) -> String {
         let mut payload = Vec::new();
         payload.extend_from_slice(PROJECT_TREE_DIGEST_SCHEMA_VERSION.as_bytes());
         payload.push(0);
-        for file in files {
-            let bytes = fs::read(&file.path).unwrap();
-            payload.extend_from_slice(&(file.relative.len() as u64).to_le_bytes());
-            payload.extend_from_slice(file.relative.as_bytes());
+        for (relative, bytes) in files {
+            payload.extend_from_slice(&(relative.len() as u64).to_le_bytes());
+            payload.extend_from_slice(relative.as_bytes());
             payload.extend_from_slice(&(bytes.len() as u64).to_le_bytes());
             payload.extend_from_slice(&bytes);
         }

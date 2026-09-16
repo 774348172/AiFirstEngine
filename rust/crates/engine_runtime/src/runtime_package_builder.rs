@@ -717,12 +717,234 @@ fn validate_input(
 
     for scene in &input.scenes {
         validate_scene_source(scene, &asset_ids, diagnostics);
+        validate_audio_entities(
+            &scene.entities,
+            &input.assets,
+            &format!("scenes[{}]", scene.id),
+            diagnostics,
+        );
+        validate_particle_entities(
+            &scene.entities,
+            &input.assets,
+            &format!("scenes[{}]", scene.id),
+            diagnostics,
+        );
     }
     for prefab in &input.prefabs {
-        if let Err(diagnostic) = runtime_prefab_document_from_source(prefab) {
-            diagnostics.push(diagnostic);
+        match runtime_prefab_document_from_source(prefab) {
+            Ok(document) => {
+                if let Ok(runtime) = serde_json::from_value::<RuntimePrefabData>(document) {
+                    validate_audio_entities(
+                        &runtime.entities,
+                        &input.assets,
+                        &format!("prefabs[{}]", prefab.prefab_id),
+                        diagnostics,
+                    );
+                    validate_particle_entities(
+                        &runtime.entities,
+                        &input.assets,
+                        &format!("prefabs[{}]", prefab.prefab_id),
+                        diagnostics,
+                    );
+                }
+            }
+            Err(diagnostic) => diagnostics.push(diagnostic),
         }
     }
+    for asset in input
+        .assets
+        .iter()
+        .filter(|asset| asset.asset_type == "audio")
+    {
+        let decoded = asset
+            .runtime_payload
+            .as_deref()
+            .ok_or_else(|| "Audio asset has no cooked WAV bytes.".to_string())
+            .and_then(crate::audio::decode_audio_wav);
+        if let Err(message) = decoded {
+            diagnostics.push(RuntimePackageDiagnostic::error(
+                "AudioDecodeFailed",
+                message,
+                Some(asset.asset_id.clone()),
+                Some(format!("assets[{}].runtimePayload", asset.asset_id)),
+                Some("Import PCM16 mono/stereo WAV at 44100 or 48000 Hz.".to_string()),
+            ));
+        }
+    }
+}
+
+fn resolve_audio_source_asset<'a>(
+    reference: &RuntimeAssetRef,
+    assets: &'a [RuntimePackageSourceAsset],
+) -> Option<&'a RuntimePackageSourceAsset> {
+    let asset = assets
+        .iter()
+        .find(|asset| match reference.guid.as_deref() {
+            Some(guid) => asset.asset_guid.as_deref().unwrap_or(&asset.asset_id) == guid,
+            None => asset.asset_id == reference.id,
+        })?;
+    (reference.asset_type == "audio"
+        && asset.asset_type == "audio"
+        && reference.sub_asset.is_none()
+        && (reference.id.is_empty() || reference.id == asset.asset_id))
+        .then_some(asset)
+}
+
+fn validate_audio_entities(
+    entities: &[RuntimeEntity],
+    assets: &[RuntimePackageSourceAsset],
+    origin: &str,
+    diagnostics: &mut Vec<RuntimePackageDiagnostic>,
+) {
+    for entity in entities {
+        let mut seen = false;
+        for component in entity
+            .components
+            .iter()
+            .filter(|component| component.component_type == "engine.audio_source")
+        {
+            let result = if seen {
+                Err("An entity may contain only one AudioSource.".to_string())
+            } else {
+                crate::audio::decode_audio_source(&component.data).and_then(|source| {
+                    resolve_audio_source_asset(&source.clip_ref, assets)
+                        .map(|_| ())
+                        .ok_or_else(|| {
+                            format!(
+                                "Audio clipRef id/guid/type does not resolve: {:?}",
+                                source.clip_ref
+                            )
+                        })
+                })
+            };
+            seen = true;
+            if let Err(message) = result {
+                diagnostics.push(RuntimePackageDiagnostic::error(
+                    "AudioSourceInvalid",
+                    message,
+                    Some(entity.id.clone()),
+                    Some(format!(
+                        "{origin}.entities[{}].components.engine.audio_source",
+                        entity.id
+                    )),
+                    Some(
+                        "Keep one AudioSource with a valid audio AssetRef and volume in [0,1]."
+                            .to_string(),
+                    ),
+                ));
+            }
+        }
+    }
+}
+
+fn audio_entity_dependencies(
+    entities: &[RuntimeEntity],
+    assets: &[RuntimePackageSourceAsset],
+) -> Vec<String> {
+    entities
+        .iter()
+        .flat_map(|entity| &entity.components)
+        .filter(|component| component.component_type == "engine.audio_source")
+        .filter_map(|component| crate::audio::decode_audio_source(&component.data).ok())
+        .filter_map(|source| resolve_audio_source_asset(&source.clip_ref, assets))
+        .map(|asset| {
+            asset
+                .asset_guid
+                .clone()
+                .unwrap_or_else(|| asset.asset_id.clone())
+        })
+        .collect::<std::collections::BTreeSet<_>>()
+        .into_iter()
+        .collect()
+}
+
+fn resolve_particle_source_asset<'a>(
+    reference: &RuntimeAssetRef,
+    assets: &'a [RuntimePackageSourceAsset],
+) -> Option<&'a RuntimePackageSourceAsset> {
+    let asset = assets
+        .iter()
+        .find(|asset| match reference.guid.as_deref() {
+            Some(guid) => asset.asset_guid.as_deref().unwrap_or(&asset.asset_id) == guid,
+            None => asset.asset_id == reference.id,
+        })?;
+    (reference.asset_type == "particle-effect"
+        && asset.asset_type == "particle-effect"
+        && reference.sub_asset.is_none()
+        && (reference.id.is_empty() || reference.id == asset.asset_id))
+        .then_some(asset)
+}
+
+fn validate_particle_entities(
+    entities: &[RuntimeEntity],
+    assets: &[RuntimePackageSourceAsset],
+    origin: &str,
+    diagnostics: &mut Vec<RuntimePackageDiagnostic>,
+) {
+    for entity in entities {
+        let mut seen = false;
+        for component in entity
+            .components
+            .iter()
+            .filter(|component| component.component_type == "engine.particle_effect")
+        {
+            let result = if seen {
+                Err("An entity may contain only one ParticleEffect.".to_string())
+            } else {
+                crate::runtime_particles::decode_particle_effect(&component.data).and_then(
+                    |source| {
+                        resolve_particle_source_asset(&source.effect_ref, assets)
+                            .map(|_| ())
+                            .ok_or_else(|| {
+                                format!(
+                                    "Particle effectRef id/guid/type does not resolve: {:?}",
+                                    source.effect_ref
+                                )
+                            })
+                    },
+                )
+            };
+            seen = true;
+            if let Err(message) = result {
+                diagnostics.push(RuntimePackageDiagnostic::error(
+                    "ParticleEffectInvalid",
+                    message,
+                    Some(entity.id.clone()),
+                    Some(format!(
+                        "{origin}.entities[{}].components.engine.particle_effect",
+                        entity.id
+                    )),
+                    Some(
+                        "Keep one ParticleEffect with a valid particle-effect AssetRef."
+                            .to_string(),
+                    ),
+                ));
+            }
+        }
+    }
+}
+
+fn particle_entity_dependencies(
+    entities: &[RuntimeEntity],
+    assets: &[RuntimePackageSourceAsset],
+) -> Vec<String> {
+    entities
+        .iter()
+        .flat_map(|entity| &entity.components)
+        .filter(|component| component.component_type == "engine.particle_effect")
+        .filter_map(|component| {
+            crate::runtime_particles::decode_particle_effect(&component.data).ok()
+        })
+        .filter_map(|source| resolve_particle_source_asset(&source.effect_ref, assets))
+        .map(|asset| {
+            asset
+                .asset_guid
+                .clone()
+                .unwrap_or_else(|| asset.asset_id.clone())
+        })
+        .collect::<std::collections::BTreeSet<_>>()
+        .into_iter()
+        .collect()
 }
 
 fn validate_scene_source(
@@ -1581,6 +1803,13 @@ fn build_asset_manifest(input: &RuntimePackageBuildInput) -> RuntimeAssetManifes
         .iter()
         .map(|asset| {
             let texture_metadata = texture_payload_by_asset.get(asset.asset_id.as_str());
+            let mut dependencies = asset.dependencies.clone();
+            if let Some(scene) = input.scenes.iter().find(|scene| scene.id == asset.asset_id) {
+                dependencies.extend(audio_entity_dependencies(&scene.entities, &input.assets));
+                dependencies.extend(particle_entity_dependencies(&scene.entities, &input.assets));
+                dependencies.sort();
+                dependencies.dedup();
+            }
             RuntimeAssetRecord {
                 asset_guid: asset
                     .asset_guid
@@ -1599,7 +1828,7 @@ fn build_asset_manifest(input: &RuntimePackageBuildInput) -> RuntimeAssetManifes
                 } else {
                     asset.asset_type.clone()
                 },
-                dependencies: asset.dependencies.clone(),
+                dependencies,
                 hash: texture_metadata
                     .map(|metadata| metadata.source_hash.clone())
                     .or_else(|| asset.hash.clone()),
@@ -1609,23 +1838,38 @@ fn build_asset_manifest(input: &RuntimePackageBuildInput) -> RuntimeAssetManifes
             }
         })
         .collect::<Vec<_>>();
-    runtime_asset_index.extend(input.prefabs.iter().map(|prefab| RuntimeAssetRecord {
-        asset_guid: prefab.prefab_id.clone(),
-        asset_id: prefab.prefab_id.clone(),
-        asset_type: "prefab".to_string(),
-        sub_asset_id: None,
-        version: "1".to_string(),
-        cooked_asset_id: format!("cooked-{}", prefab.prefab_id),
-        bundle_id: "startup".to_string(),
-        loader_kind: "prefab".to_string(),
-        dependencies: Vec::new(),
-        hash: Some(prefab_content_hash(prefab)),
-        size: None,
-        flags: vec![
-            "runtime_package_builder".to_string(),
-            "runtime_prefab_asset".to_string(),
-        ],
-        source_map_debug: Some(prefab_package_path(&prefab.prefab_id)),
+    runtime_asset_index.extend(input.prefabs.iter().map(|prefab| {
+        RuntimeAssetRecord {
+            asset_guid: prefab.prefab_id.clone(),
+            asset_id: prefab.prefab_id.clone(),
+            asset_type: "prefab".to_string(),
+            sub_asset_id: None,
+            version: "1".to_string(),
+            cooked_asset_id: format!("cooked-{}", prefab.prefab_id),
+            bundle_id: "startup".to_string(),
+            loader_kind: "prefab".to_string(),
+            dependencies: serde_json::from_value::<RuntimePrefabData>(prefab_runtime_document(
+                prefab,
+            ))
+            .map(|prefab| {
+                let mut deps = audio_entity_dependencies(&prefab.entities, &input.assets);
+                deps.extend(particle_entity_dependencies(
+                    &prefab.entities,
+                    &input.assets,
+                ));
+                deps.sort();
+                deps.dedup();
+                deps
+            })
+            .unwrap_or_default(),
+            hash: Some(prefab_content_hash(prefab)),
+            size: None,
+            flags: vec![
+                "runtime_package_builder".to_string(),
+                "runtime_prefab_asset".to_string(),
+            ],
+            source_map_debug: Some(prefab_package_path(&prefab.prefab_id)),
+        }
     }));
 
     let mut cooked_asset_table = input
@@ -1663,15 +1907,11 @@ fn build_asset_manifest(input: &RuntimePackageBuildInput) -> RuntimeAssetManifes
         compression: Some("none".to_string()),
         hash: Some(prefab_content_hash(prefab)),
     }));
-    let dependency_table = input
-        .assets
+    let dependency_table = runtime_asset_index
         .iter()
         .filter(|asset| !asset.dependencies.is_empty())
         .map(|asset| RuntimeAssetDependencyRecord {
-            asset_guid: asset
-                .asset_guid
-                .clone()
-                .unwrap_or_else(|| asset.asset_id.clone()),
+            asset_guid: asset.asset_guid.clone(),
             dependencies: asset.dependencies.clone(),
         })
         .collect::<Vec<_>>();
@@ -2918,7 +3158,7 @@ mod tests {
         let mut input = RuntimePackageBuildInput::new(RuntimeProjectInfo::explicit_empty(
             "project-fixture",
             "Fixture",
-            "0.0.3",
+            "0.1.0",
         ));
         let mapping = InputMappingAsset::gameplay_default();
         input.input_mappings.push(RuntimePackageSourceJson {
@@ -2926,6 +3166,163 @@ mod tests {
             document: serde_json::to_value(mapping).unwrap(),
         });
         input
+    }
+
+    fn audio_fixture_input() -> RuntimePackageBuildInput {
+        let mut input = fixture_input();
+        let mut scene = crate::scene_loader::tests_support::scene_fixture(false);
+        scene.id = "audio-scene".into();
+        scene.entities[0].components.push(crate::runtime_package::RuntimeProjectComponent {
+            component_type: "engine.audio_source".into(),
+            data: serde_json::json!({"clipRef":{"id":"clip","type":"audio","guid":"guid-clip"},"volume":0.4}),
+        });
+        let mut prefab_entity = scene.entities[0].clone();
+        prefab_entity.id = "prefab-speaker".into();
+        input.prefabs.push(RuntimePackageSourcePrefab {
+            prefab_id: "speaker-prefab".into(),
+            document: serde_json::to_value(RuntimePrefabData {
+                schema_version: "runtime-prefab.v1".into(),
+                id: "speaker-prefab".into(),
+                name: "Speaker".into(),
+                root_entity_id: Some("prefab-speaker".into()),
+                entities: vec![prefab_entity],
+            })
+            .unwrap(),
+        });
+        input.scenes.push(scene);
+        input.assets.push(RuntimePackageSourceAsset::new(
+            "audio-scene",
+            "Audio Scene",
+            "scene",
+            "Scenes/audio.scene.json",
+            "scenes/audio-scene.json",
+        ));
+        let mut audio = RuntimePackageSourceAsset::new(
+            "clip",
+            "Clip",
+            "audio",
+            "Assets/clip.asset",
+            "cooked/audio/clip.wav",
+        )
+        .with_runtime_payload(crate::audio::tests::audio_wav_fixture(1, 44_100));
+        audio.asset_guid = Some("guid-clip".into());
+        input.assets.push(audio);
+        input
+    }
+
+    #[test]
+    fn audio_package_scene_prefab_share_pcm_and_release_instance_assets() {
+        use crate::runtime_instance_loader::RuntimeInstanceLoader;
+        use crate::world::World;
+        use std::sync::Arc;
+        let root = temp_root("audio-lifecycle");
+        let package_dir = root.join("runtime-package");
+        let input = audio_fixture_input();
+        let report = RuntimePackageBuilder::build(
+            &RuntimePackageBuildRequest::dev_desktop(&package_dir, "audio-scene"),
+            &input,
+        );
+        assert_eq!(
+            report.status,
+            RuntimePackageBuildStatus::Success,
+            "{:?}",
+            report.diagnostics
+        );
+        assert_eq!(
+            fs::read(package_dir.join("cooked/audio/clip.wav")).unwrap(),
+            input.assets[1].runtime_payload.as_ref().unwrap().clone()
+        );
+        let loaded = load_runtime_package(&package_dir);
+        assert!(loaded.diagnostics.is_ok(), "{:?}", loaded.diagnostics);
+        let package = loaded.value.unwrap();
+        for id in ["audio-scene", "speaker-prefab"] {
+            let record = package.runtime_asset_index.record_by_guid(id).unwrap();
+            assert_eq!(record.dependencies, ["guid-clip"]);
+        }
+        let mut loader = RuntimeInstanceLoader::from_package(&package);
+        let mut world = World::new();
+        let (scene, report) = loader.load_active_scene_instance(&package, &mut world);
+        assert!(!report.has_errors(), "{:?}", report.diagnostics);
+        let scene = scene.unwrap();
+        assert_eq!(
+            world
+                .audio_source(&crate::ids::EntityId::from("entity-player"))
+                .unwrap()
+                .volume,
+            0.4
+        );
+        let scene_clip = scene
+            .owned_asset_handles
+            .iter()
+            .find_map(|handle| loader.asset_loader().get_audio_clip(handle))
+            .unwrap();
+        let (prefab, report) = loader.instantiate_prefab_from_package(
+            &package,
+            RuntimeAssetRef {
+                id: "speaker-prefab".into(),
+                asset_type: "prefab".into(),
+                guid: None,
+                sub_asset: None,
+            },
+            None,
+            Some(scene.instance_id),
+            &mut world,
+        );
+        assert!(!report.has_errors(), "{:?}", report.diagnostics);
+        let prefab = prefab.unwrap();
+        let prefab_clip = prefab
+            .owned_asset_handles
+            .iter()
+            .find_map(|handle| loader.asset_loader().get_audio_clip(handle))
+            .unwrap();
+        assert!(Arc::ptr_eq(&scene_clip, &prefab_clip));
+        let weak = Arc::downgrade(&scene_clip);
+        drop((scene_clip, prefab_clip));
+        assert!(!loader
+            .despawn_prefab_instance(prefab.instance_id, &mut world)
+            .has_errors());
+        assert!(weak.upgrade().is_some());
+        assert!(!loader
+            .unload_scene_instance(scene.instance_id, &mut world)
+            .has_errors());
+        assert!(weak.upgrade().is_none());
+        assert_eq!(loader.asset_loader().decoded_cache_len(), 0);
+        assert_eq!(world.entity_count(), 0);
+    }
+
+    #[test]
+    fn audio_package_rejects_full_asset_ref_mismatch_and_fake_payload() {
+        let mut input = audio_fixture_input();
+        for reference in [
+            serde_json::json!({"id":"clip","guid":"wrong-guid","type":"audio"}),
+            serde_json::json!({"id":"wrong-id","guid":"guid-clip","type":"audio"}),
+            serde_json::json!({"id":"clip","guid":"guid-clip","type":"texture"}),
+            serde_json::json!({"id":"clip","type":"audio","sub_asset":"part"}),
+        ] {
+            input.scenes[0].entities[0].components[0].data["clipRef"] = reference;
+            let mut diagnostics = Vec::new();
+            validate_audio_entities(
+                &input.scenes[0].entities,
+                &input.assets,
+                "scene",
+                &mut diagnostics,
+            );
+            assert!(diagnostics
+                .iter()
+                .any(|diagnostic| diagnostic.code == "AudioSourceInvalid"));
+        }
+        input = audio_fixture_input();
+        input.assets[1].runtime_payload = Some(b"{}".to_vec());
+        let root = temp_root("audio-invalid");
+        let report = RuntimePackageBuilder::build(
+            &RuntimePackageBuildRequest::dev_desktop(root.join("package"), "audio-scene"),
+            &input,
+        );
+        assert_ne!(report.status, RuntimePackageBuildStatus::Success);
+        assert!(report
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.code == "AudioDecodeFailed"));
     }
 
     fn fixture_observation_contract() -> ProjectObservationContract {
@@ -3041,6 +3438,7 @@ mod tests {
         RuntimePackageSourceFontBundle {
             metadata,
             page_payloads: vec![payload],
+            font_face_sources: Vec::new(),
         }
     }
 

@@ -629,15 +629,6 @@ pub enum UiCommandPayload {
     RecoverProjectProduction {
         run_id: String,
     },
-    ApproveGatewayAccessRequest {
-        request_id: String,
-    },
-    RejectGatewayAccessRequest {
-        request_id: String,
-    },
-    SetGatewayAccessPage {
-        page_index: usize,
-    },
     ApproveProjectRuntimeTrust {
         request_id: String,
     },
@@ -824,9 +815,6 @@ pub fn ui_command_id_for_payload(payload: &UiCommandPayload) -> &'static str {
         UiCommandPayload::AdvanceProjectProduction { .. } => "advance_project_production",
         UiCommandPayload::CancelProjectProduction { .. } => "cancel_project_production",
         UiCommandPayload::RecoverProjectProduction { .. } => "recover_project_production",
-        UiCommandPayload::ApproveGatewayAccessRequest { .. } => "approve_gateway_access_request",
-        UiCommandPayload::RejectGatewayAccessRequest { .. } => "reject_gateway_access_request",
-        UiCommandPayload::SetGatewayAccessPage { .. } => "set_gateway_access_page",
         UiCommandPayload::ApproveProjectRuntimeTrust { .. } => "approve_project_runtime_trust",
         UiCommandPayload::DenyProjectRuntimeTrust { .. } => "deny_project_runtime_trust",
         UiCommandPayload::CancelProjectRuntimeTrust { .. } => "cancel_project_runtime_trust",

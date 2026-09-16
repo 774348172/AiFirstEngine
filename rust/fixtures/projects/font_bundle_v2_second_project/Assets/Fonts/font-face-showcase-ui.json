@@ -1,0 +1,17 @@
+{
+  "schemaVersion": "font-face-asset.v2",
+  "assetId": "font-face-showcase-ui",
+  "source": {
+    "kind": "projectFile",
+    "assetRef": "font-source-showcase-ui",
+    "faceIndex": 0,
+    "sourceSha256": "sha256:f70ecb32e5b312ba7bc724977352139a3f691566dc2491377be3828631c9fab2"
+  },
+  "declared": {
+    "family": "Aife Noto Sans SC Qualification",
+    "style": "normal",
+    "weight": 400,
+    "stretch": 100
+  },
+  "hinting": "fontDefault"
+}

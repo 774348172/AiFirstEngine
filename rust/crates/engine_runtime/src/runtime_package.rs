@@ -1015,6 +1015,7 @@ fn load_font_bundles(
         match RuntimeFontBundleLoader::load(RuntimePackageSourceFontBundle {
             metadata,
             page_payloads: payloads,
+            font_face_sources: Vec::new(),
         }) {
             Ok(bundle) => {
                 if bundle.metadata.font_bundle_id != entry.font_bundle_id
@@ -2617,7 +2618,7 @@ mod tests {
   "project": {
     "projectId": "project-fixture",
     "name": "Fixture",
-    "version": "0.0.3",
+    "version": "0.1.0",
     "runtimeModule": {
       "moduleId": "engine.empty.runtime",
       "interfaceVersion": "project-runtime-module.v2",

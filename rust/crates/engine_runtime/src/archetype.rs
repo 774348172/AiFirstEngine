@@ -1,9 +1,11 @@
 use crate::component_value::RuntimeValue;
 use crate::components::{
-    Animator2D, ComponentTypeId, EntityMeta, Hierarchy, Renderable, SpriteRenderer2D, Transform,
+    Animator2D, AudioSource, ComponentTypeId, EntityMeta, Hierarchy, Renderable, SpriteRenderer2D,
+    Transform,
 };
 use crate::ids::RuntimeEntityId;
 use crate::physics2d::Collider2D;
+use crate::runtime_particles::ParticleEffect;
 use std::collections::BTreeSet;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -39,6 +41,8 @@ pub enum ComponentValue {
     Renderable(Renderable),
     SpriteRenderer2D(SpriteRenderer2D),
     Animator2D(Animator2D),
+    AudioSource(AudioSource),
+    ParticleEffect(ParticleEffect),
     Collider2D(Collider2D),
     Dynamic {
         component_type: ComponentTypeId,
@@ -55,6 +59,8 @@ impl ComponentValue {
             ComponentValue::Renderable(_) => ComponentTypeId::renderable(),
             ComponentValue::SpriteRenderer2D(_) => ComponentTypeId::sprite_renderer2d(),
             ComponentValue::Animator2D(_) => ComponentTypeId::animator2d(),
+            ComponentValue::AudioSource(_) => ComponentTypeId::audio_source(),
+            ComponentValue::ParticleEffect(_) => ComponentTypeId::particle_effect(),
             ComponentValue::Collider2D(_) => ComponentTypeId::collider2d(),
             ComponentValue::Dynamic { component_type, .. } => component_type.clone(),
         }
@@ -69,6 +75,8 @@ pub enum ComponentColumn {
     Renderable(Vec<Renderable>),
     SpriteRenderer2D(Vec<SpriteRenderer2D>),
     Animator2D(Vec<Animator2D>),
+    AudioSource(Vec<AudioSource>),
+    ParticleEffect(Vec<ParticleEffect>),
     Collider2D(Vec<Collider2D>),
     Dynamic {
         component_type: ComponentTypeId,
@@ -85,6 +93,8 @@ impl ComponentColumn {
             ComponentColumn::Renderable(_) => ComponentTypeId::renderable(),
             ComponentColumn::SpriteRenderer2D(_) => ComponentTypeId::sprite_renderer2d(),
             ComponentColumn::Animator2D(_) => ComponentTypeId::animator2d(),
+            ComponentColumn::AudioSource(_) => ComponentTypeId::audio_source(),
+            ComponentColumn::ParticleEffect(_) => ComponentTypeId::particle_effect(),
             ComponentColumn::Collider2D(_) => ComponentTypeId::collider2d(),
             ComponentColumn::Dynamic { component_type, .. } => component_type.clone(),
         }
@@ -103,6 +113,10 @@ impl ComponentColumn {
             Self::SpriteRenderer2D(Vec::new())
         } else if component_type == &ComponentTypeId::animator2d() {
             Self::Animator2D(Vec::new())
+        } else if component_type == &ComponentTypeId::audio_source() {
+            Self::AudioSource(Vec::new())
+        } else if component_type == &ComponentTypeId::particle_effect() {
+            Self::ParticleEffect(Vec::new())
         } else if component_type == &ComponentTypeId::collider2d() {
             Self::Collider2D(Vec::new())
         } else {
@@ -121,6 +135,8 @@ impl ComponentColumn {
             ComponentColumn::Renderable(values) => values.len(),
             ComponentColumn::SpriteRenderer2D(values) => values.len(),
             ComponentColumn::Animator2D(values) => values.len(),
+            ComponentColumn::AudioSource(values) => values.len(),
+            ComponentColumn::ParticleEffect(values) => values.len(),
             ComponentColumn::Collider2D(values) => values.len(),
             ComponentColumn::Dynamic { values, .. } => values.len(),
         }
@@ -145,6 +161,12 @@ impl ComponentColumn {
                 ComponentValue::SpriteRenderer2D(value),
             ) => values.push(value),
             (ComponentColumn::Animator2D(values), ComponentValue::Animator2D(value)) => {
+                values.push(value)
+            }
+            (ComponentColumn::AudioSource(values), ComponentValue::AudioSource(value)) => {
+                values.push(value)
+            }
+            (ComponentColumn::ParticleEffect(values), ComponentValue::ParticleEffect(value)) => {
                 values.push(value)
             }
             (ComponentColumn::Collider2D(values), ComponentValue::Collider2D(value)) => {
@@ -180,6 +202,12 @@ impl ComponentColumn {
             }
             ComponentColumn::Animator2D(values) => {
                 ComponentValue::Animator2D(values.swap_remove(row))
+            }
+            ComponentColumn::AudioSource(values) => {
+                ComponentValue::AudioSource(values.swap_remove(row))
+            }
+            ComponentColumn::ParticleEffect(values) => {
+                ComponentValue::ParticleEffect(values.swap_remove(row))
             }
             ComponentColumn::Collider2D(values) => {
                 ComponentValue::Collider2D(values.swap_remove(row))
@@ -305,6 +333,19 @@ impl ArchetypeTable {
         })
     }
 
+    pub fn audio_source(&self, row: usize) -> Option<&AudioSource> {
+        self.columns.iter().find_map(|column| match column {
+            ComponentColumn::AudioSource(values) => values.get(row),
+            _ => None,
+        })
+    }
+    pub fn particle_effect(&self, row: usize) -> Option<&ParticleEffect> {
+        self.columns.iter().find_map(|column| match column {
+            ComponentColumn::ParticleEffect(values) => values.get(row),
+            _ => None,
+        })
+    }
+
     pub fn collider2d(&self, row: usize) -> Option<&Collider2D> {
         self.columns.iter().find_map(|column| match column {
             ComponentColumn::Collider2D(values) => values.get(row),
@@ -350,6 +391,16 @@ impl ArchetypeTable {
                 if component_type == &ComponentTypeId::animator2d() =>
             {
                 values.get(row).cloned().map(ComponentValue::Animator2D)
+            }
+            ComponentColumn::AudioSource(values)
+                if component_type == &ComponentTypeId::audio_source() =>
+            {
+                values.get(row).cloned().map(ComponentValue::AudioSource)
+            }
+            ComponentColumn::ParticleEffect(values)
+                if component_type == &ComponentTypeId::particle_effect() =>
+            {
+                values.get(row).cloned().map(ComponentValue::ParticleEffect)
             }
             ComponentColumn::Collider2D(values)
                 if component_type == &ComponentTypeId::collider2d() =>

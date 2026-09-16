@@ -50,7 +50,7 @@ impl EditorSceneDocument {
 
     pub fn load_from_path(path: impl AsRef<Path>) -> Result<Self, Vec<SceneEditDiagnostic>> {
         let path = path.as_ref();
-        let text = fs::read_to_string(path).map_err(|error| {
+        let bytes = fs::read(path).map_err(|error| {
             vec![SceneEditDiagnostic::error(
                 "scene.document.read_failed",
                 "scene.document",
@@ -58,7 +58,15 @@ impl EditorSceneDocument {
             )
             .with_path(path.display().to_string())]
         })?;
-        let mut document = serde_json::from_str::<Self>(&text).map_err(|error| {
+        Self::load_from_bytes(path, &bytes)
+    }
+
+    pub fn load_from_bytes(
+        path: impl AsRef<Path>,
+        bytes: &[u8],
+    ) -> Result<Self, Vec<SceneEditDiagnostic>> {
+        let path = path.as_ref();
+        let mut document = serde_json::from_slice::<Self>(bytes).map_err(|error| {
             vec![SceneEditDiagnostic::error(
                 "scene.document.parse_failed",
                 "scene.document",
@@ -86,6 +94,19 @@ impl EditorSceneDocument {
 
     pub fn validate(&self) -> Vec<SceneEditDiagnostic> {
         let mut diagnostics = Vec::new();
+        if self.schema_version != EDITOR_SCENE_DOCUMENT_SCHEMA_VERSION {
+            diagnostics.push(
+                SceneEditDiagnostic::error(
+                    "scene.document.schema_version_unsupported",
+                    "scene.document",
+                    format!(
+                        "Unsupported scene document schema version: {}",
+                        self.schema_version
+                    ),
+                )
+                .with_path("schemaVersion"),
+            );
+        }
         if self.scene_id.trim().is_empty() {
             diagnostics.push(SceneEditDiagnostic::error(
                 "scene.document.scene_id_required",

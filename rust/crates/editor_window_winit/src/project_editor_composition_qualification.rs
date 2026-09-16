@@ -779,6 +779,7 @@ mod tests {
             cargo_executable: None,
             cargo_identity: "cargo 282-gate-h-candidate".to_string(),
             capture_limit_bytes: 256 * 1024,
+            prepared_runtime_glue: None,
         }
     }
 
@@ -985,6 +986,7 @@ mod tests {
             cargo_executable: None,
             cargo_identity: "cargo fresh-integration".to_string(),
             capture_limit_bytes: 256 * 1024,
+            prepared_runtime_glue: None,
         };
         let source_report = ProjectEditorCompositionArtifact::prepare(
             source_request,
@@ -1060,6 +1062,7 @@ mod tests {
                 cargo_executable: Some(run_root.join("must-not-start-cargo.exe")),
                 cargo_identity: "cargo fresh-integration".to_string(),
                 capture_limit_bytes: 256 * 1024,
+                prepared_runtime_glue: None,
             },
             ProjectEditorCompositionPreparationControl::default(),
         );
@@ -1131,6 +1134,7 @@ mod tests {
             cargo_executable: None,
             cargo_identity: "cargo 282-r1-fresh-integration".to_string(),
             capture_limit_bytes: 256 * 1024,
+            prepared_runtime_glue: None,
         };
 
         let report_a = ProjectEditorCompositionArtifact::prepare(
@@ -1373,6 +1377,7 @@ mod tests {
             cargo_executable: None,
             cargo_identity: "cargo 282-r1-fresh-integration".to_string(),
             capture_limit_bytes: 256 * 1024,
+            prepared_runtime_glue: None,
         };
         hit_request.cargo_executable = Some(run_root.join("must-not-start-cargo.exe"));
         let cache_hit = ProjectEditorCompositionArtifact::prepare(

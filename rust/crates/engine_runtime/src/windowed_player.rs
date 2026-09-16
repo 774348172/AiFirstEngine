@@ -312,6 +312,8 @@ pub struct WindowedPlayerFramePhasePerformanceSummary {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct WindowedPlayerFramePerformanceSummary {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub gpu: Option<WindowedPlayerGpuPerformance>,
     pub warmup_frames: u64,
     pub requested_sample_frames: u64,
     pub observed_sample_frames: u64,
@@ -334,6 +336,60 @@ pub struct WindowedPlayerGameplayTraceSummary {
     pub command_apply_count: usize,
     pub prefab_instantiate_apply_count: usize,
     pub failed_record_count: usize,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub failure_details: Vec<WindowedPlayerRuntimeFailure>,
+    #[serde(default)]
+    pub omitted_failure_count: usize,
+}
+
+/// Explicit performance capture only; counters describe the last simulation substep
+/// of each sampled frame, not capacity or a CPU particle mirror.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct WindowedPlayerGpuPerformance {
+    pub status: String,
+    pub adapter: String,
+    pub driver: String,
+    pub backend: String,
+    pub timestamp_period_ns: f32,
+    pub measurement_buffer_bytes: u64,
+    pub samples: Vec<WindowedPlayerGpuFrameSample>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct WindowedPlayerGpuFrameSample {
+    pub frame_index: u64,
+    pub frame_ms: f64,
+    pub particle_simulation_ms: f64,
+    pub particle_prepare_ms: f64,
+    pub particle_draw_ms: f64,
+    pub effect_count: usize,
+    pub emitter_count: usize,
+    pub particle_buffer_bytes: u64,
+    pub live: u64,
+    pub spawned_last_substep: u64,
+    pub dropped_last_substep: u64,
+    pub collisions_last_substep: u64,
+    pub invalid_last_substep: u64,
+    pub indirect_instances: u64,
+    pub dispatch_count: u64,
+    pub particle_draw_count: u64,
+}
+
+/// Bounded failure evidence retained even when successful trace records are omitted.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WindowedPlayerRuntimeFailure {
+    pub frame_index: u64,
+    pub phase: String,
+    pub rule_id: String,
+    pub operation: String,
+    pub entity_id: Option<String>,
+    pub component_type: Option<String>,
+    pub field_path: Option<String>,
+    pub error_code: Option<String>,
+    pub message: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -373,6 +429,8 @@ pub struct WindowedPlayerRunReport {
     pub frame_performance_summary: Option<WindowedPlayerFramePerformanceSummary>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub gameplay_trace_summary: Option<WindowedPlayerGameplayTraceSummary>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub audio_summary: Option<crate::runtime_audio::RuntimeAudioReport>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub gameplay_trace_records: Vec<WindowedPlayerGameplayTraceRecord>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -390,7 +448,9 @@ impl WindowedPlayerRunReport {
             .any(|diagnostic| diagnostic.severity == WindowedPlayerDiagnosticSeverity::Error)
     }
 
-    fn base(request: &WindowedPlayerRunRequest) -> Self {
+    /// Empty report for adapters that already executed the runtime elsewhere.
+    /// Constructing a report must not load or execute a package a second time.
+    pub fn base(request: &WindowedPlayerRunRequest) -> Self {
         Self {
             schema_version: WINDOWED_PLAYER_RUN_REPORT_SCHEMA_VERSION.to_string(),
             run_id: format!("windowed-player-{}", request.scenario_id),
@@ -407,6 +467,7 @@ impl WindowedPlayerRunReport {
             screenshot_summary: Some(WindowedPlayerScreenshotSummary::not_requested()),
             frame_performance_summary: None,
             gameplay_trace_summary: None,
+            audio_summary: None,
             gameplay_trace_records: Vec::new(),
             project_runtime_bind_receipt: None,
             exit_code: None,

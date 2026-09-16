@@ -58,6 +58,16 @@ impl RenderGraph {
         }
 
         for pass in &self.passes {
+            for command in &pass.commands {
+                if let RenderPassCommand::DrawParticles { view, .. } = command {
+                    if let Err(error) = view.validate() {
+                        diagnostics.push(RenderGraphDiagnostic::error(
+                            "particle_render.invalid_view",
+                            error,
+                        ));
+                    }
+                }
+            }
             for resource_id in pass.resource_refs() {
                 referenced.insert(resource_id.clone());
                 if !resource_ids.contains(resource_id.as_str()) {
@@ -132,6 +142,8 @@ impl RenderPass {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum RenderPassKind {
+    ParticleSimulation,
+    DrawParticles,
     Clear,
     DrawTestGeometry,
     DrawMeshBasic,
@@ -163,6 +175,23 @@ impl RenderDrawVertex {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "commandKind")]
 pub enum RenderPassCommand {
+    ReconcileParticles {
+        target: String,
+        sources: Vec<crate::particle_render_contract::ParticleSourceFrame>,
+    },
+    SimulateParticles {
+        target: String,
+        instance: u64,
+        step: crate::particle_render_contract::ParticleRenderStep,
+    },
+    DrawParticles {
+        target: String,
+        instance: u64,
+        emitter: u32,
+        view: crate::particle_render_contract::ParticleRenderView,
+        texture: Option<RenderResourceHandle>,
+        mesh: Option<RenderResourceHandle>,
+    },
     Clear {
         target: String,
         color: [OrderedF32; 4],
@@ -226,6 +255,9 @@ impl RenderPassCommand {
     pub fn target(&self) -> &String {
         match self {
             Self::Clear { target, .. }
+            | Self::ReconcileParticles { target, .. }
+            | Self::SimulateParticles { target, .. }
+            | Self::DrawParticles { target, .. }
             | Self::DrawTestGeometry { target, .. }
             | Self::DrawMeshBasic { target, .. }
             | Self::DrawSpriteBasic { target, .. }

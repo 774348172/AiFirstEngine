@@ -1,6 +1,6 @@
 [package]
 name = "runtime_cli"
-version.workspace = true
+version = "0.1.0"
 edition.workspace = true
 license.workspace = true
 publish.workspace = true
@@ -15,11 +15,16 @@ path = "src/lib.rs"
 name = "ai_engine_runtime_cli"
 path = "src/main.rs"
 
+[[bin]]
+name = "ai_project_runtime_player"
+path = "src/bin/ai_project_runtime_player.rs"
+
 [dependencies]
 engine_runtime = { path = "../engine_runtime" }
 runtime_player_winit = { path = "../runtime_player_winit" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+sha2 = "0.10"
 
 [features]
 default = []
@@ -35,4 +40,5 @@ windows-sys = { version = "0.59", features = [
     "Win32_System_Diagnostics_ToolHelp",
     "Win32_System_JobObjects",
     "Win32_System_Threading",
+    "Win32_System_LibraryLoader",
 ] }

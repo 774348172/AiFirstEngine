@@ -192,72 +192,6 @@ fn trusted_runtime_preparation_app(
     app
 }
 
-fn write_project_rust_fixture_for_preparation() -> std::path::PathBuf {
-    let root = write_editor_project_fixture_for_shell();
-    let rust_root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .and_then(std::path::Path::parent)
-        .unwrap();
-    let runtime_root = root.join("RuntimeModule");
-    std::fs::create_dir_all(runtime_root.join("src")).unwrap();
-    let abi = rust_root
-        .join("crates/project_runtime_abi")
-        .display()
-        .to_string()
-        .replace('\\', "/");
-    let sdk = rust_root
-        .join("crates/project_runtime_sdk")
-        .display()
-        .to_string()
-        .replace('\\', "/");
-    std::fs::write(
-        runtime_root.join("Cargo.toml"),
-        format!(
-            r#"[package]
-name = "fixture_project_runtime"
-version = "0.0.3"
-edition = "2021"
-publish = false
-
-[lib]
-path = "src/lib.rs"
-
-[dependencies]
-project_runtime_abi = {{ path = "{abi}" }}
-project_runtime_sdk = {{ path = "{sdk}" }}
-serde = {{ version = "1", features = ["derive"] }}
-"#
-        ),
-    )
-    .unwrap();
-    let fixture_root = rust_root.join("fixtures/project_runtime_native_module_minimal");
-    let lock = std::fs::read_to_string(fixture_root.join("Cargo.lock"))
-        .unwrap()
-        .replace(
-            "project_runtime_native_module_minimal",
-            "fixture_project_runtime",
-        );
-    std::fs::write(runtime_root.join("Cargo.lock"), lock).unwrap();
-    std::fs::copy(
-        fixture_root.join("src/lib.rs"),
-        runtime_root.join("src/lib.rs"),
-    )
-    .unwrap();
-    let manifest_path = root.join("project.aife.json");
-    let mut manifest: serde_json::Value =
-        serde_json::from_slice(&std::fs::read(&manifest_path).unwrap()).unwrap();
-    manifest["runtimeModule"] = serde_json::json!({
-        "sourceKind": "projectRust",
-        "moduleId": "fixture.native.runtime",
-        "interfaceVersion": "project-runtime-module.v2",
-        "cargoManifest": "RuntimeModule/Cargo.toml",
-        "cargoPackage": "fixture_project_runtime",
-        "playerBinary": "fixture_project_player"
-    });
-    std::fs::write(manifest_path, serde_json::to_vec_pretty(&manifest).unwrap()).unwrap();
-    root
-}
-
 fn specialized_composition_session_for_project(project_root: &std::path::Path) -> EditorSession {
     let manifest: editor_core::ProjectManifest =
         serde_json::from_slice(&std::fs::read(project_root.join("project.aife.json")).unwrap())
@@ -666,12 +600,18 @@ fn editor_play_prepares_off_thread_rejects_duplicate_and_commits_once() {
         .as_ref()
         .is_some_and(|feedback| feedback.message.contains("正在准备运行")));
     release.store(true, Ordering::Release);
-    for _ in 0..500 {
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(30);
+    loop {
         app.frame(1280.0, 720.0);
         if app.session().last_editor_preview_package_report().is_some() {
             break;
         }
-        std::thread::yield_now();
+        assert!(
+            std::time::Instant::now() < deadline,
+            "Editor Play preparation did not commit after release: {:?}",
+            app.report().last_feedback
+        );
+        std::thread::sleep(std::time::Duration::from_millis(1));
     }
     let preview = app
         .session()
@@ -709,238 +649,6 @@ fn dropping_application_cancels_and_joins_editor_play_worker() {
     }
     drop(app);
     std::fs::remove_dir_all(project_root).unwrap();
-}
-
-#[test]
-fn gateway_owner_thread_dispatch_gateway_native_editor_adapter_is_pumped_by_frame() {
-    let project_root = write_editor_project_fixture_for_shell();
-    let session = opened_editor_project_session(&project_root);
-    let mut app =
-        NativeEditorApplication::with_session(NativeEditorWindowConfig::default(), session);
-    let hello = ai_tool_gateway::ClientHello {
-        schema_version: ai_tool_gateway::GATEWAY_CLIENT_HELLO_SCHEMA_VERSION.to_string(),
-        gateway_protocol_version: ai_tool_gateway::GATEWAY_PROTOCOL_VERSION.to_string(),
-        client_kind: ai_tool_gateway::ClientKind::Test,
-        client_version: "native-editor-test.v1".to_string(),
-        supported_schema_versions: vec![editor_core::AI_TOOL_CATALOG_SCHEMA_VERSION.to_string()],
-        expected_editor_instance_id: app.editor_instance_id().to_string(),
-        requested_read_scope: vec!["catalog".to_string(), "project".to_string()],
-    };
-    let client = app.gateway_client();
-    let connect = client.submit_connect(hello).unwrap();
-    app.frame(1280.0, 720.0);
-    assert_eq!(app.last_gateway_requests_processed(), 1);
-    let binding = connect.recv().unwrap().unwrap();
-    let catalog = client
-        .submit_dispatch(ai_tool_gateway::GatewayRequest {
-            schema_version: ai_tool_gateway::GATEWAY_REQUEST_SCHEMA_VERSION.to_string(),
-            gateway_protocol_version: ai_tool_gateway::GATEWAY_PROTOCOL_VERSION.to_string(),
-            request_id: "native-editor-catalog".to_string(),
-            client_session_id: binding.client_session_id,
-            deadline_epoch_ms: None,
-            response_limit_bytes: 1024 * 1024,
-            payload: ai_tool_gateway::GatewayRequestPayload::Catalog(
-                editor_core::AiToolCatalogRequest::default(),
-            ),
-        })
-        .unwrap();
-    app.frame(1280.0, 720.0);
-    assert_eq!(app.last_gateway_requests_processed(), 1);
-    assert!(matches!(
-        catalog.recv().unwrap().payload,
-        ai_tool_gateway::GatewayReplyPayload::Catalog(_)
-    ));
-    let _ = std::fs::remove_dir_all(project_root);
-}
-
-#[test]
-fn gateway_owner_thread_submission_wakes_idle_native_editor_host() {
-    let project_root = write_editor_project_fixture_for_shell();
-    let session = opened_editor_project_session(&project_root);
-    let (wake_sender, wake_receiver) = std::sync::mpsc::channel();
-    let gateway_wake: ai_tool_gateway::GatewayOwnerThreadWake = std::sync::Arc::new(move || {
-        let _ = wake_sender.send(());
-    });
-    let mut app =
-        NativeEditorApplication::with_project_manager_and_dialog_initial_directory_and_gateway(
-            NativeEditorWindowConfig::default(),
-            session,
-            ProjectManagerController::default(),
-            Box::<HeadlessFolderDialogBackend>::default(),
-            default_project_dialog_initial_directory(),
-            Some(gateway_wake),
-            None,
-        );
-    let connect =
-        app.gateway_client()
-            .submit_connect(ai_tool_gateway::ClientHello {
-                schema_version: ai_tool_gateway::GATEWAY_CLIENT_HELLO_SCHEMA_VERSION.to_string(),
-                gateway_protocol_version: ai_tool_gateway::GATEWAY_PROTOCOL_VERSION.to_string(),
-                client_kind: ai_tool_gateway::ClientKind::Mcp,
-                client_version: "idle-native-editor-wake-test.v1".to_string(),
-                supported_schema_versions: vec![
-                    editor_core::AI_TOOL_CATALOG_SCHEMA_VERSION.to_string()
-                ],
-                expected_editor_instance_id: app.editor_instance_id().to_string(),
-                requested_read_scope: vec!["catalog".to_string(), "project".to_string()],
-            })
-            .unwrap();
-
-    wake_receiver
-        .recv_timeout(std::time::Duration::from_secs(1))
-        .expect("queued Gateway command must wake an idle Native Editor host");
-    app.frame(1280.0, 720.0);
-    assert!(connect.recv().unwrap().is_ok());
-    let _ = std::fs::remove_dir_all(project_root);
-}
-
-#[test]
-fn gateway_access_native_editor_approval_is_user_driven_and_session_bound() {
-    let project_root = write_editor_project_fixture_for_shell();
-    let session = opened_editor_project_session(&project_root);
-    let mut app =
-        NativeEditorApplication::with_session(NativeEditorWindowConfig::default(), session);
-    let client = app.gateway_client();
-    let connect =
-        client
-            .submit_connect(ai_tool_gateway::ClientHello {
-                schema_version: ai_tool_gateway::GATEWAY_CLIENT_HELLO_SCHEMA_VERSION.to_string(),
-                gateway_protocol_version: ai_tool_gateway::GATEWAY_PROTOCOL_VERSION.to_string(),
-                client_kind: ai_tool_gateway::ClientKind::Mcp,
-                client_version: "codex-grant-test.v1".to_string(),
-                supported_schema_versions: vec![
-                    editor_core::AI_TOOL_CATALOG_SCHEMA_VERSION.to_string()
-                ],
-                expected_editor_instance_id: app.editor_instance_id().to_string(),
-                requested_read_scope: vec!["catalog".to_string(), "project".to_string()],
-            })
-            .unwrap();
-    app.frame(1280.0, 720.0);
-    let binding = connect.recv().unwrap().unwrap();
-    let project_context = binding
-        .project_context
-        .as_ref()
-        .expect("opened Native Editor project context");
-    app.request_gateway_goal_mutation_access(
-        &binding.client_session_id,
-        editor_core::AiGoalBinding::new(
-            "native-editor-approval-test",
-            "Apply the bounded test project change.",
-            project_context.project_identity.clone(),
-            project_context.project_digest.clone(),
-            editor_core::AiGoalCompletionPolicy::CommitVerified,
-        )
-        .unwrap(),
-        editor_core::AiRiskEnvelope::default_project_owned_low_risk().unwrap(),
-    )
-    .unwrap();
-    let request = app
-        .latest_model()
-        .ai_panel
-        .gateway_access
-        .requests
-        .iter()
-        .find(|request| request.client_session_id == binding.client_session_id)
-        .expect("connected Codex access request")
-        .request_id
-        .clone();
-
-    let result = app.dispatch_command(editor_core::command_for_test(
-        UiCommandPayload::ApproveGatewayAccessRequest {
-            request_id: request,
-        },
-    ));
-
-    assert_eq!(result.status, CommandStatus::Committed);
-    let receipt = app
-        .last_gateway_access_decision_receipt()
-        .expect("Native Editor access decision receipt");
-    assert_eq!(receipt.client_session_id, binding.client_session_id);
-    assert_eq!(
-        receipt.mutation_state,
-        ai_tool_gateway::GatewayMutationAccessState::Active
-    );
-    assert!(receipt.grant_ref.is_some());
-    assert!(app
-        .latest_model()
-        .ai_panel
-        .gateway_access
-        .requests
-        .is_empty());
-    let _ = std::fs::remove_dir_all(project_root);
-}
-
-#[cfg(windows)]
-#[test]
-fn gateway_host_lifecycle_stays_stable_across_launcher_and_project_switch() {
-    let first_project_root = write_editor_project_fixture_for_shell();
-    let second_project_root = write_editor_project_fixture_for_shell();
-    let discovery_root = unique_project_launcher_temp_dir().join("gateway-discovery");
-    let session = editor_core::EditorSession::new();
-    let mut app = NativeEditorApplication::with_session_and_gateway_discovery_root(
-        NativeEditorWindowConfig::default(),
-        session,
-        discovery_root.clone(),
-    );
-
-    app.frame(1280.0, 720.0);
-    assert!(app.gateway_host_error().is_none());
-    let first_discovery = app
-        .gateway_discovery_path()
-        .expect("launcher Gateway discovery")
-        .to_path_buf();
-    let editor_instance_id = app
-        .gateway_host_binding()
-        .expect("launcher Gateway binding")
-        .editor_instance_id
-        .clone();
-    assert!(first_discovery.exists());
-
-    let opened = app.dispatch_command(editor_core::command_for_test(
-        UiCommandPayload::OpenProject {
-            path: first_project_root.display().to_string(),
-        },
-    ));
-    assert_eq!(opened.status, CommandStatus::Committed);
-    app.frame(1280.0, 720.0);
-    assert_eq!(
-        app.gateway_discovery_path(),
-        Some(first_discovery.as_path())
-    );
-    assert_eq!(
-        app.gateway_host_binding()
-            .expect("first project Gateway binding")
-            .editor_instance_id,
-        editor_instance_id
-    );
-
-    let switched = app.dispatch_command(editor_core::command_for_test(
-        UiCommandPayload::OpenProject {
-            path: second_project_root.display().to_string(),
-        },
-    ));
-    assert_eq!(switched.status, CommandStatus::Committed);
-    app.frame(1280.0, 720.0);
-    assert!(app.gateway_host_error().is_none());
-    let second_discovery = app
-        .gateway_discovery_path()
-        .expect("second project Gateway discovery")
-        .to_path_buf();
-    assert_eq!(first_discovery, second_discovery);
-    assert_eq!(
-        app.gateway_host_binding()
-            .expect("second project Gateway binding")
-            .editor_instance_id,
-        editor_instance_id
-    );
-    assert!(first_discovery.exists());
-    assert!(second_discovery.exists());
-
-    drop(app);
-    assert!(!second_discovery.exists());
-    let _ = std::fs::remove_dir_all(discovery_root);
-    let _ = std::fs::remove_dir_all(first_project_root);
-    let _ = std::fs::remove_dir_all(second_project_root);
 }
 
 #[test]
@@ -1750,7 +1458,7 @@ fn native_editor_application_loads_recent_projects_from_store() {
         editor_ui_model::RecentProjectEntry {
             name: "StoredProject".to_string(),
             path: project_root.display().to_string(),
-            engine_version: "0.0.3".to_string(),
+            engine_version: "0.1.0".to_string(),
             last_opened_at: Some("1".to_string()),
             last_modified_at: Some("1".to_string()),
             valid: true,
@@ -1788,7 +1496,7 @@ fn native_editor_migrates_duplicate_windows_recent_project_paths_once() {
     let entry = |path: String, last_opened_at: &str| editor_ui_model::RecentProjectEntry {
         name: "StoredProject".to_string(),
         path,
-        engine_version: "0.0.3".to_string(),
+        engine_version: "0.1.0".to_string(),
         last_opened_at: Some(last_opened_at.to_string()),
         last_modified_at: Some("1".to_string()),
         valid: true,

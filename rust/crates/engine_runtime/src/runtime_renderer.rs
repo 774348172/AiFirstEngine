@@ -534,6 +534,54 @@ impl RuntimeRenderer {
             });
         }
 
+        for message in &input.render_scene_state.particle_diagnostics {
+            graph.diagnostics.push(RenderGraphDiagnostic::error(
+                "particle_effect.projection_failed",
+                message.clone(),
+            ));
+        }
+        let sources = &input.render_scene_state.particle_sources;
+        if input.render_scene_state.particle_projection_active || !sources.is_empty() {
+            let mut particle_commands = vec![RenderPassCommand::ReconcileParticles {
+                target: target_id.clone(),
+                sources: sources.clone(),
+            }];
+            for source in sources {
+                particle_commands.push(RenderPassCommand::SimulateParticles {
+                    target: target_id.clone(),
+                    instance: source.instance,
+                    step: source.step.clone(),
+                });
+                let camera = crate::particle_render_contract::ParticleRenderView::from_scene_view(
+                    view,
+                    input.render_target.width,
+                    input.render_target.height,
+                    source.step.origin,
+                );
+                for emitter in 0..source.textures.len() {
+                    particle_commands.push(RenderPassCommand::DrawParticles {
+                        target: target_id.clone(),
+                        instance: source.instance,
+                        emitter: emitter as u32,
+                        view: camera.clone(),
+                        texture: source.textures[emitter],
+                        mesh: source.meshes[emitter],
+                    });
+                }
+            }
+            graph.passes.push(RenderPass {
+                pass_id: "particle-effects".into(),
+                pass_name: "Particle Effects".into(),
+                pass_kind: RenderPassKind::DrawParticles,
+                view_id: view_id.clone(),
+                reads: Vec::new(),
+                writes: vec![target_id.clone()],
+                color_targets: vec![target_id.clone()],
+                depth_target: None,
+                commands: particle_commands,
+                debug_source: Some("RenderProjectionAdapter<ParticleEffect>".into()),
+            });
+        }
         self.push_ui_composition_pass(
             &mut graph,
             aui_composition,
@@ -1686,7 +1734,7 @@ mod tests {
                 width: 12.0,
                 height: 18.0,
             },
-            uv_rect: [0.0, 0.0, 1.0, 1.0],
+            uv_rect: [0.125, 0.25, 0.375, 0.75],
             page_index,
             render_mode,
             clipped: false,
@@ -1740,6 +1788,15 @@ mod tests {
         );
         assert!(batches.iter().all(|batch| batch.font_render_mode.is_some()));
         assert!(batches.iter().all(|batch| batch.vertices.len() == 6));
+        // Clip-space Y is up; atlas rows are down. Top vertices must sample v0,
+        // bottom vertices v1, for BOTH bitmap and MSDF. The ordering is not a flip.
+        for batch in &batches {
+            let bottom = &batch.vertices[0];
+            let top = &batch.vertices[2];
+            assert!(top.position[1].to_f32() > bottom.position[1].to_f32());
+            assert_eq!(top.uv[1].to_f32(), 0.25);
+            assert_eq!(bottom.uv[1].to_f32(), 0.75);
+        }
         assert_eq!(
             batches
                 .iter()

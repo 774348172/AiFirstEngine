@@ -120,7 +120,7 @@ pub(super) fn write_runtime_package_fixture() -> PathBuf {
   "project": {
     "projectId": "native-editor-fixture",
     "name": "Native Editor Fixture",
-    "version": "0.0.3",
+    "version": "0.1.0",
     "runtimeModule": {
       "moduleId": "engine.empty.runtime",
       "interfaceVersion": "project-runtime-module.v2",

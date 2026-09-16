@@ -7,6 +7,48 @@ const FLOOD_BYTES: usize = 1024 * 1024 + 257;
 
 fn main() {
     match std::env::args().nth(1).as_deref() {
+        Some("--semantic-playtest-worker") => {
+            let input: serde_json::Value =
+                serde_json::from_slice(&std::fs::read(required_path_argument(2)).unwrap()).unwrap();
+            match input["scenario"]["scenarioId"].as_str() {
+                Some("fixture.timeout") => {
+                    let output = required_path_argument(3);
+                    let mut descendant = Command::new(std::env::current_exe().unwrap())
+                        .arg("timeout")
+                        .stdin(Stdio::null())
+                        .stdout(Stdio::null())
+                        .stderr(Stdio::null())
+                        .spawn()
+                        .unwrap();
+                    std::fs::write(
+                        output.with_extension("ready"),
+                        serde_json::to_vec(&[std::process::id(), descendant.id()]).unwrap(),
+                    )
+                    .unwrap();
+                    println!("semantic fixture waiting for timeout");
+                    eprintln!("semantic fixture timeout first cause");
+                    std::thread::sleep(Duration::from_secs(30));
+                    let _ = descendant.kill();
+                    let _ = descendant.wait();
+                }
+                Some("fixture.no-report") => {}
+                _ => std::process::exit(23),
+            }
+        }
+        Some("semantic-owner") => {
+            let root = required_path_argument(2);
+            let scenario =
+                serde_json::from_slice(&std::fs::read(root.join("scenario.json")).unwrap())
+                    .unwrap();
+            let _ = runtime_cli::run_bounded_semantic_playtest(
+                runtime_cli::SemanticPlaytestProcessRequest {
+                    player_executable: std::env::current_exe().unwrap(),
+                    runtime_package: root.clone(),
+                    scenario,
+                    output_dir: root.join("owned-run"),
+                },
+            );
+        }
         Some("flood-success") => {
             write_flood(io::stdout().lock(), b'o');
             write_flood(io::stderr().lock(), b'e');

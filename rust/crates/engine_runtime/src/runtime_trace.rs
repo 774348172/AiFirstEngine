@@ -1,7 +1,7 @@
 use crate::gameplay_command::{GameplayCommand, GameplayCommandApplyRecord, GameplayCommandId};
 use crate::gameplay_trace::GameplayTraceRecord;
 use crate::input_action::InputTraceSummary;
-use crate::logic_executor::LogicResult;
+use crate::logic_executor::{LogicResult, LogicStatus};
 use crate::physics2d::Physics2DTraceRecord;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -53,6 +53,44 @@ impl RuntimeTrace {
         result: &LogicResult,
     ) {
         let phase = phase.into();
+        if matches!(
+            result.status,
+            LogicStatus::Failed | LogicStatus::Unsupported
+        ) || !result.errors.is_empty()
+        {
+            // One failed invocation is one failure, even if it contains several diagnostics.
+            let error = result.errors.first();
+            let location = result.failure_location.as_ref();
+            self.gameplay_records.push(GameplayTraceRecord {
+                frame_index: frame,
+                phase: phase.clone(),
+                rule_id: result.rule_id.clone(),
+                operation: if location.is_some() {
+                    "write"
+                } else {
+                    "rule_execute"
+                }
+                .into(),
+                entity_id: location.map(|l| l.entity_id.clone()),
+                component_type: location.map(|l| l.component_type.clone()),
+                field_path: location.and_then(|l| l.field_path.clone()),
+                before: None,
+                after: Some(
+                    error
+                        .map(|e| e.message.clone())
+                        .unwrap_or_else(|| "Rule execution failed without a diagnostic".into()),
+                ),
+                command_id: None,
+                source: None,
+                result: "failed".into(),
+                error_code: Some(
+                    error
+                        .map(|e| e.code)
+                        .unwrap_or("rule_execution_failed")
+                        .into(),
+                ),
+            });
+        }
         for query in &result.queries {
             self.gameplay_records.push(GameplayTraceRecord {
                 frame_index: frame,
@@ -295,4 +333,75 @@ fn command_apply_summary(record: &GameplayCommandApplyRecord) -> Option<String> 
             .unwrap_or_else(|| "none".to_string()),
         record.created_entity_count
     ))
+}
+
+#[cfg(test)]
+mod failure_tests {
+    use super::*;
+    use crate::logic_executor::{ExecutorKind, LogicStatus};
+
+    #[test]
+    fn rule_failure_is_a_gameplay_failure_even_after_a_successful_write() {
+        for has_write in [false, true] {
+            let mut result = LogicResult::failed(
+                "rule.fade",
+                ExecutorKind::RustAot,
+                "world.component.unsupported_field",
+                "Cannot write color",
+            );
+            if has_write {
+                result.writes.push(crate::logic_executor::LogicWrite {
+                    entity_id: "fx".into(),
+                    component_type: "project.lifetime".into(),
+                    field: "age".into(),
+                    before: None,
+                    after: Some("0.1".into()),
+                });
+            }
+            let mut trace = RuntimeTrace::new();
+            trace.record_logic_result(7, "Update", &result);
+            let failed: Vec<_> = trace
+                .gameplay_records
+                .iter()
+                .filter(|r| r.result != "ok")
+                .collect();
+            assert_eq!(
+                failed.len(),
+                1,
+                "rule errors must not disappear into general events"
+            );
+            assert_eq!(
+                failed[0].error_code.as_deref(),
+                Some("world.component.unsupported_field")
+            );
+            assert_eq!(failed[0].after.as_deref(), Some("Cannot write color"));
+        }
+    }
+
+    #[test]
+    fn skipped_is_not_failure_but_unsupported_and_failed_without_errors_are() {
+        let mut trace = RuntimeTrace::new();
+        trace.record_logic_result(
+            1,
+            "Update",
+            &LogicResult::skipped("disabled", ExecutorKind::RustAot),
+        );
+        assert!(trace.gameplay_records.is_empty());
+        trace.record_logic_result(
+            2,
+            "Update",
+            &LogicResult::unsupported("unsupported", ExecutorKind::RustAot),
+        );
+        let mut bare = LogicResult::applied("bare-failure", ExecutorKind::RustAot);
+        bare.status = LogicStatus::Failed;
+        trace.record_logic_result(3, "Update", &bare);
+        assert_eq!(
+            trace
+                .gameplay_records
+                .iter()
+                .filter(|r| r.result != "ok")
+                .count(),
+            2
+        );
+    }
 }

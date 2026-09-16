@@ -48,7 +48,26 @@ use std::fs;
 use std::path::PathBuf;
 use std::time::Instant;
 
+pub mod engine_dll_execution;
+pub mod semantic_outcome;
+mod semantic_playtest;
+#[cfg(all(windows, feature = "real-window"))]
+mod windows_audio;
+pub use semantic_playtest::{
+    PlaytestAssertionResult, PlaytestCaptureEvidence, SemanticPlaytestReport,
+};
+
 pub const NATIVE_WINDOW_HOST_REPORT_SCHEMA_VERSION: &str = "native-window-host-report.v1";
+
+#[cfg(any(test, feature = "real-window"))]
+const REAL_WINDOW_FRAME_INTERVAL: std::time::Duration = std::time::Duration::from_micros(16_667);
+
+#[cfg(any(test, feature = "real-window"))]
+fn frame_deadline(frame_started: Instant, frame_finished: Instant) -> Instant {
+    // Rendering (including any present wait) consumes this frame's budget.
+    // An overrun is ready immediately, without accumulating catch-up frames.
+    (frame_started + REAL_WINDOW_FRAME_INTERVAL).max(frame_finished)
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -314,6 +333,9 @@ impl NativePlayerInputScript {
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct NativePlayerInputScriptFrame {
     pub frame_index: u64,
+    /// Target-canvas pixels; replay enters after the display/DPI coordinate mapping.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub pointer_position: Option<[i32; 2]>,
     #[serde(default)]
     pub key_down: Vec<String>,
     #[serde(default)]
@@ -328,6 +350,7 @@ impl NativePlayerInputScriptFrame {
     ) -> Self {
         Self {
             frame_index,
+            pointer_position: None,
             key_down: key_down.into_iter().map(Into::into).collect(),
             key_up: key_up.into_iter().map(Into::into).collect(),
         }
@@ -684,6 +707,10 @@ pub struct NativeWindowHostReport {
     pub project_runtime_bind_receipt: Option<ProjectRuntimeBindReceipt>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub project_runtime_session_report: Option<ProjectRuntimeSessionFrameReport>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub semantic_playtest: Option<SemanticPlaytestReport>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub audio: Option<engine_runtime::runtime_audio::RuntimeAudioReport>,
     pub render_thread_report_schema: Option<String>,
     pub rhi_command_count: usize,
     pub exit_code: i32,
@@ -691,7 +718,7 @@ pub struct NativeWindowHostReport {
 }
 
 impl NativeWindowHostReport {
-    fn base(request: &NativePlayerWindowRunRequest) -> Self {
+    pub fn base(request: &NativePlayerWindowRunRequest) -> Self {
         Self {
             schema_version: NATIVE_WINDOW_HOST_REPORT_SCHEMA_VERSION.to_string(),
             run_id: "native-player-window-host".to_string(),
@@ -718,6 +745,7 @@ impl NativeWindowHostReport {
             input: NativeInputSummary::empty(),
             aui: NativeAuiPresentSummary::empty(),
             frame_performance_summary: None,
+            audio: None,
             gameplay_trace_summary: (request.runtime_report_level
                 != WindowedPlayerRuntimeReportLevel::Off)
                 .then(|| WindowedPlayerGameplayTraceSummary {
@@ -731,6 +759,7 @@ impl NativeWindowHostReport {
             gameplay_trace_records: Vec::new(),
             project_runtime_bind_receipt: None,
             project_runtime_session_report: None,
+            semantic_playtest: None,
             render_thread_report_schema: None,
             rhi_command_count: 0,
             exit_code: 1,
@@ -739,9 +768,21 @@ impl NativeWindowHostReport {
     }
 
     pub fn has_errors(&self) -> bool {
-        self.diagnostics
-            .iter()
-            .any(|diagnostic| diagnostic.severity == NativeWindowHostDiagnosticSeverity::Error)
+        self.logic_status == "error"
+            || self
+                .diagnostics
+                .iter()
+                .any(|diagnostic| diagnostic.severity == NativeWindowHostDiagnosticSeverity::Error)
+    }
+
+    fn mark_runtime_advanced(&mut self) {
+        if self.logic_status != "error" {
+            self.logic_status = "ok".into();
+        }
+    }
+
+    fn completion_exit_code(&self) -> i32 {
+        i32::from(self.has_errors() || self.present_status != NativeWindowPresentStatus::Presented)
     }
 }
 
@@ -1282,7 +1323,56 @@ fn scripted_input_events(
         .chain(frame.key_up.iter().map(|key| {
             RawInputEvent::keyboard_up(frame_index, request.config.window_id.clone(), key)
         }))
+        .chain(frame.pointer_position.map(|[x, y]| {
+            RawInputEvent::mouse_move(
+                frame_index,
+                request.config.window_id.clone(),
+                x as f32,
+                y as f32,
+            )
+        }))
         .collect()
+}
+
+fn configure_runtime_audio(host: &mut EngineHostLoop, request: &NativePlayerWindowRunRequest) {
+    let trace = request.runtime_report_level == WindowedPlayerRuntimeReportLevel::Trace;
+    #[cfg(all(windows, feature = "real-window"))]
+    if request.mode == NativePlayerWindowRunMode::Windowed {
+        host.set_audio_output(Box::<windows_audio::WindowsAudioOutput>::default(), trace);
+        return;
+    }
+    host.set_audio_output(
+        Box::<engine_runtime::runtime_audio::HeadlessAudioOutput>::default(),
+        trace,
+    );
+}
+
+fn record_runtime_audio(
+    report: &mut NativeWindowHostReport,
+    host: &EngineHostLoop,
+    level: WindowedPlayerRuntimeReportLevel,
+) {
+    let audio = host.audio_report();
+    for diagnostic in &audio.diagnostics {
+        if !report
+            .diagnostics
+            .iter()
+            .any(|old| old.code == diagnostic.code && old.path == diagnostic.entity_id)
+        {
+            let mut error = NativeWindowHostDiagnostic::error(
+                &diagnostic.code,
+                "runtime_audio",
+                &diagnostic.message,
+            );
+            error.path = diagnostic.entity_id.clone();
+            report.diagnostics.push(error);
+        }
+    }
+    if level != WindowedPlayerRuntimeReportLevel::Off
+        && (audio.source_count > 0 || audio.play_count > 0 || !audio.diagnostics.is_empty())
+    {
+        report.audio = Some(audio);
+    }
 }
 
 fn record_runtime_trace(
@@ -1290,18 +1380,47 @@ fn record_runtime_trace(
     trace: &engine_runtime::runtime_trace::RuntimeTrace,
     level: WindowedPlayerRuntimeReportLevel,
 ) {
+    if trace
+        .gameplay_records
+        .iter()
+        .any(|record| record.result != "ok")
+    {
+        report.logic_status = "error".into();
+    }
     let Some(summary) = &mut report.gameplay_trace_summary else {
         return;
     };
     for record in &trace.gameplay_records {
         summary.record_count += 1;
-        summary.write_count += usize::from(record.operation == "write");
+        summary.write_count += usize::from(record.operation == "write" && record.result == "ok");
         summary.command_enqueue_count += usize::from(record.operation == "command_enqueue");
         summary.command_apply_count += usize::from(record.operation == "command_apply");
         summary.prefab_instantiate_apply_count += usize::from(
             record.operation == "command_apply" && record.source.is_some() && record.result == "ok",
         );
         summary.failed_record_count += usize::from(record.result != "ok");
+        if record.result != "ok" {
+            if summary.failure_details.len() < 16 {
+                use engine_runtime::windowed_player::WindowedPlayerRuntimeFailure;
+                let short = |value: &str| bounded_failure_text(value, 256);
+                summary.failure_details.push(WindowedPlayerRuntimeFailure {
+                    frame_index: record.frame_index,
+                    phase: short(&record.phase),
+                    rule_id: short(&record.rule_id),
+                    operation: short(&record.operation),
+                    entity_id: record.entity_id.as_ref().map(|id| short(id.as_str())),
+                    component_type: record.component_type.as_ref().map(|ty| short(ty.as_str())),
+                    field_path: record.field_path.as_deref().map(short),
+                    error_code: record.error_code.as_deref().map(short),
+                    message: record
+                        .after
+                        .as_deref()
+                        .map(|value| bounded_failure_text(value, 1024)),
+                });
+            } else {
+                summary.omitted_failure_count += 1;
+            }
+        }
         if level == WindowedPlayerRuntimeReportLevel::Trace {
             report
                 .gameplay_trace_records
@@ -1321,6 +1440,17 @@ fn record_runtime_trace(
                 });
         }
     }
+}
+
+fn bounded_failure_text(value: &str, limit: usize) -> String {
+    if value.len() <= limit {
+        return value.to_string();
+    }
+    let mut end = limit.saturating_sub(3);
+    while !value.is_char_boundary(end) {
+        end -= 1;
+    }
+    format!("{}...", &value[..end])
 }
 
 fn summarize_frame_phase(
@@ -1392,6 +1522,7 @@ fn finalize_frame_performance(
         sample[rank] as f64 / 1_000_000.0
     };
     report.frame_performance_summary = Some(WindowedPlayerFramePerformanceSummary {
+        gpu: None,
         warmup_frames: request.performance_warmup_frames,
         requested_sample_frames: request.performance_sample_frames,
         observed_sample_frames: sample.len() as u64,
@@ -1415,6 +1546,86 @@ pub fn run_headless_native_player_from_package_with_linked_modules(
     request: NativePlayerWindowRunRequest,
     linked_modules: &LinkedProjectRuntimeSet,
 ) -> NativeWindowHostReport {
+    run_headless_native_player(request, linked_modules, None)
+}
+
+/// Cooperative in-process execution. Use runtime_cli's bounded process owner for a hard deadline.
+pub fn run_windowed_semantic_playtest_with_linked_modules(
+    mut request: NativePlayerWindowRunRequest,
+    linked_modules: std::sync::Arc<LinkedProjectRuntimeSet>,
+    scenario: semantic_outcome::PlaytestScenario,
+    capture_directory: PathBuf,
+) -> NativeWindowHostReport {
+    if scenario.target != semantic_outcome::PlaytestTarget::WindowsWindowed
+        || request.input_script.is_some()
+        || request.screenshot.enabled
+        || request.mode != NativePlayerWindowRunMode::Windowed
+    {
+        let mut report = NativeWindowHostReport::base(&request);
+        report.diagnostics.push(NativeWindowHostDiagnostic::error(
+            "playtest.request_conflict",
+            "playtest",
+            "Windowed scenario owns input and capture requests.",
+        ));
+        return report;
+    }
+    request.frame_limit = scenario
+        .max_presentation_frames
+        .min(semantic_outcome::MAX_PLAYTEST_FRAMES);
+    request.input_script = Some(semantic_playtest::SemanticPlaytest::input_script(&scenario));
+    #[cfg(feature = "real-window")]
+    {
+        real_window::run_windowed_controlled(
+            request,
+            linked_modules,
+            Some((scenario, capture_directory)),
+        )
+    }
+    #[cfg(not(feature = "real-window"))]
+    {
+        let _ = (linked_modules, capture_directory);
+        let mut report = NativeWindowHostReport::base(&request);
+        report.diagnostics.push(NativeWindowHostDiagnostic::error(
+            "playtest.target_unsupported",
+            "playtest",
+            "Player was built without real-window.",
+        ));
+        report
+    }
+}
+
+/// Cooperative in-process execution. Use runtime_cli's bounded process owner for a hard deadline.
+pub fn run_headless_semantic_playtest_with_linked_modules(
+    mut request: NativePlayerWindowRunRequest,
+    linked_modules: &LinkedProjectRuntimeSet,
+    scenario: semantic_outcome::PlaytestScenario,
+) -> NativeWindowHostReport {
+    if scenario.target != semantic_outcome::PlaytestTarget::WindowsHeadless
+        || request.input_script.is_some()
+        || request.screenshot.enabled
+        || request.mode != NativePlayerWindowRunMode::HeadlessSurfaceGate
+    {
+        let mut report = NativeWindowHostReport::base(&request);
+        report.diagnostics.push(NativeWindowHostDiagnostic::error(
+            "playtest.request_conflict",
+            "playtest",
+            "Scenario owns input/capture requests and requires a headless request.",
+        ));
+        return report;
+    }
+    request.frame_limit = scenario
+        .max_presentation_frames
+        .min(semantic_outcome::MAX_PLAYTEST_FRAMES);
+    request.input_script = Some(semantic_playtest::SemanticPlaytest::input_script(&scenario));
+    run_headless_native_player(request, linked_modules, Some(scenario))
+}
+
+fn run_headless_native_player(
+    request: NativePlayerWindowRunRequest,
+    linked_modules: &LinkedProjectRuntimeSet,
+    scenario: Option<semantic_outcome::PlaytestScenario>,
+) -> NativeWindowHostReport {
+    let playtest_started = Instant::now();
     let mut report = NativeWindowHostReport::base(&request);
     report.window_status = "headless".to_string();
     report.surface_status = "headless_surface".to_string();
@@ -1446,6 +1657,12 @@ pub fn run_headless_native_player_from_package_with_linked_modules(
     report.aui.package_document_count = package.aui_manifest.documents.len();
     report.aui.loaded_document_count = package.aui_documents.len();
 
+    if let Some(scenario) = scenario.as_ref() {
+        if let Err(error) = semantic_playtest::SemanticPlaytest::validate(scenario, &package) {
+            report.diagnostics.push(error);
+            return report;
+        }
+    }
     let bound_runtime = match ProjectRuntimeBootstrap::bind(&package, linked_modules) {
         Ok(bound_runtime) => bound_runtime,
         Err(error) => {
@@ -1465,6 +1682,29 @@ pub fn run_headless_native_player_from_package_with_linked_modules(
         bound_runtime.into_parts(),
     );
     report.project_runtime_bind_receipt = Some(receipt);
+
+    configure_runtime_audio(&mut host, &request);
+    let mut playtest = match scenario
+        .map(|scenario| {
+            semantic_playtest::SemanticPlaytest::new(
+                scenario,
+                &package,
+                &report
+                    .project_runtime_bind_receipt
+                    .as_ref()
+                    .unwrap()
+                    .session_id,
+                playtest_started,
+            )
+        })
+        .transpose()
+    {
+        Ok(playtest) => playtest,
+        Err(error) => {
+            report.diagnostics.push(error);
+            return report;
+        }
+    };
 
     let Some((mut world, mut hydrator)) = hydrate_active_scene_for_player(&package, &mut report)
     else {
@@ -1497,8 +1737,20 @@ pub fn run_headless_native_player_from_package_with_linked_modules(
     let mut frame_render_submit_ns = Vec::with_capacity(request.frame_limit as usize);
     let mut frame_present_wait_ns = Vec::with_capacity(request.frame_limit as usize);
     for frame_index in 0..request.frame_limit {
+        if playtest
+            .as_mut()
+            .is_some_and(|playtest| playtest.should_stop(&mut report))
+        {
+            break;
+        }
         let frame_started = Instant::now();
-        let scripted_events = scripted_input_events(&request, frame_index + 1);
+        let scripted_events = if let Some(playtest) = &mut playtest {
+            playtest
+                .next_input_tick()
+                .map_or_else(Vec::new, |tick| scripted_input_events(&request, tick))
+        } else {
+            scripted_input_events(&request, frame_index + 1)
+        };
         let mut aui_present = aui_present_cache.take_or_rebuild(
             &package,
             &world,
@@ -1540,6 +1792,9 @@ pub fn run_headless_native_player_from_package_with_linked_modules(
             .with_action_snapshot(action_snapshot)
             .with_input_trace_summary(input_trace_summary)
             .with_runtime_texture_bindings(runtime_texture_bindings.clone());
+        if playtest.is_some() {
+            frame_input = frame_input.with_fixed_step_count(1);
+        }
         if let Some(aui_present) = aui_present.as_ref() {
             report.aui = NativeAuiPresentSummary::from_present_output(
                 &package,
@@ -1570,6 +1825,10 @@ pub fn run_headless_native_player_from_package_with_linked_modules(
             },
         );
         report.project_runtime_session_report = output.project_runtime_session_report.clone();
+        record_runtime_audio(&mut report, &host, request.runtime_report_level);
+        if let Some(playtest) = &mut playtest {
+            playtest.sample(&output, &mut report);
+        }
         frame_update_ns.push(frame_started.elapsed().as_nanos().min(u128::from(u64::MAX)) as u64);
         let render_started = Instant::now();
         record_runtime_trace(
@@ -1578,7 +1837,7 @@ pub fn run_headless_native_player_from_package_with_linked_modules(
             request.runtime_report_level,
         );
         if output.runtime_advanced {
-            report.logic_status = "ok".to_string();
+            report.mark_runtime_advanced();
         }
         if output.render_frame_report.is_some() {
             report.render_status = "ok".to_string();
@@ -1628,15 +1887,14 @@ pub fn run_headless_native_player_from_package_with_linked_modules(
     report.rhi_command_count = last_rhi_command_count;
     report.surface =
         NativeSurfaceState::headless_presented(&request.config, report.frames_completed);
-    if report.logic_status == "ok" && report.render_status == "ok" && report.rhi_status == "ok" {
+    if report.render_status == "ok" && report.rhi_status == "ok" {
         report.present_status = NativeWindowPresentStatus::Presented;
     }
-    report.exit_code =
-        if report.has_errors() || report.present_status != NativeWindowPresentStatus::Presented {
-            1
-        } else {
-            0
-        };
+    report.exit_code = report.completion_exit_code();
+    if let Some(mut playtest) = playtest {
+        playtest.should_stop(&mut report);
+        playtest.finish(&mut report);
+    }
     report
 }
 
@@ -1648,6 +1906,24 @@ fn runtime_sprite_texture_asset_ids(package: &RuntimePackage) -> BTreeSet<String
         .filter_map(|entity| entity.sprite_renderer2d.as_ref())
         .filter_map(|renderer| renderer.sprite_ref.as_ref())
         .map(|asset| asset.id.clone())
+        .chain(
+            package
+                .assets
+                .assets
+                .iter()
+                .filter(|asset| asset.asset_type == "prefab")
+                .filter_map(|asset| asset.data.as_ref())
+                .filter_map(|data| {
+                    serde_json::from_value::<engine_runtime::runtime_package::RuntimePrefabData>(
+                        data.get("prefab").unwrap_or(data).clone(),
+                    )
+                    .ok()
+                })
+                .flat_map(|prefab| prefab.entities)
+                .filter_map(|entity| entity.sprite_renderer2d)
+                .filter_map(|renderer| renderer.sprite_ref)
+                .map(|asset| asset.id),
+        )
         .chain(
             package
                 .animator2d_registry
@@ -2261,7 +2537,6 @@ mod real_window {
     };
     use engine_runtime::sprite2d_render_pipeline::Sprite2DTextureBindingContext;
     use std::sync::Arc;
-    use std::time::Duration;
     use winit::application::ApplicationHandler;
     use winit::event::{ElementState, Ime, MouseButton, MouseScrollDelta, TouchPhase, WindowEvent};
     use winit::event_loop::{ActiveEventLoop, ControlFlow, EventLoop};
@@ -2273,18 +2548,24 @@ mod real_window {
     #[cfg(target_os = "windows")]
     use winit::raw_window_handle::{HasWindowHandle, RawWindowHandle};
 
-    const REAL_WINDOW_FRAME_INTERVAL: Duration = Duration::from_micros(16_667);
-
     #[cfg(not(target_os = "android"))]
     pub fn run_windowed(
         request: NativePlayerWindowRunRequest,
         linked_modules: Arc<LinkedProjectRuntimeSet>,
     ) -> NativeWindowHostReport {
+        run_windowed_controlled(request, linked_modules, None)
+    }
+
+    pub(super) fn run_windowed_controlled(
+        request: NativePlayerWindowRunRequest,
+        linked_modules: Arc<LinkedProjectRuntimeSet>,
+        semantic: Option<(semantic_outcome::PlaytestScenario, PathBuf)>,
+    ) -> NativeWindowHostReport {
         #[cfg(target_os = "windows")]
         let event_loop_result = EventLoop::builder().with_any_thread(true).build();
         #[cfg(not(target_os = "windows"))]
         let event_loop_result = EventLoop::new();
-        run_event_loop(event_loop_result, request, linked_modules)
+        run_event_loop(event_loop_result, request, linked_modules, semantic)
     }
 
     #[cfg(target_os = "android")]
@@ -2294,19 +2575,20 @@ mod real_window {
         linked_modules: Arc<LinkedProjectRuntimeSet>,
     ) -> NativeWindowHostReport {
         let event_loop_result = EventLoop::builder().with_android_app(android_app).build();
-        run_event_loop(event_loop_result, request, linked_modules)
+        run_event_loop(event_loop_result, request, linked_modules, None)
     }
 
     fn run_event_loop(
         event_loop_result: Result<EventLoop<()>, winit::error::EventLoopError>,
         request: NativePlayerWindowRunRequest,
         linked_modules: Arc<LinkedProjectRuntimeSet>,
+        semantic: Option<(semantic_outcome::PlaytestScenario, PathBuf)>,
     ) -> NativeWindowHostReport {
         let event_loop = match event_loop_result {
             Ok(event_loop) => event_loop,
             Err(error) => return environment_blocked_report(request, error.to_string()),
         };
-        let mut app = RealWindowApp::new(request, linked_modules);
+        let mut app = RealWindowApp::new(request, linked_modules, semantic);
         match event_loop.run_app(&mut app) {
             Ok(()) => app.report.unwrap_or_else(|| {
                 environment_blocked_report(app.request, "window report missing")
@@ -2316,6 +2598,7 @@ mod real_window {
     }
 
     struct RealWindowApp {
+        semantic: Option<(semantic_outcome::PlaytestScenario, PathBuf)>,
         request: NativePlayerWindowRunRequest,
         host: Option<RealWindowHost>,
         report: Option<NativeWindowHostReport>,
@@ -2330,8 +2613,10 @@ mod real_window {
         fn new(
             request: NativePlayerWindowRunRequest,
             linked_modules: Arc<LinkedProjectRuntimeSet>,
+            semantic: Option<(semantic_outcome::PlaytestScenario, PathBuf)>,
         ) -> Self {
             Self {
+                semantic,
                 request,
                 host: None,
                 report: None,
@@ -2361,6 +2646,7 @@ mod real_window {
                 event_loop,
                 self.request.clone(),
                 Arc::clone(&self.linked_modules),
+                self.semantic.clone(),
             ) {
                 Ok(host) => {
                     host.window.request_redraw();
@@ -2388,10 +2674,11 @@ mod real_window {
             match event {
                 WindowEvent::RedrawRequested => {
                     if let Some(host) = &mut self.host {
+                        let frame_started = Instant::now();
                         let raw_input = std::mem::take(&mut self.pending_raw_input);
                         match host.present_next_frame(raw_input) {
                             RealWindowFrameAdvance::Continue => {
-                                self.next_redraw_at = Instant::now() + REAL_WINDOW_FRAME_INTERVAL;
+                                self.next_redraw_at = frame_deadline(frame_started, Instant::now());
                             }
                             RealWindowFrameAdvance::Complete => {
                                 self.report = Some(host.finish(false));
@@ -2550,6 +2837,8 @@ mod real_window {
     }
 
     struct RealWindowHost {
+        semantic: Option<(semantic_outcome::PlaytestScenario, PathBuf)>,
+        playtest: Option<semantic_playtest::SemanticPlaytest>,
         request: NativePlayerWindowRunRequest,
         window: Arc<winit::window::Window>,
         surface: wgpu::Surface<'static>,
@@ -2573,6 +2862,7 @@ mod real_window {
             event_loop: &ActiveEventLoop,
             request: NativePlayerWindowRunRequest,
             linked_modules: Arc<LinkedProjectRuntimeSet>,
+            semantic: Option<(semantic_outcome::PlaytestScenario, PathBuf)>,
         ) -> Result<Self, String> {
             let attributes = winit::window::Window::default_attributes()
                 .with_title(request.config.title.clone())
@@ -2615,29 +2905,40 @@ mod real_window {
                 }))
                 .map_err(|error| format!("surface.request_adapter_failed:{error}"))?;
             let backend_name = format!("{:?}", adapter.get_info().backend);
-            let (device, queue) = pollster::block_on(
-                adapter.request_device(&wgpu::DeviceDescriptor {
+            let (device, queue) =
+                pollster::block_on(adapter.request_device(&wgpu::DeviceDescriptor {
                     label: Some("runtime-player-wgpu-device"),
-                    required_features: wgpu::Features::empty(),
-                    required_limits: wgpu::Limits::downlevel_webgl2_defaults()
-                        .using_resolution(adapter.limits()),
+                    required_features: engine_runtime::gpu_frame_measurement::features(
+                        adapter.features(),
+                        request.performance_sample_frames > 0,
+                    ),
+                    required_limits: engine_runtime::particle_gpu::renderer_device_limits(
+                        adapter.limits(),
+                    ),
                     memory_hints: wgpu::MemoryHints::Performance,
                     trace: wgpu::Trace::Off,
-                }),
-            )
-            .map_err(|error| format!("surface.request_device_failed:{error}"))?;
+                }))
+                .map_err(|error| format!("surface.request_device_failed:{error}"))?;
             let surface_config = surface
                 .get_default_config(&adapter, size.width, size.height)
                 .ok_or_else(|| "surface.default_config_unavailable".to_string())?;
             surface.configure(&device, &surface_config);
-            let backend = engine_runtime::wgpu_backend::real::RealWgpuBackend::from_device_queue(
-                device.clone(),
-                queue,
-                surface_config.format,
-                size.width,
-                size.height,
-                backend_name.clone(),
-            );
+            let mut backend =
+                engine_runtime::wgpu_backend::real::RealWgpuBackend::from_device_queue(
+                    device.clone(),
+                    queue,
+                    surface_config.format,
+                    size.width,
+                    size.height,
+                    backend_name.clone(),
+                );
+            if request.performance_sample_frames > 0 {
+                backend.enable_frame_measurement(
+                    &adapter.get_info(),
+                    request.performance_warmup_frames,
+                    request.performance_sample_frames,
+                )?;
+            }
             let mut report = NativeWindowHostReport::base(&request);
             report.diagnostics.push(NativeWindowHostDiagnostic {
                 severity: NativeWindowHostDiagnosticSeverity::Info,
@@ -2647,6 +2948,8 @@ mod real_window {
                 path: None,
             });
             Ok(Self {
+                semantic,
+                playtest: None,
                 request,
                 window,
                 surface,
@@ -2720,6 +3023,14 @@ mod real_window {
             self.report.package_status = "ok".to_string();
             self.report.aui.package_document_count = package.aui_manifest.documents.len();
             self.report.aui.loaded_document_count = package.aui_documents.len();
+            if let Some((scenario, _)) = &self.semantic {
+                if let Err(error) =
+                    semantic_playtest::SemanticPlaytest::validate(scenario, &package)
+                {
+                    self.report.diagnostics.push(error);
+                    return false;
+                }
+            }
             let (sprite_texture_bindings, runtime_texture_bindings) =
                 match prepare_real_gpu_resources(&mut self.backend, &package) {
                     Ok(bindings) => bindings,
@@ -2757,6 +3068,21 @@ mod real_window {
                 bound_runtime.into_parts(),
             );
             host.set_game_view_target(self.request.game_view_target);
+            configure_runtime_audio(&mut host, &self.request);
+            if let Some((scenario, _)) = &self.semantic {
+                match semantic_playtest::SemanticPlaytest::new(
+                    scenario.clone(),
+                    &package,
+                    &receipt.session_id,
+                    Instant::now(),
+                ) {
+                    Ok(playtest) => self.playtest = Some(playtest),
+                    Err(error) => {
+                        self.report.diagnostics.push(error);
+                        return false;
+                    }
+                }
+            }
             self.input_mapping = Some(input_mapping);
             self.report.project_runtime_bind_receipt = Some(receipt);
             let Some((world, hydrator)) =
@@ -2786,6 +3112,13 @@ mod real_window {
             if !self.ensure_session() {
                 return RealWindowFrameAdvance::Complete;
             }
+            if self
+                .playtest
+                .as_mut()
+                .is_some_and(|p| p.should_stop(&mut self.report))
+            {
+                return RealWindowFrameAdvance::Complete;
+            }
             let frame_index = self.report.frames_completed.saturating_add(1);
             if frame_index > self.request.frame_limit {
                 return RealWindowFrameAdvance::Complete;
@@ -2800,7 +3133,13 @@ mod real_window {
                 .session
                 .as_mut()
                 .expect("successful session initialization stores runtime state");
-            let mut input_events = scripted_input_events(&self.request, frame_index);
+            let mut input_events = if let Some(playtest) = &mut self.playtest {
+                playtest
+                    .next_input_tick()
+                    .map_or_else(Vec::new, |tick| scripted_input_events(&self.request, tick))
+            } else {
+                scripted_input_events(&self.request, frame_index)
+            };
             let canvas_references = session
                 .package
                 .aui_manifest
@@ -2856,7 +3195,9 @@ mod real_window {
             );
             let mut raw_input = raw_input;
             map_display_pointer_events_to_target(&mut raw_input, presentation.as_ref());
-            input_events.extend(raw_input);
+            if self.playtest.is_none() {
+                input_events.extend(raw_input);
+            }
             let (action_snapshot, input_trace_summary, input_summary, aui_interaction) =
                 resolve_native_input_frame_with_aui(
                     &mut self.input_device_state,
@@ -2879,6 +3220,9 @@ mod real_window {
             let mut frame_input = EngineFrameInput::new(EngineHostMode::ExportedGame)
                 .with_action_snapshot(action_snapshot)
                 .with_input_trace_summary(input_trace_summary);
+            if self.playtest.is_some() {
+                frame_input = frame_input.with_fixed_step_count(1);
+            }
             if let Some(aui_present) = aui_present.as_ref() {
                 self.report.aui = NativeAuiPresentSummary::from_present_output(
                     &session.package,
@@ -2914,6 +3258,14 @@ mod real_window {
             );
             self.report.project_runtime_session_report =
                 output.project_runtime_session_report.clone();
+            record_runtime_audio(
+                &mut self.report,
+                &session.host,
+                self.request.runtime_report_level,
+            );
+            if let Some(playtest) = &mut self.playtest {
+                playtest.sample(&output, &mut self.report);
+            }
             self.frame_update_ns
                 .push(frame_started.elapsed().as_nanos().min(u128::from(u64::MAX)) as u64);
             let render_started = Instant::now();
@@ -2923,7 +3275,7 @@ mod real_window {
                 self.request.runtime_report_level,
             );
             if output.runtime_advanced {
-                self.report.logic_status = "ok".to_string();
+                self.report.mark_runtime_advanced();
             }
             if output.render_frame_report.is_some() {
                 self.report.render_status = "ok".to_string();
@@ -2969,11 +3321,19 @@ mod real_window {
                     surface_texture
                 }
                 Err(wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated) => {
+                    if let Some(playtest) = &mut self.playtest {
+                        playtest.presentation_failed(&mut self.report);
+                        return RealWindowFrameAdvance::Complete;
+                    }
                     let size = self.window.inner_size();
                     self.resize_surface(size.width, size.height);
                     return RealWindowFrameAdvance::Continue;
                 }
                 Err(wgpu::SurfaceError::Timeout) => {
+                    if let Some(playtest) = &mut self.playtest {
+                        playtest.presentation_failed(&mut self.report);
+                        return RealWindowFrameAdvance::Complete;
+                    }
                     self.report.surface.last_error = Some("surface.acquire_timeout".to_string());
                     return RealWindowFrameAdvance::Continue;
                 }
@@ -3039,6 +3399,35 @@ mod real_window {
                 "ok".to_string()
             };
             self.report.frames_completed += 1;
+            if let Some(playtest) = &mut self.playtest {
+                if self.report.rhi_status != "ok" {
+                    playtest.presentation_failed(&mut self.report);
+                }
+                if let Some(capture_id) = playtest.capture_at(frame_index) {
+                    let directory = &self.semantic.as_ref().unwrap().1;
+                    let path = directory.join(format!("capture-{frame_index}.png"));
+                    let capture_request = self.request.clone().with_screenshot(path);
+                    if u64::from(size.width) * u64::from(size.height) > 4 * 1024 * 1024 {
+                        self.report
+                            .screenshot
+                            .mark_failed(NativeWindowScreenshotStatus::ReadbackFailed);
+                    } else {
+                        self.report.screenshot = NativeWindowScreenshotReport::from_request(
+                            &capture_request.screenshot,
+                            &capture_request.config,
+                        );
+                        capture_screenshot(
+                            &mut self.backend,
+                            &render_thread.renderer_output.rhi_command_plan,
+                            &capture_request,
+                            &mut self.report,
+                            size.width,
+                            size.height,
+                        );
+                    }
+                    playtest.record_capture(capture_id, frame_index, &self.report);
+                }
+            }
             self.frame_render_submit_ns
                 .push(render_prepare_ns.saturating_add(submit_ns));
             self.frame_present_wait_ns
@@ -3066,6 +3455,10 @@ mod real_window {
                 &self.frame_render_submit_ns,
                 &self.frame_present_wait_ns,
             );
+            let gpu = self.backend.finish_frame_measurement();
+            if let Some(summary) = &mut self.report.frame_performance_summary {
+                summary.gpu = gpu;
+            }
             if self.report.present_status == NativeWindowPresentStatus::NotPresented {
                 self.report.present_status =
                     if self.report.frames_completed > 0 && self.report.rhi_status == "ok" {
@@ -3074,12 +3467,14 @@ mod real_window {
                         NativeWindowPresentStatus::RhiFailed
                     };
             }
-            self.report.exit_code =
-                if self.report.present_status == NativeWindowPresentStatus::Presented {
-                    0
-                } else {
-                    1
-                };
+            self.report.exit_code = self.report.completion_exit_code();
+            if let Some(mut playtest) = self.playtest.take() {
+                if close_requested {
+                    playtest.presentation_failed(&mut self.report);
+                }
+                playtest.should_stop(&mut self.report);
+                playtest.finish(&mut self.report);
+            }
             self.report.clone()
         }
 
@@ -3162,6 +3557,7 @@ mod real_window {
             );
             self.input_mapping = Some(input_mapping);
             report.project_runtime_bind_receipt = Some(receipt);
+            configure_runtime_audio(&mut host, &self.request);
             let Some((mut world, mut hydrator)) =
                 hydrate_active_scene_for_player(&package, &mut report)
             else {
@@ -3243,6 +3639,7 @@ mod real_window {
                 );
                 report.project_runtime_session_report =
                     output.project_runtime_session_report.clone();
+                record_runtime_audio(&mut report, &host, self.request.runtime_report_level);
                 frame_update_ns
                     .push(frame_started.elapsed().as_nanos().min(u128::from(u64::MAX)) as u64);
                 let render_started = Instant::now();
@@ -3252,7 +3649,7 @@ mod real_window {
                     self.request.runtime_report_level,
                 );
                 if output.runtime_advanced {
-                    report.logic_status = "ok".to_string();
+                    report.mark_runtime_advanced();
                 }
                 if output.render_frame_report.is_some() {
                     report.render_status = "ok".to_string();
@@ -3359,11 +3756,7 @@ mod real_window {
             } else {
                 NativeWindowPresentStatus::RhiFailed
             };
-            report.exit_code = if report.present_status == NativeWindowPresentStatus::Presented {
-                0
-            } else {
-                1
-            };
+            report.exit_code = report.completion_exit_code();
             report
         }
     }
@@ -3570,13 +3963,7 @@ mod real_window {
             ));
         }
         for upload in registry.uploads() {
-            backend.register_rgba8_texture(
-                upload.handle,
-                upload.payload.width,
-                upload.payload.height,
-                &upload.payload.rgba8,
-                &upload.payload.sampler,
-            )?;
+            backend.register_cooked_texture(upload.handle, &upload.payload)?;
         }
         let runtime_bindings = registry.binding_context();
         let mut bindings = Sprite2DTextureBindingContext::new();
@@ -3791,6 +4178,31 @@ mod real_window {
 mod tests {
     use super::*;
 
+    #[test]
+    fn frame_deadline_waits_only_for_unused_frame_budget() {
+        let started = Instant::now();
+        let finished = started + std::time::Duration::from_micros(10_000);
+        assert_eq!(
+            frame_deadline(started, finished).duration_since(finished),
+            std::time::Duration::from_micros(6_667)
+        );
+    }
+
+    #[test]
+    fn frame_deadline_overrun_is_ready_without_wait_or_catch_up_debt() {
+        let started = Instant::now();
+        for elapsed_us in [16_667, 35_000, 5_000_000] {
+            let finished = started + std::time::Duration::from_micros(elapsed_us);
+            assert_eq!(frame_deadline(started, finished), finished);
+            let next_finished = finished + std::time::Duration::from_micros(1_000);
+            assert_eq!(
+                frame_deadline(finished, next_finished).duration_since(next_finished),
+                std::time::Duration::from_micros(15_667)
+            );
+        }
+    }
+
+    #[cfg(feature = "real-window")]
     #[test]
     fn player_wgpu_backends_uses_gl_only_for_android_x86_64() {
         assert_eq!(
@@ -4063,9 +4475,43 @@ mod tests {
         )
         .expect("Animator2D fixture registry");
 
+        let mut prefab_entity = package.active_scene.entities[0].clone();
+        prefab_entity
+            .sprite_renderer2d
+            .as_mut()
+            .unwrap()
+            .sprite_ref
+            .as_mut()
+            .unwrap()
+            .id = "prefab-only-texture".to_string();
+        package
+            .assets
+            .assets
+            .push(engine_runtime::runtime_package::RuntimeAsset {
+                id: "prefab-only".to_string(),
+                name: "Prefab".to_string(),
+                asset_type: "prefab".to_string(),
+                source: String::new(),
+                state: "available".to_string(),
+                bundle_id: "startup".to_string(),
+                data: Some(
+                    serde_json::to_value(engine_runtime::runtime_package::RuntimePrefabData {
+                        schema_version: "runtime-prefab.v1".to_string(),
+                        id: "prefab-only".to_string(),
+                        name: "Prefab".to_string(),
+                        root_entity_id: Some(prefab_entity.id.clone()),
+                        entities: vec![prefab_entity],
+                    })
+                    .unwrap(),
+                ),
+            });
         let asset_ids = runtime_sprite_texture_asset_ids(&package);
 
-        assert_eq!(asset_ids.len(), 3);
+        assert!(
+            asset_ids.contains("prefab-only-texture"),
+            "runtime-spawned prefab textures must be resident before their first frame"
+        );
+        assert_eq!(asset_ids.len(), 4);
         assert!(asset_ids.contains("enemy-idle"));
         assert!(asset_ids.contains("enemy-move-0"));
         assert!(asset_ids.contains("enemy-move-1"));
@@ -4111,6 +4557,307 @@ mod tests {
             report.screenshot.path.as_deref(),
             Some("reports/screenshot.png")
         );
+    }
+
+    struct UnavailableAudioOutput {
+        prepare_calls: std::sync::Arc<std::sync::atomic::AtomicUsize>,
+    }
+
+    impl engine_runtime::runtime_audio::AudioOutput for UnavailableAudioOutput {
+        fn kind(&self) -> &'static str {
+            "test-unavailable-output"
+        }
+
+        fn prepare(&mut self) -> Result<(), String> {
+            self.prepare_calls
+                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            Err("test audio device is unavailable".into())
+        }
+
+        fn play(
+            &mut self,
+            _: engine_runtime::ids::RuntimeEntityId,
+            _: std::sync::Arc<engine_runtime::audio::DecodedAudioClip>,
+            _: f32,
+            _: bool,
+        ) -> Result<(), String> {
+            panic!("failed device preparation must prevent playback")
+        }
+
+        fn stop(&mut self, _: engine_runtime::ids::RuntimeEntityId) {}
+
+        fn set_paused(&mut self, _: engine_runtime::ids::RuntimeEntityId, _: bool) {}
+
+        fn finished(&self, _: engine_runtime::ids::RuntimeEntityId) -> bool {
+            false
+        }
+    }
+
+    #[test]
+    fn audio_device_failure_reaches_completion_diagnostics_even_when_reports_are_off() {
+        use engine_runtime::archetype::ComponentValue;
+        use engine_runtime::components::{ComponentTypeId, Hierarchy};
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        use std::sync::Arc;
+
+        let mut world = World::new();
+        let source_id = engine_runtime::ids::EntityId::from("speaker");
+        world
+            .try_spawn_entity(
+                source_id.clone(),
+                "Speaker",
+                "audio",
+                true,
+                Hierarchy {
+                    parent_id: None,
+                    sibling_order: 0,
+                },
+            )
+            .unwrap();
+        world
+            .try_insert_component_value(
+                source_id,
+                ComponentTypeId::audio_source(),
+                ComponentValue::AudioSource(engine_runtime::audio::AudioSource {
+                    clip_ref: engine_runtime::runtime_package::RuntimeAssetRef {
+                        id: "audio-test".into(),
+                        asset_type: "audio".into(),
+                        guid: None,
+                        sub_asset: None,
+                    },
+                    volume: 0.5,
+                }),
+            )
+            .unwrap();
+        let prepare_calls = Arc::new(AtomicUsize::new(0));
+        let mut host = EngineHostLoop::new("audio-failure-report");
+        host.set_audio_output(
+            Box::new(UnavailableAudioOutput {
+                prepare_calls: prepare_calls.clone(),
+            }),
+            false,
+        );
+        host.tick(
+            EngineFrameInput::new(EngineHostMode::HeadlessServer).with_fixed_step_count(0),
+            &mut world,
+        );
+        assert_eq!(prepare_calls.load(Ordering::SeqCst), 1);
+
+        for level in [
+            WindowedPlayerRuntimeReportLevel::Off,
+            WindowedPlayerRuntimeReportLevel::Summary,
+        ] {
+            let request = NativePlayerWindowRunRequest::headless_surface_gate("package")
+                .with_runtime_report_level(level);
+            let mut report = NativeWindowHostReport::base(&request);
+            report.present_status = NativeWindowPresentStatus::Presented;
+            report.mark_runtime_advanced();
+            assert!(!report.has_errors());
+            record_runtime_audio(&mut report, &host, level);
+            record_runtime_audio(&mut report, &host, level);
+            assert!(report.has_errors());
+            assert_eq!(report.completion_exit_code(), 1);
+            assert_eq!(report.diagnostics.len(), 1);
+            assert_eq!(report.diagnostics[0].code, "audio.output_unavailable");
+            assert_eq!(report.diagnostics[0].layer, "runtime_audio");
+            assert_eq!(
+                report.diagnostics[0].message,
+                "test audio device is unavailable"
+            );
+            assert_eq!(
+                report.audio.is_some(),
+                level != WindowedPlayerRuntimeReportLevel::Off
+            );
+            report.mark_runtime_advanced();
+            assert_eq!(report.completion_exit_code(), 1);
+        }
+    }
+
+    #[test]
+    fn audio_absent_project_does_not_prepare_a_device_or_emit_an_audio_report() {
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        use std::sync::Arc;
+        let prepare_calls = Arc::new(AtomicUsize::new(0));
+        let mut host = EngineHostLoop::new("no-audio-report");
+        host.set_audio_output(
+            Box::new(UnavailableAudioOutput {
+                prepare_calls: prepare_calls.clone(),
+            }),
+            false,
+        );
+        host.tick(
+            EngineFrameInput::new(EngineHostMode::HeadlessServer).with_fixed_step_count(0),
+            &mut World::new(),
+        );
+        assert_eq!(prepare_calls.load(Ordering::SeqCst), 0);
+        let request = NativePlayerWindowRunRequest::headless_surface_gate("package")
+            .with_runtime_report_level(WindowedPlayerRuntimeReportLevel::Summary);
+        let mut report = NativeWindowHostReport::base(&request);
+        record_runtime_audio(
+            &mut report,
+            &host,
+            WindowedPlayerRuntimeReportLevel::Summary,
+        );
+        report.present_status = NativeWindowPresentStatus::Presented;
+        assert!(!report.has_errors());
+        assert!(report.diagnostics.is_empty());
+        assert!(report.audio.is_none());
+        assert!(serde_json::to_value(&report)
+            .unwrap()
+            .get("audio")
+            .is_none());
+        assert_eq!(report.completion_exit_code(), 0);
+    }
+
+    #[test]
+    fn summary_reports_rule_failure_and_off_still_marks_logic_error() {
+        use engine_runtime::logic_executor::{ExecutorKind, LogicResult};
+        for level in [
+            WindowedPlayerRuntimeReportLevel::Off,
+            WindowedPlayerRuntimeReportLevel::Summary,
+        ] {
+            let request = NativePlayerWindowRunRequest::headless_surface_gate("runtime-package")
+                .with_runtime_report_level(level);
+            let mut report = NativeWindowHostReport::base(&request);
+            let mut trace = engine_runtime::runtime_trace::RuntimeTrace::new();
+            let mut failure = LogicResult::failed(
+                "rule.fade",
+                ExecutorKind::RustAot,
+                "world.component.unsupported_field",
+                "color is not writable",
+            );
+            failure.failure_location = Some(engine_runtime::logic_executor::LogicFailureLocation {
+                entity_id: "fx".into(),
+                component_type: "engine.sprite_renderer2d".into(),
+                field_path: Some("color".into()),
+            });
+            trace.record_logic_result(9, "Update", &failure);
+            record_runtime_trace(&mut report, &trace, level);
+            assert_eq!(report.logic_status, "error");
+            if level == WindowedPlayerRuntimeReportLevel::Summary {
+                assert_eq!(
+                    report
+                        .gameplay_trace_summary
+                        .as_ref()
+                        .unwrap()
+                        .failed_record_count,
+                    1
+                );
+                let summary = report.gameplay_trace_summary.as_ref().unwrap();
+                assert_eq!(
+                    summary.write_count, 0,
+                    "failed writes are not successful writes"
+                );
+                assert_eq!(summary.failure_details[0].entity_id.as_deref(), Some("fx"));
+                assert_eq!(
+                    summary.failure_details[0].field_path.as_deref(),
+                    Some("color")
+                );
+            } else {
+                assert!(report.gameplay_trace_summary.is_none());
+            }
+            assert!(report.gameplay_trace_records.is_empty());
+            report.mark_runtime_advanced();
+            record_runtime_trace(
+                &mut report,
+                &engine_runtime::runtime_trace::RuntimeTrace::new(),
+                level,
+            );
+            assert_eq!(
+                report.logic_status, "error",
+                "later successful frames cannot clear failures"
+            );
+            report.present_status = NativeWindowPresentStatus::Presented;
+            assert_eq!(
+                report.completion_exit_code(),
+                1,
+                "presenting does not mean gameplay succeeded"
+            );
+        }
+    }
+
+    #[test]
+    fn summary_keeps_bounded_failure_details_and_reads_old_reports() {
+        use engine_runtime::logic_executor::{ExecutorKind, LogicResult};
+        let request = NativePlayerWindowRunRequest::headless_surface_gate("package")
+            .with_runtime_report_level(WindowedPlayerRuntimeReportLevel::Summary);
+        let mut report = NativeWindowHostReport::base(&request);
+        let mut trace = engine_runtime::runtime_trace::RuntimeTrace::new();
+        for frame in 1..=20 {
+            trace.record_logic_result(
+                frame,
+                "Update",
+                &LogicResult::failed(
+                    "rule.fade",
+                    ExecutorKind::RustAot,
+                    "world.component.unsupported_field",
+                    "错误".repeat(2000),
+                ),
+            );
+        }
+        record_runtime_trace(
+            &mut report,
+            &trace,
+            WindowedPlayerRuntimeReportLevel::Summary,
+        );
+        let summary = report.gameplay_trace_summary.unwrap();
+        assert_eq!(summary.failed_record_count, 20);
+        assert_eq!(summary.failure_details.len(), 16);
+        assert_eq!(summary.omitted_failure_count, 4);
+        assert_eq!(summary.failure_details[0].frame_index, 1);
+        assert_eq!(summary.failure_details[15].frame_index, 16);
+        assert!(summary
+            .failure_details
+            .iter()
+            .all(|d| d.message.as_ref().unwrap().len() <= 1024));
+        let mut json = serde_json::to_value(&summary).unwrap();
+        json.as_object_mut().unwrap().remove("failureDetails");
+        json.as_object_mut().unwrap().remove("omittedFailureCount");
+        let old: WindowedPlayerGameplayTraceSummary = serde_json::from_value(json).unwrap();
+        assert!(old.failure_details.is_empty());
+        assert_eq!(old.omitted_failure_count, 0);
+        assert!(report.gameplay_trace_records.is_empty());
+    }
+
+    #[test]
+    fn summary_command_failure_preserves_entity_and_error_without_full_trace() {
+        let request = NativePlayerWindowRunRequest::headless_surface_gate("package")
+            .with_runtime_report_level(WindowedPlayerRuntimeReportLevel::Summary);
+        let mut report = NativeWindowHostReport::base(&request);
+        let mut trace = engine_runtime::runtime_trace::RuntimeTrace::new();
+        let mut record = engine_runtime::gameplay_trace::GameplayTraceRecord::write(
+            1260,
+            "PostPhysics",
+            "engine.command_buffer",
+            "enemy".into(),
+            "unused".into(),
+            "",
+            None,
+            None,
+        );
+        record.operation = "command_apply".into();
+        record.component_type = None;
+        record.field_path = None;
+        record.result = "failed".into();
+        record.error_code = Some("world.entity.missing".into());
+        trace.gameplay_records.push(record);
+        record_runtime_trace(
+            &mut report,
+            &trace,
+            WindowedPlayerRuntimeReportLevel::Summary,
+        );
+        let summary = report.gameplay_trace_summary.as_ref().unwrap();
+        assert_eq!(summary.failed_record_count, 1);
+        assert_eq!(
+            summary.failure_details[0].entity_id.as_deref(),
+            Some("enemy")
+        );
+        assert_eq!(
+            summary.failure_details[0].error_code.as_deref(),
+            Some("world.entity.missing")
+        );
+        assert_eq!(summary.failure_details[0].frame_index, 1260);
+        assert!(report.gameplay_trace_records.is_empty());
     }
 
     #[test]
@@ -4217,128 +4964,6 @@ mod tests {
         assert_eq!(session.stages[0].committed_mutation_count, 0);
         assert_eq!(receipt.producer_id, "engine_empty_project_ui_state");
         assert_ne!(receipt.producer_id, receipt.session_id);
-    }
-
-    // Requires the complex-shooter project module, which is excluded from engine-only releases.
-    #[cfg(any())]
-    #[test]
-    fn headless_player_builds_linked_static_rule_runner_from_package_rules() {
-        let root = temp_root("headless-linked-rules");
-        let package = write_minimal_runtime_package(&root, "runtime-package");
-        write_sample_rule_manifest(&package);
-        let mut request = NativePlayerWindowRunRequest::headless_surface_gate(package);
-        request.frame_limit = 1;
-
-        let linked_modules = use_complex_shooter_module(&request.runtime_package_path);
-        let report =
-            run_headless_native_player_from_package_with_linked_modules(request, &linked_modules);
-
-        assert_eq!(report.exit_code, 0);
-        assert_eq!(report.logic_status, "ok");
-        assert!(!report
-            .diagnostics
-            .iter()
-            .any(|diagnostic| diagnostic.code == "missing_registered_rule"));
-    }
-
-    #[cfg(any())]
-    #[test]
-    fn headless_player_reports_missing_registered_rule_from_package_manifest() {
-        let root = temp_root("headless-missing-rule");
-        let package = write_minimal_runtime_package(&root, "runtime-package");
-        fs::write(
-            package.join("rules").join("rule-manifest.json"),
-            r#"{
-  "schemaVersion": "runtime-rule-manifest.v1",
-  "mode": "rust-aot",
-  "rules": [{
-    "ruleId": "rule.not-linked",
-    "phase": "Update",
-    "enabled": true,
-    "executor": "rustAot",
-    "irSource": "Rules/not_linked.ir.json",
-    "irHash": "sample-not-linked",
-    "artifactId": "rule-artifact:rule.not-linked:sample-not-linked"
-  }],
-  "modules": [{
-    "artifactId": "rule-artifact:rule.not-linked:sample-not-linked",
-    "moduleKind": "staticRegistry",
-    "path": "Rules/generated/sample_project_rules.rs"
-  }]
-}"#,
-        )
-        .unwrap();
-
-        let linked_modules = use_complex_shooter_module(&package);
-        let report = run_headless_native_player_from_package_with_linked_modules(
-            NativePlayerWindowRunRequest::headless_surface_gate(package),
-            &linked_modules,
-        );
-
-        assert_eq!(report.exit_code, 1);
-        assert_eq!(
-            report.logic_status, "error",
-            "diagnostics={:#?}",
-            report.diagnostics
-        );
-        assert!(report.diagnostics.iter().any(|diagnostic| diagnostic.code
-            == "project_runtime.missing_linked_rule"
-            && diagnostic.layer == "project_runtime"));
-    }
-
-    #[cfg(any())]
-    #[test]
-    fn headless_native_player_reports_aui_present_evidence() {
-        let root = temp_root("headless-aui");
-        let package = write_minimal_runtime_package(&root, "runtime-package");
-        add_minimal_aui_document(&package);
-
-        let linked_modules = use_complex_shooter_module(&package);
-        let report = run_headless_native_player_from_package_with_linked_modules(
-            NativePlayerWindowRunRequest::headless_surface_gate(package),
-            &linked_modules,
-        );
-        assert_eq!(report.exit_code, 0, "diagnostics={:#?}", report.diagnostics);
-        assert_eq!(report.aui.package_document_count, 1);
-        assert_eq!(report.aui.loaded_document_count, 1);
-        assert!(report.aui.draw_item_count > 0);
-        assert!(report.aui.text_command_count > 0);
-        assert!(report.aui.ui_pass_inserted);
-        assert!(!report.aui.glyph_present);
-        assert_eq!(report.aui.snapshot_source, "project_producer");
-        assert_eq!(
-            report.aui.producer_id.as_deref(),
-            Some("complex_shooter_runtime_ui_state")
-        );
-        assert!(report.aui.snapshot_value_count >= 1);
-        assert!(report
-            .aui
-            .active_binding_paths
-            .contains(&"game.score_text".to_string()));
-        assert!(report
-            .aui
-            .produced_paths
-            .contains(&"game.score_text".to_string()));
-        assert_eq!(report.aui.cache_status, "miss");
-        assert!(report
-            .aui
-            .cache_miss_paths
-            .contains(&"game.score_text".to_string()));
-        assert!(report
-            .aui
-            .source_paths
-            .iter()
-            .any(|path| path.contains("project.sessionState.score")));
-        assert!(report
-            .aui
-            .declared_binding_paths
-            .contains(&"game.score_text".to_string()));
-        assert!(report.aui.missing_paths.is_empty());
-        assert_eq!(report.aui.status, "partial");
-        assert!(report
-            .aui
-            .next_actions
-            .contains(&"runtime_text_glyph_present".to_string()));
     }
 
     #[test]
@@ -4527,6 +5152,51 @@ mod tests {
             Some(engine_input::PointerPosition { x: 32.0, y: 64.0 })
         );
         assert_eq!(summary.pressed_mouse_button_count, 1);
+    }
+
+    #[test]
+    fn pointer_replay_reaches_real_input_resolver_and_old_keyboard_scripts_still_parse() {
+        let script: NativePlayerInputScript = serde_json::from_str(r#"{"schemaVersion":"native-player-input-script.v1","scriptId":"pointer","frames":[{"frameIndex":1,"pointerPosition":[1000,600]}]}"#).unwrap();
+        script.validate().unwrap();
+        let request =
+            NativePlayerWindowRunRequest::headless_surface_gate("unused").with_input_script(script);
+        let mapping = InputMappingAsset::new(
+            "pointer",
+            vec![engine_input::InputActionDefinition::new(
+                "action.pointer",
+                engine_input::InputActionValueType::Pointer,
+            )],
+            vec![engine_input::InputContextDefinition::new("gameplay", 0)],
+            vec![engine_input::InputBindingDefinition::pointer(
+                "action.pointer",
+            )],
+        );
+        let mut state = InputDeviceState::new();
+        let (snapshot, _, summary) = resolve_native_input_frame(
+            &mut state,
+            &mapping,
+            "test",
+            None,
+            &scripted_input_events(&request, 1),
+            1,
+            "window",
+            "script",
+            "test",
+        );
+        assert_eq!(
+            snapshot.pointer("action.pointer"),
+            Some(engine_input::PointerPosition {
+                x: 1000.0,
+                y: 600.0
+            })
+        );
+        assert_eq!(summary.pointer_position, snapshot.pointer("action.pointer"));
+        assert!(scripted_input_events(&request, 2).is_empty());
+        let legacy: NativePlayerInputScript = serde_json::from_str(r#"{"schemaVersion":"native-player-input-script.v1","scriptId":"keyboard","frames":[{"frameIndex":1,"keyDown":["D"]}]}"#).unwrap();
+        assert_eq!(legacy.frames[0].pointer_position, None);
+        assert!(!serde_json::to_string(&legacy)
+            .unwrap()
+            .contains("pointerPosition"));
     }
 
     #[test]
@@ -4906,7 +5576,7 @@ mod tests {
         assert!(screenshot.exists());
     }
 
-    fn temp_root(name: &str) -> PathBuf {
+    pub(crate) fn temp_root(name: &str) -> PathBuf {
         let stamp = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
@@ -4953,7 +5623,7 @@ mod tests {
         AuiRuntimePresenter::present_package_smoke(&document, 1)
     }
 
-    fn write_minimal_runtime_package(root: &Path, name: &str) -> PathBuf {
+    pub(crate) fn write_minimal_runtime_package(root: &Path, name: &str) -> PathBuf {
         let package_dir = root.join(name);
         fs::create_dir_all(package_dir.join("scenes")).unwrap();
         fs::create_dir_all(package_dir.join("assets")).unwrap();
@@ -4967,7 +5637,7 @@ mod tests {
   "project": {
     "projectId": "project-runtime-player-test",
     "name": "Runtime Player Test",
-    "version": "0.0.3",
+    "version": "0.1.0",
     "runtimeModule": {
       "moduleId": "engine.empty.runtime",
       "interfaceVersion": "project-runtime-module.v2",
@@ -5081,75 +5751,6 @@ mod tests {
         )
         .unwrap();
         package_dir
-    }
-
-    #[cfg(any())]
-    fn use_complex_shooter_module(package_dir: &Path) -> LinkedProjectRuntimeSet {
-        let manifest_path = package_dir.join("manifest.json");
-        let mut manifest: serde_json::Value =
-            serde_json::from_str(&fs::read_to_string(&manifest_path).unwrap()).unwrap();
-        manifest["project"]["runtimeModule"] =
-            serde_json::to_value(complex_shooter_project_runtime::project_runtime_descriptor())
-                .unwrap();
-        fs::write(
-            manifest_path,
-            serde_json::to_string_pretty(&manifest).unwrap(),
-        )
-        .unwrap();
-        // SAFETY: the statically linked project exports a process-static API table.
-        let api = unsafe { *complex_shooter_project_runtime::aife_project_runtime_entry_v1() };
-        engine_runtime::project_runtime_native_adapter::linked_project_runtime_set_from_api(api)
-            .unwrap()
-    }
-
-    #[cfg(any())]
-    fn write_sample_rule_manifest(package_dir: &Path) {
-        fs::write(
-            package_dir.join("rules").join("rule-manifest.json"),
-            r#"{
-  "schemaVersion": "runtime-rule-manifest.v1",
-  "mode": "rust-aot",
-  "rules": [{
-    "ruleId": "rule.player-move",
-    "phase": "Update",
-    "enabled": true,
-    "executor": "rustAot",
-    "irSource": "Rules/player_move.ir.json",
-    "irHash": "sample-player-move",
-    "artifactId": "rule-artifact:rule.player-move:sample-player-move"
-  }, {
-    "ruleId": "rule.fire-bullet",
-    "phase": "Update",
-    "enabled": true,
-    "executor": "rustAot",
-    "irSource": "Rules/fire_bullet.ir.json",
-    "irHash": "sample-fire-bullet",
-    "artifactId": "rule-artifact:rule.fire-bullet:sample-fire-bullet"
-  }, {
-    "ruleId": "rule.linear-motion",
-    "phase": "Update",
-    "enabled": true,
-    "executor": "rustAot",
-    "irSource": "Rules/linear_motion.ir.json",
-    "irHash": "sample-linear-motion",
-    "artifactId": "rule-artifact:rule.linear-motion:sample-linear-motion"
-  }],
-  "modules": [{
-    "artifactId": "rule-artifact:rule.player-move:sample-player-move",
-    "moduleKind": "staticRegistry",
-    "path": "Rules/generated/sample_project_rules.rs"
-  }, {
-    "artifactId": "rule-artifact:rule.fire-bullet:sample-fire-bullet",
-    "moduleKind": "staticRegistry",
-    "path": "Rules/generated/sample_project_rules.rs"
-  }, {
-    "artifactId": "rule-artifact:rule.linear-motion:sample-linear-motion",
-    "moduleKind": "staticRegistry",
-    "path": "Rules/generated/sample_project_rules.rs"
-  }]
-}"#,
-        )
-        .unwrap();
     }
 
     fn add_minimal_aui_document(package_dir: &Path) {

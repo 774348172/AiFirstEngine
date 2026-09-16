@@ -37,8 +37,8 @@ pub enum ExternalProjectMutationChange {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct GoalMutationOwnerFacts {
-    pub client_session_id: String,
-    pub read_generation: u64,
+    pub provider_session_id: String,
+    pub project_revision_generation: u64,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -47,8 +47,8 @@ pub struct BoundGoalMutation {
     pub schema_version: String,
     pub normalized_goal_outcome: String,
     pub goal_digest: String,
-    pub client_session_id: String,
-    pub read_generation: u64,
+    pub provider_session_id: String,
+    pub project_revision_generation: u64,
     pub project_binding: ProjectCandidateProjectBinding,
     pub project_patch_context_hash: String,
     pub derived_risk_class: AiGoalRiskClass,
@@ -86,11 +86,13 @@ impl GoalMutationModule {
             ));
         }
         let normalized_goal_outcome = normalize_goal_outcome(&intent.goal.outcome)?;
-        if owner_facts.client_session_id.trim().is_empty() || owner_facts.read_generation == 0 {
+        if owner_facts.provider_session_id.trim().is_empty()
+            || owner_facts.project_revision_generation == 0
+        {
             return Err(error(
                 "goal_mutation.owner_facts_invalid",
-                "Gateway-owned session facts are missing or invalid.",
-                "Reconnect to the current Editor and inspect the active project.",
+                "Provider-owned session facts are missing or invalid.",
+                "Attach a Provider session and inspect the active project.",
             ));
         }
 
@@ -115,8 +117,8 @@ impl GoalMutationModule {
 
         let goal_digest = digest(&(
             &normalized_goal_outcome,
-            &owner_facts.client_session_id,
-            owner_facts.read_generation,
+            &owner_facts.provider_session_id,
+            owner_facts.project_revision_generation,
             &project_binding,
             &project_patch_context_hash,
             &patch,
@@ -142,8 +144,8 @@ impl GoalMutationModule {
             schema_version: BOUND_GOAL_MUTATION_SCHEMA_VERSION.to_string(),
             normalized_goal_outcome,
             goal_digest,
-            client_session_id: owner_facts.client_session_id,
-            read_generation: owner_facts.read_generation,
+            provider_session_id: owner_facts.provider_session_id,
+            project_revision_generation: owner_facts.project_revision_generation,
             project_binding,
             project_patch_context_hash,
             derived_risk_class,

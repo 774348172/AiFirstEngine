@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "project-asset-meta.v1",
+  "assetGuid": "asset-2222222222222222222222222222222222222222222222222222222222222222",
+  "assetId": "font-source-showcase-ui",
+  "assetType": "fontSource",
+  "descriptorPath": "Assets/Fonts/font-face-showcase-ui.json",
+  "sourcePath": "Assets/Fonts/AifeNotoSansSCQualification-Regular.ttf",
+  "sourceHash": "sha256:f70ecb32e5b312ba7bc724977352139a3f691566dc2491377be3828631c9fab2",
+  "importerId": "font.ttf.v2",
+  "importerVersion": 2,
+  "settingsHash": "sha256:f70ecb32e5b312ba7bc724977352139a3f691566dc2491377be3828631c9fab2",
+  "sourceMetadata": {
+    "kind": "localFile",
+    "note": "Repository-qualified Noto Sans SC subset"
+  },
+  "license": {
+    "kind": "thirdParty",
+    "identifier": "OFL-1.1",
+    "licenseUri": "https://openfontlicense.org/open-font-license-official-text/",
+    "attribution": "Noto CJK contributors"
+  }
+}

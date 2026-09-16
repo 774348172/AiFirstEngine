@@ -1,10 +1,9 @@
 [package]
 name = "editor_core"
-version.workspace = true
+version = "0.1.0"
 edition.workspace = true
 license.workspace = true
 publish.workspace = true
-build = "build.rs"
 
 [lints]
 workspace = true
@@ -13,7 +12,8 @@ workspace = true
 path = "src/lib.rs"
 
 [dependencies]
-cap-std = "4.0.2"
+authoring_project_context = { path = "../authoring_project_context" }
+project_authoring_execution = { path = "../project_authoring_execution" }
 engine_input = { path = "../engine_input" }
 engine_runtime = { path = "../engine_runtime" }
 project_runtime_abi = { path = "../project_runtime_abi" }
@@ -24,7 +24,6 @@ runtime_player_android = { path = "../runtime_player_android" }
 schemars = "1.2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-semver = "1"
 sha2 = "0.10"
 toml = "0.8"
 url = "2.5"
@@ -47,6 +46,3 @@ windows-sys = { version = "0.59", features = [
     "Win32_System_LibraryLoader",
     "Win32_System_SystemInformation",
 ] }
-
-[build-dependencies]
-serde_json = "1"

@@ -35,7 +35,6 @@ fn ai_panel_prompt_model_carries_editable_draft_and_stage() {
         prompt_placeholder: "Describe an editor change...".to_string(),
         prompt_draft: "create a fire point".to_string(),
         messages: Vec::new(),
-        gateway_access: Default::default(),
         proposed_commands: Vec::new(),
         allowed_command_ids: vec!["generate_project_patch_from_prompt".to_string()],
         busy: true,
@@ -47,83 +46,6 @@ fn ai_panel_prompt_model_carries_editable_draft_and_stage() {
     assert_eq!(value["prompt_draft"], "create a fire point");
     assert_eq!(value["stage"], "Generating");
     assert_eq!(value["busy"], true);
-}
-
-#[test]
-fn gateway_access_inbox_is_a_dedicated_ai_panel_model() {
-    let panel = AiPanelModel {
-        prompt_placeholder: "Describe an editor change...".to_string(),
-        prompt_draft: String::new(),
-        messages: Vec::new(),
-        gateway_access: GatewayAccessInboxModel {
-            requests: vec![GatewayAccessRequestModel {
-                request_id: "access-request-1".to_string(),
-                operation_short_id: "operation-1".to_string(),
-                client_session_id: "gateway-session-1".to_string(),
-                session_short_id: "session-1".to_string(),
-                client_kind: "MCP".to_string(),
-                client_version: "codex-desktop.v1".to_string(),
-                project_identity: "project.fixture".to_string(),
-                connected_age_ms: 250,
-                expires_in_ms: 30_000,
-                state: "awaiting_user".to_string(),
-                requested_profile: "project_owned_low_risk".to_string(),
-                risk_class: "ProjectOwnedLowRisk".to_string(),
-                capabilities: vec!["mutate_project".to_string()],
-                blocked_capabilities: vec!["engine_core".to_string()],
-                goal_id: "goal-1".to_string(),
-                user_visible_outcome: "Apply the requested project change.".to_string(),
-                completion_policy: "CommitVerified".to_string(),
-                allowed_paths: vec!["Assets".to_string()],
-                denied_paths: vec!["Engine".to_string()],
-                allowed_objects: Vec::new(),
-                max_mutation_count: 16,
-                time_budget_ms: 900_000,
-                external_cost_budget_microunits: 0,
-                allow_delete: false,
-                allow_dependency_change: false,
-                allow_network: false,
-                approval_digest: "sha256:test".to_string(),
-            }],
-            page_index: 0,
-            page_count: 2,
-            total_count: 5,
-        },
-        proposed_commands: Vec::new(),
-        allowed_command_ids: Vec::new(),
-        busy: false,
-        stage: AiPanelStage::Idle,
-        status_summary: None,
-    };
-
-    let value = serde_json::to_value(panel).expect("Gateway access model should serialize");
-    assert_eq!(value["gateway_access"]["total_count"], 5);
-    assert_eq!(
-        value["gateway_access"]["requests"][0]["client_session_id"],
-        "gateway-session-1"
-    );
-    assert_eq!(value["proposed_commands"].as_array().unwrap().len(), 0);
-}
-
-#[test]
-fn gateway_access_commands_keep_request_and_page_identity() {
-    let approve = UiCommandPayload::ApproveGatewayAccessRequest {
-        request_id: "access-request-1".to_string(),
-    };
-    let reject = UiCommandPayload::RejectGatewayAccessRequest {
-        request_id: "access-request-2".to_string(),
-    };
-    let page = UiCommandPayload::SetGatewayAccessPage { page_index: 3 };
-
-    assert_eq!(
-        ui_command_id_for_payload(&approve),
-        "approve_gateway_access_request"
-    );
-    assert_eq!(
-        ui_command_id_for_payload(&reject),
-        "reject_gateway_access_request"
-    );
-    assert_eq!(ui_command_id_for_payload(&page), "set_gateway_access_page");
 }
 
 #[test]
@@ -203,7 +125,6 @@ fn ui_model_serializes_to_json_for_debugging() {
             prompt_placeholder: "Describe an editor change...".to_string(),
             prompt_draft: String::new(),
             messages: Vec::new(),
-            gateway_access: Default::default(),
             proposed_commands: Vec::new(),
             allowed_command_ids: Vec::new(),
             busy: false,
@@ -847,7 +768,7 @@ fn project_launcher_model_serializes_recent_projects() {
     launcher.recent_projects.push(RecentProjectEntry {
         name: "PlaneGame".to_string(),
         path: "D:/Projects/PlaneGame".to_string(),
-        engine_version: "0.0.3".to_string(),
+        engine_version: "0.1.0".to_string(),
         last_opened_at: Some("2026-06-30T00:00:00Z".to_string()),
         last_modified_at: None,
         valid: true,
@@ -1145,7 +1066,6 @@ fn ui_model_contains_ai_panel_for_ai_first_editor() {
             role: AiPanelMessageRole::Assistant,
             text: "Ready.".to_string(),
         }],
-        gateway_access: Default::default(),
         proposed_commands: vec![AiProposedCommand {
             proposal_id: "proposal-1".to_string(),
             label: "Rename entity".to_string(),
@@ -1176,7 +1096,6 @@ fn ai_panel_imported_project_patch_evidence_serializes() {
         prompt_placeholder: "Describe an editor change...".to_string(),
         prompt_draft: String::new(),
         messages: Vec::new(),
-        gateway_access: Default::default(),
         proposed_commands: vec![AiProposedCommand {
             proposal_id: "imported-project-patch-patch-1".to_string(),
             label: "Apply imported patch".to_string(),

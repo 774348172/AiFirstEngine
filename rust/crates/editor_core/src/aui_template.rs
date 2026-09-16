@@ -641,6 +641,9 @@ fn remap_dependencies(
 
 fn binding_target_name(target: AuiBindingTarget) -> &'static str {
     match target {
+        AuiBindingTarget::RectOffsetX => "rect.offsetX",
+        AuiBindingTarget::RectOffsetY => "rect.offsetY",
+        AuiBindingTarget::TextColor => "text.color",
         AuiBindingTarget::TextText => "text.text",
         AuiBindingTarget::InputFieldText => "inputField.text",
         AuiBindingTarget::ProgressBarValue => "progress.value",

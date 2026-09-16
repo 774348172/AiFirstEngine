@@ -273,6 +273,30 @@ fn prepare(
                 ));
                 continue;
             }
+            if component_type == ComponentTypeId::audio_source() {
+                match crate::audio::decode_audio_source(&component.data) {
+                    Ok(source) => components.push(ComponentValue::AudioSource(source)),
+                    Err(message) => diagnostics.push(diagnostic(
+                        "world.component.decode_failed",
+                        format!("AudioSource decode failed for '{source_id}': {message}"),
+                        Some(source_id.clone()),
+                        "Fix engine.audio_source clipRef and volume fields.",
+                    )),
+                }
+                continue;
+            }
+            if component_type == ComponentTypeId::particle_effect() {
+                match crate::runtime_particles::decode_particle_effect(&component.data) {
+                    Ok(source) => components.push(ComponentValue::ParticleEffect(source)),
+                    Err(message) => diagnostics.push(diagnostic(
+                        "world.component.decode_failed",
+                        message,
+                        Some(source_id.clone()),
+                        "Fix engine.particle_effect effectRef/playOnAwake/paused fields.",
+                    )),
+                }
+                continue;
+            }
             if component_type == ComponentTypeId::collider2d() {
                 match decode_collider2d(&component.data) {
                     Ok(collider) => components.push(ComponentValue::Collider2D(collider)),
@@ -600,6 +624,29 @@ mod tests {
             animator2d: None,
             components: Vec::new(),
         }
+    }
+
+    #[test]
+    fn audio_source_hydrates_once_without_playback_state_and_rejects_duplicates() {
+        let mut source = entity("speaker", None);
+        source.components.push(RuntimeProjectComponent {
+            component_type: "engine.audio_source".into(),
+            data: serde_json::json!({"clipRef":{"id":"clip","type":"audio","guid":"guid-clip"},"volume":0.25}),
+        });
+        let mut world = World::new();
+        PreparedRuntimeEntities::prepare_scene(&[source.clone()], &world)
+            .unwrap()
+            .commit(&mut world);
+        let hydrated = world
+            .audio_source(&SourceEntityId::from("speaker"))
+            .unwrap();
+        assert_eq!(hydrated.volume, 0.25);
+        assert_eq!(hydrated.clip_ref.guid.as_deref(), Some("guid-clip"));
+        source.components.push(source.components[0].clone());
+        let errors = PreparedRuntimeEntities::prepare_scene(&[source], &World::new()).unwrap_err();
+        assert!(errors
+            .iter()
+            .any(|error| error.kind == "world.component.duplicate_type"));
     }
 
     #[test]

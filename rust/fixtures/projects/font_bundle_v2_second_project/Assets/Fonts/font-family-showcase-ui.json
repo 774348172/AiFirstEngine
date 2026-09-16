@@ -1,0 +1,12 @@
+{
+  "schemaVersion": "font-family-asset.v1",
+  "assetId": "font-family-showcase-ui",
+  "faces": [
+    {
+      "fontFace": "font-face-showcase-ui",
+      "style": "normal",
+      "weight": 400
+    }
+  ],
+  "missingStylePolicy": "nearestWeightSameStyle"
+}

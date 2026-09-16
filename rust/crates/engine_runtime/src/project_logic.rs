@@ -1021,7 +1021,7 @@ mod tests {
             manifest: RuntimePackageManifest {
                 schema_version: RUNTIME_PACKAGE_SCHEMA_VERSION.to_string(),
                 package_mode: RUNTIME_PACKAGE_MODE.to_string(),
-                project: RuntimeProjectInfo::explicit_empty("project-fixture", "Fixture", "0.0.3"),
+                project: RuntimeProjectInfo::explicit_empty("project-fixture", "Fixture", "0.1.0"),
                 active_scene_id: "scene-main".to_string(),
                 scenes: vec![RuntimeSceneManifestEntry {
                     id: "scene-main".to_string(),

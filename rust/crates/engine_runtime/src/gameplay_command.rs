@@ -40,6 +40,7 @@ pub enum GameplayCommand {
         prefab_ref: RuntimeAssetRef,
         parent_entity: Option<SourceEntityId>,
         target_scene_instance: Option<RuntimeInstanceId>,
+        position: Option<crate::math::Vec3>,
     },
     DespawnPrefabInstance {
         instance_id: RuntimeInstanceId,
@@ -276,6 +277,7 @@ fn apply_gameplay_command(
             prefab_ref,
             parent_entity,
             target_scene_instance,
+            position,
         } => {
             let prefab_ref_id = prefab_ref.id.clone();
             let Some(runtime_context) = runtime_context else {
@@ -301,6 +303,20 @@ fn apply_gameplay_command(
                     world,
                 );
             let root_entity_id = instance.as_ref().and_then(|instance| instance.root_entity);
+            if let (Some(root), Some(position)) = (root_entity_id, position) {
+                let source_id = world
+                    .try_resolve_runtime_entity(root)
+                    .ok()
+                    .map(|slot| slot.source_id.clone());
+                if let Some(source_id) = source_id {
+                    let mut transform = world
+                        .transform(&source_id)
+                        .cloned()
+                        .unwrap_or_else(crate::components::Transform::identity);
+                    transform.local_position = position;
+                    world.insert_transform(source_id, transform);
+                }
+            }
             GameplayCommandApplyRecord {
                 command_id,
                 operation: "instantiate_prefab",
@@ -418,6 +434,7 @@ mod tests {
                     },
                     parent_entity: None,
                     target_scene_instance: None,
+                    position: None,
                 },
             )],
         );

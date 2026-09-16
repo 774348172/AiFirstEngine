@@ -10,7 +10,6 @@ mod asset_placement;
 mod asset_thumbnail;
 mod aui_authoring;
 mod aui_document_cooker;
-mod aui_font_atlas_cooker;
 mod aui_scene_authoring;
 mod aui_template;
 mod authoring_system;
@@ -33,7 +32,6 @@ mod inspector_details;
 mod manual_walkthrough;
 mod play_session;
 mod prefab_workflow;
-mod project_assembly_artifact_cache;
 mod project_asset_import;
 mod project_candidate_entry;
 mod project_consistency;
@@ -41,9 +39,6 @@ mod project_delivery_tools;
 mod project_editor_composition;
 mod project_editor_composition_artifact;
 mod project_editor_composition_cache_promotion;
-mod project_font_assets;
-mod project_font_bundle;
-mod project_font_cook;
 mod project_intent_workflow;
 mod project_launcher;
 mod project_observation;
@@ -53,6 +48,7 @@ mod project_player_artifact;
 mod project_preview_evidence;
 mod project_readiness;
 mod project_runtime_native_module;
+#[path = "project_runtime_package_assembler_adapter.rs"]
 mod project_runtime_package_assembler;
 mod project_runtime_player_staging;
 mod project_runtime_preparation;
@@ -273,14 +269,6 @@ pub use prefab_workflow::{
     PREFAB_OVERRIDE_COMPONENT_TYPE, PREFAB_STAGE_REPORT_SCHEMA_VERSION,
     PREFAB_WORKFLOW_REPORT_SCHEMA_VERSION,
 };
-pub use project_assembly_artifact_cache::{
-    ProjectAssemblyArtifactCache, ProjectAssemblyArtifactCacheError,
-    ProjectAssemblyArtifactCacheStatus, ProjectAssemblyArtifactEnvelope,
-    ProjectAssemblyArtifactLookup, ProjectAssemblyArtifactPublishResult,
-    ProjectAssemblyArtifactPublishStatus, ProjectAssemblyProducerReport,
-    ProjectAssemblyProducerSubstageReport, PROJECT_ASSEMBLY_ARTIFACT_ENVELOPE_SCHEMA_VERSION,
-    PROJECT_ASSEMBLY_PRODUCER_REPORT_SCHEMA_VERSION,
-};
 pub use project_asset_import::{
     AssetDatabaseDocument, AssetDatabaseRecord, AssetDatabaseRecordState, AssetGraphDocument,
     AssetGraphNode, AssetImportConflictPolicy, AssetImportSourceKind, AssetImportSourceMetadata,
@@ -297,6 +285,36 @@ pub use project_asset_import::{
     PROJECT_ASSET_IMPORT_ROLLBACK_RECEIPT_SCHEMA_VERSION,
     PROJECT_ASSET_IMPORT_VALIDATION_REPORT_SCHEMA_VERSION, PROJECT_ASSET_META_SCHEMA_VERSION,
     PROJECT_ASSET_REGISTRY_SCHEMA_VERSION,
+};
+pub use project_authoring_execution::{
+    diagnostics_for_level, resolve_font_family_face, validate_font_face_source,
+    validate_font_stack, FontAtlasProfileAsset, FontAtlasProfileRole, FontDiagnostic,
+    FontDiagnosticSeverity, FontDiagnosticStage, FontFaceAsset, FontFaceDeclaredMetadata,
+    FontFaceSource, FontFamilyAsset, FontFamilyFace, FontGlyphSet, FontHintingMode,
+    FontMissingGlyphPolicy, FontMissingStylePolicy, FontPackingProfile, FontRasterPolicy,
+    FontRasterProfile, FontReportLevel, FontSourceKind, FontStackAsset, FontStyle,
+    ProjectFontAssetSet, ValidatedFontFaceSource, FONT_ATLAS_PROFILE_ASSET_SCHEMA_VERSION,
+    FONT_FACE_ASSET_SCHEMA_VERSION, FONT_FAMILY_ASSET_SCHEMA_VERSION,
+    FONT_STACK_ASSET_SCHEMA_VERSION, PROJECT_FONT_ASSET_GRAPH_SCHEMA_VERSION,
+    PROJECT_FONT_RECIPE_VERSION,
+};
+pub use project_authoring_execution::{
+    select_auto_hybrid, FontAutoHybridDecision, FontAutoHybridRequest, ProjectFontBundleBuilder,
+};
+pub use project_authoring_execution::{
+    ProjectAssemblyArtifactCache, ProjectAssemblyArtifactCacheError,
+    ProjectAssemblyArtifactCacheStatus, ProjectAssemblyArtifactEnvelope,
+    ProjectAssemblyArtifactLookup, ProjectAssemblyArtifactPublishResult,
+    ProjectAssemblyArtifactPublishStatus, ProjectAssemblyProducerReport,
+    ProjectAssemblyProducerSubstageReport, PROJECT_ASSEMBLY_ARTIFACT_ENVELOPE_SCHEMA_VERSION,
+    PROJECT_ASSEMBLY_PRODUCER_REPORT_SCHEMA_VERSION,
+};
+pub use project_authoring_execution::{
+    ProjectFontCodepointResolution, ProjectFontCookFailure, ProjectFontCookModule,
+    ProjectFontCookOutput, ProjectFontCookRequest, ProjectFontFaceMetrics,
+    ProjectFontHintedGlyphVariant, ProjectFontKerningAdjustment, ProjectFontMsdfGlyphVariant,
+    ProjectFontProfileInventoryEntry, ProjectFontRuntimePackageCook, ProjectTextSourceAsset,
+    PROJECT_FONT_COOK_OUTPUT_SCHEMA_VERSION, PROJECT_TEXT_SOURCE_SCHEMA_VERSION,
 };
 pub use project_candidate_entry::{
     PreparedProjectCandidatePayload, ProjectCandidate, ProjectCandidateAppliedPayload,
@@ -367,28 +385,6 @@ pub use project_editor_composition::{
     PROJECT_EDITOR_COMPOSITION_RESOLVED_IDENTITY_SCHEMA_VERSION,
 };
 pub use project_editor_composition_cache_promotion::ProjectEditorCompositionCacheAdmin;
-pub use project_font_assets::{
-    diagnostics_for_level, resolve_font_family_face, validate_font_face_source,
-    validate_font_stack, FontAtlasProfileAsset, FontAtlasProfileRole, FontDiagnostic,
-    FontDiagnosticSeverity, FontDiagnosticStage, FontFaceAsset, FontFaceDeclaredMetadata,
-    FontFaceSource, FontFamilyAsset, FontFamilyFace, FontGlyphSet, FontHintingMode,
-    FontMissingGlyphPolicy, FontMissingStylePolicy, FontPackingProfile, FontRasterPolicy,
-    FontRasterProfile, FontReportLevel, FontSourceKind, FontStackAsset, FontStyle,
-    ProjectFontAssetSet, ValidatedFontFaceSource, FONT_ATLAS_PROFILE_ASSET_SCHEMA_VERSION,
-    FONT_FACE_ASSET_SCHEMA_VERSION, FONT_FAMILY_ASSET_SCHEMA_VERSION,
-    FONT_STACK_ASSET_SCHEMA_VERSION, PROJECT_FONT_ASSET_GRAPH_SCHEMA_VERSION,
-    PROJECT_FONT_RECIPE_VERSION,
-};
-pub use project_font_bundle::{
-    select_auto_hybrid, FontAutoHybridDecision, FontAutoHybridRequest, ProjectFontBundleBuilder,
-};
-pub use project_font_cook::{
-    ProjectFontCodepointResolution, ProjectFontCookFailure, ProjectFontCookModule,
-    ProjectFontCookOutput, ProjectFontCookRequest, ProjectFontFaceMetrics,
-    ProjectFontHintedGlyphVariant, ProjectFontKerningAdjustment, ProjectFontMsdfGlyphVariant,
-    ProjectFontProfileInventoryEntry, ProjectFontRuntimePackageCook, ProjectTextSourceAsset,
-    PROJECT_FONT_COOK_OUTPUT_SCHEMA_VERSION, PROJECT_TEXT_SOURCE_SCHEMA_VERSION,
-};
 pub use project_intent_workflow::{
     CandidatePayloadKind, CandidatePlanStep, CandidateValidationProfile, ChangePreparationBlocker,
     ChangePreparationRequest, ChangePreparationResult, ChangeSetApproval, ChangeSetApprovalInput,

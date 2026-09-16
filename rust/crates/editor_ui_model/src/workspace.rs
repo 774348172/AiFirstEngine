@@ -406,9 +406,6 @@ pub fn workspace_domain_for_payload(payload: &UiCommandPayload) -> WorkspaceDoma
         | UiCommandPayload::AdvanceProjectProduction { .. }
         | UiCommandPayload::CancelProjectProduction { .. }
         | UiCommandPayload::RecoverProjectProduction { .. }
-        | UiCommandPayload::ApproveGatewayAccessRequest { .. }
-        | UiCommandPayload::RejectGatewayAccessRequest { .. }
-        | UiCommandPayload::SetGatewayAccessPage { .. }
         | UiCommandPayload::AiAcceptProposedCommand { .. }
         | UiCommandPayload::AiRejectProposedCommand { .. } => WorkspaceDomainKind::Report,
         UiCommandPayload::ClearConsole
@@ -578,9 +575,6 @@ pub fn workspace_payload_kind(payload: &UiCommandPayload) -> &'static str {
         UiCommandPayload::AdvanceProjectProduction { .. } => "AdvanceProjectProduction",
         UiCommandPayload::CancelProjectProduction { .. } => "CancelProjectProduction",
         UiCommandPayload::RecoverProjectProduction { .. } => "RecoverProjectProduction",
-        UiCommandPayload::ApproveGatewayAccessRequest { .. } => "ApproveGatewayAccessRequest",
-        UiCommandPayload::RejectGatewayAccessRequest { .. } => "RejectGatewayAccessRequest",
-        UiCommandPayload::SetGatewayAccessPage { .. } => "SetGatewayAccessPage",
         UiCommandPayload::ApproveProjectRuntimeTrust { .. } => "ApproveProjectRuntimeTrust",
         UiCommandPayload::DenyProjectRuntimeTrust { .. } => "DenyProjectRuntimeTrust",
         UiCommandPayload::CancelProjectRuntimeTrust { .. } => "CancelProjectRuntimeTrust",

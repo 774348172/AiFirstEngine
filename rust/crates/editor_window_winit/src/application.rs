@@ -35,8 +35,8 @@ use editor_ui_model::{
     ui_command_id_for_payload, DiagnosticSeverity, DiagnosticSource, EditorCatalogDiagnostic,
     EditorCatalogDiagnosticCode, EditorCommandFeedback, EditorDiagnostic, EditorLocaleChangeResult,
     EditorLocaleId, EditorLocalizationSnapshot, EditorUiMode, EditorUiModel,
-    GatewayAccessRequestModel, ProjectOpenActivityModel, ProjectOpenActivityPhase, UiCommand,
-    UiCommandPayload, UiCommandSource,
+    ProjectOpenActivityModel, ProjectOpenActivityPhase, UiCommand, UiCommandPayload,
+    UiCommandSource,
 };
 use editor_ui_renderer::{
     editor_workspace_rect, DockSplitAxis, DrawCommand, EditorWorkspaceDockingModule, HitTarget,
@@ -261,18 +261,6 @@ pub struct NativeEditorApplication {
     last_command_status: Option<CommandStatus>,
     last_feedback: Option<EditorCommandFeedback>,
     redraw_requested: bool,
-    gateway_core: ai_tool_gateway::GatewayCore,
-    gateway_client: ai_tool_gateway::GatewayOwnerThreadClient,
-    gateway_dispatcher: ai_tool_gateway::GatewayOwnerThreadDispatcher,
-    gateway_host_enabled: bool,
-    editor_instance_id: String,
-    gateway_discovery_root_override: Option<PathBuf>,
-    gateway_host: Option<ai_tool_gateway::EditorGatewayHost>,
-    gateway_host_attempted_binding: Option<ai_tool_gateway::EditorGatewayHostBinding>,
-    gateway_host_error: Option<ai_tool_gateway::GatewayControlError>,
-    gateway_access_page: usize,
-    last_gateway_access_decision_receipt: Option<ai_tool_gateway::GatewayAccessDecisionReceipt>,
-    last_gateway_requests_processed: usize,
     project_runtime_trust_environment: Option<ProjectRuntimeTrustEnvironment>,
     pending_project_runtime_trust: Option<PendingProjectRuntimeTrust>,
     approved_project_runtime_trust: Option<ApprovedProjectRuntimeTrustRequest>,
@@ -282,13 +270,6 @@ pub struct NativeEditorApplication {
     project_open_preparation_adapter: Arc<dyn ProjectOpenPreparationAdapter>,
     editor_play_preparation_worker: Option<EditorPlayPreparationWorker>,
     editor_play_preparation_adapter: Arc<dyn EditorPlayPreparationAdapter>,
-}
-
-#[derive(Default)]
-struct NativeEditorGatewayBuildOptions {
-    host_enabled: bool,
-    discovery_root_override: Option<PathBuf>,
-    wake: Option<ai_tool_gateway::GatewayOwnerThreadWake>,
 }
 
 impl NativeEditorApplication {
@@ -302,10 +283,6 @@ impl NativeEditorApplication {
             ProjectManagerController::default(),
             Box::<HeadlessFolderDialogBackend>::default(),
             default_project_dialog_initial_directory(),
-            NativeEditorGatewayBuildOptions {
-                host_enabled: true,
-                ..Default::default()
-            },
         )
     }
 
@@ -318,32 +295,9 @@ impl NativeEditorApplication {
         )
     }
 
-    pub fn with_session_and_gateway_discovery_root(
-        config: NativeEditorWindowConfig,
-        session: EditorSession,
-        discovery_root: PathBuf,
-    ) -> Self {
-        Self::build(
-            config,
-            session,
-            ProjectManagerController::default(),
-            Box::<HeadlessFolderDialogBackend>::default(),
-            default_project_dialog_initial_directory(),
-            NativeEditorGatewayBuildOptions {
-                host_enabled: true,
-                discovery_root_override: Some(discovery_root),
-                wake: None,
-            },
-        )
-    }
-
     pub fn shutdown_llm(&mut self) -> editor_core::LlmShutdownReceipt {
         self.session
             .shutdown_llm(editor_core::LLM_SESSION_SHUTDOWN_DEADLINE)
-    }
-
-    pub fn gateway_active_client_count(&self) -> usize {
-        self.gateway_core.active_client_bindings().len()
     }
 
     pub fn with_project_manager(
@@ -374,30 +328,6 @@ impl NativeEditorApplication {
             project_manager,
             project_dialog,
             project_dialog_initial_directory,
-            NativeEditorGatewayBuildOptions::default(),
-        )
-    }
-
-    pub(crate) fn with_project_manager_and_dialog_initial_directory_and_gateway(
-        config: NativeEditorWindowConfig,
-        session: EditorSession,
-        project_manager: ProjectManagerController,
-        project_dialog: Box<dyn ProjectLocationDialogService>,
-        project_dialog_initial_directory: PathBuf,
-        gateway_wake: Option<ai_tool_gateway::GatewayOwnerThreadWake>,
-        gateway_discovery_root_override: Option<PathBuf>,
-    ) -> Self {
-        Self::build(
-            config,
-            session,
-            project_manager,
-            project_dialog,
-            project_dialog_initial_directory,
-            NativeEditorGatewayBuildOptions {
-                host_enabled: true,
-                discovery_root_override: gateway_discovery_root_override,
-                wake: gateway_wake,
-            },
         )
     }
 
@@ -407,7 +337,6 @@ impl NativeEditorApplication {
         mut project_manager: ProjectManagerController,
         project_dialog: Box<dyn ProjectLocationDialogService>,
         project_dialog_initial_directory: PathBuf,
-        gateway_options: NativeEditorGatewayBuildOptions,
     ) -> Self {
         project_manager.load_recent_projects(&mut session);
         let initial_surface_width = config.width as f32;
@@ -426,11 +355,7 @@ impl NativeEditorApplication {
             UiRendererConfig::new(initial_surface_width, initial_surface_height)
                 .with_workspace_snapshot(workspace_snapshot),
         );
-        let (gateway_client, gateway_dispatcher) = match gateway_options.wake {
-            Some(wake) => ai_tool_gateway::gateway_owner_thread_channel_with_wake(wake),
-            None => ai_tool_gateway::gateway_owner_thread_channel(),
-        };
-        let editor_instance_id = ai_tool_gateway::new_editor_instance_id();
+        #[allow(unused_mut)]
         let mut application = Self {
             config,
             session,
@@ -472,20 +397,6 @@ impl NativeEditorApplication {
             last_command_status: None,
             last_feedback: None,
             redraw_requested: true,
-            gateway_core: ai_tool_gateway::GatewayCore::new_for_editor_instance(
-                editor_instance_id.clone(),
-            ),
-            gateway_client,
-            gateway_dispatcher,
-            gateway_host_enabled: gateway_options.host_enabled,
-            editor_instance_id,
-            gateway_discovery_root_override: gateway_options.discovery_root_override,
-            gateway_host: None,
-            gateway_host_attempted_binding: None,
-            gateway_host_error: None,
-            gateway_access_page: 0,
-            last_gateway_access_decision_receipt: None,
-            last_gateway_requests_processed: 0,
             project_runtime_trust_environment: None,
             pending_project_runtime_trust: None,
             approved_project_runtime_trust: None,
@@ -504,7 +415,6 @@ impl NativeEditorApplication {
         if let Some(store) = crate::default_editor_preference_store() {
             application.install_editor_preference_store(store);
         }
-        application.reconcile_gateway_host();
         application
     }
 
@@ -524,11 +434,6 @@ impl NativeEditorApplication {
     ) -> NativeEditorApplicationReport {
         self.latest_surface_width = width;
         self.latest_surface_height = height;
-        self.reconcile_gateway_host();
-        let gateway_operation_steps = self.gateway_core.pump_operations(&mut self.session, 1);
-        self.last_gateway_requests_processed = self
-            .gateway_dispatcher
-            .pump(&mut self.gateway_core, &mut self.session);
         let asset_worker_changed = self.session.pump_asset_browser_refresh();
         let llm_worker_changed = self.session.pump_llm_patch_request();
         let project_runtime_preparation_changed = self.pump_project_runtime_preparation();
@@ -538,7 +443,6 @@ impl NativeEditorApplication {
         self.sync_editor_play_activity();
         self.sync_project_editor_composition_actionability();
         self.apply_inspector_context_lock();
-        self.sync_gateway_access_requests();
         self.sync_project_runtime_trust_prompt();
         self.sync_project_open_activity();
         self.latest_model.interaction_feedback = self.last_feedback.clone();
@@ -562,8 +466,6 @@ impl NativeEditorApplication {
             || project_runtime_preparation_changed
             || project_open_preparation_changed
             || editor_play_preparation_changed
-            || gateway_operation_steps > 0
-            || self.last_gateway_requests_processed > 0
             || self.session.has_active_llm_patch_request()
             || self.project_open_preparation_worker.is_some()
             || self.project_runtime_preparation_worker.is_some()
@@ -1687,23 +1589,6 @@ impl NativeEditorApplication {
                     None,
                 );
             }
-            UiCommandPayload::ApproveGatewayAccessRequest { request_id } => {
-                return self.dispatch_gateway_access_decision(
-                    command.clone(),
-                    request_id.clone(),
-                    ai_tool_gateway::GatewayAccessDecision::Approve,
-                );
-            }
-            UiCommandPayload::RejectGatewayAccessRequest { request_id } => {
-                return self.dispatch_gateway_access_decision(
-                    command.clone(),
-                    request_id.clone(),
-                    ai_tool_gateway::GatewayAccessDecision::Reject,
-                );
-            }
-            UiCommandPayload::SetGatewayAccessPage { page_index } => {
-                return self.dispatch_gateway_access_page(command.clone(), *page_index);
-            }
             _ => {}
         }
         let normalized_command = self.authoring_workspace.normalize_command(command);
@@ -1729,7 +1614,6 @@ impl NativeEditorApplication {
             }
             self.latest_model = EditorUiModelComposer::compose(&self.session);
             self.apply_inspector_context_lock();
-            self.sync_gateway_access_requests();
             self.sync_project_runtime_trust_prompt();
             self.sync_project_open_activity();
             self.latest_model.interaction_feedback = self.last_feedback.clone();
@@ -1744,7 +1628,6 @@ impl NativeEditorApplication {
         } else {
             self.latest_model = EditorUiModelComposer::compose(&self.session);
             self.apply_inspector_context_lock();
-            self.sync_gateway_access_requests();
             self.sync_project_runtime_trust_prompt();
             self.sync_project_open_activity();
             self.latest_model.interaction_feedback = self.last_feedback.clone();
@@ -2751,7 +2634,6 @@ impl NativeEditorApplication {
         self.last_command_status = Some(result.status);
         self.last_feedback = Some(command_feedback_from_result(&command, &result));
         self.latest_model = EditorUiModelComposer::compose(&self.session);
-        self.sync_gateway_access_requests();
         self.sync_project_runtime_trust_prompt();
         self.latest_model.interaction_feedback = self.last_feedback.clone();
         self.redraw_requested = true;
@@ -2774,227 +2656,6 @@ impl NativeEditorApplication {
                 dependency_summary: pending.inspection.dependency_summary.clone(),
                 identity_changed: pending.identity_changed,
             });
-    }
-
-    pub fn gateway_client(&self) -> ai_tool_gateway::GatewayOwnerThreadClient {
-        self.gateway_client.clone()
-    }
-
-    pub fn request_gateway_goal_mutation_access(
-        &mut self,
-        client_session_id: &str,
-        goal_binding: editor_core::AiGoalBinding,
-        risk_envelope: editor_core::AiRiskEnvelope,
-    ) -> Result<ai_tool_gateway::GatewayAccessRequest, ai_tool_gateway::GatewayControlError> {
-        let request = self.gateway_core.request_goal_mutation_access(
-            &self.session,
-            client_session_id,
-            goal_binding,
-            risk_envelope,
-        )?;
-        self.sync_gateway_access_requests();
-        self.redraw_requested = true;
-        Ok(request)
-    }
-
-    pub fn gateway_host_binding(&self) -> Option<&ai_tool_gateway::EditorGatewayHostBinding> {
-        self.gateway_host.as_ref().map(|host| host.binding())
-    }
-
-    pub fn editor_instance_id(&self) -> &str {
-        &self.editor_instance_id
-    }
-
-    pub fn gateway_discovery_path(&self) -> Option<&Path> {
-        self.gateway_host.as_ref().map(|host| host.discovery_path())
-    }
-
-    pub fn gateway_host_error(&self) -> Option<&ai_tool_gateway::GatewayControlError> {
-        self.gateway_host_error.as_ref()
-    }
-
-    pub fn last_gateway_access_decision_receipt(
-        &self,
-    ) -> Option<&ai_tool_gateway::GatewayAccessDecisionReceipt> {
-        self.last_gateway_access_decision_receipt.as_ref()
-    }
-
-    pub fn last_gateway_grant_receipt(
-        &self,
-    ) -> Option<&ai_tool_gateway::GatewayAccessDecisionReceipt> {
-        self.last_gateway_access_decision_receipt()
-    }
-
-    pub fn last_gateway_requests_processed(&self) -> usize {
-        self.last_gateway_requests_processed
-    }
-
-    fn reconcile_gateway_host(&mut self) {
-        if !self.gateway_host_enabled {
-            return;
-        }
-        let desired_binding = ai_tool_gateway::EditorGatewayHostBinding {
-            editor_instance_id: self.editor_instance_id.clone(),
-        };
-        if self
-            .gateway_host
-            .as_ref()
-            .map(|host| host.binding() == &desired_binding)
-            .unwrap_or(false)
-        {
-            return;
-        }
-        self.gateway_host.take();
-        if self.gateway_host_attempted_binding.as_ref() == Some(&desired_binding) {
-            return;
-        }
-        self.gateway_host_attempted_binding = Some(desired_binding.clone());
-        let started = match &self.gateway_discovery_root_override {
-            Some(root) => ai_tool_gateway::EditorGatewayHost::start_in_root(
-                root,
-                desired_binding.editor_instance_id.clone(),
-                self.gateway_client.clone(),
-            ),
-            None => ai_tool_gateway::EditorGatewayHost::start(
-                desired_binding.editor_instance_id.clone(),
-                self.gateway_client.clone(),
-            ),
-        };
-        match started {
-            Ok(host) => {
-                self.gateway_host_error = None;
-                self.gateway_host = Some(host);
-            }
-            Err(error) => {
-                self.gateway_host_error = Some(error);
-            }
-        }
-    }
-
-    fn sync_gateway_access_requests(&mut self) {
-        const PAGE_SIZE: usize = 2;
-
-        let now = epoch_ms();
-        let _ = self.gateway_core.prune(&self.session, now);
-        let requests = self.gateway_core.approval_inbox(now);
-        let total_count = requests.len();
-        let page_count = total_count.div_ceil(PAGE_SIZE);
-        self.gateway_access_page = self.gateway_access_page.min(page_count.saturating_sub(1));
-        let page_start = self.gateway_access_page.saturating_mul(PAGE_SIZE);
-        let page_end = (page_start + PAGE_SIZE).min(total_count);
-        let page_requests = requests
-            .get(page_start..page_end)
-            .unwrap_or_default()
-            .iter()
-            .map(|request| GatewayAccessRequestModel {
-                request_id: request.request_id.clone(),
-                operation_short_id: request
-                    .operation_id
-                    .as_deref()
-                    .map(short_gateway_session_id)
-                    .unwrap_or_else(|| "manual".to_string()),
-                client_session_id: request.client_session_id.clone(),
-                session_short_id: short_gateway_session_id(&request.client_session_id),
-                client_kind: gateway_client_kind_label(request.client_kind).to_string(),
-                client_version: request.client_version.clone(),
-                project_identity: request.project_identity.clone(),
-                connected_age_ms: now.saturating_sub(request.connected_at_epoch_ms),
-                expires_in_ms: request.expires_at_epoch_ms.saturating_sub(now),
-                state: "awaiting_user".to_string(),
-                requested_profile: request.requested_profile.clone(),
-                risk_class: format!("{:?}", request.risk_envelope.risk_class),
-                capabilities: request.capabilities.clone(),
-                blocked_capabilities: request.blocked_capabilities.clone(),
-                goal_id: request.goal_binding.goal_id.clone(),
-                user_visible_outcome: request.goal_binding.user_visible_outcome.clone(),
-                completion_policy: format!("{:?}", request.goal_binding.completion_policy),
-                allowed_paths: request.risk_envelope.allowed_paths.clone(),
-                denied_paths: request.risk_envelope.denied_paths.clone(),
-                allowed_objects: request.risk_envelope.allowed_objects.clone(),
-                max_mutation_count: request.risk_envelope.max_mutation_count,
-                time_budget_ms: request.risk_envelope.time_budget_ms,
-                external_cost_budget_microunits: request
-                    .risk_envelope
-                    .external_cost_budget_microunits,
-                allow_delete: request.risk_envelope.allow_delete,
-                allow_dependency_change: request.risk_envelope.allow_dependency_change,
-                allow_network: request.risk_envelope.allow_network,
-                approval_digest: request.approval_digest.clone(),
-            })
-            .collect();
-        self.latest_model.ai_panel.gateway_access = editor_ui_model::GatewayAccessInboxModel {
-            requests: page_requests,
-            page_index: self.gateway_access_page,
-            page_count,
-            total_count,
-        };
-    }
-
-    fn dispatch_gateway_access_decision(
-        &mut self,
-        command: UiCommand,
-        request_id: String,
-        decision: ai_tool_gateway::GatewayAccessDecision,
-    ) -> CommandResult {
-        let command_id = if decision == ai_tool_gateway::GatewayAccessDecision::Approve {
-            "approve_gateway_access_request"
-        } else {
-            "reject_gateway_access_request"
-        };
-        let status = match self.gateway_core.decide_access(
-            &self.session,
-            &request_id,
-            decision,
-            "native-editor-user",
-            epoch_ms(),
-        ) {
-            Ok(receipt) => {
-                self.last_gateway_access_decision_receipt = Some(receipt);
-                CommandStatus::Committed
-            }
-            Err(error) => {
-                self.gateway_host_error = Some(error);
-                CommandStatus::Rejected
-            }
-        };
-        self.last_command_id = Some(command_id.to_string());
-        self.last_command_status = Some(status);
-        self.latest_model = EditorUiModelComposer::compose(&self.session);
-        self.apply_inspector_context_lock();
-        self.sync_gateway_access_requests();
-        self.redraw_requested = true;
-        CommandResult {
-            transaction_id: format!("gateway-access-decision-{}", self.frame_index),
-            request_id: command.request_id,
-            command_id: command_id.to_string(),
-            status,
-            diagnostics: Vec::new(),
-            console_entries: Vec::new(),
-            state_changes: Vec::new(),
-            ui_model_revision: self.latest_model.revision,
-        }
-    }
-
-    fn dispatch_gateway_access_page(
-        &mut self,
-        command: UiCommand,
-        page_index: usize,
-    ) -> CommandResult {
-        self.gateway_access_page = page_index;
-        self.sync_gateway_access_requests();
-        self.last_command_id = Some("set_gateway_access_page".to_string());
-        self.last_command_status = Some(CommandStatus::Committed);
-        self.redraw_requested = true;
-        CommandResult {
-            transaction_id: format!("gateway-access-page-{}", self.frame_index),
-            request_id: command.request_id,
-            command_id: "set_gateway_access_page".to_string(),
-            status: CommandStatus::Committed,
-            diagnostics: Vec::new(),
-            console_entries: Vec::new(),
-            state_changes: Vec::new(),
-            ui_model_revision: self.latest_model.revision,
-        }
     }
 
     pub fn tick_active_game_view_runtime_descriptor_frame(
@@ -3609,22 +3270,5 @@ fn native_host_result(
         console_entries: Vec::new(),
         state_changes: Vec::new(),
         ui_model_revision: 0,
-    }
-}
-
-fn short_gateway_session_id(client_session_id: &str) -> String {
-    let suffix = client_session_id
-        .strip_prefix("gateway-session-")
-        .unwrap_or(client_session_id);
-    let chars = suffix.chars().collect::<Vec<_>>();
-    chars[chars.len().saturating_sub(10)..].iter().collect()
-}
-
-fn gateway_client_kind_label(kind: ai_tool_gateway::ClientKind) -> &'static str {
-    match kind {
-        ai_tool_gateway::ClientKind::Mcp => "MCP",
-        ai_tool_gateway::ClientKind::Cli => "CLI",
-        ai_tool_gateway::ClientKind::NativeEditor => "Editor",
-        ai_tool_gateway::ClientKind::Test => "Test",
     }
 }

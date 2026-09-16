@@ -361,9 +361,6 @@ pub(crate) fn command_id_for_shell_payload(payload: &UiCommandPayload) -> &'stat
         }
         UiCommandPayload::SaveSceneDocument { .. } => "save_scene_document",
         UiCommandPayload::AiSubmitPrompt { .. } => "ai_submit_prompt",
-        UiCommandPayload::ApproveGatewayAccessRequest { .. } => "approve_gateway_access_request",
-        UiCommandPayload::RejectGatewayAccessRequest { .. } => "reject_gateway_access_request",
-        UiCommandPayload::SetGatewayAccessPage { .. } => "set_gateway_access_page",
         UiCommandPayload::AiAcceptProposedCommand { .. } => "ai_accept_proposed_command",
         UiCommandPayload::AiRejectProposedCommand { .. } => "ai_reject_proposed_command",
         UiCommandPayload::ClearConsole => "clear_console",

@@ -21,12 +21,17 @@ fn exported_player_process_verifier_runs_staged_game_exe_and_reads_child_report(
     stage_exported_package(&exported);
     let game_exe = exported.join(if cfg!(windows) { "Game.exe" } else { "Game" });
     fs::copy(env!("CARGO_BIN_EXE_ai_engine_runtime_cli"), &game_exe).unwrap();
+    // This fixture tests the generic empty-runtime process contract. Current
+    // dev DLL composition is covered by desktop_dev_consistency and the owner.
+    write_release_package_manifest(&exported, &game_exe, None);
 
     let report = verify_exported_player_process(ExportedPlayerProcessVerificationRequest {
         exported_package_dir: exported.clone(),
         mode: "headless-gate".to_string(),
         frame_limit: 3,
-        report_path: None,
+        report_path: Some(
+            exported.join("reports/exported-player-process-verification-report.json"),
+        ),
         timeout_ms: 30_000,
         screenshot: false,
         screenshot_path: None,
@@ -56,6 +61,7 @@ fn exported_game_exe_verify_entry_spawns_child_player_and_writes_parent_report()
     stage_exported_package(&exported);
     let game_exe = exported.join(if cfg!(windows) { "Game.exe" } else { "Game" });
     fs::copy(env!("CARGO_BIN_EXE_ai_engine_runtime_cli"), &game_exe).unwrap();
+    write_release_package_manifest(&exported, &game_exe, None);
     let parent_report = exported
         .join("reports")
         .join("exported-player-process-verification-report.json");
@@ -88,7 +94,7 @@ fn exported_game_exe_verify_entry_spawns_child_player_and_writes_parent_report()
 
 #[cfg(not(feature = "real-window"))]
 #[test]
-fn desktop_dev_game_exe_zero_arg_entrypoint_passes_manifest_resolution() {
+fn desktop_dev_game_exe_zero_arg_entrypoint_rejects_missing_identity() {
     let root = temp_root("desktop-dev-zero-arg-entrypoint");
     let exported = root.join("Build").join("Windows").join("dev");
     stage_exported_package(&exported);
@@ -97,10 +103,9 @@ fn desktop_dev_game_exe_zero_arg_entrypoint_passes_manifest_resolution() {
 
     let output = Command::new(&game_exe).current_dir(&root).output().unwrap();
 
-    assert_eq!(output.status.code(), Some(1));
+    assert_eq!(output.status.code(), Some(2));
     let stderr = String::from_utf8_lossy(&output.stderr);
-    assert!(!stderr.contains("packaged entrypoint unavailable"));
-    assert!(!stderr.contains("release_manifest_invalid"));
+    assert!(stderr.contains("desktop_dev_identity_missing"), "{stderr}");
 }
 
 #[cfg(not(feature = "real-window"))]
@@ -111,6 +116,7 @@ fn exported_game_exe_windowed_screenshot_reports_feature_disabled_without_faking
     stage_exported_package(&exported);
     let game_exe = exported.join(if cfg!(windows) { "Game.exe" } else { "Game" });
     fs::copy(env!("CARGO_BIN_EXE_ai_engine_runtime_cli"), &game_exe).unwrap();
+    write_release_package_manifest(&exported, &game_exe, None);
     let parent_report = exported
         .join("reports")
         .join("exported-player-process-verification-report.json");
@@ -204,7 +210,7 @@ fn stage_exported_package(exported: &Path) {
   "project": {
     "projectId": "project-exported-player-process-test",
     "name": "Exported Player Process Test",
-    "version": "0.0.3",
+    "version": "0.1.0",
     "runtimeModule": {
       "moduleId": "engine.empty.runtime",
       "interfaceVersion": "project-runtime-module.v2",
@@ -326,6 +332,225 @@ fn stage_exported_package(exported: &Path) {
     .unwrap();
 }
 
+#[cfg(windows)]
+fn semantic_scenario(
+    id: &str,
+    timeout: u64,
+) -> runtime_player_winit::semantic_outcome::PlaytestScenario {
+    serde_json::from_value(serde_json::json!({
+        "schemaVersion":"playtest-scenario.v1", "scenarioId":id, "initialSceneId":"scene-main",
+        "target":"windows-headless", "maxSimulationTicks":3, "maxPresentationFrames":8, "timeoutMs":timeout
+    })).unwrap()
+}
+
+#[cfg(windows)]
+#[test]
+fn semantic_playtest_real_worker_and_invalid_scene_preserve_outcome() {
+    use runtime_player_winit::semantic_outcome::OutcomeStatus;
+    let root = temp_root("semantic-worker");
+    stage_exported_package(&root);
+    let request = runtime_cli::SemanticPlaytestProcessRequest {
+        player_executable: env!("CARGO_BIN_EXE_ai_engine_runtime_cli").into(),
+        runtime_package: root.join("data/runtime_package"),
+        scenario: semantic_scenario("empty", 5000),
+        output_dir: root.join("valid"),
+    };
+    let report = runtime_cli::run_bounded_semantic_playtest(request.clone()).unwrap();
+    assert_eq!(report.overall, OutcomeStatus::Passed, "{report:#?}");
+    assert_eq!(report.outcome.gameplay, OutcomeStatus::NotChecked);
+    assert_eq!(report.outcome.visual, OutcomeStatus::NotChecked);
+    assert!(report.process.owned_process_cleanup_confirmed());
+    assert_eq!(
+        report
+            .player
+            .unwrap()
+            .semantic_playtest
+            .unwrap()
+            .simulation_ticks,
+        3
+    );
+    assert!(runtime_cli::run_bounded_semantic_playtest(request.clone())
+        .unwrap_err()
+        .contains("output_not_fresh"));
+    let mut invalid = request;
+    invalid.output_dir = root.join("invalid");
+    invalid.scenario.initial_scene_id = "wrong-scene".into();
+    let report = runtime_cli::run_bounded_semantic_playtest(invalid).unwrap();
+    assert_eq!(report.overall, OutcomeStatus::Failed);
+    assert!(report.process.owned_process_cleanup_confirmed());
+    assert!(report
+        .player
+        .unwrap()
+        .diagnostics
+        .iter()
+        .any(|d| d.code == "playtest.initial_scene_mismatch"));
+    let scenario_path = root.join("scenario.json");
+    fs::write(
+        &scenario_path,
+        serde_json::to_vec(&semantic_scenario("cli", 5000)).unwrap(),
+    )
+    .unwrap();
+    let cli = runtime_cli::run_bounded_child_process(runtime_cli::BoundedChildProcessRequest {
+        executable: env!("CARGO_BIN_EXE_ai_engine_runtime_cli").into(),
+        args: vec![
+            "playtest".into(),
+            "--package".into(),
+            root.join("data/runtime_package").into_os_string(),
+            "--scenario".into(),
+            scenario_path.into_os_string(),
+            "--output-dir".into(),
+            root.join("cli").into_os_string(),
+        ],
+        current_dir: root.clone(),
+        environment: Vec::new(),
+        timeout: Duration::from_secs(10),
+        stdout_capture_limit_bytes: 32 * 1024,
+        stderr_capture_limit_bytes: 4096,
+        priority: runtime_cli::BoundedChildProcessPriority::Normal,
+    });
+    assert_eq!(cli.exit_code, Some(0), "{cli:#?}");
+    assert!(cli.owned_process_cleanup_confirmed());
+    let report: runtime_cli::SemanticPlaytestProcessReport =
+        serde_json::from_slice(&fs::read(root.join("cli/result.json")).unwrap()).unwrap();
+    assert_eq!(report.overall, OutcomeStatus::Passed);
+    let reference =
+        runtime_cli::retain_semantic_playtest_evidence(&root.join("cli/result.json")).unwrap();
+    for _ in 0..2 {
+        let observed = runtime_cli::read_semantic_playtest_evidence(&reference).unwrap();
+        assert_eq!(observed.run_id, report.run_id);
+        assert_eq!(observed.process.process_id, report.process.process_id);
+    }
+    let mut stale = reference.clone();
+    stale.run_id = "stale-run".into();
+    assert!(runtime_cli::read_semantic_playtest_evidence(&stale)
+        .unwrap_err()
+        .contains("identity_mismatch"));
+    let input_path = root.join("cli/request.json");
+    let mut input: serde_json::Value =
+        serde_json::from_slice(&fs::read(&input_path).unwrap()).unwrap();
+    input["scenario"]["scenarioId"] = "other-scenario".into();
+    fs::write(&input_path, serde_json::to_vec(&input).unwrap()).unwrap();
+    assert!(runtime_cli::read_semantic_playtest_evidence(&reference)
+        .unwrap_err()
+        .contains("identity_mismatch"));
+    fs::remove_dir_all(root).unwrap();
+}
+
+#[cfg(windows)]
+#[test]
+fn semantic_playtest_missing_report_nonzero_and_timeout_fail_closed() {
+    use runtime_player_winit::semantic_outcome::OutcomeStatus;
+    let root = temp_root("semantic-faults");
+    fs::create_dir_all(&root).unwrap();
+    for (id, expected) in [
+        (
+            "fixture.no-report",
+            runtime_cli::BoundedChildProcessExitReason::Completed,
+        ),
+        (
+            "fixture.nonzero",
+            runtime_cli::BoundedChildProcessExitReason::Failed,
+        ),
+        (
+            "fixture.timeout",
+            runtime_cli::BoundedChildProcessExitReason::Timeout,
+        ),
+    ] {
+        let output = root.join(id);
+        let started = Instant::now();
+        let report = runtime_cli::run_bounded_semantic_playtest(
+            runtime_cli::SemanticPlaytestProcessRequest {
+                player_executable: env!("CARGO_BIN_EXE_bounded_output_fixture").into(),
+                runtime_package: root.clone(),
+                scenario: semantic_scenario(id, if id == "fixture.timeout" { 2000 } else { 5000 }),
+                output_dir: output.clone(),
+            },
+        )
+        .unwrap();
+        assert_eq!(report.process.exit_reason, expected, "{report:#?}");
+        assert_eq!(report.overall, OutcomeStatus::Failed);
+        assert!(report.process.owned_process_cleanup_confirmed());
+        assert!(started.elapsed() < Duration::from_secs(8));
+        if id == "fixture.timeout" {
+            assert!(report
+                .process
+                .stderr_summary
+                .contains("timeout first cause"));
+            assert!(output.join("player.ready").exists());
+            assert_semantic_processes_exited(&output.join("player.ready"));
+        }
+        assert!(output.join("result.json").exists());
+    }
+    fs::remove_dir_all(root).unwrap();
+}
+
+#[cfg(windows)]
+#[test]
+fn semantic_playtest_owner_loss_closes_job_and_kills_descendants() {
+    let root = temp_root("semantic-owner-loss");
+    fs::create_dir_all(&root).unwrap();
+    fs::write(
+        root.join("scenario.json"),
+        serde_json::to_vec(&semantic_scenario("fixture.timeout", 5000)).unwrap(),
+    )
+    .unwrap();
+    let mut owner = Command::new(env!("CARGO_BIN_EXE_bounded_output_fixture"))
+        .arg("semantic-owner")
+        .arg(&root)
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn()
+        .unwrap();
+    let started = Instant::now();
+    let ready = root.join("owned-run/player.ready");
+    while !ready.exists() && started.elapsed() < Duration::from_secs(3) {
+        thread::sleep(Duration::from_millis(10));
+    }
+    let observed_ready = ready.exists();
+    let _ = owner.kill();
+    owner.wait().unwrap();
+    assert!(observed_ready, "owned worker never started");
+    assert_semantic_processes_exited(&ready);
+    fs::remove_dir_all(root).unwrap();
+}
+
+#[cfg(windows)]
+fn assert_semantic_processes_exited(ready: &Path) {
+    use windows_sys::Win32::Foundation::{CloseHandle, GetLastError, ERROR_INVALID_PARAMETER};
+    use windows_sys::Win32::System::Threading::{
+        GetExitCodeProcess, OpenProcess, PROCESS_QUERY_LIMITED_INFORMATION,
+    };
+    let pids: Vec<u32> = serde_json::from_slice(&fs::read(ready).unwrap()).unwrap();
+    for pid in pids {
+        let started = Instant::now();
+        loop {
+            // Query only the fixture-owned process IDs, never terminate an unrelated process.
+            let exited = unsafe {
+                let handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, 0, pid);
+                if handle.is_null() {
+                    assert_eq!(GetLastError(), ERROR_INVALID_PARAMETER);
+                    true
+                } else {
+                    let mut code = 0;
+                    let queried = GetExitCodeProcess(handle, &mut code);
+                    CloseHandle(handle);
+                    assert_ne!(queried, 0);
+                    code != 259
+                }
+            };
+            if exited {
+                break;
+            }
+            assert!(
+                started.elapsed() < Duration::from_secs(2),
+                "owned PID {pid} still running"
+            );
+            thread::sleep(Duration::from_millis(10));
+        }
+    }
+}
+
 fn write_release_package_manifest(
     exported: &Path,
     entrypoint: &Path,
@@ -337,7 +562,11 @@ fn write_release_package_manifest(
     let runtime_manifest_bytes = fs::read(&runtime_manifest).unwrap();
     let files = vec![
         ReleasePackageFile {
-            path: "ComplexShooter.exe".to_string(),
+            path: entrypoint
+                .file_name()
+                .unwrap()
+                .to_string_lossy()
+                .into_owned(),
             size: entrypoint_bytes.len() as u64,
             sha256: sha256_prefixed(&entrypoint_bytes),
             roles: vec![
@@ -356,7 +585,11 @@ fn write_release_package_manifest(
         schema_version: RELEASE_PACKAGE_MANIFEST_SCHEMA_VERSION.to_string(),
         application: ReleasePackageApplication {
             display_name: "Complex Shooter".to_string(),
-            executable_name: "ComplexShooter".to_string(),
+            executable_name: entrypoint
+                .file_stem()
+                .unwrap()
+                .to_string_lossy()
+                .into_owned(),
             company_name: "AI First Engine Studio".to_string(),
             file_description: "Complex Shooter".to_string(),
             display_version: "1.0.0".to_string(),
@@ -370,7 +603,11 @@ fn write_release_package_manifest(
             profile: "release".to_string(),
         },
         launch: ReleasePackageLaunch { user_frame_limit },
-        entrypoint: "ComplexShooter.exe".to_string(),
+        entrypoint: entrypoint
+            .file_name()
+            .unwrap()
+            .to_string_lossy()
+            .into_owned(),
         runtime_package: "data/runtime_package".to_string(),
         runtime_content_hash: format!("sha256:{}", "a".repeat(64)),
         release_payload_hash: release_payload_hash(&files),

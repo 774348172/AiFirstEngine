@@ -4,9 +4,9 @@ use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::{
-    scan_input_action_references, CommandResult, CommandStatus, CommandTransaction,
-    EditorSceneDocument, EditorSession, InputMappingAuthoringService, InputMappingEditCommand,
-    ProjectCreateError, SceneSelection, SceneUndoStack, StateChangeSummary,
+    scan_input_action_references, CommandResult, CommandStatus, CommandTransaction, EditorSession,
+    InputMappingAuthoringService, InputMappingEditCommand, ProjectCreateError, SceneSelection,
+    SceneUndoStack, StateChangeSummary,
 };
 
 pub(crate) struct ToolProjectCreateOutcome {
@@ -1078,7 +1078,7 @@ impl EditorSession {
     }
 
     pub(crate) fn open_scene_document_for_launcher(&mut self, path: &Path) -> bool {
-        match EditorSceneDocument::load_from_path(path) {
+        match self.load_scene_document_from_context(path) {
             Ok(document) => {
                 self.scene_path = Some(path.to_path_buf());
                 self.editor_scene_document = Some(document);

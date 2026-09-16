@@ -1,0 +1,18 @@
+{
+  "schemaVersion": "aife-project.v2",
+  "projectId": "project-font-bundle-v2-showcase",
+  "projectName": "Font Bundle Showcase",
+  "engineVersion": "0.1.0",
+  "createdAt": "1785244613",
+  "lastOpenedAt": "1785244613",
+  "defaultScene": "Scenes/Main.scene.json",
+  "assetRoot": "Assets",
+  "settingsVersion": "aife-project-settings.v1",
+  "runtimeModule": {
+    "moduleId": "fixture.font-bundle-showcase.runtime",
+    "interfaceVersion": "project-runtime-module.v2",
+    "cargoManifest": "RuntimeModule/Cargo.toml",
+    "cargoPackage": "font_bundle_showcase_runtime",
+    "playerBinary": "font_bundle_showcase_player"
+  }
+}

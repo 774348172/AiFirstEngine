@@ -1,21 +1,21 @@
 # 发布到 GitHub 和 Gitee
 
-本目录是独立的 V0.0.3 源码发布仓库，并继承 V0.0.1/V0.0.2 Git 历史。不要把上级主仓库的 `samples`、`target`、`evidence`、施工资料或其它 `release` 内容带入。
+本目录是独立的 V0.0.4 源码发布仓库，并继承 V0.0.1/V0.0.2 Git 历史。不要把上级主仓库的 `samples`、`target`、`evidence`、施工资料或其它 `release` 内容带入。
 
 ## 发布身份
 
 ```text
 branch: main
-tag: v0.0.3
-commit message: release: AI First Game Engine v0.0.3
+tag: V0.0.4
+commit message: release: AI First Game Engine V0.0.4
 ```
 
 发布 commit 和 annotated tag 由成包流程创建。推送前应确认：
 
 ```powershell
 git status --short
-git cat-file -t v0.0.3
-git show --stat --oneline v0.0.3
+git cat-file -t V0.0.4
+git show --stat --oneline V0.0.4
 ```
 
 ## 双远端
@@ -32,11 +32,12 @@ git remote -v
 
 ```powershell
 git push -u github main
-git push github v0.0.3
+git push github V0.0.4
 git push -u origin main
-git push origin v0.0.3
+git push origin V0.0.4
 ```
 
 推送会改变远端状态，不属于本地成包步骤，必须单独确认后执行。本地成包不会自动推送。
 
-推荐在两个平台的 Release 页面使用 [RELEASE_NOTES.md](RELEASE_NOTES.md) 作为版本介绍，并附上成包流程生成的 `AiFirstGameEngine-v0.0.3-source.zip` 及其 SHA-256。
+推荐在两个平台的 Release 页面使用 [RELEASE_NOTES.md](RELEASE_NOTES.md) 作为版本介绍，并附上成包流程生成的 `AiFirstGameEngine-V0.0.4-source.zip` 及其 SHA-256。
+

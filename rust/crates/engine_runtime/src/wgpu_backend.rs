@@ -132,6 +132,9 @@ impl WgpuBackend {
 
     fn record_payload(&mut self, payload: &RhiDrawPayload) {
         match payload {
+            RhiDrawPayload::Particles { .. } => {
+                self.pipeline_keys.insert("particle-indirect".into());
+            }
             RhiDrawPayload::TestGeometry { .. } => {
                 self.pipeline_keys
                     .insert("test-geometry.default".to_string());
@@ -194,6 +197,29 @@ impl WgpuBackend {
 }
 
 impl EngineRhiBackend for WgpuBackend {
+    fn reconcile_particles(
+        &mut self,
+        sources: &[crate::particle_render_contract::ParticleSourceFrame],
+    ) {
+        if !sources.is_empty() && !self.device_context.real_wgpu_enabled {
+            self.diagnostics.push(RhiBackendDiagnostic::error(
+                "particle_render.unsupported_backend",
+                "GPU particles require real WGPU",
+            ));
+        }
+    }
+    fn particle_step(
+        &mut self,
+        _instance: u64,
+        _step: &crate::particle_render_contract::ParticleRenderStep,
+    ) {
+        if !self.device_context.real_wgpu_enabled {
+            self.diagnostics.push(RhiBackendDiagnostic::error(
+                "particle_render.unsupported_backend",
+                "GPU particle simulation requires real WGPU",
+            ));
+        }
+    }
     fn backend_kind(&self) -> &'static str {
         "wgpu"
     }
@@ -334,6 +360,10 @@ pub mod real {
     }
 
     pub struct RealWgpuBackend {
+        measurement: Option<crate::gpu_frame_measurement::GpuFrameMeasurement>,
+        particle_meshes: BTreeMap<RenderResourceHandle, crate::particle_render::ParticleMesh>,
+        particle_depth: Option<(u32, u32, wgpu::TextureView)>,
+        particle_occluder_pipeline: Option<wgpu::RenderPipeline>,
         device: wgpu::Device,
         queue: wgpu::Queue,
         format: wgpu::TextureFormat,
@@ -345,6 +375,11 @@ pub mod real {
         msdf_font_pipeline: wgpu::RenderPipeline,
         texture_bind_group_layout: wgpu::BindGroupLayout,
         textures: BTreeMap<RenderResourceHandle, ResidentTexture>,
+        particle_effects: BTreeMap<u64, crate::particle_gpu::ParticleGpuEffect>,
+        project_particle_sources:
+            BTreeMap<u64, crate::particle_render_contract::ParticleSourceFrame>,
+        owned_particle_textures: std::collections::BTreeSet<RenderResourceHandle>,
+        owned_particle_meshes: std::collections::BTreeSet<RenderResourceHandle>,
         state: WgpuBackend,
     }
 
@@ -382,6 +417,7 @@ pub mod real {
             };
 
             Self {
+                measurement: None,
                 device,
                 queue,
                 format,
@@ -393,6 +429,13 @@ pub mod real {
                 msdf_font_pipeline,
                 texture_bind_group_layout,
                 textures: BTreeMap::new(),
+                particle_effects: BTreeMap::new(),
+                project_particle_sources: BTreeMap::new(),
+                owned_particle_textures: Default::default(),
+                owned_particle_meshes: Default::default(),
+                particle_meshes: BTreeMap::new(),
+                particle_depth: None,
+                particle_occluder_pipeline: None,
                 state,
             }
         }
@@ -413,6 +456,30 @@ pub mod real {
                 height,
                 backend_name,
             )
+        }
+
+        pub fn enable_frame_measurement(
+            &mut self,
+            info: &wgpu::AdapterInfo,
+            warmup: u64,
+            samples: u64,
+        ) -> Result<(), String> {
+            self.measurement = Some(crate::gpu_frame_measurement::GpuFrameMeasurement::new(
+                &self.device,
+                &self.queue,
+                info,
+                warmup,
+                samples,
+            )?);
+            Ok(())
+        }
+
+        pub fn finish_frame_measurement(
+            &mut self,
+        ) -> Option<crate::windowed_player::WindowedPlayerGpuPerformance> {
+            self.measurement
+                .take()
+                .map(|m| m.finish(&self.device, &self.queue))
         }
 
         pub fn new_offscreen(width: u32, height: u32) -> Result<Self, String> {
@@ -441,23 +508,274 @@ pub mod real {
                 }))
                 .map_err(|error| format!("wgpu_backend.request_adapter_failed:{error}"))?;
             let backend_name = format!("{:?}", adapter.get_info().backend);
-            let (device, queue) = pollster::block_on(
-                adapter.request_device(&wgpu::DeviceDescriptor {
+            #[cfg(test)]
+            if std::env::var_os("PARTICLE_RENDER_EVIDENCE_DIR").is_some() {
+                eprintln!("343 GPU: {:?}", adapter.get_info());
+            }
+            let required_limits = crate::particle_gpu::renderer_device_limits(adapter.limits());
+            let (device, queue) =
+                pollster::block_on(adapter.request_device(&wgpu::DeviceDescriptor {
                     label: Some("runtime-wgpu-device"),
                     required_features: wgpu::Features::empty(),
-                    required_limits: wgpu::Limits::downlevel_webgl2_defaults()
-                        .using_resolution(adapter.limits()),
+                    required_limits,
                     memory_hints: wgpu::MemoryHints::Performance,
                     trace: wgpu::Trace::Off,
-                }),
-            )
-            .map_err(|error| format!("wgpu_backend.request_device_failed:{error}"))?;
+                }))
+                .map_err(|error| format!("wgpu_backend.request_device_failed:{error}"))?;
             let format = wgpu::TextureFormat::Rgba8Unorm;
             let mut backend =
                 Self::from_device_queue(device, queue, format, width, height, backend_name);
             backend.state.target_context.target_id = "offscreen".to_string();
             backend.state.target_context.target_kind = "offscreenTexture".to_string();
             Ok(backend)
+        }
+
+        pub fn reconcile_project_particles(
+            &mut self,
+            sources: &[crate::particle_render_contract::ParticleSourceFrame],
+        ) -> Result<(), String> {
+            use crate::{
+                particle_effect::ParticleValue, runtime_particles::ParticlePreparedAssets,
+            };
+            let ids = sources
+                .iter()
+                .map(|s| s.instance)
+                .collect::<std::collections::BTreeSet<_>>();
+            if ids.len() != sources.len() {
+                return Err("particle_render.duplicate_instance".into());
+            }
+            let mut prepared = Vec::new();
+            for source in sources {
+                if !source.step.delta_seconds.to_f32().is_finite()
+                    || source.step.delta_seconds.to_f32() < 0.0
+                    || !source.step.origin.iter().all(|v| v.to_f32().is_finite())
+                {
+                    return Err("particle_gpu.invalid_step".into());
+                }
+                if let Some(old) = self.project_particle_sources.get(&source.instance) {
+                    if source.epoch < old.epoch || source.step.step_id < old.step.step_id {
+                        return Err("particle_render.stale_projection".into());
+                    }
+                    if !std::sync::Arc::ptr_eq(&old.assets, &source.assets)
+                        && old.assets != source.assets
+                    {
+                        return Err("particle_render.instance_asset_changed".into());
+                    }
+                    let parameters: std::collections::BTreeMap<String, ParticleValue> =
+                        serde_json::from_str(&source.parameters).map_err(|e| e.to_string())?;
+                    // Validate all sources before any clear/step or parameter upload.
+                    let effect = &self.particle_effects[&source.instance];
+                    effect.validate_parameters(&parameters)?;
+                    continue;
+                }
+                let assets: ParticlePreparedAssets = serde_json::from_str(&source.assets)
+                    .map_err(|e| format!("particle_render.assets_invalid:{e}"))?;
+                let count = assets.effect.description.emitters.len();
+                if [
+                    assets.textures.len(),
+                    assets.meshes.len(),
+                    assets.tints.len(),
+                    source.textures.len(),
+                    source.meshes.len(),
+                ]
+                .iter()
+                .any(|n| *n != count)
+                {
+                    return Err("particle_render.binding_count".into());
+                }
+                let mut effect =
+                    crate::particle_gpu::ParticleGpuEffect::new(&self.device, &assets.effect)?;
+                effect.enable_render(&self.device, self.format)?;
+                let parameters: std::collections::BTreeMap<String, ParticleValue> =
+                    serde_json::from_str(&source.parameters).map_err(|e| e.to_string())?;
+                effect.validate_parameters(&parameters)?;
+                let mut meshes = Vec::new();
+                for i in 0..count {
+                    let render = effect.emitters[i].render.as_mut().unwrap();
+                    if !assets.tints[i]
+                        .iter()
+                        .all(|v| v.is_finite() && *v >= 0.0 && *v <= 1.0)
+                    {
+                        return Err("particle_render.material_tint".into());
+                    }
+                    render.material_tint = assets.tints[i];
+                    render.material_resolved = true;
+                    render.validate_assets(
+                        assets.textures[i].is_some(),
+                        assets.meshes[i].is_some(),
+                    )?;
+                    if source.textures[i].is_some() != assets.textures[i].is_some()
+                        || source.meshes[i].is_some() != assets.meshes[i].is_some()
+                    {
+                        return Err("particle_render.binding_mismatch".into());
+                    }
+                    if let Some(t) = &assets.textures[i] {
+                        if t.width == 0
+                            || t.height == 0
+                            || u64::from(t.width) * u64::from(t.height) * 4 != t.rgba8.len() as u64
+                            || !matches!(t.format.as_str(), "rgba8Unorm" | "rgba8UnormSrgb")
+                        {
+                            return Err("particle_render.texture_invalid".into());
+                        }
+                    }
+                    meshes.push(
+                        assets.meshes[i]
+                            .as_ref()
+                            .map(|m| {
+                                crate::particle_render::ParticleMesh::new(
+                                    &self.device,
+                                    &m.positions,
+                                    &m.uvs,
+                                    &m.indices,
+                                )
+                            })
+                            .transpose()?,
+                    );
+                }
+                prepared.push((source, assets, effect, meshes));
+            }
+            for (source, assets, effect, meshes) in prepared {
+                for (i, mesh) in meshes.into_iter().enumerate() {
+                    if let Some(texture) = &assets.textures[i] {
+                        let handle = source.textures[i].unwrap();
+                        if !self.textures.contains_key(&handle) {
+                            self.register_cooked_texture(handle, texture)?;
+                            self.owned_particle_textures.insert(handle);
+                        }
+                    }
+                    if let Some(mesh) = mesh {
+                        let handle = source.meshes[i].unwrap();
+                        if !self.particle_meshes.contains_key(&handle) {
+                            self.particle_meshes.insert(handle, mesh);
+                            self.owned_particle_meshes.insert(handle);
+                        }
+                    }
+                }
+                self.particle_effects.insert(source.instance, effect);
+            }
+            for source in sources {
+                let old = self.project_particle_sources.get(&source.instance);
+                let restart = old.is_some_and(|old| old.epoch != source.epoch);
+                let parameters_changed = old.is_none_or(|old| {
+                    !std::sync::Arc::ptr_eq(&old.parameters, &source.parameters)
+                        && old.parameters != source.parameters
+                });
+                if restart {
+                    self.clear_particle_effect(source.instance)?;
+                }
+                if parameters_changed {
+                    let values =
+                        serde_json::from_str(&source.parameters).map_err(|e| e.to_string())?;
+                    self.particle_effects[&source.instance].set_parameters(&self.queue, &values)?;
+                }
+            }
+            let retired = self
+                .project_particle_sources
+                .keys()
+                .filter(|id| !ids.contains(id))
+                .copied()
+                .collect::<Vec<_>>();
+            for id in retired {
+                self.particle_effects.remove(&id);
+            }
+            self.project_particle_sources =
+                sources.iter().map(|s| (s.instance, s.clone())).collect();
+            let textures = sources
+                .iter()
+                .flat_map(|s| s.textures.iter().flatten().copied())
+                .collect::<std::collections::BTreeSet<_>>();
+            let meshes = sources
+                .iter()
+                .flat_map(|s| s.meshes.iter().flatten().copied())
+                .collect::<std::collections::BTreeSet<_>>();
+            self.owned_particle_textures.retain(|h| {
+                if textures.contains(h) {
+                    true
+                } else {
+                    self.textures.remove(h);
+                    false
+                }
+            });
+            self.owned_particle_meshes.retain(|h| {
+                if meshes.contains(h) {
+                    true
+                } else {
+                    self.particle_meshes.remove(h);
+                    false
+                }
+            });
+            // WGPU retains references for in-flight submissions; dropping owners does not destroy queued buffers.
+            Ok(())
+        }
+
+        pub fn install_particle_effect(
+            &mut self,
+            instance: u64,
+            cooked: &crate::particle_effect::CookedParticleEffect,
+        ) -> Result<(), String> {
+            if self.particle_effects.contains_key(&instance) {
+                return Err("particle_gpu.instance_already_exists".into());
+            }
+            let mut effect = crate::particle_gpu::ParticleGpuEffect::new(&self.device, cooked)?;
+            effect.enable_render(&self.device, self.format)?;
+            self.particle_effects.insert(instance, effect);
+            Ok(())
+        }
+
+        pub fn simulate_particle_effect(
+            &mut self,
+            instance: u64,
+            step: crate::particle_gpu::ParticleGpuStep,
+        ) -> Result<crate::particle_gpu::ParticleGpuStepReport, String> {
+            let effect = self
+                .particle_effects
+                .get_mut(&instance)
+                .ok_or("particle_gpu.instance_missing")?;
+            let mut encoder = self
+                .device
+                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                    label: Some("runtime-particle-simulation"),
+                });
+            let report = effect.encode_step(&self.device, &mut encoder, step)?;
+            if report.substeps > 0 {
+                self.queue.submit(Some(encoder.finish()));
+            }
+            Ok(report)
+        }
+
+        pub fn clear_particle_effect(&mut self, instance: u64) -> Result<(), String> {
+            let effect = self
+                .particle_effects
+                .get_mut(&instance)
+                .ok_or("particle_gpu.instance_missing")?;
+            let mut encoder = self
+                .device
+                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                    label: Some("runtime-particle-clear"),
+                });
+            effect.encode_clear(&mut encoder);
+            self.queue.submit(Some(encoder.finish()));
+            Ok(())
+        }
+
+        pub fn remove_particle_effect(&mut self, instance: u64) -> bool {
+            self.particle_effects.remove(&instance).is_some()
+        }
+
+        pub fn particle_buffer_bytes(&self, instance: u64) -> Option<u64> {
+            self.particle_effects
+                .get(&instance)
+                .map(|effect| effect.buffer_bytes())
+        }
+
+        pub fn capture_particle_state_for_validation(
+            &self,
+            instance: u64,
+        ) -> Result<Vec<crate::particle_gpu::ParticleGpuSnapshot>, String> {
+            self.particle_effects
+                .get(&instance)
+                .ok_or("particle_gpu.instance_missing")?
+                .readback_for_validation(&self.device, &self.queue)
         }
 
         pub fn register_rgba8_texture(
@@ -467,6 +785,41 @@ pub mod real {
             height: u32,
             rgba8: &[u8],
             sampler: &str,
+        ) -> Result<(), String> {
+            self.register_texture_bytes(
+                handle,
+                width,
+                height,
+                rgba8,
+                sampler,
+                wgpu::TextureFormat::Rgba8Unorm,
+            )
+        }
+
+        pub fn register_particle_mesh(
+            &mut self,
+            handle: RenderResourceHandle,
+            positions: &[[f32; 3]],
+            uvs: &[[f32; 2]],
+            indices: &[u32],
+        ) -> Result<(), String> {
+            if handle.kind != RenderResourceKind::MeshBuffer {
+                return Err("particle_render.mesh_handle_kind".into());
+            }
+            let mesh =
+                crate::particle_render::ParticleMesh::new(&self.device, positions, uvs, indices)?;
+            self.particle_meshes.insert(handle, mesh);
+            Ok(())
+        }
+
+        fn register_texture_bytes(
+            &mut self,
+            handle: RenderResourceHandle,
+            width: u32,
+            height: u32,
+            rgba8: &[u8],
+            sampler: &str,
+            format: wgpu::TextureFormat,
         ) -> Result<(), String> {
             if handle.kind != RenderResourceKind::Texture {
                 return Err("wgpu.texture_handle_kind_must_be_texture".to_string());
@@ -491,7 +844,7 @@ pub mod real {
                 mip_level_count: 1,
                 sample_count: 1,
                 dimension: wgpu::TextureDimension::D2,
-                format: wgpu::TextureFormat::Rgba8Unorm,
+                format,
                 usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
                 view_formats: &[],
             });
@@ -541,7 +894,30 @@ pub mod real {
                     _height: height,
                 },
             );
+            // Public registration makes this a shared renderer resource. The particle
+            // reconciler marks only its own new uploads as exclusively owned afterward.
+            self.owned_particle_textures.remove(&handle);
             Ok(())
+        }
+
+        pub fn register_cooked_texture(
+            &mut self,
+            handle: RenderResourceHandle,
+            payload: &crate::runtime_texture::RuntimeTexturePayload,
+        ) -> Result<(), String> {
+            let format = match payload.format.as_str() {
+                "rgba8UnormSrgb" => wgpu::TextureFormat::Rgba8UnormSrgb,
+                "rgba8Unorm" => wgpu::TextureFormat::Rgba8Unorm,
+                other => return Err(format!("unsupported cooked texture format: {other}")),
+            };
+            self.register_texture_bytes(
+                handle,
+                payload.width,
+                payload.height,
+                &payload.rgba8,
+                &payload.sampler,
+                format,
+            )
         }
 
         pub fn register_alpha8_texture(
@@ -767,6 +1143,7 @@ pub mod real {
                     .collect();
             }
             match draw_kind {
+                RhiDrawKind::Particles => Vec::new(),
                 RhiDrawKind::SpriteBasic
                 | RhiDrawKind::SpriteTextured
                 | RhiDrawKind::UiOverlay
@@ -858,6 +1235,12 @@ pub mod real {
             }
             for command in &plan.commands {
                 match command {
+                    RhiCommand::ReconcileParticles { sources } => {
+                        self.state.reconcile_particles(sources)
+                    }
+                    RhiCommand::SimulateParticles { instance, step } => {
+                        self.state.particle_step(*instance, step)
+                    }
                     RhiCommand::BeginFrame { target } => self.begin_frame(EngineRhiFrame {
                         frame_index: plan.frame_index,
                         target_id: target.clone(),
@@ -1014,6 +1397,26 @@ pub mod real {
             view: &wgpu::TextureView,
             display_content_rect: Option<GameViewRect>,
         ) -> Result<(), String> {
+            if plan.has_errors() {
+                return Err("wgpu.invalid_rhi_plan".into());
+            }
+            for command in &plan.commands {
+                if let RhiCommand::ReconcileParticles { sources } = command {
+                    self.reconcile_project_particles(sources)?;
+                }
+            }
+            if plan.commands.iter().any(|c| {
+                matches!(
+                    c,
+                    RhiCommand::SimulateParticles { .. }
+                        | RhiCommand::Draw {
+                            payload: RhiDrawPayload::Particles { .. },
+                            ..
+                        }
+                )
+            }) {
+                return self.render_particle_plan(plan, view, display_content_rect);
+            }
             if let Err(error) = self.validate_plan_texture_residency(plan) {
                 self.state.diagnostics.push(RhiBackendDiagnostic::error(
                     "wgpu.texture_binding_missing",
@@ -1029,6 +1432,9 @@ pub mod real {
                 .create_command_encoder(&wgpu::CommandEncoderDescriptor {
                     label: Some("runtime-wgpu-surface-encoder"),
                 });
+            if let Some(m) = &mut self.measurement {
+                m.begin(&mut encoder);
+            }
             let clear_color = plan.commands.iter().find_map(|command| match command {
                 RhiCommand::Clear { color, .. } => Some(wgpu::Color {
                     r: color[0].to_f32() as f64,
@@ -1099,6 +1505,9 @@ pub mod real {
                     }
                 }
             }
+            if let Some(m) = &mut self.measurement {
+                m.end(&mut encoder, &self.particle_effects)?;
+            }
             self.queue.submit(Some(encoder.finish()));
             Ok(())
         }
@@ -1117,6 +1526,359 @@ pub mod real {
                 _ => return None,
             };
             self.textures.get(handle)
+        }
+
+        fn render_particle_plan(
+            &mut self,
+            plan: &RhiCommandPlan,
+            view: &wgpu::TextureView,
+            rect: Option<GameViewRect>,
+        ) -> Result<(), String> {
+            self.validate_plan_texture_residency(plan)?;
+            // Validate every resource before advancing any effect clock.
+            for command in &plan.commands {
+                match command {
+                    RhiCommand::SimulateParticles { instance, step } => {
+                        if !self.particle_effects.contains_key(instance) {
+                            return Err("particle_gpu.instance_missing".into());
+                        }
+                        if !step.delta_seconds.to_f32().is_finite()
+                            || step.delta_seconds.to_f32() < 0.0
+                            || !step.origin.iter().all(|v| v.to_f32().is_finite())
+                        {
+                            return Err("particle_gpu.invalid_step".into());
+                        }
+                    }
+                    RhiCommand::Draw {
+                        payload:
+                            RhiDrawPayload::Particles {
+                                instance,
+                                emitter,
+                                view,
+                                texture,
+                                mesh,
+                            },
+                        ..
+                    } => {
+                        view.validate()?;
+                        let effect = self
+                            .particle_effects
+                            .get(instance)
+                            .ok_or("particle_gpu.instance_missing")?;
+                        let state = effect
+                            .emitters
+                            .get(*emitter as usize)
+                            .and_then(|e| e.render.as_ref())
+                            .ok_or("particle_render.emitter_missing")?;
+                        state.validate_assets(texture.is_some(), mesh.is_some())?;
+                        if texture.is_some_and(|h| !self.textures.contains_key(&h)) {
+                            return Err("particle_render.texture_missing".into());
+                        }
+                        if mesh.is_some_and(|h| !self.particle_meshes.contains_key(&h)) {
+                            return Err("particle_render.mesh_missing".into());
+                        }
+                    }
+                    _ => (),
+                }
+            }
+            let viewport = rect
+                .map(|r| surface_content_scissor(r).map(|s| (r, s)))
+                .transpose()?;
+            let width = view.texture().width();
+            let height = view.texture().height();
+            if self
+                .particle_depth
+                .as_ref()
+                .is_none_or(|(w, h, _)| *w != width || *h != height)
+            {
+                let texture = self.device.create_texture(&wgpu::TextureDescriptor {
+                    label: Some("runtime-particle-scene-depth"),
+                    size: wgpu::Extent3d {
+                        width,
+                        height,
+                        depth_or_array_layers: 1,
+                    },
+                    mip_level_count: 1,
+                    sample_count: 1,
+                    dimension: wgpu::TextureDimension::D2,
+                    format: wgpu::TextureFormat::Depth32Float,
+                    usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+                    view_formats: &[],
+                });
+                self.particle_depth =
+                    Some((width, height, texture.create_view(&Default::default())));
+            }
+            if self.particle_occluder_pipeline.is_none() {
+                self.particle_occluder_pipeline =
+                    Some(create_basic_pipeline(&self.device, self.format, true));
+            }
+            let depth = &self.particle_depth.as_ref().unwrap().2;
+            let mut encoder = self
+                .device
+                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                    label: Some("runtime-particle-graph"),
+                });
+            if let Some(m) = &mut self.measurement {
+                m.begin(&mut encoder);
+            }
+            let clear = plan
+                .commands
+                .iter()
+                .find_map(|c| {
+                    if let RhiCommand::Clear { color, .. } = c {
+                        Some(wgpu::Color {
+                            r: color[0].to_f32() as f64,
+                            g: color[1].to_f32() as f64,
+                            b: color[2].to_f32() as f64,
+                            a: color[3].to_f32() as f64,
+                        })
+                    } else {
+                        None
+                    }
+                })
+                .unwrap_or(wgpu::Color::BLACK);
+            {
+                let _pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                    label: Some("particle-scene-clear"),
+                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                        view,
+                        resolve_target: None,
+                        ops: wgpu::Operations {
+                            load: wgpu::LoadOp::Clear(clear),
+                            store: wgpu::StoreOp::Store,
+                        },
+                        depth_slice: None,
+                    })],
+                    depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                        view: depth,
+                        depth_ops: Some(wgpu::Operations {
+                            load: wgpu::LoadOp::Clear(1.0),
+                            store: wgpu::StoreOp::Store,
+                        }),
+                        stencil_ops: None,
+                    }),
+                    timestamp_writes: None,
+                    occlusion_query_set: None,
+                });
+            }
+            let mut consumed_through = 0;
+            for (command_index, command) in plan.commands.iter().enumerate() {
+                if command_index < consumed_through {
+                    continue;
+                }
+                if matches!(
+                    command,
+                    RhiCommand::Draw {
+                        payload: RhiDrawPayload::Particles { .. },
+                        ..
+                    }
+                ) {
+                    // Prepare consecutive independent emitter draws, then keep them
+                    // in one render pass. Preserve ordering around non-particle work
+                    // and split repeated emitters because their uniforms are mutable.
+                    let mut keys = std::collections::BTreeSet::new();
+                    let mut batch = Vec::new();
+                    let prepare_start = self
+                        .measurement
+                        .as_mut()
+                        .map(|m| m.mark(&mut encoder))
+                        .transpose()?
+                        .flatten();
+                    for next in &plan.commands[command_index..] {
+                        let RhiCommand::Draw {
+                            payload:
+                                RhiDrawPayload::Particles {
+                                    instance,
+                                    emitter,
+                                    view: camera,
+                                    texture,
+                                    mesh,
+                                },
+                            ..
+                        } = next
+                        else {
+                            break;
+                        };
+                        if !keys.insert((*instance, *emitter)) {
+                            break;
+                        }
+                        let effect = &self.particle_effects[instance];
+                        let render = effect.emitters[*emitter as usize].render.as_ref().unwrap();
+                        let (bindings, dispatches) = render.prepare(
+                            &self.device,
+                            &mut encoder,
+                            camera,
+                            effect.time_seconds() as f32,
+                            texture
+                                .and_then(|h| self.textures.get(&h))
+                                .map(|t| (&t._view, &t._sampler)),
+                            mesh.and_then(|h| self.particle_meshes.get(&h)),
+                        )?;
+                        if let Some(m) = &mut self.measurement {
+                            m.dispatches(dispatches);
+                        }
+                        batch.push((render, bindings));
+                    }
+                    {
+                        let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
+                            label: Some("particle-independent-prepare-batch"),
+                            timestamp_writes: None,
+                        });
+                        for (render, _) in &batch {
+                            render.encode_unordered_prepare(&mut pass);
+                        }
+                    }
+                    if let Some(m) = &mut self.measurement {
+                        m.end_range(&mut encoder, prepare_start, 2)?;
+                    }
+                    consumed_through = command_index + batch.len();
+                    let start = self
+                        .measurement
+                        .as_mut()
+                        .map(|m| m.mark(&mut encoder))
+                        .transpose()?
+                        .flatten();
+                    let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                        label: Some("runtime-particle-draw-batch"),
+                        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                            view,
+                            resolve_target: None,
+                            ops: wgpu::Operations {
+                                load: wgpu::LoadOp::Load,
+                                store: wgpu::StoreOp::Store,
+                            },
+                            depth_slice: None,
+                        })],
+                        depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                            view: depth,
+                            depth_ops: Some(wgpu::Operations {
+                                load: wgpu::LoadOp::Load,
+                                store: wgpu::StoreOp::Store,
+                            }),
+                            stencil_ops: None,
+                        }),
+                        timestamp_writes: None,
+                        occlusion_query_set: None,
+                    });
+                    if let Some((r, [x, y, w, h])) = viewport {
+                        pass.set_viewport(r.x, r.y, r.width, r.height, 0.0, 1.0);
+                        pass.set_scissor_rect(x, y, w, h);
+                    }
+                    for (render, bindings) in &batch {
+                        pass.set_pipeline(&render.pipeline);
+                        pass.set_bind_group(0, bindings, &[]);
+                        pass.draw_indirect(&render.indirect, 0);
+                    }
+                    drop(pass);
+                    if let Some(m) = &mut self.measurement {
+                        m.end_range(&mut encoder, start, 3)?;
+                        for _ in &batch {
+                            m.draw();
+                        }
+                    }
+                    continue;
+                }
+                if let RhiCommand::SimulateParticles { instance, step } = command {
+                    let start = self
+                        .measurement
+                        .as_mut()
+                        .map(|m| m.mark(&mut encoder))
+                        .transpose()?
+                        .flatten();
+                    let step_report = self
+                        .particle_effects
+                        .get_mut(instance)
+                        .unwrap()
+                        .encode_step(&self.device, &mut encoder, step.into())?;
+                    if let Some(m) = &mut self.measurement {
+                        m.end_range(&mut encoder, start, 1)?;
+                        m.dispatches(step_report.dispatch_count);
+                    }
+                    continue;
+                }
+                let RhiCommand::Draw {
+                    draw_kind,
+                    vertex_count,
+                    payload,
+                    ..
+                } = command
+                else {
+                    continue;
+                };
+                let vertices = Self::vertices_for_draw(*draw_kind, *vertex_count, payload);
+                if vertices.is_empty() {
+                    continue;
+                }
+                let vertex_buffer = (!vertices.is_empty()).then(|| {
+                    self.device
+                        .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                            label: Some("runtime-regular-draw"),
+                            contents: bytemuck::cast_slice(&vertices),
+                            usage: wgpu::BufferUsages::VERTEX,
+                        })
+                });
+                let occluder = matches!(
+                    draw_kind,
+                    RhiDrawKind::MeshBasic | RhiDrawKind::TestGeometry
+                );
+                let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                    label: Some("runtime-ordered-draw"),
+                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                        view,
+                        resolve_target: None,
+                        ops: wgpu::Operations {
+                            load: wgpu::LoadOp::Load,
+                            store: wgpu::StoreOp::Store,
+                        },
+                        depth_slice: None,
+                    })],
+                    depth_stencil_attachment: occluder.then_some(
+                        wgpu::RenderPassDepthStencilAttachment {
+                            view: depth,
+                            depth_ops: Some(wgpu::Operations {
+                                load: wgpu::LoadOp::Load,
+                                store: wgpu::StoreOp::Store,
+                            }),
+                            stencil_ops: None,
+                        },
+                    ),
+                    timestamp_writes: None,
+                    occlusion_query_set: None,
+                });
+                if let Some((r, [x, y, w, h])) = viewport {
+                    pass.set_viewport(r.x, r.y, r.width, r.height, 0.0, 1.0);
+                    pass.set_scissor_rect(x, y, w, h);
+                }
+                {
+                    if occluder {
+                        pass.set_pipeline(self.particle_occluder_pipeline.as_ref().unwrap());
+                    } else if let Some(texture) = self.texture_for_payload(payload) {
+                        let pipeline = match payload {
+                            RhiDrawPayload::UiComposition {
+                                font_render_mode: Some(FontBundleRenderMode::BitmapR8),
+                                ..
+                            } => &self.bitmap_font_pipeline,
+                            RhiDrawPayload::UiComposition {
+                                font_render_mode: Some(FontBundleRenderMode::MsdfRgba8),
+                                ..
+                            } => &self.msdf_font_pipeline,
+                            _ => &self.textured_pipeline,
+                        };
+                        pass.set_pipeline(pipeline);
+                        pass.set_bind_group(0, &texture.bind_group, &[]);
+                    } else {
+                        pass.set_pipeline(&self.pipeline);
+                    }
+                    pass.set_vertex_buffer(0, vertex_buffer.as_ref().unwrap().slice(..));
+                    pass.draw(0..vertices.len() as u32, 0..1);
+                }
+                drop(pass);
+            }
+            if let Some(m) = &mut self.measurement {
+                m.end(&mut encoder, &self.particle_effects)?;
+            }
+            self.queue.submit(Some(encoder.finish()));
+            Ok(())
         }
     }
 
@@ -1147,6 +1909,19 @@ pub mod real {
     }
 
     impl EngineRhiBackend for RealWgpuBackend {
+        fn reconcile_particles(
+            &mut self,
+            sources: &[crate::particle_render_contract::ParticleSourceFrame],
+        ) {
+            self.state.reconcile_particles(sources);
+        }
+        fn particle_step(
+            &mut self,
+            instance: u64,
+            step: &crate::particle_render_contract::ParticleRenderStep,
+        ) {
+            self.state.particle_step(instance, step);
+        }
         fn backend_kind(&self) -> &'static str {
             "wgpu"
         }
@@ -1205,6 +1980,13 @@ pub mod real {
     }
 
     fn create_pipeline(device: &wgpu::Device, format: wgpu::TextureFormat) -> wgpu::RenderPipeline {
+        create_basic_pipeline(device, format, false)
+    }
+    fn create_basic_pipeline(
+        device: &wgpu::Device,
+        format: wgpu::TextureFormat,
+        depth: bool,
+    ) -> wgpu::RenderPipeline {
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("runtime-wgpu-basic-shader"),
             source: wgpu::ShaderSource::Wgsl(
@@ -1252,7 +2034,13 @@ fn fs_main(in: VertexOut) -> @location(0) vec4<f32> {
                 topology: wgpu::PrimitiveTopology::TriangleList,
                 ..Default::default()
             },
-            depth_stencil: None,
+            depth_stencil: depth.then_some(wgpu::DepthStencilState {
+                format: wgpu::TextureFormat::Depth32Float,
+                depth_write_enabled: true,
+                depth_compare: wgpu::CompareFunction::LessEqual,
+                stencil: Default::default(),
+                bias: Default::default(),
+            }),
             multisample: wgpu::MultisampleState::default(),
             fragment: Some(wgpu::FragmentState {
                 module: &shader,
@@ -1646,6 +2434,41 @@ fn vs_main(
 
             assert_eq!(rgba.len(), 8 * 8 * 4);
             assert!(rgba.iter().any(|byte| *byte != 0));
+        }
+
+        #[test]
+        fn real_wgpu_cooked_texture_preserves_srgb_format() {
+            let mut backend = RealWgpuBackend::new_offscreen(8, 8)
+                .expect("GPU required for cooked texture format evidence");
+            let handle = RenderResourceHandle {
+                kind: RenderResourceKind::Texture,
+                index: 77,
+                generation: 1,
+            };
+            let mut payload = crate::runtime_texture::RuntimeTexturePayload {
+                asset_id: "mid-gray".into(),
+                cooked_asset_id: "mid-gray.cooked".into(),
+                width: 1,
+                height: 1,
+                format: "rgba8UnormSrgb".into(),
+                color_space: "srgb".into(),
+                mip_count: 1,
+                rgba8: vec![40, 44, 52, 255],
+                sampler: "linearClamp".into(),
+                source_hash: "fixture".into(),
+            };
+            backend.register_cooked_texture(handle, &payload).unwrap();
+            assert_eq!(
+                backend.textures[&handle]._texture.format(),
+                wgpu::TextureFormat::Rgba8UnormSrgb
+            );
+            payload.format = "rgba8Unorm".into();
+            payload.color_space = "linear".into();
+            backend.register_cooked_texture(handle, &payload).unwrap();
+            assert_eq!(
+                backend.textures[&handle]._texture.format(),
+                wgpu::TextureFormat::Rgba8Unorm
+            );
         }
 
         #[test]

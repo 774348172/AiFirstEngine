@@ -1,0 +1,80 @@
+{
+  "schema_version": "aui-document.v1",
+  "document_id": "font-showcase-hud",
+  "canvases": [
+    {
+      "canvas_id": "showcase-canvas",
+      "mode": "ScreenOverlay",
+      "composition_stage": "ScreenOverlay",
+      "visible": true,
+      "layer": 0,
+      "sorting_order": 0,
+      "reference_resolution": { "x": 1280.0, "y": 720.0 },
+      "scale_mode": "ConstantPixelSize",
+      "root_node": "showcase-root",
+      "screen_id": null,
+      "default_focus_node_id": null,
+      "cancel_action_id": null,
+      "submit_action_id": null
+    }
+  ],
+  "nodes": [
+    {
+      "node_id": "showcase-root",
+      "name": "Showcase Root",
+      "kind": "Panel",
+      "parent": null,
+      "children": ["showcase-text"],
+      "rect": {
+        "anchor_min": { "x": 0.0, "y": 0.0 },
+        "anchor_max": { "x": 1.0, "y": 1.0 },
+        "offset_min": { "x": 0.0, "y": 0.0 },
+        "offset_max": { "x": 0.0, "y": 0.0 },
+        "pivot": { "x": 0.5, "y": 0.5 },
+        "size": { "x": 0.0, "y": 0.0 }
+      },
+      "visible": true,
+      "interactable": false,
+      "style": null,
+      "text": null,
+      "image": null,
+      "progress_value": null,
+      "binding_refs": [],
+      "action_refs": []
+    },
+    {
+      "node_id": "showcase-text",
+      "name": "Showcase Text",
+      "kind": "Text",
+      "parent": "showcase-root",
+      "children": [],
+      "rect": {
+        "anchor_min": { "x": 0.0, "y": 0.0 },
+        "anchor_max": { "x": 0.0, "y": 0.0 },
+        "offset_min": { "x": 32.0, "y": 32.0 },
+        "offset_max": { "x": 0.0, "y": 0.0 },
+        "pivot": { "x": 0.0, "y": 0.0 },
+        "size": { "x": 400.0, "y": 64.0 }
+      },
+      "visible": true,
+      "interactable": false,
+      "style": {
+        "color": null,
+        "text_color": "#FFFFFF",
+        "font_size": 24.0,
+        "font": {
+          "fontBundleId": "font-profile-showcase-ui",
+          "fontFamilyId": "font-family-showcase-ui",
+          "style": "normal",
+          "weight": 400,
+          "rasterPolicy": "autoHybrid"
+        }
+      },
+      "text": "中界",
+      "image": null,
+      "progress_value": null,
+      "binding_refs": [],
+      "action_refs": []
+    }
+  ]
+}

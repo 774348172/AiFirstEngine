@@ -1,0 +1,19 @@
+[package]
+name = "engine_tool_provider"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+authoring_project_context = { path = "../authoring_project_context" }
+project_authoring_execution = { path = "../project_authoring_execution" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"

@@ -1,0 +1,16 @@
+[package]
+name = "project_game_sdk"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+project_runtime_sdk = { path = "../project_runtime_sdk" }
+serde = { version = "1", features = ["derive"] }

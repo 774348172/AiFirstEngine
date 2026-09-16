@@ -4,6 +4,10 @@ use crate::{
     ProjectManifest, ProjectRelativePath, ProjectWriteError, ProjectWriteScope,
     PROJECT_MANIFEST_SCHEMA_VERSION,
 };
+use authoring_project_context::{
+    EmbeddedAuthoringProjectContext, MutationCommitProgress, OpenOptions as AuthoringOpenOptions,
+    ProjectLocator, ProjectMutation, ProjectMutationOperation, PROJECT_MUTATION_SCHEMA_VERSION,
+};
 use engine_runtime::canonical_digest::sha256_prefixed;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
@@ -24,8 +28,6 @@ pub const PROJECT_ASSET_META_SCHEMA_VERSION: &str = "project-asset-meta.v1";
 pub const PROJECT_ASSET_DATABASE_SCHEMA_VERSION: &str = "project-asset-database.v1";
 pub const PROJECT_ASSET_GRAPH_SCHEMA_VERSION: &str = "project-asset-graph.v1";
 pub const PROJECT_ASSET_REGISTRY_SCHEMA_VERSION: &str = "project-asset-registry.v1";
-const PROJECT_ASSET_IMPORT_ROLLBACK_RECORD_SCHEMA_VERSION: &str =
-    "project-asset-import-rollback-record.v1";
 
 const TEXTURE_IMPORTER_ID: &str = "texture.png.v1";
 const TEXTURE_IMPORTER_VERSION: u32 = 1;
@@ -35,12 +37,9 @@ pub const FONT_SOURCE_IMPORTER_VERSION: u32 = 2;
 const ASSET_DATABASE_PATH: &str = "Library/AssetPipeline/asset-database.json";
 const ASSET_GRAPH_PATH: &str = "Library/AssetPipeline/asset-graph.json";
 const ASSET_REGISTRY_PATH: &str = "Library/AssetPipeline/asset-registry.json";
-const ASSET_IMPORT_LOCK_PATH: &str = "Library/AssetPipeline/import.lock";
 const MAX_SOURCE_BYTES: u64 = 64 * 1024 * 1024;
 const MAX_DECODED_BYTES: usize = 256 * 1024 * 1024;
 const MAX_TEXTURE_DIMENSION: u32 = 16_384;
-
-type CapturedFileState = (String, Option<Vec<u8>>);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -763,14 +762,6 @@ impl ProjectAssetImport {
         validate_candidate_record(&request.candidate)?;
         validate_passed_report(&request.candidate, &request.validation_report)?;
         let project_root = Path::new(&request.candidate.revision.project_root);
-        let scope = ProjectWriteScope::open(project_root).map_err(project_write_error)?;
-        let import_lock = scope
-            .acquire_lock(
-                ASSET_IMPORT_LOCK_PATH,
-                request.candidate.candidate_digest.as_bytes(),
-            )
-            .map_err(project_write_error)?;
-
         let current_report = Self::validate(&request.candidate)?;
         if current_report != request.validation_report {
             return Err(ProjectAssetImportError::new(
@@ -788,53 +779,80 @@ impl ProjectAssetImport {
 
         let desired = desired_transaction_files(&request.candidate)?;
         let changed_paths = desired.keys().cloned().collect::<Vec<_>>();
-        let rollback_record_path = rollback_record_path(&request.candidate);
-        let mut rollback_record = snapshot_before_transaction(
-            &scope,
-            &request.candidate,
-            &request.validation_report,
-            &desired,
-            &rollback_record_path,
-        )?;
-        rollback_record.record_digest = rollback_record_digest(&rollback_record)?;
-        rollback_record.receipt_binding_digest = receipt_binding_digest(
+        let mut context = EmbeddedAuthoringProjectContext::new();
+        let handle = context
+            .open(ProjectLocator::new(project_root), AuthoringOpenOptions)
+            .map_err(authoring_import_error)?;
+        let expected_revision = context
+            .current_revision(handle)
+            .map_err(authoring_import_error)?;
+        let expected_before = context
+            .capture_mutation_before(handle, &changed_paths)
+            .map_err(authoring_import_error)?;
+        let operations = desired
+            .iter()
+            .map(|(path, bytes)| match bytes {
+                Some(bytes) => ProjectMutationOperation::CreateOrReplace {
+                    path: path.clone(),
+                    bytes: bytes.clone(),
+                },
+                None => ProjectMutationOperation::Delete { path: path.clone() },
+            })
+            .collect::<Vec<_>>();
+        let mutation_id = format!(
+            "asset-{}",
+            &sha256_prefixed(
+                format!(
+                    "project-asset-import-mutation.v1\0{}\0{}",
+                    request.candidate.import_id, request.validation_report.validation_digest
+                )
+                .as_bytes()
+            )[7..39]
+        );
+        let mutation = ProjectMutation {
+            schema_version: PROJECT_MUTATION_SCHEMA_VERSION.to_string(),
+            mutation_id,
+            domain: "project_asset_import".to_string(),
+            expected_revision_id: expected_revision.revision_id,
+            validation_digest: request.validation_report.validation_digest.clone(),
+            declared_read_set: request.candidate.revision.changed_paths.clone(),
+            declared_write_set: changed_paths.clone(),
+            expected_before,
+            operations,
+        };
+        let mutation_receipt = if let Some(fail_after_write) = fail_after_write {
+            context.commit_mutation_controlled(handle, mutation, |progress| {
+                if matches!(
+                    progress,
+                    MutationCommitProgress::AfterOperation { index, .. }
+                        if index + 1 >= fail_after_write
+                ) {
+                    Err("injected asset import apply failure".to_string())
+                } else {
+                    Ok(())
+                }
+            })
+        } else {
+            context.commit_mutation(handle, mutation)
+        }
+        .map_err(authoring_import_error)?;
+
+        let scope = ProjectWriteScope::open(project_root).map_err(project_write_error)?;
+        if let Err(error) = verify_applied_transaction(&scope, &request.candidate) {
+            context
+                .rollback_mutation(handle, &mutation_receipt)
+                .map_err(authoring_import_error)?;
+            return Err(error);
+        }
+        let rollback_record_path = mutation_receipt.journal_path.clone();
+        let rollback_record_digest = mutation_receipt.binding_digest.clone();
+        let receipt_binding_digest = receipt_binding_digest(
             &request.candidate,
             &request.validation_report.validation_digest,
             &changed_paths,
             &rollback_record_path,
-            &rollback_record.record_digest,
+            &rollback_record_digest,
         )?;
-
-        if let Err(error) = persist_rollback_record(&scope, &rollback_record_path, &rollback_record)
-        {
-            return cleanup_unapplied_snapshots(
-                error,
-                &scope,
-                &rollback_record_path,
-                &rollback_record.snapshots,
-            );
-        }
-
-        if let Err(error) = apply_desired_files(&scope, &desired, fail_after_write) {
-            return fail_apply_and_restore(
-                error,
-                &scope,
-                &request.candidate.revision,
-                &rollback_record,
-                &rollback_record_path,
-            );
-        }
-        if let Err(error) =
-            verify_applied_transaction(&scope, &request.candidate, &rollback_record.snapshots)
-        {
-            return fail_apply_and_restore(
-                error,
-                &scope,
-                &request.candidate.revision,
-                &rollback_record,
-                &rollback_record_path,
-            );
-        }
 
         let receipt = ProjectAssetImportApplyReceipt {
             schema_version: PROJECT_ASSET_IMPORT_APPLY_RECEIPT_SCHEMA_VERSION.to_string(),
@@ -848,15 +866,14 @@ impl ProjectAssetImport {
             derived_applied_digest: request.candidate.derived_candidate_digest,
             changed_paths,
             rollback_record_path,
-            rollback_record_digest: rollback_record.record_digest,
-            receipt_binding_digest: rollback_record.receipt_binding_digest,
+            rollback_record_digest,
+            receipt_binding_digest,
             diagnostics: request.candidate.diagnostics,
             next_actions: vec![
-                "Keep the candidate and rollback snapshots until this import is accepted."
+                "Keep the candidate and sealed mutation receipt until this import is accepted."
                     .to_string(),
             ],
         };
-        import_lock.release().map_err(project_write_error)?;
         Ok(receipt)
     }
 
@@ -864,39 +881,40 @@ impl ProjectAssetImport {
         receipt: &ProjectAssetImportApplyReceipt,
         project_root: &Path,
     ) -> Result<ProjectAssetImportRollbackReceipt, ProjectAssetImportError> {
-        validate_apply_receipt(receipt)?;
-        let scope = ProjectWriteScope::open(project_root).map_err(project_write_error)?;
-        let import_lock = scope
-            .acquire_lock(
-                ASSET_IMPORT_LOCK_PATH,
-                receipt.receipt_binding_digest.as_bytes(),
-            )
-            .map_err(project_write_error)?;
-        verify_receipt_project_root(receipt, project_root)?;
-        verify_current_applied_state(&scope, receipt)?;
-
-        let record_bytes = scope
-            .read(&receipt.rollback_record_path)
-            .map_err(project_write_error)?;
-        let record: AssetImportRollbackRecord =
-            serde_json::from_slice(&record_bytes).map_err(|error| {
-                ProjectAssetImportError::new(
-                    "project_asset_import.rollback_record_invalid",
-                    format!("Rollback record cannot be decoded: {error}"),
-                    Some(Path::new(&receipt.rollback_record_path)),
-                    "Preserve the rollback artifacts and recover with a trusted maintainer.",
-                )
-            })?;
-        validate_rollback_record(&scope, receipt, &record)?;
-        let applied_state = capture_current_files(&scope, &receipt.changed_paths)?;
-
-        let rollback_result = restore_before_snapshots(&scope, &record.snapshots)
-            .and_then(|_| verify_restored_before_state(&scope, receipt, &record.snapshots));
-        if let Err(error) = rollback_result {
-            return fail_rollback_and_restore_applied(error, &scope, receipt, &applied_state);
+        validate_unified_import_receipt(receipt, project_root)?;
+        let mut context = EmbeddedAuthoringProjectContext::new();
+        let handle = context
+            .open(ProjectLocator::new(project_root), AuthoringOpenOptions)
+            .map_err(authoring_import_rollback_error)?;
+        let mutation_receipt = context
+            .mutation_receipt_for_journal(handle, &receipt.rollback_record_path)
+            .map_err(authoring_import_rollback_error)?;
+        if mutation_receipt.domain != "project_asset_import"
+            || mutation_receipt.binding_digest != receipt.rollback_record_digest
+        {
+            return Err(ProjectAssetImportError::new(
+                "project_asset_import.apply_receipt_binding_mismatch",
+                "Asset import receipt does not bind its sealed unified mutation.",
+                Some(Path::new(&receipt.rollback_record_path)),
+                "Reject the invalid apply receipt.",
+            ));
         }
-        cleanup_rollback_artifacts(&scope, &receipt.rollback_record_path, &record.snapshots)?;
-        import_lock.release().map_err(project_write_error)?;
+        context
+            .rollback_mutation(handle, &mutation_receipt)
+            .map_err(authoring_import_rollback_error)?;
+        let scope = ProjectWriteScope::open(project_root).map_err(project_write_error)?;
+        if derived_state_digest(&scope)? != receipt.derived_before_digest
+            || CandidateProjectRevisionStore::project_digest(project_root)
+                .map_err(candidate_error)?
+                != receipt.before_project_digest
+        {
+            return Err(ProjectAssetImportError::new(
+                "project_asset_import.rollback_digest_mismatch",
+                "Unified rollback did not restore the sealed source and derived identity.",
+                Some(project_root),
+                "Preserve the unified transaction and recover with a trusted maintainer.",
+            ));
+        }
         Ok(ProjectAssetImportRollbackReceipt {
             schema_version: PROJECT_ASSET_IMPORT_ROLLBACK_RECEIPT_SCHEMA_VERSION.to_string(),
             import_id: receipt.import_id.clone(),
@@ -906,41 +924,14 @@ impl ProjectAssetImport {
             restored_derived_digest: receipt.derived_before_digest.clone(),
             replaced_derived_digest: receipt.derived_applied_digest.clone(),
             changed_paths: receipt.changed_paths.clone(),
-            rollback_record_removed: true,
-            snapshot_files_removed: true,
+            rollback_record_removed: false,
+            snapshot_files_removed: false,
             diagnostics: Vec::new(),
             next_actions: vec![
                 "The project asset state is back at the pre-import revision.".to_string(),
             ],
         })
     }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
-struct AssetImportRollbackSnapshot {
-    path: String,
-    snapshot_path: Option<String>,
-    before_digest: Option<String>,
-    applied_digest: Option<String>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
-struct AssetImportRollbackRecord {
-    schema_version: String,
-    import_id: String,
-    revision_id: String,
-    validation_digest: String,
-    source_hash: String,
-    before_project_digest: String,
-    applied_project_digest: String,
-    derived_before_digest: String,
-    derived_applied_digest: String,
-    changed_paths: Vec<String>,
-    record_digest: String,
-    receipt_binding_digest: String,
-    snapshots: Vec<AssetImportRollbackSnapshot>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -997,198 +988,9 @@ fn desired_transaction_files(
     Ok(files)
 }
 
-fn rollback_transaction_id(candidate: &ProjectAssetImportCandidate) -> String {
-    let payload = format!(
-        "project-asset-import-transaction.v1\0{}\0{}",
-        candidate.import_id, candidate.revision.revision_id
-    );
-    format!(
-        "tx-{}",
-        sha256_prefixed(payload.as_bytes()).trim_start_matches("sha256:")
-    )
-}
-
-fn rollback_record_path(candidate: &ProjectAssetImportCandidate) -> String {
-    format!(
-        "Library/AssetPipeline/Rollback/{}/record.json",
-        rollback_transaction_id(candidate)
-    )
-}
-
-fn rollback_record_path_for(import_id: &str, revision_id: &str) -> String {
-    let payload = format!("project-asset-import-transaction.v1\0{import_id}\0{revision_id}");
-    format!(
-        "Library/AssetPipeline/Rollback/tx-{}/record.json",
-        sha256_prefixed(payload.as_bytes()).trim_start_matches("sha256:")
-    )
-}
-
-fn snapshot_path(record_path: &str, index: usize) -> Result<String, ProjectAssetImportError> {
-    let parent = Path::new(record_path).parent().ok_or_else(|| {
-        ProjectAssetImportError::new(
-            "project_asset_import.rollback_record_path_invalid",
-            "Rollback record path has no project-relative parent.",
-            Some(Path::new(record_path)),
-            "Reject the invalid transaction path.",
-        )
-    })?;
-    Ok(format!(
-        "{}/snapshot-{index:03}.bin",
-        parent.to_string_lossy().replace('\\', "/")
-    ))
-}
-
-fn snapshot_before_transaction(
-    scope: &ProjectWriteScope,
-    candidate: &ProjectAssetImportCandidate,
-    report: &ProjectAssetImportValidationReport,
-    desired: &BTreeMap<String, Option<Vec<u8>>>,
-    record_path: &str,
-) -> Result<AssetImportRollbackRecord, ProjectAssetImportError> {
-    if scope.try_exists(record_path).map_err(project_write_error)? {
-        return Err(ProjectAssetImportError::new(
-            "project_asset_import.rollback_record_exists",
-            "A rollback record already exists for this import transaction.",
-            Some(Path::new(record_path)),
-            "Resolve the previous import or rollback before retrying.",
-        ));
-    }
-
-    let mut snapshots = Vec::with_capacity(desired.len());
-    let mut before_payloads = Vec::new();
-    for (index, (path, after_bytes)) in desired.iter().enumerate() {
-        let binary_path = snapshot_path(record_path, index)?;
-        if scope
-            .try_exists(&binary_path)
-            .map_err(project_write_error)?
-        {
-            return Err(ProjectAssetImportError::new(
-                "project_asset_import.rollback_snapshot_exists",
-                "A rollback snapshot already exists for this import transaction.",
-                Some(Path::new(&binary_path)),
-                "Resolve the stale rollback artifacts before retrying.",
-            ));
-        }
-        let before_bytes = if scope.try_exists(path).map_err(project_write_error)? {
-            Some(scope.read(path).map_err(project_write_error)?)
-        } else {
-            None
-        };
-        let before_digest = before_bytes.as_deref().map(sha256_prefixed);
-        let snapshot_path = before_bytes.as_ref().map(|_| binary_path.clone());
-        let applied_digest = after_bytes.as_deref().map(sha256_prefixed);
-        if let Some(bytes) = before_bytes {
-            before_payloads.push((binary_path, bytes));
-        }
-        snapshots.push(AssetImportRollbackSnapshot {
-            path: path.clone(),
-            snapshot_path,
-            before_digest,
-            applied_digest,
-        });
-    }
-
-    let mut written = Vec::new();
-    for (path, bytes) in before_payloads {
-        if let Err(error) = scope
-            .write_atomic(&path, &bytes)
-            .map_err(project_write_error)
-        {
-            let cleanup = cleanup_relative_files(scope, written.iter().rev());
-            return match cleanup {
-                Ok(()) => Err(error),
-                Err(cleanup_error) => Err(ProjectAssetImportError::new(
-                    "project_asset_import.snapshot_write_cleanup_failed",
-                    format!(
-                        "Rollback snapshot write failed ({error}); cleanup also failed: {cleanup_error}"
-                    ),
-                    Some(Path::new(&path)),
-                    "Preserve the rollback directory and recover with a trusted maintainer.",
-                )),
-            };
-        }
-        written.push(path);
-    }
-
-    Ok(AssetImportRollbackRecord {
-        schema_version: PROJECT_ASSET_IMPORT_ROLLBACK_RECORD_SCHEMA_VERSION.to_string(),
-        import_id: candidate.import_id.clone(),
-        revision_id: candidate.revision.revision_id.clone(),
-        validation_digest: report.validation_digest.clone(),
-        source_hash: candidate.source_hash.clone(),
-        before_project_digest: candidate.revision.base_project_digest.clone(),
-        applied_project_digest: candidate.revision.candidate_project_digest.clone(),
-        derived_before_digest: candidate.derived_before_digest.clone(),
-        derived_applied_digest: candidate.derived_candidate_digest.clone(),
-        changed_paths: desired.keys().cloned().collect(),
-        record_digest: String::new(),
-        receipt_binding_digest: String::new(),
-        snapshots,
-    })
-}
-
-fn persist_rollback_record(
-    scope: &ProjectWriteScope,
-    record_path: &str,
-    record: &AssetImportRollbackRecord,
-) -> Result<(), ProjectAssetImportError> {
-    let bytes = json_bytes(record)?;
-    scope
-        .write_atomic(record_path, &bytes)
-        .map(drop)
-        .map_err(project_write_error)
-}
-
-fn cleanup_unapplied_snapshots(
-    cause: ProjectAssetImportError,
-    scope: &ProjectWriteScope,
-    record_path: &str,
-    snapshots: &[AssetImportRollbackSnapshot],
-) -> Result<ProjectAssetImportApplyReceipt, ProjectAssetImportError> {
-    match cleanup_rollback_artifacts(scope, record_path, snapshots) {
-        Ok(()) => Err(cause),
-        Err(cleanup_error) => Err(ProjectAssetImportError::new(
-            "project_asset_import.rollback_record_cleanup_failed",
-            format!(
-                "Rollback record persistence failed ({cause}); snapshot cleanup also failed: {cleanup_error}"
-            ),
-            Some(Path::new(record_path)),
-            "Preserve the rollback directory and recover with a trusted maintainer.",
-        )),
-    }
-}
-
-fn apply_desired_files(
-    scope: &ProjectWriteScope,
-    desired: &BTreeMap<String, Option<Vec<u8>>>,
-    fail_after_write: Option<usize>,
-) -> Result<(), ProjectAssetImportError> {
-    let mut written = 0_usize;
-    for (path, bytes) in desired {
-        if let Some(bytes) = bytes {
-            scope
-                .write_atomic(path, bytes)
-                .map_err(project_write_error)?;
-        } else {
-            scope.remove_file(path).map_err(project_write_error)?;
-        }
-        written += 1;
-        if fail_after_write == Some(written) {
-            return Err(ProjectAssetImportError::new(
-                "project_asset_import.injected_apply_failure",
-                "Asset import test fault interrupted the transaction.",
-                Some(Path::new(path)),
-                "Verify compensating restoration before retrying.",
-            ));
-        }
-    }
-    Ok(())
-}
-
 fn verify_applied_transaction(
     scope: &ProjectWriteScope,
     candidate: &ProjectAssetImportCandidate,
-    snapshots: &[AssetImportRollbackSnapshot],
 ) -> Result<(), ProjectAssetImportError> {
     let applied =
         CandidateProjectRevisionStore::verify_base(&candidate.revision, scope.display_root())
@@ -1202,119 +1004,6 @@ fn verify_applied_transaction(
             Some(scope.display_root()),
             "Restore the before snapshots and inspect concurrent project writes.",
         ));
-    }
-    verify_snapshot_side(scope, snapshots, false)
-}
-
-fn fail_apply_and_restore(
-    cause: ProjectAssetImportError,
-    scope: &ProjectWriteScope,
-    revision: &CandidateProjectRevision,
-    record: &AssetImportRollbackRecord,
-    record_path: &str,
-) -> Result<ProjectAssetImportApplyReceipt, ProjectAssetImportError> {
-    if let Err(restore_error) = restore_before_snapshots(scope, &record.snapshots) {
-        return Err(ProjectAssetImportError::new(
-            "project_asset_import.apply_rollback_failed",
-            format!("Apply failed ({cause}); automatic restoration also failed: {restore_error}"),
-            Some(scope.display_root()),
-            "Preserve the rollback artifacts and recover with a trusted maintainer.",
-        ));
-    }
-    let restored = CandidateProjectRevisionStore::verify_base(revision, scope.display_root())
-        .map_err(candidate_error)?;
-    if restored.status != CandidateBaseVerificationStatus::Matched
-        || restored.actual_digest != record.before_project_digest
-        || derived_state_digest(scope)? != record.derived_before_digest
-    {
-        return Err(ProjectAssetImportError::new(
-            "project_asset_import.apply_rollback_digest_mismatch",
-            "Apply failed and restoration did not reproduce the recorded before state.",
-            Some(scope.display_root()),
-            "Preserve the rollback artifacts and recover with a trusted maintainer.",
-        ));
-    }
-    cleanup_rollback_artifacts(scope, record_path, &record.snapshots)?;
-    Err(ProjectAssetImportError::new(
-        "project_asset_import.apply_failed_restored",
-        format!("Asset import apply failed and the before state was restored: {cause}"),
-        Some(scope.display_root()),
-        "Repair the candidate and create a new validated import revision.",
-    ))
-}
-
-fn restore_before_snapshots(
-    scope: &ProjectWriteScope,
-    snapshots: &[AssetImportRollbackSnapshot],
-) -> Result<(), ProjectAssetImportError> {
-    let before = read_before_snapshots(scope, snapshots)?;
-    for (snapshot, bytes) in snapshots.iter().zip(before).rev() {
-        if let Some(bytes) = bytes {
-            scope
-                .write_atomic(&snapshot.path, &bytes)
-                .map_err(project_write_error)?;
-        } else {
-            scope
-                .remove_file(&snapshot.path)
-                .map_err(project_write_error)?;
-        }
-    }
-    Ok(())
-}
-
-fn read_before_snapshots(
-    scope: &ProjectWriteScope,
-    snapshots: &[AssetImportRollbackSnapshot],
-) -> Result<Vec<Option<Vec<u8>>>, ProjectAssetImportError> {
-    snapshots
-        .iter()
-        .map(
-            |snapshot| match (&snapshot.snapshot_path, &snapshot.before_digest) {
-                (Some(path), Some(expected)) => {
-                    let bytes = scope.read(path).map_err(project_write_error)?;
-                    if sha256_prefixed(&bytes) != *expected {
-                        return Err(ProjectAssetImportError::new(
-                        "project_asset_import.rollback_snapshot_tampered",
-                        "Rollback snapshot bytes do not match the recorded digest.",
-                        Some(Path::new(path)),
-                        "Preserve the rollback artifacts and recover with a trusted maintainer.",
-                    ));
-                    }
-                    Ok(Some(bytes))
-                }
-                (None, None) => Ok(None),
-                _ => Err(ProjectAssetImportError::new(
-                    "project_asset_import.rollback_snapshot_binding_invalid",
-                    "Rollback snapshot path and digest presence do not agree.",
-                    Some(Path::new(&snapshot.path)),
-                    "Reject the invalid rollback record.",
-                )),
-            },
-        )
-        .collect()
-}
-
-fn cleanup_rollback_artifacts(
-    scope: &ProjectWriteScope,
-    record_path: &str,
-    snapshots: &[AssetImportRollbackSnapshot],
-) -> Result<(), ProjectAssetImportError> {
-    let snapshot_paths = snapshots
-        .iter()
-        .filter_map(|snapshot| snapshot.snapshot_path.as_ref());
-    cleanup_relative_files(scope, snapshot_paths)?;
-    scope
-        .remove_file(record_path)
-        .map(drop)
-        .map_err(project_write_error)
-}
-
-fn cleanup_relative_files<'a>(
-    scope: &ProjectWriteScope,
-    paths: impl IntoIterator<Item = &'a String>,
-) -> Result<(), ProjectAssetImportError> {
-    for path in paths {
-        scope.remove_file(path).map_err(project_write_error)?;
     }
     Ok(())
 }
@@ -1370,15 +1059,6 @@ fn validate_approval(
     Ok(())
 }
 
-fn rollback_record_digest(
-    record: &AssetImportRollbackRecord,
-) -> Result<String, ProjectAssetImportError> {
-    let mut normalized = record.clone();
-    normalized.record_digest.clear();
-    normalized.receipt_binding_digest.clear();
-    digest_serializable(&normalized, "asset import rollback record")
-}
-
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 struct ReceiptBindingFields<'a> {
@@ -1421,71 +1101,6 @@ fn receipt_binding_digest(
         rollback_record_path: record_path,
         rollback_record_digest: record_digest,
     })
-}
-
-fn validate_apply_receipt(
-    receipt: &ProjectAssetImportApplyReceipt,
-) -> Result<(), ProjectAssetImportError> {
-    validate_token("import_id", &receipt.import_id)?;
-    validate_digest_format(&receipt.source_hash, "source hash")?;
-    validate_digest_format(&receipt.validation_digest, "validation digest")?;
-    validate_digest_format(&receipt.before_project_digest, "before project digest")?;
-    validate_digest_format(&receipt.applied_project_digest, "applied project digest")?;
-    validate_digest_format(&receipt.derived_before_digest, "derived before digest")?;
-    validate_digest_format(&receipt.derived_applied_digest, "derived applied digest")?;
-    validate_digest_format(&receipt.rollback_record_digest, "rollback record digest")?;
-    validate_digest_format(&receipt.receipt_binding_digest, "receipt binding digest")?;
-    let expected_record_path =
-        rollback_record_path_for(&receipt.import_id, &receipt.revision.revision_id);
-    let mut canonical_paths = BTreeSet::new();
-    for path in &receipt.changed_paths {
-        let relative = ProjectRelativePath::parse(path).map_err(project_write_error)?;
-        if relative.as_str() != path || !canonical_paths.insert(path) {
-            return Err(ProjectAssetImportError::new(
-                "project_asset_import.apply_receipt_paths_invalid",
-                "Apply receipt changed paths must be canonical, unique, and sorted.",
-                Some(Path::new(path)),
-                "Reject the invalid apply receipt.",
-            ));
-        }
-    }
-    let sorted_paths = canonical_paths.into_iter().cloned().collect::<Vec<_>>();
-    let binding = receipt_binding_digest_fields(&ReceiptBindingFields {
-        import_id: &receipt.import_id,
-        revision_id: &receipt.revision.revision_id,
-        source_hash: &receipt.source_hash,
-        before_project_digest: &receipt.before_project_digest,
-        applied_project_digest: &receipt.applied_project_digest,
-        derived_before_digest: &receipt.derived_before_digest,
-        derived_applied_digest: &receipt.derived_applied_digest,
-        validation_digest: &receipt.validation_digest,
-        changed_paths: &receipt.changed_paths,
-        rollback_record_path: &receipt.rollback_record_path,
-        rollback_record_digest: &receipt.rollback_record_digest,
-    })?;
-    let mut expected_paths = receipt.revision.changed_paths.clone();
-    expected_paths.extend([
-        ASSET_DATABASE_PATH.to_string(),
-        ASSET_GRAPH_PATH.to_string(),
-        ASSET_REGISTRY_PATH.to_string(),
-    ]);
-    expected_paths.sort();
-    if receipt.schema_version != PROJECT_ASSET_IMPORT_APPLY_RECEIPT_SCHEMA_VERSION
-        || receipt.before_project_digest != receipt.revision.base_project_digest
-        || receipt.applied_project_digest != receipt.revision.candidate_project_digest
-        || receipt.changed_paths != sorted_paths
-        || receipt.changed_paths != expected_paths
-        || receipt.rollback_record_path != expected_record_path
-        || receipt.receipt_binding_digest != binding
-    {
-        return Err(ProjectAssetImportError::new(
-            "project_asset_import.apply_receipt_binding_mismatch",
-            "Apply receipt does not bind the exact import transaction.",
-            Some(Path::new(&receipt.rollback_record_path)),
-            "Reject the invalid apply receipt.",
-        ));
-    }
-    Ok(())
 }
 
 fn validate_digest_format(value: &str, role: &str) -> Result<(), ProjectAssetImportError> {
@@ -1546,214 +1161,6 @@ fn import_paths_equal(left: &Path, right: &Path) -> bool {
 #[cfg(not(windows))]
 fn import_paths_equal(left: &Path, right: &Path) -> bool {
     left == right
-}
-
-fn verify_current_applied_state(
-    scope: &ProjectWriteScope,
-    receipt: &ProjectAssetImportApplyReceipt,
-) -> Result<(), ProjectAssetImportError> {
-    let current =
-        CandidateProjectRevisionStore::verify_base(&receipt.revision, scope.display_root())
-            .map_err(candidate_error)?;
-    if current.actual_digest != receipt.applied_project_digest
-        || derived_state_digest(scope)? != receipt.derived_applied_digest
-    {
-        return Err(ProjectAssetImportError::new(
-            "project_asset_import.rollback_project_drifted",
-            "Project source or AssetPipeline state changed after import apply.",
-            Some(scope.display_root()),
-            "Review current changes and perform an explicit merge or recovery.",
-        ));
-    }
-    Ok(())
-}
-
-fn validate_rollback_record(
-    scope: &ProjectWriteScope,
-    receipt: &ProjectAssetImportApplyReceipt,
-    record: &AssetImportRollbackRecord,
-) -> Result<(), ProjectAssetImportError> {
-    let digest_matches =
-        rollback_record_digest(record).as_deref() == Ok(receipt.rollback_record_digest.as_str());
-    let paths_match = record.snapshots.len() == receipt.changed_paths.len()
-        && record
-            .snapshots
-            .iter()
-            .map(|snapshot| &snapshot.path)
-            .eq(receipt.changed_paths.iter());
-    if record.schema_version != PROJECT_ASSET_IMPORT_ROLLBACK_RECORD_SCHEMA_VERSION
-        || record.import_id != receipt.import_id
-        || record.revision_id != receipt.revision.revision_id
-        || record.validation_digest != receipt.validation_digest
-        || record.source_hash != receipt.source_hash
-        || record.before_project_digest != receipt.before_project_digest
-        || record.applied_project_digest != receipt.applied_project_digest
-        || record.derived_before_digest != receipt.derived_before_digest
-        || record.derived_applied_digest != receipt.derived_applied_digest
-        || record.changed_paths != receipt.changed_paths
-        || record.record_digest != receipt.rollback_record_digest
-        || record.receipt_binding_digest != receipt.receipt_binding_digest
-        || !digest_matches
-        || !paths_match
-    {
-        return Err(ProjectAssetImportError::new(
-            "project_asset_import.rollback_record_binding_mismatch",
-            "Rollback record does not bind the exact applied import receipt.",
-            Some(Path::new(&receipt.rollback_record_path)),
-            "Preserve the record and recover with a trusted maintainer.",
-        ));
-    }
-    for (index, snapshot) in record.snapshots.iter().enumerate() {
-        let expected_snapshot_path = snapshot_path(&receipt.rollback_record_path, index)?;
-        match (&snapshot.snapshot_path, &snapshot.before_digest) {
-            (Some(path), Some(digest))
-                if path == &expected_snapshot_path
-                    && validate_digest_format(digest, "snapshot digest").is_ok() => {}
-            (None, None) => {}
-            _ => {
-                return Err(ProjectAssetImportError::new(
-                    "project_asset_import.rollback_snapshot_binding_invalid",
-                    "Rollback snapshot metadata is not canonical for the transaction.",
-                    Some(Path::new(&snapshot.path)),
-                    "Reject the invalid rollback record.",
-                ));
-            }
-        }
-        if let Some(digest) = &snapshot.applied_digest {
-            validate_digest_format(digest, "applied file digest")?;
-        }
-    }
-    read_before_snapshots(scope, &record.snapshots)?;
-    verify_snapshot_side(scope, &record.snapshots, false)
-}
-
-fn verify_snapshot_side(
-    scope: &ProjectWriteScope,
-    snapshots: &[AssetImportRollbackSnapshot],
-    before: bool,
-) -> Result<(), ProjectAssetImportError> {
-    for snapshot in snapshots {
-        let expected = if before {
-            snapshot.before_digest.as_ref()
-        } else {
-            snapshot.applied_digest.as_ref()
-        };
-        let exists = scope
-            .try_exists(&snapshot.path)
-            .map_err(project_write_error)?;
-        match (exists, expected) {
-            (true, Some(expected)) => {
-                let bytes = scope.read(&snapshot.path).map_err(project_write_error)?;
-                if sha256_prefixed(&bytes) != *expected {
-                    return Err(ProjectAssetImportError::new(
-                        "project_asset_import.transaction_file_digest_mismatch",
-                        "Transaction file bytes do not match the recorded state.",
-                        Some(Path::new(&snapshot.path)),
-                        "Preserve rollback artifacts and inspect concurrent writes.",
-                    ));
-                }
-            }
-            (false, None) => {}
-            _ => {
-                return Err(ProjectAssetImportError::new(
-                    "project_asset_import.transaction_file_presence_mismatch",
-                    "Transaction file presence does not match the recorded state.",
-                    Some(Path::new(&snapshot.path)),
-                    "Preserve rollback artifacts and inspect concurrent writes.",
-                ));
-            }
-        }
-    }
-    Ok(())
-}
-
-fn capture_current_files(
-    scope: &ProjectWriteScope,
-    paths: &[String],
-) -> Result<Vec<CapturedFileState>, ProjectAssetImportError> {
-    paths
-        .iter()
-        .map(|path| {
-            let bytes = if scope.try_exists(path).map_err(project_write_error)? {
-                Some(scope.read(path).map_err(project_write_error)?)
-            } else {
-                None
-            };
-            Ok((path.clone(), bytes))
-        })
-        .collect()
-}
-
-fn restore_file_state(
-    scope: &ProjectWriteScope,
-    files: &[CapturedFileState],
-) -> Result<(), ProjectAssetImportError> {
-    for (path, bytes) in files.iter().rev() {
-        if let Some(bytes) = bytes {
-            scope
-                .write_atomic(path, bytes)
-                .map_err(project_write_error)?;
-        } else {
-            scope.remove_file(path).map_err(project_write_error)?;
-        }
-    }
-    Ok(())
-}
-
-fn verify_restored_before_state(
-    scope: &ProjectWriteScope,
-    receipt: &ProjectAssetImportApplyReceipt,
-    snapshots: &[AssetImportRollbackSnapshot],
-) -> Result<(), ProjectAssetImportError> {
-    let restored =
-        CandidateProjectRevisionStore::verify_base(&receipt.revision, scope.display_root())
-            .map_err(candidate_error)?;
-    if restored.status != CandidateBaseVerificationStatus::Matched
-        || restored.actual_digest != receipt.before_project_digest
-        || derived_state_digest(scope)? != receipt.derived_before_digest
-    {
-        return Err(ProjectAssetImportError::new(
-            "project_asset_import.rollback_digest_mismatch",
-            "Rollback did not restore the recorded before state.",
-            Some(scope.display_root()),
-            "Preserve rollback artifacts and recover with a trusted maintainer.",
-        ));
-    }
-    verify_snapshot_side(scope, snapshots, true)
-}
-
-fn fail_rollback_and_restore_applied(
-    cause: ProjectAssetImportError,
-    scope: &ProjectWriteScope,
-    receipt: &ProjectAssetImportApplyReceipt,
-    applied_state: &[CapturedFileState],
-) -> Result<ProjectAssetImportRollbackReceipt, ProjectAssetImportError> {
-    if let Err(restore_error) = restore_file_state(scope, applied_state) {
-        return Err(ProjectAssetImportError::new(
-            "project_asset_import.rollback_compensation_failed",
-            format!(
-                "Rollback failed ({cause}); restoring the applied state also failed: {restore_error}"
-            ),
-            Some(scope.display_root()),
-            "Preserve rollback artifacts and recover with a trusted maintainer.",
-        ));
-    }
-    if let Err(verify_error) = verify_current_applied_state(scope, receipt) {
-        return Err(ProjectAssetImportError::new(
-            "project_asset_import.rollback_compensation_digest_mismatch",
-            format!(
-                "Rollback failed ({cause}); applied-state compensation could not be verified: {verify_error}"
-            ),
-            Some(scope.display_root()),
-            "Preserve rollback artifacts and recover with a trusted maintainer.",
-        ));
-    }
-    Err(ProjectAssetImportError::new(
-        "project_asset_import.rollback_failed_applied_restored",
-        format!("Rollback failed and the applied state was restored: {cause}"),
-        Some(scope.display_root()),
-        "Repair the rollback artifacts before retrying.",
-    ))
 }
 
 fn validate_token(field: &str, value: &str) -> Result<(), ProjectAssetImportError> {
@@ -2606,6 +2013,86 @@ fn project_write_error(error: ProjectWriteError) -> ProjectAssetImportError {
     }
 }
 
+fn validate_unified_import_receipt(
+    receipt: &ProjectAssetImportApplyReceipt,
+    project_root: &Path,
+) -> Result<(), ProjectAssetImportError> {
+    verify_receipt_project_root(receipt, project_root)?;
+    let expected_binding = receipt_binding_digest_fields(&ReceiptBindingFields {
+        import_id: &receipt.import_id,
+        revision_id: &receipt.revision.revision_id,
+        source_hash: &receipt.source_hash,
+        before_project_digest: &receipt.before_project_digest,
+        applied_project_digest: &receipt.applied_project_digest,
+        derived_before_digest: &receipt.derived_before_digest,
+        derived_applied_digest: &receipt.derived_applied_digest,
+        validation_digest: &receipt.validation_digest,
+        changed_paths: &receipt.changed_paths,
+        rollback_record_path: &receipt.rollback_record_path,
+        rollback_record_digest: &receipt.rollback_record_digest,
+    })?;
+    if receipt.schema_version != PROJECT_ASSET_IMPORT_APPLY_RECEIPT_SCHEMA_VERSION
+        || !receipt
+            .rollback_record_path
+            .starts_with(".aife/authoring/transactions/")
+        || !receipt.rollback_record_path.ends_with("/journal.json")
+        || expected_binding != receipt.receipt_binding_digest
+    {
+        return Err(ProjectAssetImportError::new(
+            "project_asset_import.apply_receipt_binding_mismatch",
+            "Asset import receipt does not bind its unified mutation receipt and journal.",
+            Some(Path::new(&receipt.rollback_record_path)),
+            "Reject the invalid apply receipt.",
+        ));
+    }
+    Ok(())
+}
+
+fn authoring_import_error(
+    error: authoring_project_context::ContextError,
+) -> ProjectAssetImportError {
+    let code = match error.diagnostic.code.as_str() {
+        "authoring_context.mutation_revision_drifted"
+        | "authoring_context.mutation_before_drifted" => "project_asset_import.base_drifted",
+        "authoring_context.mutation_commit_interrupted" => {
+            "project_asset_import.apply_failed_restored"
+        }
+        _ => error.diagnostic.code.as_str(),
+    };
+    ProjectAssetImportError {
+        code: code.to_string(),
+        message: error.diagnostic.message,
+        path: error.diagnostic.path,
+        next_action: error.diagnostic.next_action,
+    }
+}
+
+fn authoring_import_rollback_error(
+    error: authoring_project_context::ContextError,
+) -> ProjectAssetImportError {
+    let code = match error.diagnostic.code.as_str() {
+        "authoring_context.rollback_revision_drifted"
+        | "authoring_context.rollback_write_path_drifted" => {
+            "project_asset_import.rollback_project_drifted"
+        }
+        "authoring_context.rollback_receipt_invalid"
+        | "authoring_context.rollback_journal_invalid"
+        | "authoring_context.mutation_recovery_blocked" => {
+            "project_asset_import.rollback_record_invalid"
+        }
+        "authoring_context.rollback_material_invalid" => {
+            "project_asset_import.rollback_snapshot_tampered"
+        }
+        _ => error.diagnostic.code.as_str(),
+    };
+    ProjectAssetImportError {
+        code: code.to_string(),
+        message: error.diagnostic.message,
+        path: error.diagnostic.path,
+        next_action: error.diagnostic.next_action,
+    }
+}
+
 fn candidate_error(error: CandidateProjectRevisionError) -> ProjectAssetImportError {
     ProjectAssetImportError {
         code: error.code,
@@ -2768,7 +2255,10 @@ mod tests {
             .project
             .join(&receipt.rollback_record_path)
             .is_file());
-        assert!(!fixture.project.join(ASSET_IMPORT_LOCK_PATH).exists());
+        assert!(!fixture
+            .project
+            .join("Library/AssetPipeline/import.lock")
+            .exists());
     }
 
     #[test]
@@ -2776,7 +2266,6 @@ mod tests {
         let fixture = fixture("apply-restore");
         let candidate = ProjectAssetImport::prepare(fixture.request()).unwrap();
         let report = ProjectAssetImport::validate(&candidate).unwrap();
-        let record_path = rollback_record_path(&candidate);
 
         let error =
             ProjectAssetImport::apply_internal(apply_request(candidate.clone(), report), Some(1))
@@ -2793,8 +2282,10 @@ mod tests {
         ] {
             assert!(!fixture.project.join(path).exists());
         }
-        assert!(!fixture.project.join(record_path).exists());
-        assert!(!fixture.project.join(ASSET_IMPORT_LOCK_PATH).exists());
+        assert!(!fixture
+            .project
+            .join("Library/AssetPipeline/import.lock")
+            .exists());
     }
 
     #[test]
@@ -2806,30 +2297,73 @@ mod tests {
 
         let rollback = ProjectAssetImport::rollback(&receipt, &fixture.project).unwrap();
 
-        assert!(rollback.rollback_record_removed);
-        assert!(rollback.snapshot_files_removed);
-        assert!(!fixture.project.join(&receipt.rollback_record_path).exists());
+        assert!(!rollback.rollback_record_removed);
+        assert!(!rollback.snapshot_files_removed);
+        assert!(fixture.project.join(&receipt.rollback_record_path).exists());
+        assert!(fixture
+            .project
+            .join(Path::new(&receipt.rollback_record_path).parent().unwrap())
+            .join("rollback-receipt.json")
+            .is_file());
         assert!(!fixture.project.join(&candidate.record.source_path).exists());
         assert!(ProjectAssetImport::load_database(&fixture.project)
             .unwrap()
             .is_none());
-        assert!(!fixture.project.join(ASSET_IMPORT_LOCK_PATH).exists());
+        assert!(!fixture
+            .project
+            .join("Library/AssetPipeline/import.lock")
+            .exists());
     }
 
     #[test]
-    fn project_asset_import_lock_rejects_concurrent_apply() {
+    fn project_asset_import_uses_shared_authoring_mutation_lock() {
         let fixture = fixture("lock");
         let candidate = ProjectAssetImport::prepare(fixture.request()).unwrap();
         let report = ProjectAssetImport::validate(&candidate).unwrap();
-        let scope = ProjectWriteScope::open(&fixture.project).unwrap();
-        let lock = scope
-            .acquire_lock(ASSET_IMPORT_LOCK_PATH, b"other-import")
+        let mut context = EmbeddedAuthoringProjectContext::new();
+        let handle = context
+            .open(ProjectLocator::new(&fixture.project), AuthoringOpenOptions)
             .unwrap();
+        let path = "Settings/lock-probe.json".to_string();
+        let before = context
+            .capture_mutation_before(handle, std::slice::from_ref(&path))
+            .unwrap();
+        let mutation = ProjectMutation {
+            schema_version: PROJECT_MUTATION_SCHEMA_VERSION.to_string(),
+            mutation_id: "asset-import-shared-lock-probe".to_string(),
+            domain: "test".to_string(),
+            expected_revision_id: context.current_revision(handle).unwrap().revision_id,
+            validation_digest: format!("sha256:{}", "8".repeat(64)),
+            declared_read_set: Vec::new(),
+            declared_write_set: vec![path.clone()],
+            expected_before: before,
+            operations: vec![ProjectMutationOperation::CreateOrReplace {
+                path,
+                bytes: b"held".to_vec(),
+            }],
+        };
+        let (ready_tx, ready_rx) = std::sync::mpsc::channel();
+        let (release_tx, release_rx) = std::sync::mpsc::channel();
+        let worker = std::thread::spawn(move || {
+            context.commit_mutation_controlled(handle, mutation, |progress| {
+                if matches!(progress, MutationCommitProgress::BeforeApply) {
+                    ready_tx.send(()).unwrap();
+                    release_rx.recv().unwrap();
+                }
+                Ok(())
+            })
+        });
+        ready_rx.recv().unwrap();
 
         let error = ProjectAssetImport::apply(apply_request(candidate, report)).unwrap_err();
 
-        assert_eq!(error.code, "project_write.lock_held");
-        lock.release().unwrap();
+        assert_eq!(error.code, "authoring_context.mutation_authority_busy");
+        release_tx.send(()).unwrap();
+        worker.join().unwrap().unwrap();
+        assert!(!fixture
+            .project
+            .join("Library/AssetPipeline/import.lock")
+            .exists());
     }
 
     #[test]
@@ -2879,14 +2413,15 @@ mod tests {
         let receipt =
             ProjectAssetImport::apply(apply_request(replacement.clone(), replacement_report))
                 .unwrap();
-        let record: AssetImportRollbackRecord = serde_json::from_slice(
+        let record: serde_json::Value = serde_json::from_slice(
             &fs::read(fixture.project.join(&receipt.rollback_record_path)).unwrap(),
         )
         .unwrap();
-        let snapshot_path = record
-            .snapshots
+        let snapshot_path = record["snapshots"]
+            .as_array()
+            .unwrap()
             .iter()
-            .find_map(|snapshot| snapshot.snapshot_path.as_ref())
+            .find_map(|snapshot| snapshot["beforeMaterialPath"].as_str())
             .unwrap();
         let applied_source =
             fs::read(fixture.project.join(&replacement.record.source_path)).unwrap();
@@ -3046,7 +2581,7 @@ mod tests {
         let candidates = root.join("candidates");
         fs::create_dir_all(&source_dir).unwrap();
         fs::create_dir_all(&candidates).unwrap();
-        ProjectLauncherState::new("0.0.3")
+        ProjectLauncherState::new("0.1.0")
             .create_project(&project, "Asset Import Test")
             .unwrap();
         let source = source_dir.join("test-texture.png");

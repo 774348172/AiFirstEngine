@@ -1,0 +1,8 @@
+{
+  "schema_version": "input-mapping.v2",
+  "asset_id": "input.none",
+  "actions": [],
+  "contexts": [],
+  "bindings": [],
+  "platform_overrides": []
+}

@@ -1,0 +1,86 @@
+schema_version = "architecture-policy.v1"
+review_authorities = ["local-maintainer"]
+
+[[profiles]]
+id = "engine-strict"
+mode = "engine_strict"
+include = ["Cargo.toml", "Cargo.lock", "rust-toolchain.toml", "crates/**", "quality/**", ".github/workflows/**"]
+exclude = ["target/**", "vendor/**", "generated/**"]
+
+[[profiles]]
+id = "project-advisory"
+mode = "project_advisory"
+include = ["project_modules/**", "project_players/**"]
+exclude = ["target/**", "vendor/**", "generated/**"]
+
+[[profiles]]
+id = "project-strict"
+mode = "project_strict"
+include = ["project_modules/**", "project_players/**"]
+exclude = ["target/**", "vendor/**", "generated/**"]
+
+[[domains]]
+id = "workspace-governance"
+owner = "engine-quality"
+include = ["Cargo.toml", "Cargo.lock", "rust-toolchain.toml", "quality/**", ".github/workflows/**"]
+facade_only = []
+
+[[domains]]
+id = "quality-tooling"
+owner = "engine-quality"
+include = ["crates/quality_gate/**", "crates/code_hygiene/**", "crates/architecture_review/**"]
+facade_only = []
+
+[[domains]]
+id = "editor"
+owner = "editor-platform"
+include = ["crates/editor_core/**", "crates/editor_ui_model/**", "crates/editor_ui_backend_egui/**", "crates/editor_ui_renderer/**", "crates/editor_wgpu_renderer/**", "crates/editor_input/**", "crates/editor_window_winit/**", "crates/editor_host/**"]
+facade_only = ["crates/editor_core/src/lib.rs"]
+
+[[domains]]
+id = "runtime"
+owner = "runtime-platform"
+include = ["crates/engine_input/**", "crates/engine_runtime/**", "crates/runtime_cli/**", "crates/runtime_player_winit/**"]
+facade_only = ["crates/runtime_player_winit/src/lib.rs"]
+
+[[domains]]
+id = "validation"
+owner = "engine-validation"
+include = ["crates/project_e2e_gate/**"]
+facade_only = []
+
+[[domains]]
+id = "project-modules"
+owner = "project-authors"
+include = ["project_modules/**"]
+facade_only = []
+
+[[domains]]
+id = "project-players"
+owner = "project-authors"
+include = ["project_players/**"]
+facade_only = []
+
+[[dependency_rules]]
+id = "editor-to-runtime"
+from = "editor"
+to = "runtime"
+allowed = true
+
+[[dependency_rules]]
+id = "validation-to-runtime"
+from = "validation"
+to = "runtime"
+allowed = true
+
+[[dependency_rules]]
+id = "project-to-runtime"
+from = "project-modules"
+to = "runtime"
+allowed = true
+
+[[dependency_rules]]
+id = "runtime-to-quality-forbidden"
+from = "runtime"
+to = "quality-tooling"
+allowed = false

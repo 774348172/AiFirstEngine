@@ -31,6 +31,22 @@ fn editor_scene_document_requires_transform_for_each_entity() {
 }
 
 #[test]
+fn editor_scene_document_rejects_unknown_schema_version() {
+    let path = write_scene_fixture(true);
+    let mut value: serde_json::Value = serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
+    value["schemaVersion"] = serde_json::Value::String("editor-scene-document.v99".to_string());
+
+    let diagnostics =
+        EditorSceneDocument::load_from_bytes(&path, &serde_json::to_vec(&value).unwrap())
+            .unwrap_err();
+
+    assert!(diagnostics.iter().any(|diagnostic| {
+        diagnostic.code == "scene.document.schema_version_unsupported"
+            && diagnostic.path.as_deref() == Some("schemaVersion")
+    }));
+}
+
+#[test]
 fn editor_scene_document_tracks_dirty_revision() {
     let mut document = scene_document();
     document.mark_dirty("tx-1");

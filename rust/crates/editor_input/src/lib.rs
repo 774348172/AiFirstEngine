@@ -743,26 +743,6 @@ impl EditorInputRouter {
                     proposal_id: proposal_id.clone(),
                 },
             )),
-            HitTarget::GatewayAccessDecision {
-                request_id,
-                approved,
-            } => Some(self.command(
-                if *approved {
-                    "approve_gateway_access_request"
-                } else {
-                    "reject_gateway_access_request"
-                },
-                UiCommandSource::AiAssistant,
-                if *approved {
-                    UiCommandPayload::ApproveGatewayAccessRequest {
-                        request_id: request_id.clone(),
-                    }
-                } else {
-                    UiCommandPayload::RejectGatewayAccessRequest {
-                        request_id: request_id.clone(),
-                    }
-                },
-            )),
             HitTarget::ProjectRuntimeTrustDecision { request_id, action } => {
                 let payload = match action.as_str() {
                     "approve" => Some(UiCommandPayload::ApproveProjectRuntimeTrust {
@@ -784,13 +764,6 @@ impl EditorInputRouter {
                     )
                 })
             }
-            HitTarget::GatewayAccessPage { page_index } => Some(self.command(
-                "set_gateway_access_page",
-                UiCommandSource::AiAssistant,
-                UiCommandPayload::SetGatewayAccessPage {
-                    page_index: *page_index,
-                },
-            )),
             HitTarget::AiPanelAction { action_id } => self.ai_panel_action_command(action_id),
             HitTarget::ProjectIntentAction {
                 action_id,
@@ -1420,9 +1393,8 @@ mod tests {
     use editor_ui_model::{
         AiCommandReviewState, AiPanelMessage, AiPanelMessageRole, AiPanelModel, AiProposedCommand,
         Animator2DAuthoringModel, BuildExportCommand, BuildExportModel, BuildProfileSummary,
-        ConsoleModel, EditorUiMode, EditorUiModel, GatewayAccessInboxModel,
-        GatewayAccessRequestModel, HierarchyModel, HierarchyNode, InspectorField, InspectorModel,
-        InspectorSection, InspectorValue, InspectorValueType, PanelLayoutModel,
+        ConsoleModel, EditorUiMode, EditorUiModel, HierarchyModel, HierarchyNode, InspectorField,
+        InspectorModel, InspectorSection, InspectorValue, InspectorValueType, PanelLayoutModel,
         ProjectBrowserEntry, ProjectBrowserEntryKind, ProjectBrowserModel, ProjectLauncherModel,
         RecentProjectEntry, RuntimeRunState, RuntimeTraceModel, ToolbarCommand, ToolbarModel,
         UiCommandPayload, Vec3, ViewportModel, WorkspaceViewMode,
@@ -1702,7 +1674,7 @@ mod tests {
             .push(RecentProjectEntry {
                 name: "PlaneGame".to_string(),
                 path: "D:/Projects/PlaneGame".to_string(),
-                engine_version: "0.0.3".to_string(),
+                engine_version: "0.1.0".to_string(),
                 last_opened_at: None,
                 last_modified_at: None,
                 valid: true,
@@ -2376,82 +2348,6 @@ mod tests {
     }
 
     #[test]
-    fn gateway_access_hits_route_to_request_bound_commands() {
-        let mut model = fixture_model();
-        model.ai_panel.gateway_access = GatewayAccessInboxModel {
-            requests: vec![GatewayAccessRequestModel {
-                request_id: "access-request-1".to_string(),
-                operation_short_id: "operation-1".to_string(),
-                client_session_id: "gateway-session-1".to_string(),
-                session_short_id: "session-1".to_string(),
-                client_kind: "MCP".to_string(),
-                client_version: "codex-desktop.v1".to_string(),
-                project_identity: "project.fixture".to_string(),
-                connected_age_ms: 100,
-                expires_in_ms: 10_000,
-                state: "awaiting_user".to_string(),
-                requested_profile: "project_owned_low_risk".to_string(),
-                risk_class: "ProjectOwnedLowRisk".to_string(),
-                capabilities: vec!["mutate_project".to_string()],
-                blocked_capabilities: Vec::new(),
-                goal_id: "goal-1".to_string(),
-                user_visible_outcome: "Apply the requested project change.".to_string(),
-                completion_policy: "CommitVerified".to_string(),
-                allowed_paths: vec!["Assets".to_string()],
-                denied_paths: vec!["Engine".to_string()],
-                allowed_objects: Vec::new(),
-                max_mutation_count: 16,
-                time_budget_ms: 900_000,
-                external_cost_budget_microunits: 0,
-                allow_delete: false,
-                allow_dependency_change: false,
-                allow_network: false,
-                approval_digest: "sha256:test".to_string(),
-            }],
-            page_index: 0,
-            page_count: 2,
-            total_count: 5,
-        };
-        let draw_list = SelfUiRenderer::build_draw_list(
-            &model,
-            UiRendererConfig::new(1280.0, 720.0)
-                .with_active_bottom_panel(Some("ai_panel".to_string())),
-        );
-        let mut router = EditorInputRouter::new();
-
-        for (region_id, expected) in [
-            (
-                "hit.gateway_access.approve.access-request-1",
-                UiCommandPayload::ApproveGatewayAccessRequest {
-                    request_id: "access-request-1".to_string(),
-                },
-            ),
-            (
-                "hit.gateway_access.page.next.1",
-                UiCommandPayload::SetGatewayAccessPage { page_index: 1 },
-            ),
-        ] {
-            let region = draw_list
-                .hit_regions
-                .iter()
-                .find(|region| region.id == region_id)
-                .unwrap_or_else(|| panic!("missing Gateway access hit region {region_id}"));
-            let result = router.route(
-                EditorInputEvent::PointerDown {
-                    x: region.rect.x + 1.0,
-                    y: region.rect.y + 1.0,
-                    button: PointerButton::Primary,
-                },
-                &draw_list,
-            );
-            assert_eq!(
-                result.command.expect("Gateway hit should route").payload,
-                expected
-            );
-        }
-    }
-
-    #[test]
     fn router_maps_project_intent_actions_to_bound_workflow_payloads() {
         let mut router = EditorInputRouter::new();
         for (action_id, subject_id, expected) in [
@@ -2990,7 +2886,6 @@ mod tests {
                     role: AiPanelMessageRole::Assistant,
                     text: "Ready.".to_string(),
                 }],
-                gateway_access: Default::default(),
                 proposed_commands: vec![AiProposedCommand {
                     proposal_id: "proposal-1".to_string(),
                     label: "Rename selected".to_string(),

@@ -192,8 +192,6 @@ fn panel_id_for_hit_target(target: &HitTarget) -> Option<String> {
         }
         HitTarget::RuntimeTraceEntry { .. } => Some("runtime_trace".to_string()),
         HitTarget::AiProposedCommand { .. }
-        | HitTarget::GatewayAccessDecision { .. }
-        | HitTarget::GatewayAccessPage { .. }
         | HitTarget::AiPanelAction { .. }
         | HitTarget::AiPromptField => Some("ai_panel".to_string()),
         HitTarget::ProjectIntentAction { .. } => Some("project_intent".to_string()),

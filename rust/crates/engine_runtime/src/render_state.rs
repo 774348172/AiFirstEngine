@@ -350,6 +350,9 @@ pub struct RenderFrameViewData {
 
 #[derive(Debug, Clone, Default)]
 pub struct RenderSceneState {
+    pub(crate) particle_sources: Vec<crate::particle_render_contract::ParticleSourceFrame>,
+    pub(crate) particle_projection_active: bool,
+    pub(crate) particle_diagnostics: Vec<String>,
     proxies: BTreeMap<RenderProxyId, RenderProxy>,
     entity_to_proxy: BTreeMap<RuntimeEntityId, RenderProxyId>,
     source_to_proxy: BTreeMap<SourceEntityId, RenderProxyId>,

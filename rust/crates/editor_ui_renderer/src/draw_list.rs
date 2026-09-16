@@ -194,13 +194,6 @@ pub enum HitTarget {
     AiProposedCommand {
         proposal_id: String,
     },
-    GatewayAccessDecision {
-        request_id: String,
-        approved: bool,
-    },
-    GatewayAccessPage {
-        page_index: usize,
-    },
     ProjectRuntimeTrustDecision {
         request_id: String,
         action: String,

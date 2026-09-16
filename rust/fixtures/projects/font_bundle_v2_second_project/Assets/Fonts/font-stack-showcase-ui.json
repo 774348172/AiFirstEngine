@@ -1,0 +1,7 @@
+{
+  "schemaVersion": "font-stack-asset.v1",
+  "assetId": "font-stack-showcase-ui",
+  "families": ["font-family-showcase-ui"],
+  "missingGlyphPolicy": "error",
+  "replacementCodepoint": "U+FFFD"
+}

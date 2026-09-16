@@ -101,7 +101,7 @@ pub struct AiToolAvailabilityReason {
 pub struct AiToolAvailabilityBasis {
     pub project_identity: Option<String>,
     pub project_digest: Option<String>,
-    pub read_generation: Option<u64>,
+    pub project_revision_generation: Option<u64>,
     pub runtime_binding_digest: Option<String>,
     pub access_generation: Option<u64>,
     pub operation_generation: Option<u64>,

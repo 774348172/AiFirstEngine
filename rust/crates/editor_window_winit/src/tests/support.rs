@@ -35,7 +35,7 @@ pub(super) fn session_with_linked_project_runtime(module_id: &str) -> EditorSess
 pub(super) fn pump_editor_play_until_terminal(
     app: &mut NativeEditorApplication,
 ) -> NativeEditorApplicationReport {
-    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(30);
     loop {
         let report = app.frame(1280.0, 720.0);
         if report.last_command_status != Some(CommandStatus::Pending) {
@@ -120,7 +120,6 @@ pub(super) fn fixture_model() -> EditorUiModel {
             prompt_placeholder: "Describe an editor change...".to_string(),
             prompt_draft: String::new(),
             messages: Vec::new(),
-            gateway_access: Default::default(),
             proposed_commands: Vec::new(),
             allowed_command_ids: Vec::new(),
             busy: false,
@@ -216,6 +215,72 @@ pub(super) fn write_editor_project_fixture_for_shell() -> std::path::PathBuf {
     root
 }
 
+pub(super) fn write_project_rust_fixture_for_preparation() -> std::path::PathBuf {
+    let root = write_editor_project_fixture_for_shell();
+    let rust_root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .and_then(std::path::Path::parent)
+        .unwrap();
+    let runtime_root = root.join("RuntimeModule");
+    std::fs::create_dir_all(runtime_root.join("src")).unwrap();
+    let abi = rust_root
+        .join("crates/project_runtime_abi")
+        .display()
+        .to_string()
+        .replace('\\', "/");
+    let sdk = rust_root
+        .join("crates/project_runtime_sdk")
+        .display()
+        .to_string()
+        .replace('\\', "/");
+    std::fs::write(
+        runtime_root.join("Cargo.toml"),
+        format!(
+            r#"[package]
+name = "fixture_project_runtime"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+project_runtime_abi = {{ path = "{abi}" }}
+project_runtime_sdk = {{ path = "{sdk}" }}
+serde = {{ version = "1", features = ["derive"] }}
+"#
+        ),
+    )
+    .unwrap();
+    let fixture_root = rust_root.join("fixtures/project_runtime_native_module_minimal");
+    let lock = std::fs::read_to_string(fixture_root.join("Cargo.lock"))
+        .unwrap()
+        .replace(
+            "project_runtime_native_module_minimal",
+            "fixture_project_runtime",
+        );
+    std::fs::write(runtime_root.join("Cargo.lock"), lock).unwrap();
+    std::fs::copy(
+        fixture_root.join("src/lib.rs"),
+        runtime_root.join("src/lib.rs"),
+    )
+    .unwrap();
+    let manifest_path = root.join("project.aife.json");
+    let mut manifest: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(&manifest_path).unwrap()).unwrap();
+    manifest["runtimeModule"] = serde_json::json!({
+        "sourceKind": "projectRust",
+        "moduleId": "fixture.native.runtime",
+        "interfaceVersion": "project-runtime-module.v2",
+        "cargoManifest": "RuntimeModule/Cargo.toml",
+        "cargoPackage": "fixture_project_runtime",
+        "playerBinary": "fixture_project_player"
+    });
+    std::fs::write(manifest_path, serde_json::to_vec_pretty(&manifest).unwrap()).unwrap();
+    root
+}
+
 pub(super) fn write_runtime_package_fixture_for_shell(
     root: &std::path::Path,
     name: &str,
@@ -235,7 +300,7 @@ pub(super) fn write_runtime_package_fixture_for_shell(
   "project": {
     "projectId": "runtime-shell-test",
     "name": "Runtime Shell Test",
-    "version": "0.0.3",
+    "version": "0.1.0",
     "runtimeModule": {
       "moduleId": "engine.empty.runtime",
       "interfaceVersion": "project-runtime-module.v2",

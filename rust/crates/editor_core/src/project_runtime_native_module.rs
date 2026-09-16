@@ -270,6 +270,8 @@ pub struct ProjectRuntimeNativeModuleBuildRequest {
     pub metadata_hard_deadline_ms: u64,
     pub build_hard_deadline_ms: u64,
     pub capture_limit_bytes: usize,
+    #[serde(skip)]
+    pub prepared_runtime_glue: Option<project_authoring_execution::PreparedRuntimeGlue>,
 }
 
 impl ProjectRuntimeNativeModuleBuildRequest {
@@ -377,7 +379,14 @@ fn prepare_inner(
     let build_root = prepare_build_root(&request.build_root, &source_root)?;
     let identity_digest = request.identity.digest()?;
     report.identity_digest.clone_from(&identity_digest);
-    let key = identity_digest.trim_start_matches("sha256:");
+    let cache_identity_digest = native_module_cache_identity(
+        &identity_digest,
+        request
+            .prepared_runtime_glue
+            .as_ref()
+            .map(|glue| glue.generation_digest()),
+    );
+    let key = cache_identity_digest.trim_start_matches("sha256:");
     let cache_root = build_root.join(CACHE_ROOT_NAME);
     fs::create_dir_all(cache_root.join("cache"))
         .map_err(|error| io_diag("prepare_root", &cache_root, error))?;
@@ -404,9 +413,43 @@ fn prepare_inner(
         std::process::id(),
         now_epoch_nanos()
     ));
-    copy_source_tree(&source_root, &staging_root)?;
+    let build_source_root = if let Some(glue) = &request.prepared_runtime_glue {
+        let runtime_module_root = staging_root.join("RuntimeModule");
+        copy_source_tree(&source_root, &runtime_module_root)?;
+        normalize_manifest(
+            &runtime_module_root,
+            &sdk_root,
+            &["project_game_sdk"],
+            false,
+        )?;
+        let runtime_glue_root = staging_root.join("RuntimeGlue");
+        glue.materialize(&runtime_glue_root, &sdk_root, Path::new("../RuntimeModule"))
+            .map_err(|error| {
+                diag(
+                    &error.code,
+                    "materialize_generated_runtime_glue",
+                    error.message,
+                    Some(&runtime_glue_root),
+                    &error.next_action,
+                )
+            })?;
+        runtime_glue_root
+    } else {
+        copy_source_tree(&source_root, &staging_root)?;
+        staging_root.clone()
+    };
     let outcome = (|| {
-        let (package_name, crate_name) = normalize_cdylib_manifest(&staging_root, &sdk_root)?;
+        let engine_dependencies = if request.prepared_runtime_glue.is_some() {
+            &[
+                "project_game_sdk",
+                "project_runtime_sdk",
+                "project_runtime_abi",
+            ][..]
+        } else {
+            &["project_runtime_sdk", "project_runtime_abi"][..]
+        };
+        let (package_name, crate_name) =
+            normalize_manifest(&build_source_root, &sdk_root, engine_dependencies, true)?;
         let cargo = request
             .cargo_executable
             .clone()
@@ -427,6 +470,19 @@ fn prepare_inner(
                 OsString::from(&request.identity.aot_content_digest),
             ),
         ];
+        if request.prepared_runtime_glue.is_some() {
+            run_step(
+                runner,
+                report,
+                "cargo_generate_generated_glue_lock",
+                &cargo,
+                vec!["generate-lockfile".into(), "--offline".into()],
+                &build_source_root,
+                &environment,
+                request.metadata_hard_deadline_ms,
+                request.capture_limit_bytes,
+            )?;
+        }
         let metadata = run_step(
             runner,
             report,
@@ -439,7 +495,7 @@ fn prepare_inner(
                 "--locked".into(),
                 "--offline".into(),
             ],
-            &staging_root,
+            &build_source_root,
             &environment,
             request.metadata_hard_deadline_ms,
             request.capture_limit_bytes,
@@ -468,7 +524,7 @@ fn prepare_inner(
             "cargo_build_release",
             &cargo,
             build_args,
-            &staging_root,
+            &build_source_root,
             &environment,
             request.build_hard_deadline_ms,
             request.capture_limit_bytes,
@@ -577,9 +633,11 @@ fn run_step(
     Ok(process)
 }
 
-fn normalize_cdylib_manifest(
+fn normalize_manifest(
     staging_root: &Path,
     sdk_root: &Path,
+    engine_dependencies: &[&str],
+    force_cdylib: bool,
 ) -> Result<(String, String), ProjectRuntimeNativeModuleDiagnostic> {
     let manifest_path = staging_root.join("Cargo.toml");
     let text = fs::read_to_string(&manifest_path)
@@ -624,15 +682,17 @@ fn normalize_cdylib_manifest(
         .and_then(toml::Value::as_str)
         .unwrap_or(&package)
         .to_string();
-    let mut lib = root
-        .remove("lib")
-        .and_then(|value| value.as_table().cloned())
-        .unwrap_or_default();
-    lib.insert(
-        "crate-type".to_string(),
-        toml::Value::Array(vec![toml::Value::String("cdylib".to_string())]),
-    );
-    root.insert("lib".to_string(), toml::Value::Table(lib));
+    if force_cdylib {
+        let mut lib = root
+            .remove("lib")
+            .and_then(|value| value.as_table().cloned())
+            .unwrap_or_default();
+        lib.insert(
+            "crate-type".to_string(),
+            toml::Value::Array(vec![toml::Value::String("cdylib".to_string())]),
+        );
+        root.insert("lib".to_string(), toml::Value::Table(lib));
+    }
     let dependencies = root
         .entry("dependencies")
         .or_insert_with(|| toml::Value::Table(Default::default()))
@@ -646,7 +706,7 @@ fn normalize_cdylib_manifest(
                 "Repair the project RuntimeModule Cargo manifest.",
             )
         })?;
-    for name in ["project_runtime_sdk", "project_runtime_abi"] {
+    for name in engine_dependencies {
         let crate_root = canonical_directory(&sdk_root.join("crates").join(name), "SDK crate")?;
         dependencies.insert(
             name.to_string(),
@@ -668,6 +728,19 @@ fn normalize_cdylib_manifest(
     fs::write(&manifest_path, normalized)
         .map_err(|error| io_diag("stage_manifest", &manifest_path, error))?;
     Ok((package, crate_name))
+}
+
+fn native_module_cache_identity(identity_digest: &str, generation_digest: Option<&str>) -> String {
+    generation_digest
+        .map(|generation_digest| {
+            sha256_prefixed(
+                format!(
+                    "project-runtime-native-generated-glue.v1\0{identity_digest}\0{generation_digest}"
+                )
+                .as_bytes(),
+            )
+        })
+        .unwrap_or_else(|| identity_digest.to_string())
 }
 
 fn validate_dependency_scope(
@@ -747,12 +820,7 @@ fn validate_dependency_scope(
         .collect::<Vec<_>>();
     names.sort();
     names.dedup();
-    for forbidden in [
-        "engine_runtime",
-        "engine_input",
-        "editor_core",
-        "ai_tool_gateway",
-    ] {
+    for forbidden in ["engine_runtime", "engine_input", "editor_core"] {
         if names.iter().any(|name| name == forbidden) {
             return Err(diag(
                 "project_runtime.native_module_dependency_scope_rejected",
@@ -1494,37 +1562,50 @@ mod tests {
         let staged = owned_root.join("staged");
         copy_source_tree(&tower_module, &staged).unwrap();
 
-        let (package_name, crate_name) =
-            normalize_cdylib_manifest(&staged, &repository_root.join("rust")).unwrap();
+        let (package_name, crate_name) = normalize_manifest(
+            &staged,
+            &repository_root.join("rust"),
+            &["project_game_sdk"],
+            false,
+        )
+        .unwrap();
         assert_eq!(package_name, "tower_defense_project_runtime");
         assert_eq!(crate_name, package_name);
 
         let manifest: toml::Value =
             toml::from_str(&fs::read_to_string(staged.join("Cargo.toml")).unwrap()).unwrap();
         let dependencies = manifest["dependencies"].as_table().unwrap();
-        for required in ["project_runtime_abi", "project_runtime_sdk"] {
-            assert!(dependencies.contains_key(required), "missing {required}");
-        }
+        assert!(dependencies.contains_key("project_game_sdk"));
         for forbidden in [
+            "project_runtime_abi",
+            "project_runtime_sdk",
             "engine_runtime",
             "engine_input",
             "editor_core",
-            "ai_tool_gateway",
         ] {
             assert!(
                 !dependencies.contains_key(forbidden),
                 "forbidden {forbidden}"
             );
         }
-        assert_eq!(
-            manifest["lib"]["crate-type"].as_array().unwrap(),
-            &[toml::Value::String("cdylib".to_string())]
-        );
+        assert!(manifest.get("lib").is_none());
 
         let source = fs::read_to_string(staged.join("src/lib.rs")).unwrap();
-        assert!(source.contains("aife_project_runtime_entry_v1"));
-        assert!(source.contains("AIFE_PROJECT_RUNTIME_AOT_DIGEST"));
+        assert!(source.contains("pub fn project_game()"));
+        assert!(!source.contains("aife_project_runtime_entry_v1"));
         fs::remove_dir_all(owned_root).unwrap();
+    }
+
+    #[test]
+    fn project_runtime_native_module_cache_identity_tracks_generated_glue() {
+        let identity_digest = digest('3');
+        let first = native_module_cache_identity(&identity_digest, Some(&digest('4')));
+        let second = native_module_cache_identity(&identity_digest, Some(&digest('5')));
+        assert_ne!(first, second);
+        assert_eq!(
+            native_module_cache_identity(&identity_digest, None),
+            identity_digest
+        );
     }
 
     #[test]

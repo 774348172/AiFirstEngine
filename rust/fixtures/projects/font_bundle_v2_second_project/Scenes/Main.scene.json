@@ -1,0 +1,48 @@
+{
+  "schemaVersion": "editor-scene-document.v1",
+  "id": "scene-main",
+  "name": "Font Bundle Showcase",
+  "gravity": 0,
+  "background": "#10151b",
+  "skyColor": "#1d2833",
+  "entities": [
+    {
+      "schemaVersion": "editor-scene-entity.v1",
+      "id": "entity-camera-main",
+      "name": "Main Camera",
+      "kind": "camera",
+      "enabled": true,
+      "siblingOrder": 0,
+      "transform": {
+        "localPosition": { "x": 0, "y": 0, "z": 10 },
+        "localRotation": { "x": 0, "y": 0, "z": 0 },
+        "localScale": { "x": 1, "y": 1, "z": 1 }
+      },
+      "components": [
+        {
+          "componentType": "project.camera2d",
+          "data": { "orthographicSize": 5 }
+        }
+      ]
+    },
+    {
+      "schemaVersion": "editor-scene-entity.v1",
+      "id": "entity-font-showcase-ui",
+      "name": "Font Showcase UI",
+      "kind": "ui",
+      "enabled": true,
+      "siblingOrder": 1,
+      "transform": {
+        "localPosition": { "x": 0, "y": 0, "z": 0 },
+        "localRotation": { "x": 0, "y": 0, "z": 0 },
+        "localScale": { "x": 1, "y": 1, "z": 1 }
+      },
+      "components": [
+        {
+          "componentType": "project.auiDocumentRef",
+          "data": { "documentId": "font-showcase-hud" }
+        }
+      ]
+    }
+  ]
+}

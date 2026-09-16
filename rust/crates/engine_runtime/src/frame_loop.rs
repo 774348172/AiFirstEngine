@@ -12,7 +12,7 @@ use crate::project_logic::ProjectLogicRunner;
 use crate::project_observation::CookedProjectObservationContract;
 use crate::project_observation::ProjectRuntimeObservationState;
 use crate::project_runtime_session::{
-    execute_project_runtime_observation, execute_project_runtime_session_stage_with_animator2d,
+    execute_project_runtime_observation, execute_project_runtime_session_stage_with_media,
     ProjectRuntimeSession, ProjectRuntimeSessionFrameReport, ProjectRuntimeSessionReportLevel,
     ProjectRuntimeSessionStage,
 };
@@ -20,6 +20,7 @@ use crate::render_command::{apply_batch, RenderFrameReport, RenderFrameReportLev
 use crate::render_extract::RenderExtractContext;
 use crate::render_snapshot::{extract_render_snapshot, RenderSnapshot};
 use crate::render_state::RenderSceneState;
+use crate::runtime_audio::AudioSourceCommand;
 use crate::runtime_instance_loader::RuntimeInstanceLoader;
 use crate::runtime_package::RuntimePackage;
 use crate::runtime_time::{RuntimeTime, TimeTraceSummary, DEFAULT_FIXED_DELTA_TIME};
@@ -49,6 +50,8 @@ pub struct RuntimeFrameOutput {
     pub project_runtime_session_report: Option<ProjectRuntimeSessionFrameReport>,
     pub project_observation_state: Option<ProjectRuntimeObservationState>,
     pub animator2d_frame_result: Animator2DFrameResult,
+    pub audio_source_commands: Vec<AudioSourceCommand>,
+    pub particle_commands: Vec<crate::runtime_particles::ParticleCommand>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -398,9 +401,11 @@ impl FrameLoop {
             ProjectRuntimeSessionFrameReport::new(frame, binding.session.session_id().to_string())
         });
         let mut animator2d_commands = Vec::<Animator2DCommand>::new();
+        let mut audio_source_commands = Vec::<AudioSourceCommand>::new();
+        let mut particle_commands = Vec::new();
         if let Some(binding) = project_session.as_mut() {
             if !binding.actions.is_empty() {
-                let stage_report = execute_project_runtime_session_stage_with_animator2d(
+                let stage_report = execute_project_runtime_session_stage_with_media(
                     binding.session,
                     ProjectRuntimeSessionStage::AuiActionDispatch,
                     frame,
@@ -409,6 +414,8 @@ impl FrameLoop {
                     binding.actions,
                     binding.report_level,
                     &mut animator2d_commands,
+                    &mut audio_source_commands,
+                    &mut particle_commands,
                 );
                 trace.record(
                     frame,
@@ -482,7 +489,7 @@ impl FrameLoop {
             };
 
             if let Some(binding) = project_session.as_mut() {
-                let stage_report = execute_project_runtime_session_stage_with_animator2d(
+                let stage_report = execute_project_runtime_session_stage_with_media(
                     binding.session,
                     ProjectRuntimeSessionStage::FixedUpdate,
                     frame,
@@ -491,6 +498,8 @@ impl FrameLoop {
                     &[],
                     binding.report_level,
                     &mut animator2d_commands,
+                    &mut audio_source_commands,
+                    &mut particle_commands,
                 );
                 trace.record(
                     frame,
@@ -783,6 +792,8 @@ impl FrameLoop {
             project_runtime_session_report,
             project_observation_state,
             animator2d_frame_result,
+            audio_source_commands,
+            particle_commands,
         })
     }
 }
@@ -1712,6 +1723,115 @@ mod tests {
             )
             .unwrap();
         assert_eq!(stepped.animator2d_frame_result.fixed_tick_index, 2);
+    }
+
+    #[test]
+    fn audio_source_frame_collects_once_and_handles_aui_without_fixed_tick() {
+        use crate::runtime_audio::AudioSourceAction as Action;
+        let mut world = World::new();
+        let id = EntityId::from("speaker");
+        let runtime_id = world.spawn_entity(id.clone(), "Speaker", "audio", true, hierarchy());
+        world.insert_component_value(
+            id,
+            ComponentValue::AudioSource(crate::audio::AudioSource {
+                clip_ref: crate::runtime_package::RuntimeAssetRef {
+                    id: "audio-test".into(),
+                    asset_type: "audio".into(),
+                    guid: None,
+                    sub_asset: None,
+                },
+                volume: 0.5,
+            }),
+        );
+        let mut frame_loop = FrameLoop::new("audio-scene");
+        let mut render_scene = RenderSceneState::new();
+        let mut extract = RenderExtractContext::new();
+        let mut session = AudioScheduleSession { emit_play: true };
+        let action = AuiAction {
+            action_id: "pause".into(),
+            node_id: "pause".into(),
+            event: crate::aui::AuiActionEvent::Click,
+            payload: None,
+        };
+        for (fixed_steps, actions, expected) in [
+            (1, &[][..], vec![Action::Play]),
+            (1, &[][..], vec![]),
+            (
+                0,
+                std::slice::from_ref(&action),
+                vec![Action::SetPaused(true)],
+            ),
+            (0, &[][..], vec![]),
+        ] {
+            let output = frame_loop
+                .tick_runtime_frame_with_project_session_delta_and_fixed_steps(
+                    &mut world,
+                    &mut render_scene,
+                    &mut extract,
+                    None,
+                    None,
+                    DEFAULT_FIXED_DELTA_TIME,
+                    None,
+                    ProjectRuntimeFrameSession {
+                        session: &mut session,
+                        actions,
+                        report_level: ProjectRuntimeSessionReportLevel::Summary,
+                        observation_contract: None,
+                    },
+                    fixed_steps,
+                )
+                .unwrap();
+            assert_eq!(
+                output
+                    .audio_source_commands
+                    .iter()
+                    .map(|command| command.action.clone())
+                    .collect::<Vec<_>>(),
+                expected
+            );
+            assert!(output
+                .audio_source_commands
+                .iter()
+                .all(|command| command.runtime_id == runtime_id));
+        }
+    }
+
+    struct AudioScheduleSession {
+        emit_play: bool,
+    }
+
+    impl ProjectRuntimeSession for AudioScheduleSession {
+        fn session_id(&self) -> &str {
+            "audio.schedule.session"
+        }
+
+        fn handle_aui_actions(
+            &mut self,
+            _context: ProjectRuntimeSessionContext<'_>,
+            _batch: ProjectAuiActionBatch<'_>,
+        ) -> ProjectRuntimeSessionOutput {
+            let mut mutations = ProjectRuntimeMutationBuffer::new();
+            mutations.audio_source_command(
+                EntityId::from("speaker"),
+                crate::runtime_audio::AudioSourceAction::SetPaused(true),
+            );
+            ProjectRuntimeSessionOutput::applied(mutations)
+        }
+
+        fn fixed_update(
+            &mut self,
+            _context: ProjectRuntimeSessionContext<'_>,
+        ) -> ProjectRuntimeSessionOutput {
+            if !std::mem::take(&mut self.emit_play) {
+                return ProjectRuntimeSessionOutput::no_op();
+            }
+            let mut mutations = ProjectRuntimeMutationBuffer::new();
+            mutations.audio_source_command(
+                EntityId::from("speaker"),
+                crate::runtime_audio::AudioSourceAction::Play,
+            );
+            ProjectRuntimeSessionOutput::applied(mutations)
+        }
     }
 
     #[test]

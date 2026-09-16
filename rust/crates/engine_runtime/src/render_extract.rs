@@ -57,8 +57,15 @@ impl RenderExtractContext {
         scene: &RenderSceneState,
         dirty_record: DirtyRecord,
     ) -> Option<RenderCommand> {
-        let runtime_entity_id = world.runtime_id_for_source(&dirty_record.entity_id)?;
         let proxy_id = scene.proxy_for_source(&dirty_record.entity_id);
+        let runtime_entity_id = world
+            .runtime_id_for_source(&dirty_record.entity_id)
+            .or_else(|| {
+                // Despawn releases the World mapping before RenderProjection consumes its dirty record.
+                proxy_id
+                    .and_then(|id| scene.proxy(id))
+                    .map(|proxy| proxy.common.runtime_entity_id)
+            })?;
         let command_id = self.next_command_id();
         match dirty_record.dirty_type {
             DirtyType::Transform => {
@@ -254,6 +261,39 @@ mod tests {
             Some(renderable("mesh-a")),
         );
         world
+    }
+
+    #[test]
+    fn despawn_sprite_removes_presented_proxy_after_world_identity_is_released() {
+        let mut world = World::new();
+        let id = EntityId::from("entity-sprite");
+        world.spawn_with_components(
+            id.clone(),
+            "Sprite",
+            "actor",
+            true,
+            hierarchy(),
+            Some(transform(1.0)),
+            None,
+        );
+        world.insert_sprite_renderer2d(id.clone(), sprite("sprite-a"));
+        let mut scene = RenderSceneState::new();
+        let mut extract = RenderExtractContext::new();
+        let commands = extract
+            .extract_world_dirty(1, &mut world, &scene)
+            .normalize_merge(&scene);
+        assert!(apply_batch(&mut scene, &commands).is_empty());
+        assert!(scene.proxy_for_source(&id).is_some());
+        world.try_despawn_entity(&id).unwrap();
+        assert!(world.runtime_id_for_source(&id).is_none());
+        let commands = extract
+            .extract_world_dirty(2, &mut world, &scene)
+            .normalize_merge(&scene);
+        assert!(apply_batch(&mut scene, &commands).is_empty());
+        assert!(
+            scene.proxy_for_source(&id).is_none(),
+            "despawned sprite must disappear from the presented scene"
+        );
     }
 
     #[test]

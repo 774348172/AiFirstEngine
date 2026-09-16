@@ -21,9 +21,8 @@ fn temp_root() -> TempRoot {
     TempRoot(root)
 }
 
-fn project_root() -> std::path::PathBuf {
-    std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("../../../samples/tower_defense_project")
+fn project_root() -> TempRoot {
+    TempRoot(write_project_rust_fixture_for_preparation())
 }
 
 fn engine_sdk_root() -> std::path::PathBuf {
@@ -44,7 +43,7 @@ fn open_command(path: &std::path::Path) -> UiCommand {
 fn pump_until_trust_prompt(
     app: &mut NativeEditorApplication,
 ) -> editor_ui_model::ProjectRuntimeTrustPromptModel {
-    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(30);
     loop {
         app.frame(1280.0, 720.0);
         if let Some(prompt) = app.latest_model().project_runtime_trust_prompt.clone() {
@@ -63,6 +62,7 @@ fn pump_until_trust_prompt(
 #[test]
 fn project_runtime_trust_prompt_requires_explicit_approve_and_cancel_writes_nothing() {
     let state = temp_root();
+    let project = project_root();
     let trust = editor_core::ProjectRuntimeTrustModule::open(&state.0).unwrap();
     let environment = ProjectRuntimeTrustEnvironment {
         trust_module: trust.clone(),
@@ -73,10 +73,10 @@ fn project_runtime_trust_prompt_requires_explicit_approve_and_cancel_writes_noth
         .with_project_runtime_trust_environment(environment.clone());
 
     assert!(app
-        .dispatch_project_launcher_command_or_dispatch(open_command(&project_root()))
+        .dispatch_project_launcher_command_or_dispatch(open_command(&project.0))
         .is_none());
     let prompt = pump_until_trust_prompt(&mut app);
-    assert_eq!(prompt.module_id, "sample.tower-defense.runtime");
+    assert_eq!(prompt.module_id, "fixture.native.runtime");
     assert_eq!(
         app.latest_draw_list()
             .hit_regions
@@ -96,19 +96,16 @@ fn project_runtime_trust_prompt_requires_explicit_approve_and_cancel_writes_noth
     assert_eq!(cancelled.status, CommandStatus::Committed);
     assert!(app.take_approved_project_runtime_trust_request().is_none());
 
-    let inspection = ProjectRuntimeTrustInspection::inspect(
-        project_root(),
-        engine_sdk_root(),
-        "sha256:editor-one",
-    )
-    .unwrap();
+    let inspection =
+        ProjectRuntimeTrustInspection::inspect(&project.0, engine_sdk_root(), "sha256:editor-one")
+            .unwrap();
     assert_eq!(
         trust.evaluate(&inspection.request, None).unwrap().status,
         ProjectRuntimeTrustStatus::Required
     );
 
     assert!(app
-        .dispatch_project_launcher_command_or_dispatch(open_command(&project_root()))
+        .dispatch_project_launcher_command_or_dispatch(open_command(&project.0))
         .is_none());
     let prompt = pump_until_trust_prompt(&mut app);
     let approved = app.dispatch_command(UiCommand {
@@ -138,7 +135,7 @@ fn project_runtime_trust_prompt_requires_explicit_approve_and_cancel_writes_noth
             ..environment
         });
     assert!(stale_app
-        .dispatch_project_launcher_command_or_dispatch(open_command(&project_root()))
+        .dispatch_project_launcher_command_or_dispatch(open_command(&project.0))
         .is_none());
     assert!(pump_until_trust_prompt(&mut stale_app).identity_changed);
 }
@@ -146,6 +143,7 @@ fn project_runtime_trust_prompt_requires_explicit_approve_and_cancel_writes_noth
 #[test]
 fn recent_project_selection_reuses_project_runtime_trust_review() {
     let state = temp_root();
+    let project = project_root();
     let mut app = NativeEditorApplication::new(NativeEditorWindowConfig::default())
         .with_project_runtime_trust_environment(ProjectRuntimeTrustEnvironment {
             trust_module: editor_core::ProjectRuntimeTrustModule::open(&state.0).unwrap(),
@@ -157,22 +155,23 @@ fn recent_project_selection_reuses_project_runtime_trust_review() {
         source: UiCommandSource::ProjectLauncher,
         request_id: "recent-project-trust".to_string(),
         payload: UiCommandPayload::SelectRecentProject {
-            path: project_root().display().to_string(),
+            path: project.0.display().to_string(),
         },
     });
     assert!(result.is_none());
     assert_eq!(
         pump_until_trust_prompt(&mut app).module_id,
-        "sample.tower-defense.runtime"
+        "fixture.native.runtime"
     );
 }
 
 #[test]
 fn recent_project_trust_rejection_preserves_authoring_and_blocks_runtime() {
     let state = temp_root();
+    let project = project_root();
     let trust = editor_core::ProjectRuntimeTrustModule::open(&state.0).unwrap();
     let inspection = ProjectRuntimeTrustInspection::inspect(
-        project_root(),
+        &project.0,
         engine_sdk_root(),
         "sha256:editor-recent-denied",
     )
@@ -196,11 +195,11 @@ fn recent_project_trust_rejection_preserves_authoring_and_blocks_runtime() {
             source: UiCommandSource::ProjectLauncher,
             request_id: "recent-project-denied".to_string(),
             payload: UiCommandPayload::SelectRecentProject {
-                path: project_root().display().to_string(),
+                path: project.0.display().to_string(),
             },
         })
         .is_none());
-    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(30);
     loop {
         app.frame(1280.0, 720.0);
         if matches!(

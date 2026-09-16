@@ -571,6 +571,19 @@ impl World {
         table.animator2d(row)
     }
 
+    pub fn particle_effect(
+        &self,
+        id: &EntityId,
+    ) -> Option<&crate::runtime_particles::ParticleEffect> {
+        let (table, row) = self.table_row_for_source(id)?;
+        table.particle_effect(row)
+    }
+
+    pub fn audio_source(&self, id: &EntityId) -> Option<&crate::audio::AudioSource> {
+        let (table, row) = self.table_row_for_source(id)?;
+        table.audio_source(row)
+    }
+
     pub fn collider2d(&self, id: &EntityId) -> Option<&crate::physics2d::Collider2D> {
         let (table, row) = self.table_row_for_source(id)?;
         table.collider2d(row)

@@ -11,6 +11,8 @@ use crate::project_observation::{
     validate_project_observation_values, CookedProjectObservationContract, ProjectObservationValue,
     ProjectRuntimeObservationDiagnostic, ProjectRuntimeObservationState,
 };
+use crate::runtime_audio::{AudioSourceAction, AudioSourceCommand};
+use crate::runtime_particles::{ParticleAction, ParticleCommand};
 use crate::runtime_time::TimeContext;
 use crate::world::World;
 use crate::world_api::{
@@ -136,6 +138,8 @@ enum ProjectRuntimeMutationOperation {
 pub struct ProjectRuntimeMutationBuffer {
     operations: Vec<ProjectRuntimeMutationOperation>,
     animator2d_commands: Vec<Animator2DCommand>,
+    audio_source_intents: Vec<(EntityId, AudioSourceAction)>,
+    particle_intents: Vec<(EntityId, u64, ParticleAction)>,
 }
 
 impl ProjectRuntimeMutationBuffer {
@@ -144,11 +148,17 @@ impl ProjectRuntimeMutationBuffer {
     }
 
     pub fn is_empty(&self) -> bool {
-        self.operations.is_empty() && self.animator2d_commands.is_empty()
+        self.operations.is_empty()
+            && self.animator2d_commands.is_empty()
+            && self.audio_source_intents.is_empty()
+            && self.particle_intents.is_empty()
     }
 
     pub fn len(&self) -> usize {
-        self.operations.len() + self.animator2d_commands.len()
+        self.operations.len()
+            + self.animator2d_commands.len()
+            + self.audio_source_intents.len()
+            + self.particle_intents.len()
     }
 
     pub fn replace_component(
@@ -207,6 +217,23 @@ impl ProjectRuntimeMutationBuffer {
         });
     }
 
+    pub fn animator2d_command(&mut self, command: Animator2DCommand) {
+        self.animator2d_commands.push(command);
+    }
+
+    pub fn particle_command(
+        &mut self,
+        entity_id: EntityId,
+        generation: u64,
+        action: ParticleAction,
+    ) {
+        self.particle_intents.push((entity_id, generation, action));
+    }
+
+    pub fn audio_source_command(&mut self, entity_id: EntityId, action: AudioSourceAction) {
+        self.audio_source_intents.push((entity_id, action));
+    }
+
     pub fn animator2d_set_trigger(&mut self, entity_id: EntityId, parameter_id: impl Into<String>) {
         self.animator2d_commands
             .push(Animator2DCommand::SetTrigger {
@@ -232,7 +259,53 @@ impl ProjectRuntimeMutationBuffer {
         world: &World,
     ) -> Result<PreparedProjectRuntimeMutationBatch, ProjectRuntimeMutationError> {
         let staged_count = self.len();
+        let mut particle_commands = Vec::new();
+        for (entity_id, generation, action) in self.particle_intents {
+            let runtime_id = world.runtime_id_for_source(&entity_id);
+            if !world
+                .entity(&entity_id)
+                .is_some_and(|m| m.alive && m.enabled)
+                || world.particle_effect(&entity_id).is_none()
+                || !runtime_id
+                    .is_some_and(|id| generation == 0 || generation == u64::from(id.generation))
+            {
+                return Err(ProjectRuntimeMutationError {
+                    code: "particle_effect.target_unavailable",
+                    operation_index: particle_commands.len(),
+                    message: format!(
+                        "ParticleEffect target {entity_id} is absent, disabled or stale"
+                    ),
+                    report: ProjectRuntimeMutationCommitReport::rejected(staged_count),
+                });
+            }
+            particle_commands.push(ParticleCommand {
+                entity_id,
+                runtime_id: runtime_id.unwrap(),
+                action,
+            });
+        }
         let animator2d_commands = self.animator2d_commands;
+        let audio_operation_start = self.operations.len() + animator2d_commands.len();
+        let mut audio_source_commands = Vec::with_capacity(self.audio_source_intents.len());
+        for (index, (entity_id, action)) in self.audio_source_intents.into_iter().enumerate() {
+            let live = world
+                .entity(&entity_id)
+                .is_some_and(|meta| meta.alive && meta.enabled);
+            let runtime_id = world.runtime_id_for_source(&entity_id);
+            if !live || world.audio_source(&entity_id).is_none() || runtime_id.is_none() {
+                return Err(ProjectRuntimeMutationError {
+                    code: "audio_source.target_unavailable",
+                    operation_index: audio_operation_start + index,
+                    message: format!("AudioSource target {entity_id} must be alive, enabled, and have a typed AudioSource."),
+                    report: ProjectRuntimeMutationCommitReport::rejected(staged_count),
+                });
+            }
+            audio_source_commands.push(AudioSourceCommand {
+                entity_id,
+                runtime_id: runtime_id.expect("live audio source runtime identity checked"),
+                action,
+            });
+        }
         let mut overlay = BTreeMap::<(EntityId, ComponentTypeId), ComponentValue>::new();
         let mut prepared = Vec::with_capacity(staged_count);
 
@@ -352,6 +425,8 @@ impl ProjectRuntimeMutationBuffer {
         Ok(PreparedProjectRuntimeMutationBatch {
             operations: prepared,
             animator2d_commands,
+            audio_source_commands,
+            particle_commands,
             staged_count,
         })
     }
@@ -383,6 +458,8 @@ enum PreparedProjectRuntimeMutation {
 pub struct PreparedProjectRuntimeMutationBatch {
     operations: Vec<PreparedProjectRuntimeMutation>,
     animator2d_commands: Vec<Animator2DCommand>,
+    audio_source_commands: Vec<AudioSourceCommand>,
+    particle_commands: Vec<ParticleCommand>,
     staged_count: usize,
 }
 
@@ -427,10 +504,15 @@ impl PreparedProjectRuntimeMutationBatch {
         }
         Ok(ProjectRuntimeMutationCommitReport {
             staged_count: self.staged_count,
-            committed_count: records.len() + self.animator2d_commands.len(),
+            committed_count: records.len()
+                + self.animator2d_commands.len()
+                + self.audio_source_commands.len()
+                + self.particle_commands.len(),
             rejected_count: 0,
             records,
             animator2d_commands: self.animator2d_commands,
+            audio_source_commands: self.audio_source_commands,
+            particle_commands: self.particle_commands,
         })
     }
 }
@@ -480,6 +562,8 @@ impl ProjectRuntimeMutationError {
                 rejected_count: staged_count.saturating_sub(committed_count),
                 records: Vec::new(),
                 animator2d_commands: Vec::new(),
+                audio_source_commands: Vec::new(),
+                particle_commands: Vec::new(),
             },
         }
     }
@@ -504,6 +588,8 @@ pub struct ProjectRuntimeMutationCommitReport {
     pub rejected_count: usize,
     pub records: Vec<WorldWriteRecord>,
     pub animator2d_commands: Vec<Animator2DCommand>,
+    pub audio_source_commands: Vec<AudioSourceCommand>,
+    pub particle_commands: Vec<ParticleCommand>,
 }
 
 impl ProjectRuntimeMutationCommitReport {
@@ -514,6 +600,8 @@ impl ProjectRuntimeMutationCommitReport {
             rejected_count: staged_count,
             records: Vec::new(),
             animator2d_commands: Vec::new(),
+            audio_source_commands: Vec::new(),
+            particle_commands: Vec::new(),
         }
     }
 }
@@ -735,7 +823,7 @@ pub(crate) fn execute_project_runtime_observation(
     validate_project_observation_values(contract, frame_index, &session_id, output.into_values())
 }
 
-pub(crate) fn execute_project_runtime_session_stage_with_animator2d(
+pub(crate) fn execute_project_runtime_session_stage_with_media(
     session: &mut dyn ProjectRuntimeSession,
     stage: ProjectRuntimeSessionStage,
     frame_index: u64,
@@ -744,6 +832,8 @@ pub(crate) fn execute_project_runtime_session_stage_with_animator2d(
     actions: &[AuiAction],
     report_level: ProjectRuntimeSessionReportLevel,
     animator2d_commands: &mut Vec<Animator2DCommand>,
+    audio_source_commands: &mut Vec<AudioSourceCommand>,
+    particle_commands: &mut Vec<ParticleCommand>,
 ) -> ProjectRuntimeSessionStageReport {
     let action_trace = if report_level == ProjectRuntimeSessionReportLevel::Trace {
         actions
@@ -810,6 +900,8 @@ pub(crate) fn execute_project_runtime_session_stage_with_animator2d(
         Ok(ProjectRuntimeMutationPreparation::Prepared(batch)) => match batch.commit(world) {
             Ok(report) => {
                 animator2d_commands.extend(report.animator2d_commands.iter().cloned());
+                audio_source_commands.extend(report.audio_source_commands);
+                particle_commands.extend(report.particle_commands);
                 (report.committed_count, report.rejected_count, false)
             }
             Err(error) => {
@@ -994,3 +1086,125 @@ pub fn create_empty_project_runtime_session(
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod audio_source_tests {
+    use super::*;
+    use crate::audio::AudioSource;
+    use crate::components::Hierarchy;
+    use crate::runtime_package::RuntimeAssetRef;
+
+    fn source_world(enabled: bool, with_source: bool) -> World {
+        let mut world = World::new();
+        let id = EntityId::from("speaker");
+        world.spawn_entity(
+            id.clone(),
+            "Speaker",
+            "audio",
+            enabled,
+            Hierarchy {
+                parent_id: None,
+                sibling_order: 0,
+            },
+        );
+        if with_source {
+            world.insert_component_value(
+                id,
+                ComponentValue::AudioSource(AudioSource {
+                    clip_ref: RuntimeAssetRef {
+                        id: "audio-test".into(),
+                        asset_type: "audio".into(),
+                        guid: None,
+                        sub_asset: None,
+                    },
+                    volume: 0.5,
+                }),
+            );
+        }
+        world
+    }
+
+    fn play_buffer() -> ProjectRuntimeMutationBuffer {
+        let mut mutations = ProjectRuntimeMutationBuffer::new();
+        mutations.audio_source_command(EntityId::from("speaker"), AudioSourceAction::Play);
+        mutations
+    }
+
+    #[test]
+    fn audio_source_noop_rejected_and_faulted_outputs_never_commit_commands() {
+        let world = source_world(true, true);
+        for status in [
+            ProjectRuntimeSessionStatus::NoOp,
+            ProjectRuntimeSessionStatus::Unhandled,
+            ProjectRuntimeSessionStatus::Rejected,
+            ProjectRuntimeSessionStatus::Faulted,
+        ] {
+            let mut output = ProjectRuntimeSessionOutput::applied(play_buffer());
+            output.status = status;
+            let ProjectRuntimeMutationPreparation::Dropped(report) =
+                output.prepare_mutations(&world).unwrap()
+            else {
+                panic!("non-Applied output must drop audio");
+            };
+            assert_eq!(report.committed_count, 0);
+            assert_eq!(report.rejected_count, 1);
+            assert!(report.audio_source_commands.is_empty());
+        }
+    }
+
+    #[test]
+    fn audio_source_preparation_rejects_missing_disabled_and_untyped_targets() {
+        for world in [
+            World::new(),
+            source_world(false, true),
+            source_world(true, false),
+        ] {
+            let error = play_buffer().prepare(&world).unwrap_err();
+            assert_eq!(error.code, "audio_source.target_unavailable");
+            assert!(error.message.contains("speaker"));
+            assert_eq!(error.report.committed_count, 0);
+            assert!(error.report.audio_source_commands.is_empty());
+        }
+    }
+
+    #[test]
+    fn audio_source_failed_mutation_batch_does_not_leak_a_play_command() {
+        let world = source_world(true, true);
+        let mut buffer = play_buffer();
+        buffer.write_transform(
+            EntityId::from("missing"),
+            Transform {
+                local_position: crate::math::Vec3::ZERO,
+                local_rotation: crate::math::Vec3::ZERO,
+                local_scale: crate::math::Vec3::ONE,
+            },
+        );
+        let error = buffer.prepare(&world).unwrap_err();
+        assert_eq!(error.report.staged_count, 2);
+        assert_eq!(error.report.committed_count, 0);
+        assert!(error.report.audio_source_commands.is_empty());
+    }
+
+    #[test]
+    fn audio_source_prepared_command_keeps_original_runtime_generation() {
+        let mut world = source_world(true, true);
+        let id = EntityId::from("speaker");
+        let original = world.runtime_id_for_source(&id).unwrap();
+        let prepared = play_buffer().prepare(&world).unwrap();
+        world.despawn_entity(&id);
+        let replacement = world.spawn_entity(
+            id.clone(),
+            "Replacement",
+            "audio",
+            true,
+            Hierarchy {
+                parent_id: None,
+                sibling_order: 0,
+            },
+        );
+        let report = prepared.commit(&mut world).unwrap();
+        assert_ne!(original, replacement);
+        assert_eq!(report.audio_source_commands[0].runtime_id, original);
+        assert_ne!(report.audio_source_commands[0].runtime_id, replacement);
+    }
+}

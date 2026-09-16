@@ -975,6 +975,9 @@ fn decode_style(value: serde_json::Value) -> Result<AuiStyle, String> {
 
 fn decode_binding_target(value: &str) -> Result<AuiBindingTarget, String> {
     match value.trim() {
+        "rect.offsetX" | "RectOffsetX" => Ok(AuiBindingTarget::RectOffsetX),
+        "rect.offsetY" | "RectOffsetY" => Ok(AuiBindingTarget::RectOffsetY),
+        "text.color" | "TextColor" => Ok(AuiBindingTarget::TextColor),
         "text.text" | "text" | "TextText" => Ok(AuiBindingTarget::TextText),
         "progress.value" | "progressValue" | "ProgressBarValue" => {
             Ok(AuiBindingTarget::ProgressBarValue)

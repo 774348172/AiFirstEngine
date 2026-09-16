@@ -256,9 +256,25 @@ impl AndroidDevExportPipeline {
         Self::export_with_preflight(request, preflight)
     }
 
+    pub fn export_prepared(
+        request: AndroidDevExportRequest,
+        prepared: &project_authoring_execution::PreparedRuntimePackage,
+    ) -> AndroidDevExportReport {
+        let preflight = AndroidToolchainPreflight::probe_host_for_abi(request.abi);
+        Self::export_with_preflight_and_glue(request, preflight, prepared.generated_runtime_glue())
+    }
+
     fn export_with_preflight(
         request: AndroidDevExportRequest,
         preflight: AndroidToolchainPreflight,
+    ) -> AndroidDevExportReport {
+        Self::export_with_preflight_and_glue(request, preflight, None)
+    }
+
+    fn export_with_preflight_and_glue(
+        request: AndroidDevExportRequest,
+        preflight: AndroidToolchainPreflight,
+        prepared_runtime_glue: Option<&project_authoring_execution::PreparedRuntimeGlue>,
     ) -> AndroidDevExportReport {
         let mut report = base_report(&request, preflight);
         if !report.preflight.ready {
@@ -267,7 +283,12 @@ impl AndroidDevExportPipeline {
             return report;
         }
         let resolved_preflight = report.preflight.clone();
-        match stage_build_and_publish(&request, &resolved_preflight, &mut report) {
+        match stage_build_and_publish(
+            &request,
+            &resolved_preflight,
+            prepared_runtime_glue,
+            &mut report,
+        ) {
             Ok(apk_path) => {
                 report.status = AndroidDevExportStatus::Success;
                 report.package_status = "success".to_string();
@@ -293,6 +314,7 @@ impl AndroidDevExportPipeline {
 fn stage_build_and_publish(
     request: &AndroidDevExportRequest,
     preflight: &AndroidToolchainPreflight,
+    prepared_runtime_glue: Option<&project_authoring_execution::PreparedRuntimeGlue>,
     report: &mut AndroidDevExportReport,
 ) -> Result<PathBuf, String> {
     if request.output_dir
@@ -362,6 +384,7 @@ fn stage_build_and_publish(
         &project_manifest,
         &application_id,
         preflight.sdk_root.as_deref().expect("ready SDK"),
+        prepared_runtime_glue,
     )?;
     report.completed_stages.push("launcher".to_string());
 
@@ -498,6 +521,7 @@ fn generate_android_project(
     project: &ProjectManifest,
     application_id: &str,
     sdk_root: &Path,
+    prepared_runtime_glue: Option<&project_authoring_execution::PreparedRuntimeGlue>,
 ) -> Result<(), String> {
     let engine_rust_root = Path::new(env!("CARGO_MANIFEST_DIR"))
         .parent()
@@ -513,13 +537,26 @@ fn generate_android_project(
     let runtime_module_root = runtime_module
         .parent()
         .ok_or_else(|| "android_export.runtime_module_root_missing".to_string())?;
+    let runtime_dependency_root = if let Some(glue) = prepared_runtime_glue {
+        let glue_root = android_project
+            .parent()
+            .ok_or_else(|| "android_export.staging_parent_missing".to_string())?
+            .join("RuntimeGlue");
+        glue.materialize(&glue_root, engine_rust_root, runtime_module_root)
+            .map_err(|error| format!("{}: {}", error.code, error.message))?;
+        glue_root
+    } else {
+        runtime_module_root.to_path_buf()
+    };
+    let runtime_dependency_package =
+        runtime_dependency_package(project, prepared_runtime_glue.is_some());
     write_text(
         &launcher_root.join("Cargo.toml"),
         &format!(
-            "[package]\nname = \"aife_android_launcher\"\nversion = \"0.0.3\"\nedition = \"2021\"\n\n[lib]\nname = \"main\"\ncrate-type = [\"cdylib\"]\n\n[dependencies]\nruntime_player_android = {{ path = \"{}\" }}\nproject_runtime = {{ package = \"{}\", path = \"{}\" }}\nwinit = {{ version = \"0.30\", features = [\"android-game-activity\"] }}\n\n[workspace]\n",
+            "[package]\nname = \"aife_android_launcher\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[lib]\nname = \"main\"\ncrate-type = [\"cdylib\"]\n\n[dependencies]\nruntime_player_android = {{ path = \"{}\" }}\nproject_runtime = {{ package = \"{}\", path = \"{}\" }}\nwinit = {{ version = \"0.30\", features = [\"android-game-activity\"] }}\n\n[workspace]\n",
             toml_path(&engine_rust_root.join("crates/runtime_player_android")),
-            project.runtime_module.cargo_package,
-            toml_path(runtime_module_root),
+            runtime_dependency_package,
+            toml_path(&runtime_dependency_root),
         ),
     )?;
     write_text(
@@ -548,7 +585,7 @@ fn generate_android_project(
     write_text(
         &android_project.join("app/build.gradle.kts"),
         &format!(
-            "plugins {{ id(\"com.android.application\") }}\n\nandroid {{\n    namespace = \"{application_id}\"\n    compileSdk = {ANDROID_COMPILE_SDK}\n    ndkVersion = \"{ANDROID_NDK_VERSION}\"\n    defaultConfig {{\n        applicationId = \"{application_id}\"\n        minSdk = {ANDROID_MIN_SDK}\n        targetSdk = {ANDROID_COMPILE_SDK}\n        versionCode = 1\n        versionName = \"0.0.3-dev\"\n        ndk {{ abiFilters += \"{}\" }}\n    }}\n}}\n\ndependencies {{\n    implementation(\"androidx.games:games-activity:3.0.5\")\n    implementation(\"androidx.appcompat:appcompat:1.7.1\")\n    implementation(platform(\"org.jetbrains.kotlin:kotlin-bom:1.8.22\"))\n}}\n",
+            "plugins {{ id(\"com.android.application\") }}\n\nandroid {{\n    namespace = \"{application_id}\"\n    compileSdk = {ANDROID_COMPILE_SDK}\n    ndkVersion = \"{ANDROID_NDK_VERSION}\"\n    defaultConfig {{\n        applicationId = \"{application_id}\"\n        minSdk = {ANDROID_MIN_SDK}\n        targetSdk = {ANDROID_COMPILE_SDK}\n        versionCode = 1\n        versionName = \"0.1.0-dev\"\n        ndk {{ abiFilters += \"{}\" }}\n    }}\n}}\n\ndependencies {{\n    implementation(\"androidx.games:games-activity:3.0.5\")\n    implementation(\"androidx.appcompat:appcompat:1.7.1\")\n    implementation(platform(\"org.jetbrains.kotlin:kotlin-bom:1.8.22\"))\n}}\n",
             request.abi.android_abi()
         ),
     )?;
@@ -560,6 +597,17 @@ fn generate_android_project(
         ),
     )?;
     Ok(())
+}
+
+fn runtime_dependency_package(
+    project: &ProjectManifest,
+    uses_generated_runtime_glue: bool,
+) -> &str {
+    if uses_generated_runtime_glue {
+        "aife_generated_runtime_glue"
+    } else {
+        project.runtime_module.cargo_package.as_str()
+    }
 }
 
 fn discover_toolchain_facts(abi: AndroidDevAbi) -> AndroidToolchainFacts {
@@ -1019,7 +1067,7 @@ mod tests {
             "schemaVersion": "aife-project.v2",
             "projectId": "tower-test",
             "projectName": "Tower Test",
-            "engineVersion": "0.0.3",
+            "engineVersion": "0.1.0",
             "createdAt": "1",
             "lastOpenedAt": "1",
             "defaultScene": "Scenes/Main.scene.json",
@@ -1035,6 +1083,10 @@ mod tests {
             }
         }))
         .unwrap();
+        assert_eq!(
+            runtime_dependency_package(&project, true),
+            "aife_generated_runtime_glue"
+        );
 
         generate_android_project(
             &android_project,
@@ -1042,6 +1094,7 @@ mod tests {
             &project,
             "com.aifirst.dev.towertest",
             &sdk_root,
+            None,
         )
         .unwrap();
 
@@ -1072,6 +1125,7 @@ mod tests {
             &project,
             "com.aifirst.dev.towertest",
             &sdk_root,
+            None,
         )
         .unwrap();
         let emulator_gradle =

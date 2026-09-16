@@ -16,6 +16,7 @@ pub struct HeadlessRhiBackend {
     present_count: usize,
     binding_count: usize,
     uploaded_resource_count: usize,
+    particle_unsupported: bool,
     hasher: DefaultHasher,
 }
 
@@ -35,6 +36,7 @@ impl HeadlessRhiBackend {
             present_count: 0,
             binding_count: 0,
             uploaded_resource_count: 0,
+            particle_unsupported: false,
             hasher: DefaultHasher::new(),
         }
     }
@@ -59,6 +61,7 @@ impl EngineRhiBackend for HeadlessRhiBackend {
     }
 
     fn begin_frame(&mut self, frame: EngineRhiFrame) {
+        self.particle_unsupported = false;
         frame.frame_index.hash(&mut self.hasher);
         "begin".hash(&mut self.hasher);
         frame.target_id.hash(&mut self.hasher);
@@ -72,6 +75,9 @@ impl EngineRhiBackend for HeadlessRhiBackend {
     }
 
     fn draw(&mut self, draw_call: EngineRhiDrawCall) {
+        if matches!(draw_call.payload, RhiDrawPayload::Particles { .. }) {
+            self.particle_unsupported = true;
+        }
         self.draw_count += 1;
         "draw".hash(&mut self.hasher);
         draw_call.target_id.hash(&mut self.hasher);
@@ -86,6 +92,21 @@ impl EngineRhiBackend for HeadlessRhiBackend {
         "submit".hash(&mut self.hasher);
     }
 
+    fn reconcile_particles(
+        &mut self,
+        sources: &[crate::particle_render_contract::ParticleSourceFrame],
+    ) {
+        self.particle_unsupported |= !sources.is_empty();
+    }
+
+    fn particle_step(
+        &mut self,
+        _instance: u64,
+        _step: &crate::particle_render_contract::ParticleRenderStep,
+    ) {
+        self.particle_unsupported = true;
+    }
+
     fn present(&mut self, target_id: &str) {
         self.present_count += 1;
         "present".hash(&mut self.hasher);
@@ -94,6 +115,12 @@ impl EngineRhiBackend for HeadlessRhiBackend {
 
     fn finish_report(&mut self, plan: &RhiCommandPlan) -> RhiBackendReport {
         let mut diagnostics = Vec::new();
+        if self.particle_unsupported {
+            diagnostics.push(RhiBackendDiagnostic::error(
+                "particle_render.unsupported_backend",
+                "headless intent recording does not execute GPU particles",
+            ));
+        }
         plan.graph_id.hash(&mut self.hasher);
         if plan.has_errors() {
             diagnostics.push(RhiBackendDiagnostic::error(
@@ -113,7 +140,11 @@ impl EngineRhiBackend for HeadlessRhiBackend {
             binding_count: self.binding_count,
             uploaded_resource_count: self.uploaded_resource_count,
             reused_resource_count: 0,
-            failed_resource_count: if plan.has_errors() { 1 } else { 0 },
+            failed_resource_count: if plan.has_errors() || self.particle_unsupported {
+                1
+            } else {
+                0
+            },
             target_hash: format!("{:016x}", self.hasher.finish()),
             diagnostics,
         }

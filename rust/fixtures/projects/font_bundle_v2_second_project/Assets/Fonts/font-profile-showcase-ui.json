@@ -1,0 +1,26 @@
+{
+  "schemaVersion": "font-atlas-profile-asset.v1",
+  "assetId": "font-profile-showcase-ui",
+  "role": "defaultUi",
+  "fontStack": "font-stack-showcase-ui",
+  "glyphSet": {
+    "includeRuntimeTextSources": true,
+    "unicodeRanges": [],
+    "literals": ["中界"],
+    "locales": ["zh-CN"]
+  },
+  "raster": {
+    "policy": "autoHybrid",
+    "bitmapPixelSizes": [16, 24, 32],
+    "bitmapHinting": "fontDefault",
+    "msdfEmSize": 64,
+    "msdfPixelRange": 8
+  },
+  "packing": {
+    "pageWidth": 128,
+    "pageHeight": 128,
+    "padding": 1,
+    "maxBitmapPages": 8,
+    "maxMsdfPages": 8
+  }
+}

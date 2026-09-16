@@ -3,13 +3,12 @@ use editor_ui_model::{
     AiCommandReviewState, AiPanelMessage, AiPanelMessageRole, AiPanelModel, AiProposedCommand,
     Animator2DAuthoringModel, BuildExportCommand, BuildExportModel, BuildExportReportSummary,
     BuildProfileSummary, ConsoleModel, EditorCommandFeedback, EditorCommandFeedbackStatus,
-    EditorUiMode, EditorUiModel, GatewayAccessInboxModel, GatewayAccessRequestModel,
-    HierarchyModel, InspectorField, InspectorModel, InspectorSection, InspectorValue,
-    InspectorValueType, PanelLayoutModel, ProjectBrowserEntry, ProjectBrowserEntryKind,
-    ProjectBrowserModel, ProjectLauncherModel, ProjectOpenActivityModel, ProjectOpenActivityPhase,
-    RecentProjectEntry, ReleaseBuildProfileModel, RuntimeRunState, RuntimeTraceModel,
-    ToolbarCommand, ToolbarModel, UiCommandPayload, UiCommandSource, Vec3, ViewportModel,
-    WorkspaceViewMode,
+    EditorUiMode, EditorUiModel, HierarchyModel, InspectorField, InspectorModel, InspectorSection,
+    InspectorValue, InspectorValueType, PanelLayoutModel, ProjectBrowserEntry,
+    ProjectBrowserEntryKind, ProjectBrowserModel, ProjectLauncherModel, ProjectOpenActivityModel,
+    ProjectOpenActivityPhase, RecentProjectEntry, ReleaseBuildProfileModel, RuntimeRunState,
+    RuntimeTraceModel, ToolbarCommand, ToolbarModel, UiCommandPayload, UiCommandSource, Vec3,
+    ViewportModel, WorkspaceViewMode,
 };
 use engine_runtime::game_view_presentation::{GameViewScalePolicy, GameViewTargetSpec};
 
@@ -996,7 +995,7 @@ fn launcher_project_open_activity_is_localized_opaque_bounded_and_disables_open_
             .push(RecentProjectEntry {
                 name: "Tower Defense".to_string(),
                 path: "G:/gameEngin/samples/tower_defense_project".to_string(),
-                engine_version: "0.0.3".to_string(),
+                engine_version: "0.1.0".to_string(),
                 last_opened_at: None,
                 last_modified_at: None,
                 valid: true,
@@ -1152,7 +1151,7 @@ fn renderer_outputs_recent_project_hit_region() {
         .push(RecentProjectEntry {
             name: "PlaneGame".to_string(),
             path: "D:/Projects/PlaneGame".to_string(),
-            engine_version: "0.0.3".to_string(),
+            engine_version: "0.1.0".to_string(),
             last_opened_at: None,
             last_modified_at: Some("today".to_string()),
             valid: true,
@@ -1182,7 +1181,7 @@ fn launcher_formats_recent_project_epoch_as_unpadded_date() {
         .push(RecentProjectEntry {
             name: "Tower Defense".to_string(),
             path: "G:/gameEngin/samples/tower_defense_project".to_string(),
-            engine_version: "0.0.3".to_string(),
+            engine_version: "0.1.0".to_string(),
             last_opened_at: None,
             last_modified_at: Some("223776000".to_string()),
             valid: true,
@@ -1700,7 +1699,6 @@ fn fixture_model() -> EditorUiModel {
                 role: AiPanelMessageRole::Assistant,
                 text: "Ready.".to_string(),
             }],
-            gateway_access: Default::default(),
             proposed_commands: vec![AiProposedCommand {
                 proposal_id: "proposal-1".to_string(),
                 label: "Rename selected".to_string(),
@@ -1778,70 +1776,6 @@ fn ai_panel_narrow_dock_keeps_prompt_and_submit_separate() {
 
     assert!(prompt.width >= 40.0);
     assert!(prompt.x + prompt.width <= submit.x);
-}
-
-#[test]
-fn gateway_access_rows_are_separate_from_ai_proposals_and_keep_unique_hit_ids() {
-    let mut model = fixture_model();
-    model.ai_panel.gateway_access = GatewayAccessInboxModel {
-        requests: (0..2)
-            .map(|index| GatewayAccessRequestModel {
-                request_id: format!("gateway-access-request-{index}"),
-                operation_short_id: format!("operation-{index}"),
-                client_session_id: format!("gateway-session-{index}"),
-                session_short_id: index.to_string(),
-                client_kind: "MCP".to_string(),
-                client_version: "codex-desktop.v1".to_string(),
-                project_identity: "project.fixture".to_string(),
-                connected_age_ms: 100,
-                expires_in_ms: 10_000,
-                state: "awaiting_user".to_string(),
-                requested_profile: "project_owned_low_risk".to_string(),
-                risk_class: "ProjectOwnedLowRisk".to_string(),
-                capabilities: vec!["mutate_project".to_string()],
-                blocked_capabilities: vec!["engine_core".to_string()],
-                goal_id: format!("goal-{index}"),
-                user_visible_outcome: "Apply the requested project change.".to_string(),
-                completion_policy: "CommitVerified".to_string(),
-                allowed_paths: vec!["Assets".to_string()],
-                denied_paths: vec!["Engine".to_string()],
-                allowed_objects: Vec::new(),
-                max_mutation_count: 16,
-                time_budget_ms: 900_000,
-                external_cost_budget_microunits: 0,
-                allow_delete: false,
-                allow_dependency_change: false,
-                allow_network: false,
-                approval_digest: "sha256:test".to_string(),
-            })
-            .collect(),
-        page_index: 0,
-        page_count: 1,
-        total_count: 2,
-    };
-
-    let draw_list = SelfUiRenderer::build_draw_list(&model, config_with_panel("ai_panel"));
-    let gateway_hits = draw_list
-        .hit_regions
-        .iter()
-        .filter(|region| matches!(region.target, HitTarget::GatewayAccessDecision { .. }))
-        .collect::<Vec<_>>();
-    let unique_ids = gateway_hits
-        .iter()
-        .map(|region| region.id.as_str())
-        .collect::<std::collections::BTreeSet<_>>();
-
-    assert_eq!(
-        gateway_hits.len(),
-        4,
-        "two detailed rows need approve and reject actions"
-    );
-    assert_eq!(
-        unique_ids.len(),
-        4,
-        "every Gateway action needs a unique hit id"
-    );
-    assert_eq!(model.ai_panel.proposed_commands.len(), 1);
 }
 
 #[test]

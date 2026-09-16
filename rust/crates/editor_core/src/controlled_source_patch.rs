@@ -1,9 +1,12 @@
 use crate::{
     CandidateBaseVerificationStatus, CandidateFileChange, CandidateProjectRevision,
     CandidateProjectRevisionRequest, CandidateProjectRevisionStore, ProjectManifest,
-    ProjectRelativePath, ProjectRuntimeSourceKind, ProjectWriteScope,
-    CANDIDATE_PROJECT_REVISION_SCHEMA_VERSION, PROJECT_MANIFEST_SCHEMA_VERSION,
-    PROJECT_RUNTIME_MODULE_INTERFACE_VERSION,
+    ProjectRelativePath, ProjectRuntimeSourceKind, CANDIDATE_PROJECT_REVISION_SCHEMA_VERSION,
+    PROJECT_MANIFEST_SCHEMA_VERSION, PROJECT_RUNTIME_MODULE_INTERFACE_VERSION,
+};
+use authoring_project_context::{
+    EmbeddedAuthoringProjectContext, OpenOptions as AuthoringOpenOptions, ProjectLocator,
+    ProjectMutation, ProjectMutationOperation, PROJECT_MUTATION_SCHEMA_VERSION,
 };
 use engine_runtime::canonical_digest::sha256_prefixed;
 use runtime_cli::{
@@ -31,11 +34,9 @@ pub const CONTROLLED_SOURCE_PATCH_APPLY_RECEIPT_SCHEMA_VERSION: &str =
 pub const CONTROLLED_SOURCE_PATCH_ROLLBACK_RECEIPT_SCHEMA_VERSION: &str =
     "controlled-source-patch-rollback-receipt.v1";
 
-const ROLLBACK_RECORD_SCHEMA_VERSION: &str = "controlled-source-patch-rollback-record.v1";
 const MAX_OPERATIONS: usize = 64;
 const MAX_FILE_TEXT_BYTES: usize = 1024 * 1024;
 const MAX_TOTAL_TEXT_BYTES: usize = 4 * 1024 * 1024;
-const MAX_ROLLBACK_BYTES: usize = 16 * 1024 * 1024;
 const DEFAULT_STEP_TIMEOUT_MS: u64 = 120_000;
 const MAX_STEP_TIMEOUT_MS: u64 = 600_000;
 const DEFAULT_CAPTURE_LIMIT_BYTES: usize = 128 * 1024;
@@ -481,111 +482,107 @@ impl ControlledSourcePatch {
             ));
         }
         validate_candidate_contract(Path::new(&request.candidate.revision.candidate_root))?;
-
-        let scope = ProjectWriteScope::open(project_root).map_err(project_write_error)?;
-        let snapshots = snapshot_before_files(&scope, &request.candidate.revision.changed_paths)?;
-        let store_root = canonical_store_root(&request.candidate)?;
-        let rollback_name = rollback_record_name(&request.candidate.revision.revision_id);
-        let rollback_path = store_root.join(&rollback_name);
-        if rollback_path.exists() {
+        let mut context = EmbeddedAuthoringProjectContext::new();
+        let handle = context
+            .open(ProjectLocator::new(project_root), AuthoringOpenOptions)
+            .map_err(authoring_mutation_error)?;
+        let expected_revision = context
+            .current_revision(handle)
+            .map_err(authoring_mutation_error)?;
+        let write_set = request.candidate.revision.changed_paths.clone();
+        let expected_before = context
+            .capture_mutation_before(handle, &write_set)
+            .map_err(authoring_mutation_error)?;
+        let candidate_root = Path::new(&request.candidate.revision.candidate_root);
+        let operations = write_set
+            .iter()
+            .map(|path| {
+                let source = candidate_root.join(path);
+                if source.exists() {
+                    fs::read(&source)
+                        .map(|bytes| ProjectMutationOperation::CreateOrReplace {
+                            path: path.clone(),
+                            bytes,
+                        })
+                        .map_err(|error| {
+                            ControlledSourcePatchError::new(
+                                "controlled_source_patch.candidate_file_read_failed",
+                                format!("Validated candidate file cannot be read: {error}"),
+                                Some(&source),
+                                "Reject the candidate and preserve the project base.",
+                            )
+                        })
+                } else {
+                    Ok(ProjectMutationOperation::Delete { path: path.clone() })
+                }
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        let mutation_id = format!(
+            "csp-{}",
+            &sha256_prefixed(
+                format!(
+                    "controlled-source-patch-mutation.v1\0{}\0{}",
+                    request.candidate.patch_id, request.validation_report.validation_digest
+                )
+                .as_bytes()
+            )[7..39]
+        );
+        let mutation_receipt = context
+            .commit_mutation(
+                handle,
+                ProjectMutation {
+                    schema_version: PROJECT_MUTATION_SCHEMA_VERSION.to_string(),
+                    mutation_id,
+                    domain: "controlled_source_patch".to_string(),
+                    expected_revision_id: expected_revision.revision_id,
+                    validation_digest: request.validation_report.validation_digest.clone(),
+                    declared_read_set: write_set.clone(),
+                    declared_write_set: write_set.clone(),
+                    expected_before,
+                    operations,
+                },
+            )
+            .map_err(authoring_mutation_error)?;
+        let applied =
+            CandidateProjectRevisionStore::verify_base(&request.candidate.revision, project_root)
+                .map_err(candidate_error)?;
+        if applied.actual_digest != request.candidate.revision.candidate_project_digest {
+            context
+                .rollback_mutation(handle, &mutation_receipt)
+                .map_err(authoring_mutation_error)?;
             return Err(ControlledSourcePatchError::new(
-                "controlled_source_patch.rollback_record_exists",
-                "A rollback record already exists for this revision.",
-                Some(&rollback_path),
-                "Resolve the previous apply or rollback before retrying.",
+                "controlled_source_patch.apply_digest_mismatch",
+                "Applied project digest does not match the validated candidate.",
+                Some(project_root),
+                "The unified mutation was rolled back; inspect candidate lowering.",
             ));
         }
-        let mut rollback_record = RollbackRecord {
-            schema_version: ROLLBACK_RECORD_SCHEMA_VERSION.to_string(),
-            patch_id: request.candidate.patch_id.clone(),
-            revision_id: request.candidate.revision.revision_id.clone(),
-            before_project_digest: request.candidate.revision.base_project_digest.clone(),
-            applied_project_digest: request.candidate.revision.candidate_project_digest.clone(),
-            changed_paths: request.candidate.revision.changed_paths.clone(),
-            record_digest: String::new(),
-            receipt_binding_digest: String::new(),
-            snapshots,
-        };
-        rollback_record.record_digest = rollback_record_digest(&rollback_record)?;
+
+        let rollback_path = project_root.join(&mutation_receipt.journal_path);
+        let record_digest = mutation_receipt.binding_digest.clone();
         let binding = receipt_binding_digest(
             &request.candidate.patch_id,
             &request.candidate.revision,
             &request.validation_report.validation_digest,
             &rollback_path,
-            &rollback_record.record_digest,
+            &record_digest,
         )?;
-        rollback_record.receipt_binding_digest = binding.clone();
-        let record_bytes = serde_json::to_vec(&rollback_record).map_err(|error| {
-            ControlledSourcePatchError::new(
-                "controlled_source_patch.rollback_record_encode_failed",
-                format!("Rollback record cannot be encoded: {error}"),
-                Some(&rollback_path),
-                "Inspect the rollback record schema implementation.",
-            )
-        })?;
-        ProjectWriteScope::open(&store_root)
-            .map_err(project_write_error)?
-            .write_atomic(&rollback_name, &record_bytes)
-            .map_err(project_write_error)?;
-
-        if let Err(error) = apply_candidate_files(&scope, &request.candidate.revision) {
-            return fail_apply_and_restore(
-                error,
-                &scope,
-                &rollback_record,
-                &store_root,
-                &rollback_name,
-                &request.candidate.revision,
-            );
-        }
-        let applied = match CandidateProjectRevisionStore::verify_base(
-            &request.candidate.revision,
-            project_root,
-        )
-        .map_err(candidate_error)
-        {
-            Ok(applied) => applied,
-            Err(error) => {
-                return fail_apply_and_restore(
-                    error,
-                    &scope,
-                    &rollback_record,
-                    &store_root,
-                    &rollback_name,
-                    &request.candidate.revision,
-                );
-            }
-        };
-        if applied.actual_digest != request.candidate.revision.candidate_project_digest {
-            return fail_apply_and_restore(
-                ControlledSourcePatchError::new(
-                    "controlled_source_patch.apply_digest_mismatch",
-                    "Applied project digest does not match the validated candidate.",
-                    Some(project_root),
-                    "Restore the before snapshot and inspect concurrent project writes.",
-                ),
-                &scope,
-                &rollback_record,
-                &store_root,
-                &rollback_name,
-                &request.candidate.revision,
-            );
-        }
 
         Ok(ControlledSourcePatchApplyReceipt {
             schema_version: CONTROLLED_SOURCE_PATCH_APPLY_RECEIPT_SCHEMA_VERSION.to_string(),
             patch_id: request.candidate.patch_id,
-            revision: request.candidate.revision,
+            revision: request.candidate.revision.clone(),
             validation_digest: request.validation_report.validation_digest,
-            before_project_digest: rollback_record.before_project_digest,
-            applied_project_digest: rollback_record.applied_project_digest,
-            changed_paths: rollback_record.changed_paths,
+            before_project_digest: request.candidate.revision.base_project_digest.clone(),
+            applied_project_digest: request.candidate.revision.candidate_project_digest.clone(),
+            changed_paths: request.candidate.revision.changed_paths.clone(),
             rollback_record_path: rollback_path.display().to_string(),
-            rollback_record_digest: rollback_record.record_digest,
+            rollback_record_digest: record_digest,
             receipt_binding_digest: binding,
             diagnostics: Vec::new(),
             next_actions: vec![
-                "Keep the candidate and rollback record until this apply is accepted.".to_string(),
+                "Keep the candidate and sealed mutation receipt until this apply is accepted."
+                    .to_string(),
             ],
         })
     }
@@ -594,64 +591,57 @@ impl ControlledSourcePatch {
         receipt: &ControlledSourcePatchApplyReceipt,
         project_root: &Path,
     ) -> Result<ControlledSourcePatchRollbackReceipt, ControlledSourcePatchError> {
-        validate_apply_receipt(receipt, project_root)?;
-        let current = CandidateProjectRevisionStore::verify_base(&receipt.revision, project_root)
-            .map_err(candidate_error)?;
-        if current.actual_digest != receipt.applied_project_digest {
-            return Err(ControlledSourcePatchError::new(
-                "controlled_source_patch.rollback_project_drifted",
-                "Project content changed after SourcePatch apply.",
+        validate_unified_apply_receipt(receipt, project_root)?;
+        let mut context = EmbeddedAuthoringProjectContext::new();
+        let handle = context
+            .open(ProjectLocator::new(project_root), AuthoringOpenOptions)
+            .map_err(authoring_rollback_error)?;
+        let canonical_root = project_root.canonicalize().map_err(|error| {
+            ControlledSourcePatchError::new(
+                "controlled_source_patch.project_root_unavailable",
+                format!("Project root cannot be canonicalized: {error}"),
                 Some(project_root),
-                "Review current changes and perform an explicit merge or recovery.",
-            ));
-        }
-        let rollback_path = PathBuf::from(&receipt.rollback_record_path);
-        let store_root = rollback_path.parent().ok_or_else(|| {
-            ControlledSourcePatchError::new(
-                "controlled_source_patch.rollback_record_path_invalid",
-                "Rollback record has no owning store directory.",
-                Some(&rollback_path),
-                "Reject the invalid apply receipt.",
+                "Open the original project root before rollback.",
             )
         })?;
-        let rollback_name = rollback_record_name(&receipt.revision.revision_id);
-        if rollback_path.file_name().and_then(|value| value.to_str()) != Some(&rollback_name) {
+        let journal_relative = Path::new(&receipt.rollback_record_path)
+            .strip_prefix(&canonical_root)
+            .map_err(|_| {
+                ControlledSourcePatchError::new(
+                    "controlled_source_patch.apply_receipt_binding_mismatch",
+                    "Rollback journal is outside the original project root.",
+                    Some(Path::new(&receipt.rollback_record_path)),
+                    "Reject the invalid apply receipt.",
+                )
+            })?
+            .to_string_lossy()
+            .replace('\\', "/");
+        let mutation_receipt = context
+            .mutation_receipt_for_journal(handle, &journal_relative)
+            .map_err(authoring_rollback_error)?;
+        if mutation_receipt.domain != "controlled_source_patch"
+            || mutation_receipt.binding_digest != receipt.rollback_record_digest
+        {
             return Err(ControlledSourcePatchError::new(
-                "controlled_source_patch.rollback_record_path_invalid",
-                "Rollback record path is not the exact revision sibling.",
-                Some(&rollback_path),
+                "controlled_source_patch.apply_receipt_binding_mismatch",
+                "Apply receipt does not bind the sealed ControlledSourcePatch mutation.",
+                Some(Path::new(&receipt.rollback_record_path)),
                 "Reject the invalid apply receipt.",
             ));
         }
-        let store_scope = ProjectWriteScope::open(store_root).map_err(project_write_error)?;
-        let record_bytes = store_scope
-            .read(&rollback_name)
-            .map_err(project_write_error)?;
-        let record: RollbackRecord = serde_json::from_slice(&record_bytes).map_err(|error| {
-            ControlledSourcePatchError::new(
-                "controlled_source_patch.rollback_record_invalid",
-                format!("Rollback record cannot be decoded: {error}"),
-                Some(&rollback_path),
-                "Preserve the record and recover it with a trusted maintainer.",
-            )
-        })?;
-        validate_rollback_record(receipt, &record)?;
-
-        let scope = ProjectWriteScope::open(project_root).map_err(project_write_error)?;
-        restore_snapshots(&scope, &record.snapshots)?;
+        context
+            .rollback_mutation(handle, &mutation_receipt)
+            .map_err(authoring_rollback_error)?;
         let restored = CandidateProjectRevisionStore::verify_base(&receipt.revision, project_root)
             .map_err(candidate_error)?;
         if restored.actual_digest != receipt.before_project_digest {
             return Err(ControlledSourcePatchError::new(
                 "controlled_source_patch.rollback_digest_mismatch",
-                "Rollback did not restore the recorded before digest.",
+                "Unified rollback did not restore the recorded candidate base digest.",
                 Some(project_root),
-                "Preserve the rollback record and recover with a trusted maintainer.",
+                "Preserve the unified transaction and recover with a trusted maintainer.",
             ));
         }
-        store_scope
-            .remove_file(&rollback_name)
-            .map_err(project_write_error)?;
         Ok(ControlledSourcePatchRollbackReceipt {
             schema_version: CONTROLLED_SOURCE_PATCH_ROLLBACK_RECEIPT_SCHEMA_VERSION.to_string(),
             patch_id: receipt.patch_id.clone(),
@@ -659,9 +649,12 @@ impl ControlledSourcePatch {
             restored_project_digest: receipt.before_project_digest.clone(),
             replaced_project_digest: receipt.applied_project_digest.clone(),
             changed_paths: receipt.changed_paths.clone(),
-            rollback_record_removed: true,
+            rollback_record_removed: false,
             diagnostics: Vec::new(),
-            next_actions: vec!["The project is back at the pre-apply revision.".to_string()],
+            next_actions: vec![
+                "The project is back at the pre-apply revision; the sealed journal is retained."
+                    .to_string(),
+            ],
         })
     }
 }
@@ -677,27 +670,6 @@ struct ResolvedEngineSdk {
     root: PathBuf,
     engine_runtime_root: PathBuf,
     engine_input_root: PathBuf,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
-struct RollbackFileSnapshot {
-    path: String,
-    before_bytes: Option<Vec<u8>>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
-struct RollbackRecord {
-    schema_version: String,
-    patch_id: String,
-    revision_id: String,
-    before_project_digest: String,
-    applied_project_digest: String,
-    changed_paths: Vec<String>,
-    record_digest: String,
-    receipt_binding_digest: String,
-    snapshots: Vec<RollbackFileSnapshot>,
 }
 
 fn validate_source_patch(
@@ -1622,137 +1594,6 @@ fn validate_approval(
     Ok(())
 }
 
-fn snapshot_before_files(
-    scope: &ProjectWriteScope,
-    changed_paths: &[String],
-) -> Result<Vec<RollbackFileSnapshot>, ControlledSourcePatchError> {
-    let mut total = 0_usize;
-    let mut snapshots = Vec::with_capacity(changed_paths.len());
-    for path in changed_paths {
-        let before_bytes = if scope.try_exists(path).map_err(project_write_error)? {
-            let bytes = scope.read(path).map_err(project_write_error)?;
-            total = total.checked_add(bytes.len()).ok_or_else(|| {
-                ControlledSourcePatchError::new(
-                    "controlled_source_patch.rollback_snapshot_too_large",
-                    "Rollback snapshot size overflowed the supported range.",
-                    None,
-                    "Split the SourcePatch into smaller revisions.",
-                )
-            })?;
-            if total > MAX_ROLLBACK_BYTES {
-                return Err(ControlledSourcePatchError::new(
-                    "controlled_source_patch.rollback_snapshot_too_large",
-                    format!("Rollback snapshot exceeds {MAX_ROLLBACK_BYTES} bytes."),
-                    None,
-                    "Split the SourcePatch into smaller revisions.",
-                ));
-            }
-            Some(bytes)
-        } else {
-            None
-        };
-        snapshots.push(RollbackFileSnapshot {
-            path: path.clone(),
-            before_bytes,
-        });
-    }
-    Ok(snapshots)
-}
-
-fn apply_candidate_files(
-    scope: &ProjectWriteScope,
-    revision: &CandidateProjectRevision,
-) -> Result<(), ControlledSourcePatchError> {
-    let candidate_root = Path::new(&revision.candidate_root);
-    for path in &revision.changed_paths {
-        let source = candidate_root.join(path);
-        if source.exists() {
-            let bytes = fs::read(&source).map_err(|error| {
-                ControlledSourcePatchError::new(
-                    "controlled_source_patch.candidate_read_failed",
-                    format!("Validated candidate file cannot be read: {error}"),
-                    Some(&source),
-                    "Reject the candidate and preserve the project base.",
-                )
-            })?;
-            scope
-                .write_atomic(path, &bytes)
-                .map_err(project_write_error)?;
-        } else {
-            scope.remove_file(path).map_err(project_write_error)?;
-        }
-    }
-    Ok(())
-}
-
-fn restore_snapshots(
-    scope: &ProjectWriteScope,
-    snapshots: &[RollbackFileSnapshot],
-) -> Result<(), ControlledSourcePatchError> {
-    for snapshot in snapshots.iter().rev() {
-        if let Some(bytes) = &snapshot.before_bytes {
-            scope
-                .write_atomic(&snapshot.path, bytes)
-                .map_err(project_write_error)?;
-        } else {
-            scope
-                .remove_file(&snapshot.path)
-                .map_err(project_write_error)?;
-        }
-    }
-    Ok(())
-}
-
-fn fail_apply_and_restore(
-    cause: ControlledSourcePatchError,
-    scope: &ProjectWriteScope,
-    record: &RollbackRecord,
-    store_root: &Path,
-    rollback_name: &str,
-    revision: &CandidateProjectRevision,
-) -> Result<ControlledSourcePatchApplyReceipt, ControlledSourcePatchError> {
-    if let Err(restore_error) = restore_snapshots(scope, &record.snapshots) {
-        return Err(ControlledSourcePatchError::new(
-            "controlled_source_patch.apply_rollback_failed",
-            format!("Apply failed ({cause}); automatic restoration also failed: {restore_error}"),
-            Some(scope.display_root()),
-            "Preserve the rollback record and recover with a trusted maintainer.",
-        ));
-    }
-    let restored = CandidateProjectRevisionStore::verify_base(revision, scope.display_root())
-        .map_err(candidate_error);
-    if !matches!(
-        restored,
-        Ok(ref verification)
-            if verification.status == CandidateBaseVerificationStatus::Matched
-                && verification.actual_digest == record.before_project_digest
-    ) {
-        return Err(ControlledSourcePatchError::new(
-            "controlled_source_patch.apply_rollback_digest_mismatch",
-            "Apply failed and restoration did not reproduce the recorded before digest.",
-            Some(scope.display_root()),
-            "Preserve the rollback record and recover with a trusted maintainer.",
-        ));
-    }
-    let store_scope = ProjectWriteScope::open(store_root).map_err(project_write_error)?;
-    store_scope
-        .remove_file(rollback_name)
-        .map_err(project_write_error)?;
-    Err(ControlledSourcePatchError::new(
-        "controlled_source_patch.apply_failed_restored",
-        format!("SourcePatch apply failed and the before snapshot was restored: {cause}"),
-        Some(scope.display_root()),
-        "Repair the candidate and create a new validated revision.",
-    ))
-}
-
-fn rollback_record_digest(record: &RollbackRecord) -> Result<String, ControlledSourcePatchError> {
-    let mut input = record.clone();
-    input.record_digest.clear();
-    input.receipt_binding_digest.clear();
-    digest_serializable(&input, "rollback record")
-}
-
 fn receipt_binding_digest(
     patch_id: &str,
     revision: &CandidateProjectRevision,
@@ -1785,71 +1626,6 @@ fn receipt_binding_digest(
         },
         "apply receipt binding",
     )
-}
-
-fn validate_apply_receipt(
-    receipt: &ControlledSourcePatchApplyReceipt,
-    project_root: &Path,
-) -> Result<(), ControlledSourcePatchError> {
-    if receipt.schema_version != CONTROLLED_SOURCE_PATCH_APPLY_RECEIPT_SCHEMA_VERSION
-        || receipt.before_project_digest != receipt.revision.base_project_digest
-        || receipt.applied_project_digest != receipt.revision.candidate_project_digest
-        || receipt.changed_paths != receipt.revision.changed_paths
-        || validate_digest(&receipt.rollback_record_digest, "rollback record digest").is_err()
-    {
-        return Err(ControlledSourcePatchError::new(
-            "controlled_source_patch.apply_receipt_invalid",
-            "Apply receipt does not match its CandidateProjectRevision.",
-            Some(project_root),
-            "Use the original apply receipt and project root.",
-        ));
-    }
-    let expected = receipt_binding_digest(
-        &receipt.patch_id,
-        &receipt.revision,
-        &receipt.validation_digest,
-        Path::new(&receipt.rollback_record_path),
-        &receipt.rollback_record_digest,
-    )?;
-    if expected != receipt.receipt_binding_digest {
-        return Err(ControlledSourcePatchError::new(
-            "controlled_source_patch.apply_receipt_binding_mismatch",
-            "Apply receipt binding digest is invalid.",
-            None,
-            "Use the original unmodified apply receipt.",
-        ));
-    }
-    Ok(())
-}
-
-fn validate_rollback_record(
-    receipt: &ControlledSourcePatchApplyReceipt,
-    record: &RollbackRecord,
-) -> Result<(), ControlledSourcePatchError> {
-    if record.schema_version != ROLLBACK_RECORD_SCHEMA_VERSION
-        || record.patch_id != receipt.patch_id
-        || record.revision_id != receipt.revision.revision_id
-        || record.before_project_digest != receipt.before_project_digest
-        || record.applied_project_digest != receipt.applied_project_digest
-        || record.changed_paths != receipt.changed_paths
-        || record.record_digest != receipt.rollback_record_digest
-        || rollback_record_digest(record).as_deref() != Ok(receipt.rollback_record_digest.as_str())
-        || record.receipt_binding_digest != receipt.receipt_binding_digest
-        || record.snapshots.len() != receipt.changed_paths.len()
-        || record
-            .snapshots
-            .iter()
-            .map(|snapshot| &snapshot.path)
-            .ne(receipt.changed_paths.iter())
-    {
-        return Err(ControlledSourcePatchError::new(
-            "controlled_source_patch.rollback_record_binding_mismatch",
-            "Rollback record does not bind the exact apply receipt.",
-            Some(Path::new(&receipt.rollback_record_path)),
-            "Preserve the record and recover with a trusted maintainer.",
-        ));
-    }
-    Ok(())
 }
 
 fn canonical_store_root(
@@ -1887,10 +1663,6 @@ fn subprocess_path(path: &Path) -> PathBuf {
 #[cfg(not(windows))]
 fn subprocess_path(path: &Path) -> PathBuf {
     path.to_path_buf()
-}
-
-fn rollback_record_name(revision_id: &str) -> String {
-    format!(".{revision_id}.source-patch-rollback.json")
 }
 
 fn validate_opaque_id(value: &str, role: &str) -> Result<(), ControlledSourcePatchError> {
@@ -2072,13 +1844,89 @@ fn candidate_error(error: crate::CandidateProjectRevisionError) -> ControlledSou
     }
 }
 
-fn project_write_error(error: crate::ProjectWriteError) -> ControlledSourcePatchError {
-    ControlledSourcePatchError::new(
-        error.code,
-        error.to_string(),
-        error.relative_path.as_deref().map(Path::new),
-        "Resolve the project write containment error and retry.",
-    )
+fn validate_unified_apply_receipt(
+    receipt: &ControlledSourcePatchApplyReceipt,
+    project_root: &Path,
+) -> Result<(), ControlledSourcePatchError> {
+    let canonical_root = project_root.canonicalize().map_err(|error| {
+        ControlledSourcePatchError::new(
+            "controlled_source_patch.project_root_unavailable",
+            format!("Project root cannot be canonicalized: {error}"),
+            Some(project_root),
+            "Open the original project root before rollback.",
+        )
+    })?;
+    if receipt.schema_version != CONTROLLED_SOURCE_PATCH_APPLY_RECEIPT_SCHEMA_VERSION
+        || !Path::new(&receipt.rollback_record_path)
+            .starts_with(canonical_root.join(".aife/authoring/transactions"))
+    {
+        return Err(ControlledSourcePatchError::new(
+            "controlled_source_patch.apply_receipt_binding_mismatch",
+            "Apply receipt does not bind its unified mutation receipt and journal.",
+            Some(Path::new(&receipt.rollback_record_path)),
+            "Reject the invalid apply receipt.",
+        ));
+    }
+    let expected = receipt_binding_digest(
+        &receipt.patch_id,
+        &receipt.revision,
+        &receipt.validation_digest,
+        Path::new(&receipt.rollback_record_path),
+        &receipt.rollback_record_digest,
+    )?;
+    if expected != receipt.receipt_binding_digest {
+        return Err(ControlledSourcePatchError::new(
+            "controlled_source_patch.apply_receipt_binding_mismatch",
+            "Apply receipt binding digest is invalid.",
+            Some(Path::new(&receipt.rollback_record_path)),
+            "Reject the invalid apply receipt.",
+        ));
+    }
+    Ok(())
+}
+
+fn authoring_mutation_error(
+    error: authoring_project_context::ContextError,
+) -> ControlledSourcePatchError {
+    let code = match error.diagnostic.code.as_str() {
+        "authoring_context.mutation_revision_drifted"
+        | "authoring_context.mutation_before_drifted" => {
+            "controlled_source_patch.apply_base_drifted"
+        }
+        "authoring_context.mutation_commit_interrupted" => {
+            "controlled_source_patch.apply_failed_restored"
+        }
+        _ => error.diagnostic.code.as_str(),
+    };
+    ControlledSourcePatchError {
+        code: code.to_string(),
+        message: error.diagnostic.message,
+        path: error.diagnostic.path,
+        next_action: error.diagnostic.next_action,
+    }
+}
+
+fn authoring_rollback_error(
+    error: authoring_project_context::ContextError,
+) -> ControlledSourcePatchError {
+    let code = match error.diagnostic.code.as_str() {
+        "authoring_context.rollback_revision_drifted"
+        | "authoring_context.rollback_write_path_drifted" => {
+            "controlled_source_patch.rollback_project_drifted"
+        }
+        "authoring_context.rollback_receipt_invalid"
+        | "authoring_context.rollback_journal_invalid"
+        | "authoring_context.rollback_material_invalid" => {
+            "controlled_source_patch.rollback_record_binding_mismatch"
+        }
+        _ => error.diagnostic.code.as_str(),
+    };
+    ControlledSourcePatchError {
+        code: code.to_string(),
+        message: error.diagnostic.message,
+        path: error.diagnostic.path,
+        next_action: error.diagnostic.next_action,
+    }
 }
 
 #[cfg(test)]
@@ -2167,7 +2015,7 @@ mod tests {
                 "workspace = \"../..\"",
                 "[target.'cfg(windows)'.dependencies]",
                 "serde = \"=1.0.0\"",
-                "engine_runtime = { version = \"=0.0.3\", path = \"../engine\" }",
+                "engine_runtime = { version = \"=0.1.0\", path = \"../engine\" }",
                 "crate-type = [\"dylib\"]",
             ] {
                 let (root, store) = fixture_project("cargo-policy");
@@ -2194,7 +2042,7 @@ mod tests {
                 } else if forbidden.starts_with('[') {
                     cargo.push('\n');
                     cargo.push_str(forbidden);
-                    cargo.push_str("\nengine_runtime = \"=0.0.3\"\n");
+                    cargo.push_str("\nengine_runtime = \"=0.1.0\"\n");
                 } else {
                     cargo.push_str(forbidden);
                     cargo.push('\n');
@@ -2503,14 +2351,19 @@ mod tests {
 
             let rollback = ControlledSourcePatch::rollback(&receipt, &root).unwrap();
 
-            assert!(rollback.rollback_record_removed);
+            assert!(!rollback.rollback_record_removed);
             assert_eq!(
                 fs::read(root.join(PROJECT_MANIFEST_PATH)).unwrap(),
                 before_manifest
             );
             assert!(!root.join(CARGO_MANIFEST_PATH).exists());
             assert!(!root.join(RUNTIME_LIB_PATH).exists());
-            assert!(!Path::new(&receipt.rollback_record_path).exists());
+            assert!(Path::new(&receipt.rollback_record_path).exists());
+            assert!(Path::new(&receipt.rollback_record_path)
+                .parent()
+                .unwrap()
+                .join("rollback-receipt.json")
+                .is_file());
             let verification =
                 CandidateProjectRevisionStore::verify_base(&candidate.revision, &root).unwrap();
             assert_eq!(
@@ -2559,10 +2412,15 @@ mod tests {
             .unwrap();
             let applied_manifest = fs::read(root.join(PROJECT_MANIFEST_PATH)).unwrap();
             let rollback_path = Path::new(&receipt.rollback_record_path);
-            let mut record: RollbackRecord =
+            let record: serde_json::Value =
                 serde_json::from_slice(&fs::read(rollback_path).unwrap()).unwrap();
-            record.snapshots[0].before_bytes = Some(b"tampered snapshot".to_vec());
-            fs::write(rollback_path, serde_json::to_vec(&record).unwrap()).unwrap();
+            let material = record["snapshots"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .find_map(|snapshot| snapshot["beforeMaterialPath"].as_str())
+                .unwrap();
+            fs::write(root.join(material), b"tampered snapshot").unwrap();
 
             let error = ControlledSourcePatch::rollback(&receipt, &root).unwrap_err();
 
@@ -2597,7 +2455,7 @@ mod tests {
             "schemaVersion": PROJECT_MANIFEST_SCHEMA_VERSION,
             "projectId": "project-test",
             "projectName": "Test Project",
-            "engineVersion": "0.0.3",
+            "engineVersion": "0.1.0",
             "createdAt": "2026-07-14T00:00:00Z",
             "lastOpenedAt": null,
             "defaultScene": "Scenes/Main.scene.json",
@@ -2631,7 +2489,7 @@ mod tests {
         let mut operations = vec![
             ControlledSourcePatchOperation::CreateOrReplace {
                 path: CARGO_MANIFEST_PATH.to_string(),
-                text: "[package]\nname = \"test_project_runtime\"\nversion = \"0.0.3\"\nedition = \"2021\"\n\n[dependencies]\nengine_runtime = \"=0.0.3\"\n".to_string(),
+                text: "[package]\nname = \"test_project_runtime\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[dependencies]\nengine_runtime = \"=0.1.0\"\n".to_string(),
             },
             ControlledSourcePatchOperation::CreateOrReplace {
                 path: RUNTIME_LIB_PATH.to_string(),
@@ -2677,7 +2535,7 @@ mod tests {
             fs::create_dir_all(crate_root.join("src")).unwrap();
             fs::write(
                 crate_root.join("Cargo.toml"),
-                format!("[package]\nname = \"{name}\"\nversion = \"0.0.3\"\nedition = \"2021\"\n"),
+                format!("[package]\nname = \"{name}\"\nversion = \"0.1.0\"\nedition = \"2021\"\n"),
             )
             .unwrap();
             fs::write(crate_root.join("src/lib.rs"), "pub fn marker() {}\n").unwrap();

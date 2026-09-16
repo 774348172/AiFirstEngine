@@ -30,8 +30,8 @@ fn intent(outcome: &str) -> ExternalProjectMutationIntent {
 
 fn owner_facts() -> GoalMutationOwnerFacts {
     GoalMutationOwnerFacts {
-        client_session_id: "gateway-session-goal-mutation".to_string(),
-        read_generation: 7,
+        provider_session_id: "provider-session-goal-mutation".to_string(),
+        project_revision_generation: 7,
     }
 }
 
@@ -43,7 +43,7 @@ fn goal_mutation_contract_binds_engine_owned_project_facts_and_normalizes_goal()
             .unwrap();
 
     assert_eq!(bound.normalized_goal_outcome, "add a player jump");
-    assert_eq!(bound.read_generation, 7);
+    assert_eq!(bound.project_revision_generation, 7);
     assert_eq!(
         bound.candidate_input.envelope.target_project_id,
         bound.project_binding.project_id

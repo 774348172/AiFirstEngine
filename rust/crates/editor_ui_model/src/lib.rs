@@ -28,8 +28,8 @@ mod workspace;
 
 pub use ai_panel::{
     AiCommandReviewState, AiPanelMessage, AiPanelMessageRole, AiPanelModel, AiPanelResponse,
-    AiPanelStage, AiProposedCommand, GatewayAccessInboxModel, GatewayAccessRequestModel,
-    ImportedProjectPatchEvidence, ProjectPatchDiagnosticEvidence, ProjectPatchEvidence,
+    AiPanelStage, AiProposedCommand, ImportedProjectPatchEvidence, ProjectPatchDiagnosticEvidence,
+    ProjectPatchEvidence,
 };
 pub use animator2d::*;
 pub use asset_browser::{

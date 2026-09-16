@@ -235,6 +235,10 @@ fn field_value(component: &ComponentValue, field_path: &FieldPath) -> Option<Run
         ComponentValue::SpriteRenderer2D(sprite) if field_path.as_str() == "visible" => {
             Some(RuntimeValue::Bool(sprite.visible))
         }
+        ComponentValue::SpriteRenderer2D(sprite) if field_path.as_str() == "color" => {
+            let [r, g, b, a] = sprite.color;
+            Some(RuntimeValue::Color { r, g, b, a })
+        }
         _ => None,
     }
 }
@@ -265,6 +269,13 @@ fn set_component_field(
     value: RuntimeValue,
 ) -> Result<(), ()> {
     match component {
+        ComponentValue::SpriteRenderer2D(sprite) if field_path.as_str() == "flipX" => {
+            let RuntimeValue::Bool(flip) = value else {
+                return Err(());
+            };
+            sprite.flip_x = flip;
+            Ok(())
+        }
         ComponentValue::Dynamic {
             value: dynamic_value,
             ..
@@ -274,6 +285,17 @@ fn set_component_field(
                 return Err(());
             };
             sprite.visible = visible;
+            Ok(())
+        }
+        ComponentValue::SpriteRenderer2D(sprite) if field_path.as_str() == "color" => {
+            let RuntimeValue::Color { r, g, b, a } = value else {
+                return Err(());
+            };
+            let color = [r, g, b, a];
+            if !color.iter().all(|v| v.is_finite()) {
+                return Err(());
+            }
+            sprite.color = color;
             Ok(())
         }
         _ => Err(()),
@@ -354,6 +376,89 @@ mod tests {
             parent_id: None,
             sibling_order: 0,
         }
+    }
+
+    #[test]
+    fn sprite_color_field_write_marks_render_dirty_and_rejects_invalid_values() {
+        use crate::components::SpriteRenderer2D;
+        let mut world = World::new();
+        let id = EntityId::from("fade-sprite");
+        world.spawn_entity(id.clone(), "FX", "visual", true, hierarchy());
+        world
+            .try_insert_sprite_renderer2d(id.clone(), SpriteRenderer2D::default())
+            .unwrap();
+        world.take_dirty_records();
+        let ty = ComponentTypeId::sprite_renderer2d();
+        let path = FieldPath::parse("color").unwrap();
+        WorldWriteApi::new(&mut world)
+            .write_component_field(
+                id.clone(),
+                ty.clone(),
+                &path,
+                RuntimeValue::Color {
+                    r: 1.0,
+                    g: 0.8,
+                    b: 0.2,
+                    a: 0.25,
+                },
+            )
+            .expect("project FX can fade");
+        assert_eq!(
+            world.sprite_renderer2d(&id).unwrap().color,
+            [1.0, 0.8, 0.2, 0.25]
+        );
+        assert!(
+            !world.dirty_records().is_empty(),
+            "render projection must see color change"
+        );
+        for invalid in [
+            RuntimeValue::Bool(false),
+            RuntimeValue::Color {
+                r: 1.0,
+                g: 1.0,
+                b: 1.0,
+                a: f32::NAN,
+            },
+        ] {
+            assert!(WorldWriteApi::new(&mut world)
+                .write_component_field(id.clone(), ty.clone(), &path, invalid)
+                .is_err());
+            assert_eq!(world.sprite_renderer2d(&id).unwrap().color[3], 0.25);
+        }
+    }
+
+    #[test]
+    fn animator2d_project_facing_flip_is_typed_and_marks_render_dirty() {
+        let mut world = World::new();
+        let id = EntityId::from("robot");
+        world.spawn_entity(id.clone(), "Robot", "actor", true, hierarchy());
+        world
+            .try_insert_sprite_renderer2d(
+                id.clone(),
+                crate::components::SpriteRenderer2D::default(),
+            )
+            .unwrap();
+        world.take_dirty_records();
+        let path = FieldPath::parse("flipX").unwrap();
+        WorldWriteApi::new(&mut world)
+            .write_component_field(
+                id.clone(),
+                ComponentTypeId::sprite_renderer2d(),
+                &path,
+                RuntimeValue::Bool(true),
+            )
+            .unwrap();
+        assert!(world.sprite_renderer2d(&id).unwrap().flip_x);
+        assert!(!world.dirty_records().is_empty());
+        assert!(WorldWriteApi::new(&mut world)
+            .write_component_field(
+                id.clone(),
+                ComponentTypeId::sprite_renderer2d(),
+                &path,
+                RuntimeValue::F64(1.0)
+            )
+            .is_err());
+        assert!(world.sprite_renderer2d(&id).unwrap().flip_x);
     }
 
     #[test]

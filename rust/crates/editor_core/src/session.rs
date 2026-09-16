@@ -1397,10 +1397,7 @@ impl EditorSession {
             UiCommandPayload::RecoverProjectProduction { run_id } => {
                 self.recover_project_production(&mut transaction, run_id)
             }
-            UiCommandPayload::ApproveGatewayAccessRequest { .. }
-            | UiCommandPayload::RejectGatewayAccessRequest { .. }
-            | UiCommandPayload::SetGatewayAccessPage { .. }
-            | UiCommandPayload::ApproveProjectRuntimeTrust { .. }
+            UiCommandPayload::ApproveProjectRuntimeTrust { .. }
             | UiCommandPayload::DenyProjectRuntimeTrust { .. }
             | UiCommandPayload::CancelProjectRuntimeTrust { .. } => {
                 self.push_error(

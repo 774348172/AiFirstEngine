@@ -545,9 +545,6 @@ fn payload_needs_context(payload: &UiCommandPayload) -> bool {
         UiCommandPayload::AdvanceProjectProduction { run_id }
         | UiCommandPayload::CancelProjectProduction { run_id }
         | UiCommandPayload::RecoverProjectProduction { run_id } => run_id.is_empty(),
-        UiCommandPayload::ApproveGatewayAccessRequest { request_id }
-        | UiCommandPayload::RejectGatewayAccessRequest { request_id } => request_id.is_empty(),
-        UiCommandPayload::SetGatewayAccessPage { .. } => false,
         UiCommandPayload::AiAcceptProposedCommand { proposal_id }
         | UiCommandPayload::AiRejectProposedCommand { proposal_id } => proposal_id.is_empty(),
         UiCommandPayload::CreateProject { path, name } => path.is_empty() || name.is_empty(),

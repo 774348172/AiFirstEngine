@@ -2138,7 +2138,6 @@ impl EditorSession {
             prompt_placeholder: "Describe an editor change...".to_string(),
             prompt_draft: self.ai_prompt_draft.clone(),
             messages: self.ai_panel_messages.clone(),
-            gateway_access: Default::default(),
             proposed_commands: self.ai_proposed_commands.clone(),
             allowed_command_ids: vec![
                 "select_scene_entity".to_string(),

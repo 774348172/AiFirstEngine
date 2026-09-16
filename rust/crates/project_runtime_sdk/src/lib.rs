@@ -16,7 +16,7 @@ pub const PROJECT_RUNTIME_SDK_SCHEMA: &str = concat!(
     "project-runtime-sdk.v1;json-utf8;",
     "descriptor;rules;session-create;session-call;rule-call;aui-actions;",
     "fixed-update;conditional-ui-state;observations;world-query;world-read;",
-    "rule-input-actions;rule-collision-pairs;deferred-mutations;spawn-despawn"
+    "rule-input-actions;rule-collision-pairs;deferred-mutations;spawn-despawn;animator2d-session-intents;audio-source-session-intents"
 );
 
 pub struct ProjectRuntimeAotDigestSource<'a> {
@@ -160,6 +160,8 @@ pub struct ProjectRuntimeInputAction {
     pub action_id: String,
     pub phase: Option<String>,
     pub axis1: Option<f32>,
+    /// Axis vector, or target-canvas pixel coordinates when phase is `pointer`.
+    /// Pointer coordinates retain the Player's display-to-target mapping.
     pub axis2: Option<[f32; 2]>,
 }
 
@@ -313,6 +315,21 @@ impl ProjectRuntimeSessionOutput {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum ProjectRuntimeDeferredMutation {
+    ParticleEffect {
+        entity_id: String,
+        #[serde(default)]
+        generation: u64,
+        intent: ProjectRuntimeParticleIntent,
+    },
+    AudioSource {
+        entity_id: String,
+        intent: ProjectRuntimeAudioSourceIntent,
+    },
+    #[serde(rename = "animator2d")]
+    Animator2D {
+        entity_id: String,
+        intent: ProjectRuntimeAnimator2DIntent,
+    },
     WriteTransform {
         entity_id: String,
         transform: ProjectRuntimeTransform,
@@ -330,10 +347,117 @@ pub enum ProjectRuntimeDeferredMutation {
     },
     InstantiatePrefab {
         prefab_id: String,
+        /// Optional root position; preserves the prefab's rotation and scale.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        position: Option<[f32; 3]>,
     },
     DespawnEntity {
         entity_id: String,
     },
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "operation", rename_all = "snake_case", deny_unknown_fields)]
+pub enum ProjectRuntimeAnimator2DIntent {
+    SetBool { name: String, value: bool },
+    Play { name: String },
+    Resume,
+    SetPaused { paused: bool },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "operation", rename_all = "snake_case", deny_unknown_fields)]
+pub enum ProjectRuntimeAudioSourceIntent {
+    Play {},
+    Stop {},
+    SetPaused { paused: bool },
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "operation", rename_all = "snake_case", deny_unknown_fields)]
+pub enum ProjectRuntimeParticleIntent {
+    Play {},
+    Restart {},
+    StopEmitting {},
+    Clear {},
+    SetPaused {
+        paused: bool,
+    },
+    SetParameter {
+        name: String,
+        value: ProjectRuntimeParticleValue,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(
+    tag = "type",
+    content = "value",
+    rename_all = "camelCase",
+    deny_unknown_fields
+)]
+pub enum ProjectRuntimeParticleValue {
+    Float(f32),
+    Uint(u32),
+    Vec3([f32; 3]),
+    Vec4([f32; 4]),
+}
+
+#[cfg(test)]
+mod audio_source_wire_tests {
+    use super::*;
+
+    #[test]
+    fn audio_source_intents_preserve_wire_contract_and_reject_unknown_fields() {
+        for intent in [
+            serde_json::json!({"operation":"play"}),
+            serde_json::json!({"operation":"stop"}),
+            serde_json::json!({"operation":"set_paused","paused":true}),
+            serde_json::json!({"operation":"set_paused","paused":false}),
+        ] {
+            let wire =
+                serde_json::json!({"kind":"audio_source","entity_id":"speaker","intent":intent});
+            let mutation: ProjectRuntimeDeferredMutation =
+                serde_json::from_value(wire.clone()).unwrap();
+            assert_eq!(serde_json::to_value(mutation).unwrap(), wire);
+        }
+        assert!(serde_json::from_value::<ProjectRuntimeAudioSourceIntent>(
+            serde_json::json!({"operation":"play","clip":"path.wav"})
+        )
+        .is_err());
+        assert!(serde_json::from_value::<ProjectRuntimeAudioSourceIntent>(
+            serde_json::json!({"operation":"stop","clip":"path.wav"})
+        )
+        .is_err());
+        assert!(serde_json::from_value::<ProjectRuntimeAudioSourceIntent>(
+            serde_json::json!({"operation":"set_paused","paused":true,"clip":"path.wav"})
+        )
+        .is_err());
+        assert!(serde_json::from_value::<ProjectRuntimeAudioSourceIntent>(
+            serde_json::json!({"operation":"set_paused"})
+        )
+        .is_err());
+    }
+}
+
+#[cfg(test)]
+mod spawn_position_tests {
+    use super::*;
+
+    #[test]
+    fn prefab_spawn_wire_preserves_requested_position_and_accepts_legacy_request() {
+        let input = serde_json::json!({"kind":"instantiate_prefab", "prefab_id":"prefab-test", "position":[3.5,-3.25,0.0]});
+        let mutation: ProjectRuntimeDeferredMutation =
+            serde_json::from_value(input.clone()).unwrap();
+        assert_eq!(
+            serde_json::to_value(mutation).unwrap()["position"],
+            input["position"]
+        );
+        let legacy = serde_json::json!({"kind":"instantiate_prefab", "prefab_id":"prefab-test"});
+        let mutation: ProjectRuntimeDeferredMutation =
+            serde_json::from_value(legacy.clone()).unwrap();
+        assert_eq!(serde_json::to_value(mutation).unwrap(), legacy);
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]

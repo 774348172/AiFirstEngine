@@ -11,8 +11,8 @@ use crate::{
     EditorSession, EditorVec3, EntitySelectionSource, PreviewWorldSync, RuntimePickStatus,
     RuntimeWorldPickRequest, SceneEditCommand, SceneEditDiagnostic, SceneEditDiagnosticSeverity,
     SceneEditRequest, SceneEditRequestSource, SceneEditTransaction, SceneEditTransactionStatus,
-    SceneSavePipeline, SceneSaveStatus, SceneUndoStack, StateChangeSummary, UndoPolicy,
-    WorldPickCollector,
+    SceneSavePipeline, SceneSaveReport, SceneSaveStatus, SceneUndoStack, StateChangeSummary,
+    UndoPolicy, WorldPickCollector,
 };
 
 pub(crate) fn editor_vec3_to_ui(value: EditorVec3) -> Vec3 {
@@ -282,6 +282,79 @@ fn scene_edit_command_for_runtime_apply(
 }
 
 impl EditorSession {
+    pub(crate) fn load_scene_document_from_context(
+        &self,
+        path: &Path,
+    ) -> Result<EditorSceneDocument, Vec<SceneEditDiagnostic>> {
+        let Some(session) = self.active_project_session.as_ref() else {
+            // Bare scene fixtures remain supported for owner-level editor unit tests. Real project
+            // sessions always take the Context snapshot path below.
+            return EditorSceneDocument::load_from_path(path);
+        };
+        let project_root = session.project_root.canonicalize().map_err(|error| {
+            vec![SceneEditDiagnostic::error(
+                "scene.document.project_root_unavailable",
+                "scene.document",
+                format!("Project root cannot be canonicalized: {error}"),
+            )]
+        })?;
+        let canonical_path = path.canonicalize().map_err(|error| {
+            vec![SceneEditDiagnostic::error(
+                "scene.document.read_failed",
+                "scene.document",
+                format!("Failed to resolve scene file {}: {error}", path.display()),
+            )
+            .with_path(path.display().to_string())]
+        })?;
+        let relative = canonical_path.strip_prefix(&project_root).map_err(|_| {
+            vec![SceneEditDiagnostic::error(
+                "scene.document.path_outside_project",
+                "scene.document",
+                "Scene path must be inside the opened project root.",
+            )
+            .with_path(path.display().to_string())]
+        })?;
+        let relative_path = relative.to_string_lossy().replace('\\', "/");
+        let mut authoring = session.authoring_session().lock().map_err(|_| {
+            vec![SceneEditDiagnostic::error(
+                "scene.document.context_poisoned",
+                "scene.document",
+                "AuthoringProjectContext lock is unavailable.",
+            )]
+        })?;
+        authoring.refresh().map_err(|error| {
+            vec![SceneEditDiagnostic::error(
+                error.diagnostic.code,
+                "scene.document",
+                error.diagnostic.message,
+            )
+            .with_path(relative_path.clone())]
+        })?;
+        let snapshot = authoring
+            .snapshot(vec![relative_path.clone()])
+            .map_err(|error| {
+                vec![SceneEditDiagnostic::error(
+                    error.diagnostic.code,
+                    "scene.document",
+                    error.diagnostic.message,
+                )
+                .with_path(relative_path.clone())]
+            })?;
+        let file = snapshot
+            .files
+            .into_iter()
+            .find(|file| file.relative_path == relative_path)
+            .ok_or_else(|| {
+                vec![SceneEditDiagnostic::error(
+                    "scene.document.snapshot_file_missing",
+                    "scene.document",
+                    "Scene snapshot did not contain the requested file.",
+                )
+                .with_path(relative_path.clone())]
+            })?;
+        EditorSceneDocument::load_from_bytes(path, &file.bytes)
+    }
+
     pub(crate) fn open_scene_document(
         &mut self,
         transaction: &mut CommandTransaction,
@@ -296,7 +369,7 @@ impl EditorSession {
         transaction.write_set.push("preview_world".to_string());
         transaction.undo_policy = UndoPolicy::FutureUndoable;
 
-        let document = match EditorSceneDocument::load_from_path(path) {
+        let document = match self.load_scene_document_from_context(path) {
             Ok(document) => document,
             Err(diagnostics) => {
                 transaction
@@ -484,36 +557,6 @@ impl EditorSession {
             .read_set
             .push("editor_scene_document".to_string());
         transaction.undo_policy = UndoPolicy::None;
-        let fallback_root = path
-            .as_ref()
-            .and_then(|path| path.parent())
-            .and_then(Path::parent)
-            .map(Path::to_path_buf)
-            .or_else(|| {
-                self.scene_path
-                    .as_ref()
-                    .and_then(|path| path.parent())
-                    .and_then(Path::parent)
-                    .map(Path::to_path_buf)
-            });
-        let write_scope = self
-            .active_project_session
-            .as_ref()
-            .map(|session| session.write_scope().clone())
-            .or_else(|| {
-                fallback_root
-                    .as_ref()
-                    .and_then(|root| crate::ProjectWriteScope::open(root).ok())
-            });
-        let Some(write_scope) = write_scope else {
-            self.push_error(
-                transaction,
-                "editor.scene_document.no_project",
-                "Cannot save Scene without a project or legacy fixture write scope.",
-                Some("Open a project or save beneath the opened Scene fixture root."),
-            );
-            return self.finish_transaction(transaction.clone(), CommandStatus::Failed);
-        };
         let Some(document) = &mut self.editor_scene_document else {
             self.push_error(
                 transaction,
@@ -523,7 +566,57 @@ impl EditorSession {
             );
             return self.finish_transaction(transaction.clone(), CommandStatus::Failed);
         };
-        let report = SceneSavePipeline::save_in_scope(document, &write_scope, path.as_ref());
+        let report = if let Some(authoring_session) = self
+            .active_project_session
+            .as_ref()
+            .map(|session| session.authoring_session().clone())
+        {
+            match authoring_session.lock() {
+                Ok(mut authoring) => {
+                    SceneSavePipeline::save_in_context(document, &mut authoring, path.as_ref())
+                }
+                Err(_) => SceneSaveReport {
+                    scene_id: document.scene_id.clone(),
+                    path: path.clone().unwrap_or_default(),
+                    status: SceneSaveStatus::Failed,
+                    diagnostics: vec![SceneEditDiagnostic::error(
+                        "editor.scene_document.context_poisoned",
+                        "scene.save",
+                        "AuthoringProjectContext lock is unavailable.",
+                    )],
+                    dirty_after: document.dirty_state.dirty,
+                },
+            }
+        } else {
+            // Bare scene fixtures remain supported for owner-level editor unit tests.
+            let fallback_root = path
+                .as_ref()
+                .and_then(|path| path.parent())
+                .and_then(Path::parent)
+                .map(Path::to_path_buf)
+                .or_else(|| {
+                    document
+                        .scene_path
+                        .as_ref()
+                        .and_then(|path| path.parent())
+                        .and_then(Path::parent)
+                        .map(Path::to_path_buf)
+                });
+            match fallback_root.and_then(|root| crate::ProjectWriteScope::open(root).ok()) {
+                Some(scope) => SceneSavePipeline::save_in_scope(document, &scope, path.as_ref()),
+                None => SceneSaveReport {
+                    scene_id: document.scene_id.clone(),
+                    path: path.clone().unwrap_or_default(),
+                    status: SceneSaveStatus::Failed,
+                    diagnostics: vec![SceneEditDiagnostic::error(
+                        "editor.scene_document.no_project",
+                        "scene.save",
+                        "Cannot open the bare Scene fixture write scope.",
+                    )],
+                    dirty_after: document.dirty_state.dirty,
+                },
+            }
+        };
         transaction.diagnostics.extend(scene_diagnostics_to_editor(
             transaction,
             report.diagnostics.clone(),
