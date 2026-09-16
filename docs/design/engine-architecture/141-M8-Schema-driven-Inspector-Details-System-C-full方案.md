@@ -116,10 +116,10 @@ Prefab Override
 本地源码参考：
 
 ```text
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\Inspector\Core\InspectorWindow.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\SerializedObject.bindings.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\SerializedProperty.bindings.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\Inspector
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\Inspector\Core\InspectorWindow.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\SerializedObject.bindings.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\SerializedProperty.bindings.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\Inspector
 ```
 
 可借鉴：
@@ -154,9 +154,9 @@ Actor / Component / Blueprint defaults / Instance override
 本地源码参考：
 
 ```text
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\PropertyEditor\Private\SDetailsView.cpp
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\PropertyEditor\Public\PropertyHandle.h
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\PropertyEditor\Private\UserInterface\PropertyEditor
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\PropertyEditor\Private\SDetailsView.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\PropertyEditor\Public\PropertyHandle.h
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\PropertyEditor\Private\UserInterface\PropertyEditor
 ```
 
 可借鉴：
@@ -191,9 +191,9 @@ Object::get / Object::set
 本地源码参考：
 
 ```text
-<GODOT_SOURCE>\godot-master\godot-master\editor\editor_inspector.cpp
-<GODOT_SOURCE>\godot-master\godot-master\editor\editor_inspector.h
-<GODOT_SOURCE>\godot-master\godot-master\core\object\object.cpp
+I:\godotcode\godot-master\godot-master\editor\editor_inspector.cpp
+I:\godotcode\godot-master\godot-master\editor\editor_inspector.h
+I:\godotcode\godot-master\godot-master\core\object\object.cpp
 ```
 
 可借鉴：
@@ -225,8 +225,8 @@ World serialization
 本地源码参考：
 
 ```text
-<BEVY_SOURCE>\bevy-main\bevy-main\crates\bevy_reflect
-<BEVY_SOURCE>\bevy-main\bevy-main\crates\bevy_world_serialization
+I:\BevyCode\bevy-main\bevy-main\crates\bevy_reflect
+I:\BevyCode\bevy-main\bevy-main\crates\bevy_world_serialization
 ```
 
 可借鉴：

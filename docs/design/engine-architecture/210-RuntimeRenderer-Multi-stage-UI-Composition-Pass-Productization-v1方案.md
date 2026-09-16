@@ -91,7 +91,7 @@ Canvas / Graphic / RectTransform
 ```text
 框架设计/Unity源码参考/UGUI-Canvas-EventSystem-Render源码参考.md
 
-<UNITY_UI_REFERENCE>\com.unity.ugui
+I:\com.unity.ugui\com.unity.ugui
   Runtime/UGUI/UI/Core/CanvasUpdateRegistry.cs
   Runtime/UGUI/UI/Core/Graphic.cs
   Runtime/UGUI/UI/Core/GraphicRaycaster.cs
@@ -128,7 +128,7 @@ https://docs.unity3d.com/Packages/com.unity.ugui@2.0/manual/UICanvas.html
 ```text
 框架设计/Unity源码参考/SRP-CommandBuffer-RendererBackend源码参考.md
 
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master
   Runtime/Export/RenderPipeline/RenderPipeline.cs
   Runtime/Export/RenderPipeline/ScriptableRenderContext.cs
   Runtime/Export/Graphics/RenderingCommandBuffer.cs
@@ -149,7 +149,7 @@ pass 顺序应由 Renderer / RenderGraph 表达，不能散落在项目规则里
 ```text
 框架设计/UE源码参考/RDG-RHI-RendererBackend源码参考.md
 
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release
+I:\UECode\UnrealEngine-release\UnrealEngine-release
   Engine/Source/Runtime/RenderCore/Public/RenderGraph.h
   Engine/Source/Runtime/RenderCore/Public/RenderGraphBuilder.h
   Engine/Source/Runtime/RHI/Public/RHICommandList.h

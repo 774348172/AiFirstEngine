@@ -93,11 +93,11 @@ ACCENT / WARNING / ERROR
 本地源码：
 
 ```text
-<UNITY_CS_REFERENCE>/UnityCsReference-master/UnityCsReference-master/Editor/Mono/GUI/SplitView.cs
-<UNITY_CS_REFERENCE>/UnityCsReference-master/UnityCsReference-master/Editor/Mono/GUI/DockArea.cs
-<UNITY_CS_REFERENCE>/UnityCsReference-master/UnityCsReference-master/Editor/Mono/HostView.cs
-<UNITY_CS_REFERENCE>/UnityCsReference-master/UnityCsReference-master/Editor/Mono/GUI/PaneDragTab.cs
-<UNITY_CS_REFERENCE>/UnityCsReference-master/UnityCsReference-master/Editor/Mono/GUI/WindowLayout.cs
+I:/UnityCode/UnityCsReference-master/UnityCsReference-master/Editor/Mono/GUI/SplitView.cs
+I:/UnityCode/UnityCsReference-master/UnityCsReference-master/Editor/Mono/GUI/DockArea.cs
+I:/UnityCode/UnityCsReference-master/UnityCsReference-master/Editor/Mono/HostView.cs
+I:/UnityCode/UnityCsReference-master/UnityCsReference-master/Editor/Mono/GUI/PaneDragTab.cs
+I:/UnityCode/UnityCsReference-master/UnityCsReference-master/Editor/Mono/GUI/WindowLayout.cs
 ```
 
 关键链路：
@@ -141,9 +141,9 @@ Split 与 Tab Stack 是工作区结构，不属于业务面板；
 本地源码：
 
 ```text
-<GODOT_SOURCE>/godot-master/godot-master/editor/docks/editor_dock_manager.h
-<GODOT_SOURCE>/godot-master/godot-master/editor/docks/editor_dock_manager.cpp
-<GODOT_SOURCE>/godot-master/godot-master/scene/gui/split_container.cpp
+I:/godotcode/godot-master/godot-master/editor/docks/editor_dock_manager.h
+I:/godotcode/godot-master/godot-master/editor/docks/editor_dock_manager.cpp
+I:/godotcode/godot-master/godot-master/scene/gui/split_container.cpp
 ```
 
 关键链路：

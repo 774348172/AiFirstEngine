@@ -48,10 +48,10 @@ Unreal:
 本地源码参考：
 
 ```text
-<UNITY_CS_REFERENCE>/UnityCsReference-master/UnityCsReference-master/Editor/Mono/ComponentUtility.cs
-<UNITY_CS_REFERENCE>/UnityCsReference-master/UnityCsReference-master/Editor/Mono/ComponentUtility.bindings.cs
-<UNITY_CS_REFERENCE>/UnityCsReference-master/UnityCsReference-master/Editor/Mono/EditorUtility.cs
-<UNITY_CS_REFERENCE>/UnityCsReference-master/UnityCsReference-master/Editor/Mono/EditorUtility.bindings.cs
+I:/UnityCode/UnityCsReference-master/UnityCsReference-master/Editor/Mono/ComponentUtility.cs
+I:/UnityCode/UnityCsReference-master/UnityCsReference-master/Editor/Mono/ComponentUtility.bindings.cs
+I:/UnityCode/UnityCsReference-master/UnityCsReference-master/Editor/Mono/EditorUtility.cs
+I:/UnityCode/UnityCsReference-master/UnityCsReference-master/Editor/Mono/EditorUtility.bindings.cs
 ```
 
 关键点：
@@ -88,14 +88,14 @@ Inspector 常规修改:
 本地源码参考：
 
 ```text
-<UNREAL_ENGINE_SOURCE>/UnrealEngine-release/UnrealEngine-release/Engine/Source/Editor/LevelEditor/Private/LevelEditorActions.cpp
+I:/UECode/UnrealEngine-release/UnrealEngine-release/Engine/Source/Editor/LevelEditor/Private/LevelEditorActions.cpp
   FLevelEditorActionCallbacks::OnKeepSimulationChanges
   FLevelEditorActionCallbacks::CanExecuteKeepSimulationChanges
 
-<UNREAL_ENGINE_SOURCE>/UnrealEngine-release/UnrealEngine-release/Engine/Source/Editor/UnrealEd/Private/Editor.cpp
+I:/UECode/UnrealEngine-release/UnrealEngine-release/Engine/Source/Editor/UnrealEd/Private/Editor.cpp
   EditorUtilities::CopyActorProperties
 
-<UNREAL_ENGINE_SOURCE>/UnrealEngine-release/UnrealEngine-release/Engine/Source/Editor/UnrealEd/Public/Editor.h
+I:/UECode/UnrealEngine-release/UnrealEngine-release/Engine/Source/Editor/UnrealEd/Public/Editor.h
   EditorUtilities::FCopyOptions
 ```
 

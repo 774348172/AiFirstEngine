@@ -59,10 +59,10 @@ UE 的编辑器命令路线最接近本项目要学习的方向。
 源码参考：
 
 ```text
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Slate\Public\Framework\Commands\UICommandList.h
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Slate\Public\Framework\Commands\UIAction.h
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Slate\Private\Framework\Commands\UICommandList.cpp
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Slate\Private\Framework\Commands\UIAction.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Slate\Public\Framework\Commands\UICommandList.h
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Slate\Public\Framework\Commands\UIAction.h
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Slate\Private\Framework\Commands\UICommandList.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Slate\Private\Framework\Commands\UIAction.cpp
 ```
 
 UE 的关键结构：
@@ -120,10 +120,10 @@ EditorWindow / UI Toolkit / IMGUI / MenuItem / Shortcut
 源码参考：
 
 ```text
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\Undo\Undo.bindings.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\UIElements\Inspector\InspectorElement.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\UIElements\Controls\PropertyField.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Modules\PackageManagerUI\Editor\UI\List\PackageSearchBar.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\Undo\Undo.bindings.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\UIElements\Inspector\InspectorElement.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\UIElements\Controls\PropertyField.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Modules\PackageManagerUI\Editor\UI\List\PackageSearchBar.cs
 ```
 
 Unity 的 `ValidateCommand / ExecuteCommand`、`SerializedObject.ApplyModifiedProperties`、`Undo.RecordObject` 说明它也在做“显示层事件”和“实际数据修改/Undo”分离，只是命令分布更散。
@@ -155,9 +155,9 @@ EditorPlugin / Control / InputEvent / Shortcut
 源码参考：
 
 ```text
-<GODOT_SOURCE>\godot-master\godot-master\editor
-<GODOT_SOURCE>\godot-master\godot-master\scene\gui\popup_menu.h
-<GODOT_SOURCE>\godot-master\godot-master\scene\gui\popup_menu.cpp
+I:\godotcode\godot-master\godot-master\editor
+I:\godotcode\godot-master\godot-master\scene\gui\popup_menu.h
+I:\godotcode\godot-master\godot-master\scene\gui\popup_menu.cpp
 ```
 
 值得学习：

@@ -46,10 +46,10 @@ Build / Run 只负责生成和运行包，不负责在运行时重新解释编�
 本地源码参考：
 
 ```text
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Programs\AutomationTool
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Programs\AutomationTool\AutomationUtils\ProjectParams.cs
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Programs\AutomationTool\AutomationUtils\Platform.cs
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Programs\AutomationTool\Scripts\RunProjectCommand.Automation.cs
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Programs\AutomationTool
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Programs\AutomationTool\AutomationUtils\ProjectParams.cs
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Programs\AutomationTool\AutomationUtils\Platform.cs
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Programs\AutomationTool\Scripts\RunProjectCommand.Automation.cs
 ```
 
 UE 的核心路线是：
@@ -77,10 +77,10 @@ Run 阶段可以复用 staged 输出。
 本地源码参考：
 
 ```text
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\BuildPlayerWindow.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\BuildPipeline\BuildPipeline.bindings.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\BuildPipeline\BuildPlayerContext.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\BuildPipeline\BuildPipelineInterfaces.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\BuildPlayerWindow.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\BuildPipeline\BuildPipeline.bindings.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\BuildPipeline\BuildPlayerContext.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\BuildPipeline\BuildPipelineInterfaces.cs
 ```
 
 Unity 的核心路线是：
@@ -107,11 +107,11 @@ BuildReport 贯穿构建回调和后处理。
 本地源码参考：
 
 ```text
-<BEVY_SOURCE>\bevy-main\bevy-main\crates\bevy_app\src\app.rs
-<BEVY_SOURCE>\bevy-main\bevy-main\crates\bevy_app\src\schedule_runner.rs
-<BEVY_SOURCE>\bevy-main\bevy-main\crates\bevy_winit\src\lib.rs
-<BEVY_SOURCE>\bevy-main\bevy-main\crates\bevy_asset\src\lib.rs
-<BEVY_SOURCE>\bevy-main\bevy-main\crates\bevy_internal\src\default_plugins.rs
+I:\BevyCode\bevy-main\bevy-main\crates\bevy_app\src\app.rs
+I:\BevyCode\bevy-main\bevy-main\crates\bevy_app\src\schedule_runner.rs
+I:\BevyCode\bevy-main\bevy-main\crates\bevy_winit\src\lib.rs
+I:\BevyCode\bevy-main\bevy-main\crates\bevy_asset\src\lib.rs
+I:\BevyCode\bevy-main\bevy-main\crates\bevy_internal\src\default_plugins.rs
 ```
 
 Bevy 的核心路线是：

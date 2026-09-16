@@ -21,11 +21,11 @@ artifact，并用一次普通 Editor Open / trust approve / Play / Stop 证明�
 
 ```text
 production Editor:
-  <repository-root>\rust\target\debug\editor_host.exe
+  G:\gameEngin\rust\target\debug\editor_host.exe
   sha256:F8856CE9A507E7A2E6D4DCA6E8D20B2957ECB507AACB414917281240D7420EA8
 
 Gate H retained target:
-  <RUN_292_ROOT>\20260816-143623\cargo-target
+  G:\Aife292Runs\20260816-143623\cargo-target
   editor_host.exe 当前不存在，可复用依赖做一次增量 build
 
 Tower exact module identity:

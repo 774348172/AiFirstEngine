@@ -174,17 +174,17 @@ verified RuntimePackage
 ### 4.1 Unity
 
 ```text
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\PlayerSettings.bindings.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\PlayerSettings.bindings.cs
   PlayerSettings.companyName
   PlayerSettings.productName
   PlayerSettings.bundleVersion
   SetIcons / SetIconsForPlatform
 
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\BuildPlayerWindowBuildMethods.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\BuildPlayerWindowBuildMethods.cs
   GetBuildPlayerOptions
   Paths.MakeValidFileName(PlayerSettings.productName)
 
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\BuildPipeline\PostprocessBuildPlayer.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\BuildPipeline\PostprocessBuildPlayer.cs
   Postprocess(... companyName, productName, ...)
 ```
 
@@ -194,7 +194,7 @@ verified RuntimePackage
 ### 4.2 Unreal Engine
 
 ```text
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\EngineSettings\Classes\GeneralProjectSettings.h
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\EngineSettings\Classes\GeneralProjectSettings.h
   CompanyName
   CopyrightNotice
   Description
@@ -202,7 +202,7 @@ verified RuntimePackage
   ProjectVersion
   ProjectDisplayedTitle
 
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Programs\AutomationTool\Win\WinPlatform.Automation.cs
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Programs\AutomationTool\Win\WinPlatform.Automation.cs
   GetFilesToDeployOrStage
   StageBootstrapExecutable
   ModuleResourceUpdate.SetIcons
@@ -998,12 +998,12 @@ rust/crates/editor_core/src/services/build_service.rs
 rust/crates/runtime_cli/src/lib.rs
 rust/crates/runtime_cli/src/exported_player_verification.rs
 
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\PlayerSettings.bindings.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\BuildPlayerWindowBuildMethods.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\BuildPipeline\PostprocessBuildPlayer.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\PlayerSettings.bindings.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\BuildPlayerWindowBuildMethods.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\BuildPipeline\PostprocessBuildPlayer.cs
 
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\EngineSettings\Classes\GeneralProjectSettings.h
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Programs\AutomationTool\Win\WinPlatform.Automation.cs
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\EngineSettings\Classes\GeneralProjectSettings.h
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Programs\AutomationTool\Win\WinPlatform.Automation.cs
 
 https://github.com/godotengine/godot/blob/master/platform/windows/export/export_plugin.cpp
 https://github.com/godotengine/godot/blob/master/platform/windows/export/template_modifier.cpp

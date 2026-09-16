@@ -66,8 +66,8 @@ PrefabUtility
 源码参考：
 
 ```text
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Modules\HierarchyEditor\ScriptBindings\HierarchyGameObjectHandler.bindings.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Modules\HierarchyEditor\Managed\HierarchyWindow.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Modules\HierarchyEditor\ScriptBindings\HierarchyGameObjectHandler.bindings.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Modules\HierarchyEditor\Managed\HierarchyWindow.cs
 ```
 
 可借鉴：
@@ -103,9 +103,9 @@ Deferred Spawn
 源码参考：
 
 ```text
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Engine\Private\Actor.cpp
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Engine\Private\World.cpp
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Engine\Private\GameplayStatics.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Engine\Private\Actor.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Engine\Private\World.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Engine\Private\GameplayStatics.cpp
 ```
 
 可借鉴：
@@ -138,9 +138,9 @@ Node scene_instance_state / inherited_state
 源码参考：
 
 ```text
-<GODOT_SOURCE>\godot-master\godot-master\scene\resources\packed_scene.cpp
-<GODOT_SOURCE>\godot-master\godot-master\scene\main\node.cpp
-<GODOT_SOURCE>\godot-master\godot-master\scene\property_utils.cpp
+I:\godotcode\godot-master\godot-master\scene\resources\packed_scene.cpp
+I:\godotcode\godot-master\godot-master\scene\main\node.cpp
+I:\godotcode\godot-master\godot-master\scene\property_utils.cpp
 ```
 
 可借鉴：
@@ -173,8 +173,8 @@ EntityMap / MapEntities
 源码参考：
 
 ```text
-<BEVY_SOURCE>\bevy-main\bevy-main\crates\bevy_world_serialization\src\world_asset_spawner.rs
-<BEVY_SOURCE>\bevy-main\bevy-main\crates\bevy_world_serialization\src\dynamic_world.rs
+I:\BevyCode\bevy-main\bevy-main\crates\bevy_world_serialization\src\world_asset_spawner.rs
+I:\BevyCode\bevy-main\bevy-main\crates\bevy_world_serialization\src\dynamic_world.rs
 ```
 
 可借鉴：

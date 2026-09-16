@@ -415,7 +415,7 @@ headless layout / render report。
 本地参考源码：
 
 ```text
-<UNITY_UI_REFERENCE>\com.oathx.unitycli-master\com.oathx.unitycli-master
+I:\UnityAIUI\com.oathx.unitycli-master\com.oathx.unitycli-master
 ```
 
 它不是 Runtime UI 系统，而是 Unity Editor 中的 AI UI 生产工具链。

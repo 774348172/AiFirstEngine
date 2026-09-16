@@ -8,6 +8,7 @@
 > 上游方案：`250-AI-Primary-ProjectProduction-Dual-Path-v1方案.md`  
 > 上游 Gate：`251-Provider-independent-From-Blank-Creation-Golden-Gate-v1方案.md`  
 > 产品对象：没有编程基础和只有少量编程基础的游戏创作爱好者
+> 2026-08-31 authority 状态：历史默认工作流；IntentEvent / WorkItem / ChangeSet 可作为复杂任务和 Optional Editor UX 复用，但不再是所有 AI 修改的默认前置，不能覆盖 `00-AI-First-Game-Engine-权威架构设计-v1.md`。
 
 ## 1. 决策
 
@@ -119,20 +120,20 @@ Unity/UE 的成熟诊断工具应当学习；它们对需求表达不设前置 G
   - Unity / UE A 通道实际项目生产与多轮 repair
   - 三引擎 validation / rollback / audit 对比
 
-<LOCAL_TEST_ROOT>/Unity/unityTest/Assets/C01/Editor/C01ProjectBuilder.cs
+I:/EngineTest/Unity/unityTest/Assets/C01/Editor/C01ProjectBuilder.cs
   - AssetDatabase / Scene / Prefab / serialized validation / BuildPipeline 项目层闭环
 
-<LOCAL_TEST_ROOT>/Unity/unityTest/Library/PackageCache/com.unity.test-framework@1405238725ab/
+I:/EngineTest/Unity/unityTest/Library/PackageCache/com.unity.test-framework@1405238725ab/
   - TestRunnerApi、EditMode/PlayMode、LogAssert 和 command-line test
 
-<UNREAL_LAUNCHER_REFERENCE>/UE_5.8/Engine/Source/Developer/OutputLog/
+I:/UElacunch/UE_5.8/Engine/Source/Developer/OutputLog/
   - FOutputLogModule、日志过滤和 Console
 
-<UNREAL_LAUNCHER_REFERENCE>/UE_5.8/Engine/Source/Runtime/Core/Public/Misc/AutomationTest.h
+I:/UElacunch/UE_5.8/Engine/Source/Runtime/Core/Public/Misc/AutomationTest.h
   - FAutomationTestFramework
 
-<UNREAL_LAUNCHER_REFERENCE>/UE_5.8/Engine/Source/Developer/AutomationController/
-<UNREAL_LAUNCHER_REFERENCE>/UE_5.8/Engine/Source/Developer/FunctionalTesting/
+I:/UElacunch/UE_5.8/Engine/Source/Developer/AutomationController/
+I:/UElacunch/UE_5.8/Engine/Source/Developer/FunctionalTesting/
   - Automation report、Message Log、Functional Test 和 screenshot evidence
 ```
 

@@ -63,9 +63,9 @@ Audio -> GameObject + AudioSource
 源码参考：
 
 ```text
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\Commands\GOCreationCommands.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\Inspector\GameObjectInspector.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\DragAndDrop.bindings.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\Commands\GOCreationCommands.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\Inspector\GameObjectInspector.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\DragAndDrop.bindings.cs
 ```
 
 观察到的关键点：
@@ -89,8 +89,8 @@ Content Browser asset
 源码参考：
 
 ```text
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\UnrealEd\Private\EditorEngine.cpp
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\UnrealEd\Private\EditorViewportClient.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\UnrealEd\Private\EditorEngine.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\UnrealEd\Private\EditorViewportClient.cpp
 ```
 
 关键实现点：
@@ -113,8 +113,8 @@ FileSystem / Resource
 源码参考：
 
 ```text
-<GODOT_SOURCE>\godot-master\godot-master\editor\scene\canvas_item_editor_plugin.cpp
-<GODOT_SOURCE>\godot-master\godot-master\editor\scene\3d\node_3d_editor_viewport.cpp
+I:\godotcode\godot-master\godot-master\editor\scene\canvas_item_editor_plugin.cpp
+I:\godotcode\godot-master\godot-master\editor\scene\3d\node_3d_editor_viewport.cpp
 ```
 
 关键实现点：

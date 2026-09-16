@@ -50,13 +50,13 @@ Runtime 阶段只加载 RuntimePackage 内 cooked texture，不做项目源 PNG 
 源码参考：
 
 ```text
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Engine\Classes\Engine\Texture2D.h
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Engine\Private\Texture2D.cpp
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Engine\Public\TextureResource.h
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\RenderCore\Public\RenderResource.h
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\RHI\Public\RHICommandList.h
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Plugins\2D\Paper2D\Source\Paper2D\Private\PaperSpriteComponent.cpp
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Plugins\2D\Paper2D\Source\Paper2D\Private\PaperRenderSceneProxy.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Engine\Classes\Engine\Texture2D.h
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Engine\Private\Texture2D.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Engine\Public\TextureResource.h
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\RenderCore\Public\RenderResource.h
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\RHI\Public\RHICommandList.h
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Plugins\2D\Paper2D\Source\Paper2D\Private\PaperSpriteComponent.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Plugins\2D\Paper2D\Source\Paper2D\Private\PaperRenderSceneProxy.cpp
 ```
 
 UE 的关键链路：

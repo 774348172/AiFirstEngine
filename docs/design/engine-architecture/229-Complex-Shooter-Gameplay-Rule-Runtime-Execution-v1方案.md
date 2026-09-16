@@ -107,7 +107,7 @@ https://docs.unity3d.com/ScriptReference/LowLevel.PlayerLoop.html
 源码参考：
 
 ```text
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Runtime\Export\PlayerLoop\PlayerLoop.bindings.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Runtime\Export\PlayerLoop\PlayerLoop.bindings.cs
 ```
 
 关键点：
@@ -146,7 +146,7 @@ https://dev.epicgames.com/documentation/en-us/unreal-engine/actor-ticking-in-unr
 源码参考：
 
 ```text
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Engine\Private\TickTaskManager.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Engine\Private\TickTaskManager.cpp
 ```
 
 关键点：
@@ -186,8 +186,8 @@ https://docs.rs/bevy_ecs/latest/bevy_ecs/schedule/struct.Schedule.html
 源码参考：
 
 ```text
-<BEVY_SOURCE>\bevy-main\bevy-main\crates\bevy_ecs\src\schedule\schedule.rs
-<BEVY_SOURCE>\bevy-main\bevy-main\crates\bevy_ecs\src\schedule\auto_insert_apply_deferred.rs
+I:\BevyCode\bevy-main\bevy-main\crates\bevy_ecs\src\schedule\schedule.rs
+I:\BevyCode\bevy-main\bevy-main\crates\bevy_ecs\src\schedule\auto_insert_apply_deferred.rs
 ```
 
 关键点：
@@ -223,7 +223,7 @@ https://docs.godotengine.org/en/stable/tutorials/scripting/idle_and_physics_proc
 源码参考：
 
 ```text
-<GODOT_SOURCE>\godot-master\godot-master\scene\main\node.cpp
+I:\godotcode\godot-master\godot-master\scene\main\node.cpp
 ```
 
 关键点：

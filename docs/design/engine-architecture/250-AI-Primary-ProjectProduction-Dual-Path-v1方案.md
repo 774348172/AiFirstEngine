@@ -230,7 +230,7 @@ v1 使用严格 `ProjectCandidateEnvelope`，每个候选只承载一种 `Projec
 
 ### Phase 6：C-01 Golden Gate
 
-状态：已完成并归档。真实 `<LOCAL_TEST_ROOT>\AiFirstGame` 已通过 validation-only v3 Preview/Export/external package/像素验收；见 `施工文档/已完成/250-F-当前可自动化施工文档-C-01-Golden-Gate-v1.md` 与 `阶段完成记录/2026-07-15-C-01-Golden-Gate-v1/00-总览.md`。
+状态：已完成并归档。真实 `I:\EngineTest\AiFirstGame` 已通过 validation-only v3 Preview/Export/external package/像素验收；见 `施工文档/已完成/250-F-当前可自动化施工文档-C-01-Golden-Gate-v1.md` 与 `阶段完成记录/2026-07-15-C-01-Golden-Gate-v1/00-总览.md`。
 
 从全新空项目通过正式表面完成 Sprite、Input、Prefab、玩法、AUI、Preview、重开和 Windows Export，并保存确定性 evidence。
 

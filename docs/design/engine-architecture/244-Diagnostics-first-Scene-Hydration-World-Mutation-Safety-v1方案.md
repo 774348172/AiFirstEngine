@@ -196,7 +196,7 @@ INC-02 LLM request lifecycle；继续由 243 独立施工。
 本机源码：
 
 ```text
-<UNITY_CS_REFERENCE>/UnityCsReference-master/UnityCsReference-master/
+I:/UnityCode/UnityCsReference-master/UnityCsReference-master/
   Runtime/Export/Scripting/UnityEngineObject.bindings.cs
   Runtime/Export/SceneManager/SceneManager.cs
   Runtime/Export/SceneManager/SceneManager.bindings.cs
@@ -228,7 +228,7 @@ Transform.SetParent
 本机源码：
 
 ```text
-<UNREAL_ENGINE_SOURCE>/UnrealEngine-release/UnrealEngine-release/
+I:/UECode/UnrealEngine-release/UnrealEngine-release/
   Engine/Source/Runtime/Engine/Private/LevelActor.cpp
   Engine/Source/Runtime/Engine/Private/Components/SceneComponent.cpp
   Engine/Source/Runtime/Engine/Classes/Engine/World.h
@@ -261,7 +261,7 @@ SpawnActorDeferred / FinishSpawning
 本机源码：
 
 ```text
-<GODOT_SOURCE>/godot-master/godot-master/
+I:/GodotCode/godot-master/godot-master/
   scene/resources/packed_scene.cpp
   scene/main/node.cpp
 ```
@@ -287,7 +287,7 @@ deferred NodePath target
 本机源码：
 
 ```text
-<BEVY_SOURCE>/bevy-main/bevy-main/
+I:/BevyCode/bevy-main/bevy-main/
   crates/bevy_world_serialization/src/dynamic_world.rs
   crates/bevy_ecs/src/world/mod.rs
   crates/bevy_ecs/src/system/commands/mod.rs
@@ -910,14 +910,14 @@ rust/crates/engine_runtime/src/runtime_instance.rs
 rust/crates/engine_runtime/src/runtime_instance_diagnostics.rs
 rust/crates/engine_runtime/src/gameplay_command.rs
 
-<UNITY_CS_REFERENCE>/UnityCsReference-master/UnityCsReference-master/Runtime/Export/Scripting/UnityEngineObject.bindings.cs
-<UNITY_CS_REFERENCE>/UnityCsReference-master/UnityCsReference-master/Runtime/Export/SceneManager/SceneManager.cs
-<UNREAL_ENGINE_SOURCE>/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/Engine/Private/LevelActor.cpp
-<UNREAL_ENGINE_SOURCE>/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/Engine/Private/Components/SceneComponent.cpp
-<GODOT_SOURCE>/godot-master/godot-master/scene/resources/packed_scene.cpp
-<GODOT_SOURCE>/godot-master/godot-master/scene/main/node.cpp
-<BEVY_SOURCE>/bevy-main/bevy-main/crates/bevy_world_serialization/src/dynamic_world.rs
-<BEVY_SOURCE>/bevy-main/bevy-main/crates/bevy_ecs/src/world/mod.rs
+I:/UnityCode/UnityCsReference-master/UnityCsReference-master/Runtime/Export/Scripting/UnityEngineObject.bindings.cs
+I:/UnityCode/UnityCsReference-master/UnityCsReference-master/Runtime/Export/SceneManager/SceneManager.cs
+I:/UECode/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/Engine/Private/LevelActor.cpp
+I:/UECode/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/Engine/Private/Components/SceneComponent.cpp
+I:/GodotCode/godot-master/godot-master/scene/resources/packed_scene.cpp
+I:/GodotCode/godot-master/godot-master/scene/main/node.cpp
+I:/BevyCode/bevy-main/bevy-main/crates/bevy_world_serialization/src/dynamic_world.rs
+I:/BevyCode/bevy-main/bevy-main/crates/bevy_ecs/src/world/mod.rs
 
 https://github.com/Unity-Technologies/UnityCsReference/blob/master/Runtime/Export/Scripting/UnityEngineObject.bindings.cs
 https://dev.epicgames.com/documentation/en-us/unreal-engine/API/Runtime/Engine/Engine/UWorld/SpawnActor

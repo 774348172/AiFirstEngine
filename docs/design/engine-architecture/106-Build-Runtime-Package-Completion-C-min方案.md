@@ -90,10 +90,10 @@ report
 本地源码参考：
 
 ```text
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Programs\AutomationTool
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Programs\AutomationTool\AutomationUtils\ProjectParams.cs
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Programs\AutomationTool\AutomationUtils\Platform.cs
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Programs\AutomationTool\Turnkey\Commands\CreateBuild.cs
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Programs\AutomationTool
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Programs\AutomationTool\AutomationUtils\ProjectParams.cs
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Programs\AutomationTool\AutomationUtils\Platform.cs
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Programs\AutomationTool\Turnkey\Commands\CreateBuild.cs
 ```
 
 UE 的路线可以概括为：
@@ -122,10 +122,10 @@ Stage 目录是 Run / Deploy / Package 的共同输入。
 本地源码参考：
 
 ```text
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\BuildPlayerWindowBuildMethods.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\BuildPipeline\BuildPipeline.bindings.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\Modules\BeeBuildPostprocessor.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\BuildPlayerSceneTreeView.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\BuildPlayerWindowBuildMethods.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\BuildPipeline\BuildPipeline.bindings.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\Modules\BeeBuildPostprocessor.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\BuildPlayerSceneTreeView.cs
 ```
 
 Unity 的路线可以概括为：
@@ -158,11 +158,11 @@ Editor Play / Preview 和正式 Run 都尽量读取同一种 Runtime Package。
 本地源码参考：
 
 ```text
-<GODOT_SOURCE>\godot-master\godot-master\editor\editor_node.cpp
-<GODOT_SOURCE>\godot-master\godot-master\editor\export
-<GODOT_SOURCE>\godot-master\godot-master\editor\file_system\editor_file_system.cpp
-<GODOT_SOURCE>\godot-master\godot-master\editor\import
-<GODOT_SOURCE>\godot-master\godot-master\editor\run\editor_run_native.cpp
+I:\godotcode\godot-master\godot-master\editor\editor_node.cpp
+I:\godotcode\godot-master\godot-master\editor\export
+I:\godotcode\godot-master\godot-master\editor\file_system\editor_file_system.cpp
+I:\godotcode\godot-master\godot-master\editor\import
+I:\godotcode\godot-master\godot-master\editor\run\editor_run_native.cpp
 ```
 
 Godot 的路线可以概括为：
@@ -190,9 +190,9 @@ ExportPreset 定义平台导出策略。
 本地源码参考：
 
 ```text
-<BEVY_SOURCE>\bevy-main\bevy-main\crates\bevy_asset
-<BEVY_SOURCE>\bevy-main\bevy-main\crates\bevy_app
-<BEVY_SOURCE>\bevy-main\bevy-main\crates\bevy_winit
+I:\BevyCode\bevy-main\bevy-main\crates\bevy_asset
+I:\BevyCode\bevy-main\bevy-main\crates\bevy_app
+I:\BevyCode\bevy-main\bevy-main\crates\bevy_winit
 ```
 
 Bevy 的路线更偏：

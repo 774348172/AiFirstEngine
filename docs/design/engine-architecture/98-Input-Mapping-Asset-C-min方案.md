@@ -46,8 +46,8 @@ Input.GetAxis
 本地源码参考：
 
 ```text
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Modules\InputLegacy\Input.bindings.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Runtime\Export\PlayerLoop\PlayerLoop.bindings.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Modules\InputLegacy\Input.bindings.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Runtime\Export\PlayerLoop\PlayerLoop.bindings.cs
 ```
 
 Unity 新 Input System 的方向是：
@@ -92,9 +92,9 @@ EnhancedInputSubsystem
 本地源码参考：
 
 ```text
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Plugins\EnhancedInput
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Engine\Classes\Components\InputComponent.h
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Plugins\Runtime\OpenXR\Source\OpenXRInput
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Plugins\EnhancedInput
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Engine\Classes\Components\InputComponent.h
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Plugins\Runtime\OpenXR\Source\OpenXRInput
 ```
 
 结论：
@@ -119,9 +119,9 @@ is_action_pressed
 本地源码参考：
 
 ```text
-<GODOT_SOURCE>\godot-master\godot-master\core\input
-<GODOT_SOURCE>\godot-master\godot-master\editor\settings\action_map_editor.cpp
-<GODOT_SOURCE>\godot-master\godot-master\main\main.cpp
+I:\godotcode\godot-master\godot-master\core\input
+I:\godotcode\godot-master\godot-master\editor\settings\action_map_editor.cpp
+I:\godotcode\godot-master\godot-master\main\main.cpp
 ```
 
 结论：
@@ -146,9 +146,9 @@ GamepadEvent
 本地源码参考：
 
 ```text
-<BEVY_SOURCE>\bevy-main\bevy-main\crates\bevy_input
-<BEVY_SOURCE>\bevy-main\bevy-main\crates\bevy_winit
-<BEVY_SOURCE>\bevy-main\bevy-main\crates\bevy_gilrs
+I:\BevyCode\bevy-main\bevy-main\crates\bevy_input
+I:\BevyCode\bevy-main\bevy-main\crates\bevy_winit
+I:\BevyCode\bevy-main\bevy-main\crates\bevy_gilrs
 ```
 
 结论：

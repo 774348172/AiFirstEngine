@@ -70,18 +70,18 @@ PointerInputModule
 关键源码：
 
 ```text
-<UNITY_UI_REFERENCE>/com.unity.ugui/Runtime/UGUI/EventSystem/InputModules/PointerInputModule.cs
+I:/com.unity.ugui/com.unity.ugui/Runtime/UGUI/EventSystem/InputModules/PointerInputModule.cs
   PointerInputModule.GetTouchPointerEventData / GetMousePointerEventData
   eventSystem.RaycastAll(pointerData, m_RaycastResultCache)
   FindFirstRaycast(m_RaycastResultCache)
 
-<UNITY_UI_REFERENCE>/com.unity.ugui/Runtime/UGUI/EventSystem/EventSystem.cs
+I:/com.unity.ugui/com.unity.ugui/Runtime/UGUI/EventSystem/EventSystem.cs
   EventSystem.RaycastAll
   RaycasterManager.GetRaycasters()
   module.Raycast(eventData, raycastResults)
   raycastResults.Sort(s_RaycastComparer)
 
-<UNITY_UI_REFERENCE>/com.unity.ugui/Runtime/UGUI/UI/Core/GraphicRaycaster.cs
+I:/com.unity.ugui/com.unity.ugui/Runtime/UGUI/UI/Core/GraphicRaycaster.cs
   GraphicRaycaster.Raycast
   Graphic.raycastTarget
   canvasRenderer.cull
@@ -89,7 +89,7 @@ PointerInputModule
   graphic.Raycast(pointerPosition, eventCamera)
   depth sort
 
-<UNITY_UI_REFERENCE>/com.unity.ugui/Runtime/UGUI/EventSystem/InputModules/StandaloneInputModule.cs
+I:/com.unity.ugui/com.unity.ugui/Runtime/UGUI/EventSystem/InputModules/StandaloneInputModule.cs
   ProcessMousePress
   pointerCurrentRaycast.gameObject
   ExecuteEvents.ExecuteHierarchy(pointerDownHandler)
@@ -143,21 +143,21 @@ UGameViewportClient::InputKey / InputAxis
 关键源码：
 
 ```text
-<UNREAL_ENGINE_SOURCE>/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/Slate/Private/Framework/Application/SlateApplication.cpp
+I:/UECode/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/Slate/Private/Framework/Application/SlateApplication.cpp
   LocateWindowUnderMouse
   LocateWidgetInWindow
   ProcessMouseButtonDownEvent
   RoutePointerDownEvent
   ProcessKeyDownEvent
 
-<UNREAL_ENGINE_SOURCE>/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/UMG/Private/Components/WidgetInteractionComponent.cpp
+I:/UECode/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/UMG/Private/Components/WidgetInteractionComponent.cpp
   PerformTrace
   DetermineWidgetUnderPointer
   PressPointerKey
   ReleasePointerKey
   SendKeyChar
 
-<UNREAL_ENGINE_SOURCE>/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/Engine/Private/GameViewportClient.cpp
+I:/UECode/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/Engine/Private/GameViewportClient.cpp
   InputKey
   InputAxis
   PlayerController->InputKey

@@ -79,7 +79,7 @@ Bug 排查时无法判断问题来自 PrefabAsset、Override、Scene placeholder
 2026-07-09 读取：
 
 ```text
-<internal-review-root>\01-226-PrefabInstance-RuntimePackage-Bake-Authoring-Prefab-Instance-Expansion方案审查.md
+G:\gameEngin\4.8AI审查目录\01-226-PrefabInstance-RuntimePackage-Bake-Authoring-Prefab-Instance-Expansion方案审查.md
 ```
 
 审查对象与本文一致，审查结论为：
@@ -1105,7 +1105,7 @@ C-min 同步执行即可。
 已读取审查文档：
 
 ```text
-<internal-review-root>\01-226-PrefabInstance-RuntimePackage-Bake-Authoring-Prefab-Instance-Expansion方案审查.md
+G:\gameEngin\4.8AI审查目录\01-226-PrefabInstance-RuntimePackage-Bake-Authoring-Prefab-Instance-Expansion方案审查.md
 ```
 
 审查对象：

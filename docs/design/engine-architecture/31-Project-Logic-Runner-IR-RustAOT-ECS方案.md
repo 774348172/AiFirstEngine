@@ -79,10 +79,10 @@ World
 参考源码：
 
 ```text
-<UNREAL_ENGINE_SOURCE>/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/Engine/Private/TickTaskManager.cpp
-<UNREAL_ENGINE_SOURCE>/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/Engine/Private/Actor.cpp
-<UNREAL_ENGINE_SOURCE>/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/Engine/Private/Components/ActorComponent.cpp
-<UNREAL_ENGINE_SOURCE>/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/Engine/Classes/Engine/EngineBaseTypes.h
+I:/UECode/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/Engine/Private/TickTaskManager.cpp
+I:/UECode/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/Engine/Private/Actor.cpp
+I:/UECode/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/Engine/Private/Components/ActorComponent.cpp
+I:/UECode/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/Engine/Classes/Engine/EngineBaseTypes.h
 ```
 
 UE 的特点：
@@ -110,7 +110,7 @@ PlayerLoop
 参考源码：
 
 ```text
-<UNITY_CS_REFERENCE>/UnityCsReference-master/UnityCsReference-master/Runtime/Export/PlayerLoop/PlayerLoop.bindings.cs
+I:/UnityCode/UnityCsReference-master/UnityCsReference-master/Runtime/Export/PlayerLoop/PlayerLoop.bindings.cs
 ```
 
 Unity 的特点：
@@ -135,8 +135,8 @@ App / Schedule
 参考源码：
 
 ```text
-<BEVY_SOURCE>/bevy-main/bevy-main/crates/bevy_ecs/src/schedule
-<BEVY_SOURCE>/bevy-main/bevy-main/crates/bevy_ecs/src/system
+I:/BevyCode/bevy-main/bevy-main/crates/bevy_ecs/src/schedule
+I:/BevyCode/bevy-main/bevy-main/crates/bevy_ecs/src/system
 ```
 
 Bevy 的特点：

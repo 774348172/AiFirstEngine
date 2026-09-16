@@ -70,14 +70,14 @@ present/acquire wait
 ## 6. 真实 Gate 根
 
 ```text
-project=<LOCAL_TEST_ROOT>\AiFirstGame-FromBlank-251-r2
-candidate_store=<run-root>\251-r2\candidates
-evidence=<run-root>\251-r2\evidence
-external_export=<LOCAL_TEST_ROOT>\Exports\AiFirstGame-FromBlank-251-r2
-engine_sdk=<repository-root>\rust
+project=I:\EngineTest\AiFirstGame-FromBlank-251-r2
+candidate_store=G:\gameEngin-targets\251-r2\candidates
+evidence=G:\gameEngin-targets\251-r2\evidence
+external_export=I:\EngineTest\Exports\AiFirstGame-FromBlank-251-r2
+engine_sdk=G:\gameEngin\rust
 ```
 
-R1 在 43.5 秒处因未传播 `CARGO_TARGET_DIR` 导致 Player artifact build root 落入 Engine SDK，并被隔离合同正确拒绝。R1 项目、10 个候选与失败 evidence 全部冻结；R2 必须使用新的四个输出根，并通过 `prior_attempt_report` 把 R1 first blocker 与 repair count 绑定进最终报告。旧 `<LOCAL_TEST_ROOT>\AiFirstGame`、旧 250-F evidence、Unity A 和 UE A 全部只读。
+R1 在 43.5 秒处因未传播 `CARGO_TARGET_DIR` 导致 Player artifact build root 落入 Engine SDK，并被隔离合同正确拒绝。R1 项目、10 个候选与失败 evidence 全部冻结；R2 必须使用新的四个输出根，并通过 `prior_attempt_report` 把 R1 first blocker 与 repair count 绑定进最终报告。旧 `I:\EngineTest\AiFirstGame`、旧 250-F evidence、Unity A 和 UE A 全部只读。
 
 ## 7. 验收
 

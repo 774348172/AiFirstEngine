@@ -159,8 +159,8 @@ Godot 对变更文件执行阻断式静态检查，并通过 module 注册、构
 本地源码参考：
 
 ```text
-<UNITY_UI_REFERENCE>/com.unity.ugui/Runtime/UGUI/UnityEngine.UI.asmdef
-<UNITY_UI_REFERENCE>/com.unity.ugui/Editor/UGUI/UnityEditor.UI.asmdef
+I:/com.unity.ugui/com.unity.ugui/Runtime/UGUI/UnityEngine.UI.asmdef
+I:/com.unity.ugui/com.unity.ugui/Editor/UGUI/UnityEditor.UI.asmdef
 对应 Runtime / Editor test asmdef
 ```
 

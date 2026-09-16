@@ -33,7 +33,7 @@ lineage 当时已经被外层授权流程放入真实 cache，并在失败后移
 最新 fresh root：
 
 ```text
-<PRODUCTION_RUN_ROOT>\282-r1-gate-h-20260812-150654
+C:\AifeProductionRuns\282-r1-gate-h-20260812-150654
 ```
 
 关键身份：

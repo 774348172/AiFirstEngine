@@ -129,7 +129,7 @@ recent projects 是用户级配置，不属于项目内容。
   "recentProjects": [
     {
       "name": "PlaneGame",
-      "path": "<PROJECTS_ROOT>/PlaneGame",
+      "path": "D:/Projects/PlaneGame",
       "engineVersion": "0.1.0",
       "lastOpenedAt": "timestamp",
       "lastModifiedAt": "timestamp",

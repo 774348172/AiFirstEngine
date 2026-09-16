@@ -78,8 +78,8 @@ Unity 的路线是 `Collider2D` 作为组件，`BoxCollider2D / CircleCollider2D
 源码参考：
 
 ```text
-<UNITY_CS_REFERENCE>/UnityCsReference-master/UnityCsReference-master/Editor/Mono/Inspector/ColliderEditorBase.cs
-<UNITY_CS_REFERENCE>/UnityCsReference-master/UnityCsReference-master/Editor/Mono/PolygonEditor.bindings.cs
+I:/UnityCode/UnityCsReference-master/UnityCsReference-master/Editor/Mono/Inspector/ColliderEditorBase.cs
+I:/UnityCode/UnityCsReference-master/UnityCsReference-master/Editor/Mono/PolygonEditor.bindings.cs
 ```
 
 对我们的启发：
@@ -97,9 +97,9 @@ UE 的路线更完整：`UShapeComponent / UBoxComponent / USphereComponent / UC
 源码参考：
 
 ```text
-<UNREAL_ENGINE_SOURCE>/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/Engine/Classes/PhysicsEngine/BodySetup.h
-<UNREAL_ENGINE_SOURCE>/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/Engine/Classes/PhysicsEngine/BodyInstance.h
-<UNREAL_ENGINE_SOURCE>/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/Engine/Private/TriggerActors.cpp
+I:/UECode/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/Engine/Classes/PhysicsEngine/BodySetup.h
+I:/UECode/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/Engine/Classes/PhysicsEngine/BodyInstance.h
+I:/UECode/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/Engine/Private/TriggerActors.cpp
 ```
 
 对我们的启发：
@@ -117,9 +117,9 @@ Godot 的 2D 碰撞体系很适合我们参考。`CollisionShape2D` 是节点，
 源码参考：
 
 ```text
-<GODOT_SOURCE>/godot-master/godot-master/scene/2d/physics/collision_shape_2d.cpp
-<GODOT_SOURCE>/godot-master/godot-master/scene/resources/2d/rectangle_shape_2d.cpp
-<GODOT_SOURCE>/godot-master/godot-master/scene/resources/2d/circle_shape_2d.cpp
+I:/godotcode/godot-master/godot-master/scene/2d/physics/collision_shape_2d.cpp
+I:/godotcode/godot-master/godot-master/scene/resources/2d/rectangle_shape_2d.cpp
+I:/godotcode/godot-master/godot-master/scene/resources/2d/circle_shape_2d.cpp
 ```
 
 对我们的启发：

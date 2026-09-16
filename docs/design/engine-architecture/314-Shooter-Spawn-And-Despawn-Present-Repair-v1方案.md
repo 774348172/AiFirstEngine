@@ -1,0 +1,8 @@
+# 314 打飞机发射位置与销毁呈现修复
+
+用户2026-09-10明确授权修改313遗留两处缺陷。本次为现有功能修复，不开启新系统。
+
+最小反事实：发射时把玩家当前Transform传入既有延迟Prefab实例化；实体销毁后按已有RenderProxy身份移除渲染代理，不依赖已经释放的World映射。
+项目决定枪口位置，通用SDK/Runtime仅承载可选实例化根position（更窄于完整Transform，保留Prefab旋转/缩放）；保持无参数实例化兼容，不引入玩法API或新工具。
+先用owner失败测试确认原因；若既有合同不能携带Transform，最小扩展既有mutation/command及直接consumer，不增加独立框架。
+用受影响测试及重新构建的同项目Player实证移动后发射与击杀后消失。旧安装Provider/config不替换，不能复用含旧Runtime的Player作为修复证据。

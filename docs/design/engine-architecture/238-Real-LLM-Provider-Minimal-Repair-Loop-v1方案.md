@@ -315,11 +315,11 @@ Rust ProjectPatch model 与 provider schema 必须有自动一致性测试。
 源码：
 
 ```text
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\Undo\Undo.bindings.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\Undo\Undo.bindings.cs
   Undo.RecordObject
   Undo.RegisterCompleteObjectUndo
 
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Modules\AssetDatabase\Editor\ScriptBindings\AssetDatabase.bindings.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Modules\AssetDatabase\Editor\ScriptBindings\AssetDatabase.bindings.cs
   AssetDatabase.SaveAssets
   AssetDatabase.Refresh
 ```
@@ -341,8 +341,8 @@ editor command
 源码：
 
 ```text
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\UnrealEd\Public\ScopedTransaction.h
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\UnrealEd\Private\ScopedTransaction.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\UnrealEd\Public\ScopedTransaction.h
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\UnrealEd\Private\ScopedTransaction.cpp
 
 FScopedTransaction::Construct
   -> GEditor->BeginTransaction
@@ -357,8 +357,8 @@ FScopedTransaction::Cancel
 验证源码：
 
 ```text
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Plugins\Editor\DataValidation\Source\DataValidation\Public\EditorValidatorSubsystem.h
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Plugins\Editor\DataValidation\Source\DataValidation\Private\EditorValidatorSubsystem.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Plugins\Editor\DataValidation\Source\DataValidation\Public\EditorValidatorSubsystem.h
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Plugins\Editor\DataValidation\Source\DataValidation\Private\EditorValidatorSubsystem.cpp
 
 ValidateAssetsWithSettings
   -> ValidateAssetsInternal
@@ -373,7 +373,7 @@ ValidateAssetsWithSettings
 源码：
 
 ```text
-<GODOT_SOURCE>\godot\editor\editor_undo_redo_manager.cpp
+I:\godotAllCode\godot\editor\editor_undo_redo_manager.cpp
 
 EditorUndoRedoManager::create_action
   -> add_do_method / add_do_property
@@ -388,7 +388,7 @@ Godot 还按 Scene history 与 global history 区分修改，并通过 `mark_uns
 ### 5.5 用户提供的 UnityAIUI 参考
 
 ```text
-<UNITY_UI_REFERENCE>\com.oathx.unitycli-master
+I:\UnityAIUI\com.oathx.unitycli-master
 ```
 
 该目录是第三方 UnityCLI，不是 Unity 官方 AI provider 源码。
@@ -532,7 +532,7 @@ Report Panel summary evidence
 默认请求中禁止发送：
 
 ```text
-<ABSOLUTE_PATH> / <ABSOLUTE_PATH> 等绝对路径。
+G:\... / I:\... 等绝对路径。
 用户名、主目录、临时目录。
 API key、Authorization header。
 本机环境变量列表。
@@ -1573,18 +1573,18 @@ rust/crates/editor_ui_model/src/ai_panel.rs
 rust/crates/editor_ui_model/src/authoring_workflow.rs
 rust/crates/editor_window_winit/src/application.rs
 
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\Undo\Undo.bindings.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Modules\AssetDatabase\Editor\ScriptBindings\AssetDatabase.bindings.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\Undo\Undo.bindings.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Modules\AssetDatabase\Editor\ScriptBindings\AssetDatabase.bindings.cs
 
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\UnrealEd\Public\ScopedTransaction.h
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\UnrealEd\Private\ScopedTransaction.cpp
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Plugins\Editor\DataValidation\Source\DataValidation\Public\EditorValidatorSubsystem.h
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Plugins\Editor\DataValidation\Source\DataValidation\Private\EditorValidatorSubsystem.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\UnrealEd\Public\ScopedTransaction.h
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\UnrealEd\Private\ScopedTransaction.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Plugins\Editor\DataValidation\Source\DataValidation\Public\EditorValidatorSubsystem.h
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Plugins\Editor\DataValidation\Source\DataValidation\Private\EditorValidatorSubsystem.cpp
 
-<GODOT_SOURCE>\godot\editor\editor_undo_redo_manager.h
-<GODOT_SOURCE>\godot\editor\editor_undo_redo_manager.cpp
+I:\godotAllCode\godot\editor\editor_undo_redo_manager.h
+I:\godotAllCode\godot\editor\editor_undo_redo_manager.cpp
 
-<UNITY_UI_REFERENCE>\com.oathx.unitycli-master
+I:\UnityAIUI\com.oathx.unitycli-master
 
 https://developers.openai.com/api/docs/guides/structured-outputs
 https://developers.openai.com/api/docs/guides/function-calling

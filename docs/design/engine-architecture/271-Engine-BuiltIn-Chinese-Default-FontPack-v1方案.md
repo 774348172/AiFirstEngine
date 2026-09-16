@@ -36,7 +36,7 @@ recipe 的 Tower Assembly 从冷路径约 85 秒降到热路径约 1.55 秒。
 用户提供的上游包：
 
 ```text
-<local-font-archive>\Noto_Sans_SC.zip
+C:\Users\zenghaoran\Desktop\Noto_Sans_SC.zip
 archive size = 112760167 bytes
 license = SIL Open Font License 1.1
 reserved font name = Source

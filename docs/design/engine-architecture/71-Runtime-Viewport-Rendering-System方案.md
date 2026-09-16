@@ -67,8 +67,8 @@ Runtime Renderer
 源码参考：
 
 ```text
-<UNREAL_ENGINE_SOURCE>/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/Engine/Private/GameViewportClient.cpp
-<UNREAL_ENGINE_SOURCE>/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/Engine/Private/Slate/SceneViewport.cpp
+I:/UECode/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/Engine/Private/GameViewportClient.cpp
+I:/UECode/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/Engine/Private/Slate/SceneViewport.cpp
 ```
 
 UE 的关键流程：
@@ -103,8 +103,8 @@ Renderer 不应该理解编辑器面板结构。
 源码参考：
 
 ```text
-<UNITY_CS_REFERENCE>/UnityCsReference-master/UnityCsReference-master/Editor/Mono/GameView/GameView.cs
-<UNITY_CS_REFERENCE>/UnityCsReference-master/UnityCsReference-master/Editor/Mono/SceneView/SceneView.cs
+I:/UnityCode/UnityCsReference-master/UnityCsReference-master/Editor/Mono/GameView/GameView.cs
+I:/UnityCode/UnityCsReference-master/UnityCsReference-master/Editor/Mono/SceneView/SceneView.cs
 ```
 
 Unity 的关键流程：
@@ -136,7 +136,7 @@ Scene View 和 Game View 可以共享世界数据，但应有独立 camera / vie
 源码参考：
 
 ```text
-<BEVY_SOURCE>/bevy-main/bevy-main/crates/bevy_render/src/camera.rs
+I:/BevyCode/bevy-main/bevy-main/crates/bevy_render/src/camera.rs
 ```
 
 Bevy 的关键流程：

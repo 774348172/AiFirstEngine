@@ -96,10 +96,10 @@ UE-like RenderCommand Dispatcher
 源码参考：
 
 ```text
-<UNREAL_ENGINE_SOURCE>/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/RenderCore/Private/RenderingThread.cpp
-<UNREAL_ENGINE_SOURCE>/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/RenderCore/Public/RenderingThread.h
-<UNREAL_ENGINE_SOURCE>/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/RenderCore/Public/RenderCommandFence.h
-<UNREAL_ENGINE_SOURCE>/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/RenderCore/Private/RenderResource.cpp
+I:/UECode/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/RenderCore/Private/RenderingThread.cpp
+I:/UECode/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/RenderCore/Public/RenderingThread.h
+I:/UECode/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/RenderCore/Public/RenderCommandFence.h
+I:/UECode/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/RenderCore/Private/RenderResource.cpp
 ```
 
 UE 的关键规则：
@@ -161,9 +161,9 @@ RenderThread health / timeout 必须能报告。
 源码参考：
 
 ```text
-<UNITY_CS_REFERENCE>/UnityCsReference-master/UnityCsReference-master/Runtime/Export/RenderPipeline/ScriptableRenderContext.cs
-<UNITY_CS_REFERENCE>/UnityCsReference-master/UnityCsReference-master/Runtime/Export/Graphics/RenderingCommandBuffer.cs
-<UNITY_CS_REFERENCE>/UnityCsReference-master/UnityCsReference-master/Runtime/Export/Graphics/GraphicsFence.bindings.cs
+I:/UnityCode/UnityCsReference-master/UnityCsReference-master/Runtime/Export/RenderPipeline/ScriptableRenderContext.cs
+I:/UnityCode/UnityCsReference-master/UnityCsReference-master/Runtime/Export/Graphics/RenderingCommandBuffer.cs
+I:/UnityCode/UnityCsReference-master/UnityCsReference-master/Runtime/Export/Graphics/GraphicsFence.bindings.cs
 ```
 
 Unity 的关键规则：
@@ -195,7 +195,7 @@ Fence 是可理解的同步抽象。
 源码参考：
 
 ```text
-<BEVY_SOURCE>/bevy-main/bevy-main/crates/bevy_render/src/pipelined_rendering.rs
+I:/BevyCode/bevy-main/bevy-main/crates/bevy_render/src/pipelined_rendering.rs
 ```
 
 Bevy 的关键规则：

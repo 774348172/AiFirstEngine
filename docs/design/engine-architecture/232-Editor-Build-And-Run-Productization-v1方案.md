@@ -114,18 +114,18 @@ Editor Build Export Panel
 本机源码参考：
 
 ```text
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\BuildPlayerWindow.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\BuildPlayerWindow.cs
   BuildPlayerAndRun()
   BuildPlayerAndRunInternal(bool askForBuildLocation)
   CallBuildMethods(askForBuildLocation, BuildOptions.AutoRunPlayer | BuildOptions.StrictMode)
 
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\BuildPlayerWindowBuildMethods.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\BuildPlayerWindowBuildMethods.cs
   CallBuildMethods(...)
   m_Building
   BuildPlayerOptions
   DefaultBuildMethods.BuildPlayer(options)
 
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\BuildPipeline\Settings\BuildOptions.bindings.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\BuildPipeline\Settings\BuildOptions.bindings.cs
   AutoRunPlayer
 ```
 
@@ -167,13 +167,13 @@ UI 不自己拼底层构建步骤。
 本机源码参考：
 
 ```text
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Programs\AutomationTool\Scripts\RunProjectCommand.Automation.cs
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Programs\AutomationTool\Scripts\RunProjectCommand.Automation.cs
   Run(ProjectParams Params)
   RunInternal(...)
   SetupClientParams(...)
   RunClient(...)
 
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Programs\AutomationTool\AutomationUtils\ProcessUtils.cs
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Programs\AutomationTool\AutomationUtils\ProcessUtils.cs
   ProcessUtils.Run(...)
   ProcessManager.CreateProcess(...)
 ```

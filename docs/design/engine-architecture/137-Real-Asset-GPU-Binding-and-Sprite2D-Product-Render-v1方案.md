@@ -81,11 +81,11 @@ WindowedPlayer 有 GPU binding summary，但还不是完整资源上传、绑定
 本地源码参考：
 
 ```text
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Runtime\2D\Common\ScriptBindings\Sprites.bindings.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Runtime\2D\SpriteAtlas\ScriptBindings\SpriteAtlas.bindings.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\Inspector\SpriteRendererEditor.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Runtime\Export\Graphics\Texture.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Runtime\Export\Graphics\Texture.bindings.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Runtime\2D\Common\ScriptBindings\Sprites.bindings.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Runtime\2D\SpriteAtlas\ScriptBindings\SpriteAtlas.bindings.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\Inspector\SpriteRendererEditor.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Runtime\Export\Graphics\Texture.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Runtime\Export\Graphics\Texture.bindings.cs
 ```
 
 Unity 用户侧看到的是：
@@ -113,11 +113,11 @@ sortingLayer / sortingOrder
 本地源码参考方向：
 
 ```text
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Engine\Classes\Engine\Texture2D.h
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Engine\Private\Texture2D.cpp
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\RenderCore\Public\RenderResource.h
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\RenderCore\Private\RenderResource.cpp
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Plugins\2D\Paper2D
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Engine\Classes\Engine\Texture2D.h
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Engine\Private\Texture2D.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\RenderCore\Public\RenderResource.h
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\RenderCore\Private\RenderResource.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Plugins\2D\Paper2D
 ```
 
 UE 的核心分层：
@@ -143,10 +143,10 @@ Game / Runtime World 只能产生渲染意图和 AssetRef，不能直接创建 W
 本地源码参考：
 
 ```text
-<BEVY_SOURCE>\bevy-main\bevy-main\crates\bevy_sprite\src\sprite.rs
-<BEVY_SOURCE>\bevy-main\bevy-main\crates\bevy_render\src\render_asset.rs
-<BEVY_SOURCE>\bevy-main\bevy-main\crates\bevy_render\src\texture\gpu_image.rs
-<BEVY_SOURCE>\bevy-main\bevy-main\crates\bevy_render\src\render_resource\bind_group.rs
+I:\BevyCode\bevy-main\bevy-main\crates\bevy_sprite\src\sprite.rs
+I:\BevyCode\bevy-main\bevy-main\crates\bevy_render\src\render_asset.rs
+I:\BevyCode\bevy-main\bevy-main\crates\bevy_render\src\texture\gpu_image.rs
+I:\BevyCode\bevy-main\bevy-main\crates\bevy_render\src\render_resource\bind_group.rs
 ```
 
 Bevy 的模式非常接近我们：
@@ -166,10 +166,10 @@ Main World Sprite { image: Handle<Image> }
 本地源码参考：
 
 ```text
-<GODOT_SOURCE>\godot-master\godot-master\scene\2d\sprite_2d.cpp
-<GODOT_SOURCE>\godot-master\godot-master\scene\resources\texture.cpp
-<GODOT_SOURCE>\godot-master\godot-master\servers\rendering_server.*
-<GODOT_SOURCE>\godot-master\godot-master\servers\rendering\renderer_rd\storage_rd\texture_storage.cpp
+I:\godotcode\godot-master\godot-master\scene\2d\sprite_2d.cpp
+I:\godotcode\godot-master\godot-master\scene\resources\texture.cpp
+I:\godotcode\godot-master\godot-master\servers\rendering_server.*
+I:\godotcode\godot-master\godot-master\servers\rendering\renderer_rd\storage_rd\texture_storage.cpp
 ```
 
 Godot 的模式：

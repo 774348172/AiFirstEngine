@@ -96,13 +96,13 @@ Stop 能停止 in-process runtime。
 本机源码参考：
 
 ```text
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\GameView\GameView.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\GameView\GameView.cs
   GameView : PlayModeView
   OnEnable 注册 EditorApplication.playModeStateChanged
   OnPlayModeStateChanged 处理 EnteredPlayMode / ExitingPlayMode
   targetRenderSize / targetSize / GameViewSize / zoom / focus / toolbar
 
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\GUI\EditorApplicationLayout.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\GUI\EditorApplicationLayout.cs
   InitPlaymodeLayout
   FinalizePlaymodeLayout
   SetPlaymodeLayout
@@ -136,7 +136,7 @@ GameView 本身负责显示、尺寸、焦点、工具栏，不应该负责 Runt
 本机源码参考：
 
 ```text
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\UnrealEd\Private\PlayLevel.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\UnrealEd\Private\PlayLevel.cpp
   UEditorEngine::RequestPlaySession
   UEditorEngine::StartQueuedPlaySessionRequest
   UEditorEngine::StartQueuedPlaySessionRequestImpl

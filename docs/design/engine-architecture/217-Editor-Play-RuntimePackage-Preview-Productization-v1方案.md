@@ -104,21 +104,21 @@ Play 可以自动准备 RuntimePackage，但必须缓存优先、脏域优先、
 本机源码参考：
 
 ```text
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\EditorApplication.bindings.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\EditorApplication.bindings.cs
   EditorApplication.EnterPlaymode()
   EditorApplication.isPlaying
   EditorApplication.isPlayingOrWillChangePlaymode
 
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\EditorApplication.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\EditorApplication.cs
   PlayModeStateChange
   playModeStateChanged
   Internal_EnterPlayModePreStart
 
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\GameView\GameView.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\GameView\GameView.cs
   playModeStateChanged listener
   target size / focus / render target handling
 
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\BuildPlayerWindow.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\BuildPlayerWindow.cs
   BuildAndRun button / Build Pipeline branch
 ```
 

@@ -99,8 +99,8 @@ Platform Pump Messages
 源码参考：
 
 ```text
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Launch\Private\LaunchEngineLoop.cpp
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\RenderCore\Private\RenderingThread.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Launch\Private\LaunchEngineLoop.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\RenderCore\Private\RenderingThread.cpp
 ```
 
 对我们的启发：
@@ -128,7 +128,7 @@ Input / EarlyUpdate
 源码参考：
 
 ```text
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Runtime\Export\PlayerLoop\PlayerLoop.bindings.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Runtime\Export\PlayerLoop\PlayerLoop.bindings.cs
 ```
 
 对我们的启发：
@@ -157,9 +157,9 @@ winit EventLoop
 源码参考：
 
 ```text
-<BEVY_SOURCE>\bevy-main\bevy-main\crates\bevy_winit\src\state.rs
-<BEVY_SOURCE>\bevy-main\bevy-main\crates\bevy_render\src\extract_plugin.rs
-<BEVY_SOURCE>\bevy-main\bevy-main\crates\bevy_render\src\lib.rs
+I:\BevyCode\bevy-main\bevy-main\crates\bevy_winit\src\state.rs
+I:\BevyCode\bevy-main\bevy-main\crates\bevy_render\src\extract_plugin.rs
+I:\BevyCode\bevy-main\bevy-main\crates\bevy_render\src\lib.rs
 ```
 
 对我们的启发：

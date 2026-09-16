@@ -21,11 +21,11 @@ CQ-04 不是新增文件浏览器、VFS、进程沙箱或 AssetDB。它只建立
 例如：
 
 ```text
-project root = <PROJECTS_ROOT>/Game
-<PROJECTS_ROOT>/Game/Assets/Generated -> <OUTSIDE_ROOT>   // symlink 或 junction
+project root = G:/Projects/Game
+G:/Projects/Game/Assets/Generated -> C:/Outside   // symlink 或 junction
 ```
 
-当前 lexical `starts_with(project_root)` 仍会认为 `Assets/Generated/image.png` 位于项目内，操作系统却会把写入重定向到 `<OUTSIDE_ROOT>/image.png`。
+当前 lexical `starts_with(project_root)` 仍会认为 `Assets/Generated/image.png` 位于项目内，操作系统却会把写入重定向到 `C:/Outside/image.png`。
 
 241 的作用是把“项目根”从一个可随意拼接的 `PathBuf`，升级为一份由打开目录句柄承载、只能执行受限相对操作的写权限。
 

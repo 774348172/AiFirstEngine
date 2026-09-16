@@ -100,12 +100,12 @@ Undo
 本地源码参考：
 
 ```text
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\SceneView\SceneView.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\SceneHierarchy.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\Inspector\Core\InspectorWindow.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\ProjectBrowser\ProjectBrowser.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\SerializedObject.bindings.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\Undo.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\SceneView\SceneView.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\SceneHierarchy.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\Inspector\Core\InspectorWindow.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\ProjectBrowser\ProjectBrowser.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\SerializedObject.bindings.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\Undo.cs
 ```
 
 Unity 的启发：
@@ -135,12 +135,12 @@ FScopedTransaction
 本地源码参考：
 
 ```text
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\LevelEditor\Private\SLevelEditor.cpp
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\LevelEditor\Private\SLevelViewport.cpp
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\LevelEditor\Private\LevelEditor.cpp
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\LevelEditor\Private\LevelEditorActions.cpp
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\PropertyEditor\Private\SDetailsView.cpp
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\ContentBrowser\Private\SContentBrowser.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\LevelEditor\Private\SLevelEditor.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\LevelEditor\Private\SLevelViewport.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\LevelEditor\Private\LevelEditor.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\LevelEditor\Private\LevelEditorActions.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\PropertyEditor\Private\SDetailsView.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\ContentBrowser\Private\SContentBrowser.cpp
 ```
 
 UE 的启发：
@@ -168,12 +168,12 @@ EditorUndoRedoManager
 本地源码参考：
 
 ```text
-<GODOT_SOURCE>\godot-master\godot-master\editor\editor_node.h
-<GODOT_SOURCE>\godot-master\godot-master\editor\docks\scene_tree_dock.h
-<GODOT_SOURCE>\godot-master\godot-master\editor\docks\scene_tree_dock.cpp
-<GODOT_SOURCE>\godot-master\godot-master\editor\inspector\editor_inspector.h
-<GODOT_SOURCE>\godot-master\godot-master\editor\docks\filesystem_dock.h
-<GODOT_SOURCE>\godot-master\godot-master\editor\editor_undo_redo_manager.h
+I:\godotcode\godot-master\godot-master\editor\editor_node.h
+I:\godotcode\godot-master\godot-master\editor\docks\scene_tree_dock.h
+I:\godotcode\godot-master\godot-master\editor\docks\scene_tree_dock.cpp
+I:\godotcode\godot-master\godot-master\editor\inspector\editor_inspector.h
+I:\godotcode\godot-master\godot-master\editor\docks\filesystem_dock.h
+I:\godotcode\godot-master\godot-master\editor\editor_undo_redo_manager.h
 ```
 
 Godot 的启发：

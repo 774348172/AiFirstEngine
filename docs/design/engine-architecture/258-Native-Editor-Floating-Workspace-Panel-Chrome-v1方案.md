@@ -101,10 +101,10 @@ https://docs.unity3d.com/ScriptReference/EditorWindow.html
 本地源码：
 
 ```text
-<UNITY_CS_REFERENCE>/UnityCsReference-master/UnityCsReference-master/Editor/Mono/GUI/SplitView.cs
-<UNITY_CS_REFERENCE>/UnityCsReference-master/UnityCsReference-master/Editor/Mono/GUI/DockArea.cs
-<UNITY_CS_REFERENCE>/UnityCsReference-master/UnityCsReference-master/Editor/Mono/HostView.cs
-<UNITY_CS_REFERENCE>/UnityCsReference-master/UnityCsReference-master/Editor/Mono/GUI/PaneDragTab.cs
+I:/UnityCode/UnityCsReference-master/UnityCsReference-master/Editor/Mono/GUI/SplitView.cs
+I:/UnityCode/UnityCsReference-master/UnityCsReference-master/Editor/Mono/GUI/DockArea.cs
+I:/UnityCode/UnityCsReference-master/UnityCsReference-master/Editor/Mono/HostView.cs
+I:/UnityCode/UnityCsReference-master/UnityCsReference-master/Editor/Mono/GUI/PaneDragTab.cs
 ```
 
 关键做法：
@@ -142,9 +142,9 @@ drop preview 与 commit 使用同一 target resolution。
 参考：
 
 ```text
-<GODOT_SOURCE>/godot-master/godot-master/editor/docks/editor_dock_manager.h
-<GODOT_SOURCE>/godot-master/godot-master/editor/docks/editor_dock_manager.cpp
-<GODOT_SOURCE>/godot-master/godot-master/scene/gui/split_container.cpp
+I:/godotcode/godot-master/godot-master/editor/docks/editor_dock_manager.h
+I:/godotcode/godot-master/godot-master/editor/docks/editor_dock_manager.cpp
+I:/godotcode/godot-master/godot-master/scene/gui/split_container.cpp
 ```
 
 采用集中 Dock owner、业务 panel 与 placement 解耦、布局保存与无效状态安全恢复。不照搬固定

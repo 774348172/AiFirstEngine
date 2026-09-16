@@ -100,9 +100,9 @@ DragAndDrop
 本地源码参考：
 
 ```text
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\ProjectBrowser\ProjectBrowser.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\ObjectSelector.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\Search\ObjectSelectorSearch.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\ProjectBrowser\ProjectBrowser.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\ObjectSelector.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\Search\ObjectSelectorSearch.cs
 ```
 
 可借鉴：
@@ -137,8 +137,8 @@ AssetContextMenu
 本地源码参考：
 
 ```text
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\ContentBrowser
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\ContentBrowserData
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\ContentBrowser
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\ContentBrowserData
 ```
 
 可借鉴：
@@ -170,8 +170,8 @@ EditorFileDialog
 本地源码参考：
 
 ```text
-<GODOT_SOURCE>\godot-master\godot-master\editor\docks\filesystem_dock.cpp
-<GODOT_SOURCE>\godot-master\godot-master\editor\editor_interface.cpp
+I:\godotcode\godot-master\godot-master\editor\docks\filesystem_dock.cpp
+I:\godotcode\godot-master\godot-master\editor\editor_interface.cpp
 ```
 
 可借鉴：
@@ -204,8 +204,8 @@ AssetLoader
 本地源码参考：
 
 ```text
-<BEVY_SOURCE>\bevy-main\bevy-main\crates\bevy_asset\src\server\mod.rs
-<BEVY_SOURCE>\bevy-main\bevy-main\crates\bevy_asset\src\handle.rs
+I:\BevyCode\bevy-main\bevy-main\crates\bevy_asset\src\server\mod.rs
+I:\BevyCode\bevy-main\bevy-main\crates\bevy_asset\src\handle.rs
 ```
 
 可借鉴：

@@ -164,8 +164,8 @@ AUI 全量字体系统。
 
 ```text
 Windows:
-  <WINDOWS_FONTS>\segoeui.ttf
-  <WINDOWS_FONTS>\arial.ttf
+  C:\Windows\Fonts\segoeui.ttf
+  C:\Windows\Fonts\arial.ttf
 
 fallback:
   如果系统字体不可用，回退到 112 的 BuiltinDebugFont。

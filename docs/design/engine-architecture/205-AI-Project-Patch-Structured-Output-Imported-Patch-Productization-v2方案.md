@@ -78,8 +78,8 @@ https://docs.unity3d.com/ScriptReference/SerializedObject.ApplyModifiedPropertie
 
 ```text
 框架设计/Unity源码参考/AI-Project-Patch-EditorTransaction源码参考.md
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\Inspector\TransformInspector.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\UIElements\Controls\PropertyField.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\Inspector\TransformInspector.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\UIElements\Controls\PropertyField.cs
 ```
 
 可学习点：
@@ -119,9 +119,9 @@ https://dev.epicgames.com/documentation/en-us/unreal-engine/API/Editor/UnrealEd/
 
 ```text
 框架设计/UE源码参考/AI-Project-Patch-EditorTransaction源码参考.md
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\UnrealEd\Private\EditorActor.cpp
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\UMGEditor\Private\WidgetBlueprintEditorUtils.cpp
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\UMGEditor\Private\WidgetBlueprintOperationUtils.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\UnrealEd\Private\EditorActor.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\UMGEditor\Private\WidgetBlueprintEditorUtils.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\UMGEditor\Private\WidgetBlueprintOperationUtils.cpp
 ```
 
 可学习点：
@@ -160,8 +160,8 @@ https://docs.godotengine.org/en/stable/classes/class_editorundoredomanager.html
 
 ```text
 框架设计/Godot源码参考/AI-Project-Patch-EditorUndoRedo源码参考.md
-<GODOT_SOURCE>\godot-master\godot-master\editor\inspector\editor_inspector.cpp
-<GODOT_SOURCE>\godot-master\godot-master\editor\scene\3d\node_3d_editor_viewport.cpp
+I:\godotcode\godot-master\godot-master\editor\inspector\editor_inspector.cpp
+I:\godotcode\godot-master\godot-master\editor\scene\3d\node_3d_editor_viewport.cpp
 ```
 
 可学习点：
@@ -197,9 +197,9 @@ https://docs.rs/bevy/latest/bevy/prelude/struct.DynamicScene.html
 
 ```text
 框架设计/Bevy源码参考/AI-Project-Patch-Reflect-DynamicWorld源码参考.md
-<BEVY_SOURCE>\bevy-main\bevy-main\crates\bevy_app\src\app.rs
-<BEVY_SOURCE>\bevy-main\bevy-main\crates\bevy_asset\src\reflect.rs
-<BEVY_SOURCE>\bevy-main\bevy-main\crates\bevy_world_serialization\src\world_asset_spawner.rs
+I:\BevyCode\bevy-main\bevy-main\crates\bevy_app\src\app.rs
+I:\BevyCode\bevy-main\bevy-main\crates\bevy_asset\src\reflect.rs
+I:\BevyCode\bevy-main\bevy-main\crates\bevy_world_serialization\src\world_asset_spawner.rs
 ```
 
 可学习点：

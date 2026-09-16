@@ -56,7 +56,7 @@ Unity UI Toolkit 使用 `DefaultEventSystem` 处理运行时 UI 输入。
 源码参考：
 
 ```text
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Modules\UIElements\Core\GameObjects\DefaultEventSystem.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Modules\UIElements\Core\GameObjects\DefaultEventSystem.cs
 ```
 
 核心流程：
@@ -102,7 +102,7 @@ UE Slate 由 `FSlateApplication` 统一处理窗口和 Widget 输入。
 源码参考：
 
 ```text
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Slate\Private\Framework\Application\SlateApplication.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Slate\Private\Framework\Application\SlateApplication.cpp
 ```
 
 核心流程：
@@ -140,7 +140,7 @@ Godot 由 Viewport 处理 Control 输入。
 源码参考：
 
 ```text
-<GODOT_SOURCE>\godot-master\godot-master\scene\main\viewport.cpp
+I:\godotcode\godot-master\godot-master\scene\main\viewport.cpp
 ```
 
 核心流程：
@@ -174,7 +174,7 @@ Bevy 把 picking 做成后端管线。
 源码参考：
 
 ```text
-<BEVY_SOURCE>\bevy-main\bevy-main\crates\bevy_picking\src\backend.rs
+I:\BevyCode\bevy-main\bevy-main\crates\bevy_picking\src\backend.rs
 ```
 
 核心流程：

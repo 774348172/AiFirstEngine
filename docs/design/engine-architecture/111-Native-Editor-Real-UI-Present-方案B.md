@@ -32,8 +32,8 @@ FSlateApplication / SWindow
 参考源码入口：
 
 ```text
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Slate\Private\Framework\Application\SlateApplication.cpp
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\SlateRHIRenderer\Private\SlateRHIRenderer.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Slate\Private\Framework\Application\SlateApplication.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\SlateRHIRenderer\Private\SlateRHIRenderer.cpp
 ```
 
 可借鉴点：
@@ -66,7 +66,7 @@ ContainerWindow / GUIView / EditorWindow
 参考源码入口：
 
 ```text
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\GUIView.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\GUIView.cs
 ```
 
 可借鉴点：

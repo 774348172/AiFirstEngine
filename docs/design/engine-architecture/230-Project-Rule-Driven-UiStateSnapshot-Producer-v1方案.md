@@ -121,10 +121,10 @@ UGUI 中项目脚本或 ViewModel 更新 Text / Image / Slider 等 UI 组件。
 源码参考：
 
 ```text
-<UNITY_UI_REFERENCE>\com.unity.ugui\Runtime\UGUI\UI\Core\Graphic.cs
-<UNITY_UI_REFERENCE>\com.unity.ugui\Runtime\UGUI\UI\Core\CanvasUpdateRegistry.cs
-<UNITY_UI_REFERENCE>\com.unity.ugui\Runtime\UGUI\UI\Core\Text.cs
-<UNITY_UI_REFERENCE>\com.unity.ugui\Runtime\UGUI\UI\Core\Image.cs
+I:\com.unity.ugui\com.unity.ugui\Runtime\UGUI\UI\Core\Graphic.cs
+I:\com.unity.ugui\com.unity.ugui\Runtime\UGUI\UI\Core\CanvasUpdateRegistry.cs
+I:\com.unity.ugui\com.unity.ugui\Runtime\UGUI\UI\Core\Text.cs
+I:\com.unity.ugui\com.unity.ugui\Runtime\UGUI\UI\Core\Image.cs
 ```
 
 可学习点：

@@ -79,17 +79,17 @@ SceneView / Picking
 源码参考：
 
 ```text
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\SceneView\SceneViewPicking.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\SceneView\SceneViewPicking.cs
   PickGameObject(Vector2 mousePosition)
   HandleUtility.PickObject(...)
 
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\Selection\Selection.bindings.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\Selection\Selection.bindings.cs
   Selection.activeObject
   Selection.activeGameObject
   Selection.activeEntityId
   Selection.objects
 
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\Inspector\Core\GenericInspector.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\Inspector\Core\GenericInspector.cs
   new SerializedObject(targets, context)
   SerializedObject.Update()
   SerializedObject.GetIterator()
@@ -128,18 +128,18 @@ Viewport interaction
 源码参考：
 
 ```text
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\ViewportInteraction\Private\ViewportInteractor.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\ViewportInteraction\Private\ViewportInteractor.cpp
   GEditor->SelectNone(...)
   GEditor->SelectActor(...)
 
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\PropertyEditor\Private\SDetailsView.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\PropertyEditor\Private\SDetailsView.cpp
   SDetailsView::SetObject(UObject*)
   SDetailsView::SetObjects(...)
   SDetailsView::SetObjectArrayPrivate(...)
   SelectedObjects
   RootPropertyNodes
 
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\PropertyEditor\Private\SDetailsViewBase.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\PropertyEditor\Private\SDetailsViewBase.cpp
   SDetailsViewBase::UpdatePropertyMaps()
   DetailLayouts
   RootPropertyNodes

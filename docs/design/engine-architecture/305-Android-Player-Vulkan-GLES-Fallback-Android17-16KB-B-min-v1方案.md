@@ -40,7 +40,7 @@ GPU：host
 安装 APK：
 
 ```text
-<ANDROID_RUN_ROOT>\304-E3-presentation-fix-20260824-210800\artifacts\TowerDefense-x86_64-debug.apk
+G:\AifeAndroidRuns\304-E3-presentation-fix-20260824-210800\artifacts\TowerDefense-x86_64-debug.apk
 SHA-256：D279A8140D9C39AC4E3E604CA9949E5719B250D77FCDCCE784DA4C10A06D8996
 ABI：仅 lib/x86_64/libmain.so
 ```

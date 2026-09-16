@@ -142,13 +142,13 @@ M1 说明“有哪些域”；本系统说明“如何完成一个项目”。
 源码参考：
 
 ```text
-<UNITY_CS_REFERENCE>/UnityCsReference-master/UnityCsReference-master/Editor/Mono/ProjectBrowser/ProjectBrowser.cs
-<UNITY_CS_REFERENCE>/UnityCsReference-master/UnityCsReference-master/Editor/Mono/SceneHierarchyWindow.cs
-<UNITY_CS_REFERENCE>/UnityCsReference-master/UnityCsReference-master/Editor/Mono/Inspector/Core/InspectorWindow.cs
-<UNITY_CS_REFERENCE>/UnityCsReference-master/UnityCsReference-master/Editor/Mono/PlayModeView/PlayModeView.cs
-<UNITY_CS_REFERENCE>/UnityCsReference-master/UnityCsReference-master/Editor/Mono/BuildPlayerWindow.cs
-<UNITY_CS_REFERENCE>/UnityCsReference-master/UnityCsReference-master/Editor/Mono/BuildPlayerWindowBuildMethods.cs
-<UNITY_CS_REFERENCE>/UnityCsReference-master/UnityCsReference-master/Editor/Mono/GUI/WindowLayout.cs
+I:/UnityCode/UnityCsReference-master/UnityCsReference-master/Editor/Mono/ProjectBrowser/ProjectBrowser.cs
+I:/UnityCode/UnityCsReference-master/UnityCsReference-master/Editor/Mono/SceneHierarchyWindow.cs
+I:/UnityCode/UnityCsReference-master/UnityCsReference-master/Editor/Mono/Inspector/Core/InspectorWindow.cs
+I:/UnityCode/UnityCsReference-master/UnityCsReference-master/Editor/Mono/PlayModeView/PlayModeView.cs
+I:/UnityCode/UnityCsReference-master/UnityCsReference-master/Editor/Mono/BuildPlayerWindow.cs
+I:/UnityCode/UnityCsReference-master/UnityCsReference-master/Editor/Mono/BuildPlayerWindowBuildMethods.cs
+I:/UnityCode/UnityCsReference-master/UnityCsReference-master/Editor/Mono/GUI/WindowLayout.cs
 ```
 
 Unity 的编辑器创作流程核心是：
@@ -184,14 +184,14 @@ Project -> Assets -> Scene -> Inspector -> Play -> Build。
 源码参考：
 
 ```text
-<UNREAL_ENGINE_SOURCE>/UnrealEngine-release/UnrealEngine-release/Engine/Source/Editor/UnrealEd/Private/LevelEditorViewport.cpp
-<UNREAL_ENGINE_SOURCE>/UnrealEngine-release/UnrealEngine-release/Engine/Source/Editor/UnrealEd/Private/SEditorViewport.cpp
-<UNREAL_ENGINE_SOURCE>/UnrealEngine-release/UnrealEngine-release/Engine/Source/Editor/UnrealEd/Private/Kismet2/DebuggerCommands.cpp
-<UNREAL_ENGINE_SOURCE>/UnrealEngine-release/UnrealEngine-release/Engine/Source/Editor/MainFrame/Private/Frame/MainFrameActions.cpp
-<UNREAL_ENGINE_SOURCE>/UnrealEngine-release/UnrealEngine-release/Engine/Source/Editor/ContentBrowserData/Public/IContentBrowserDataModule.h
-<UNREAL_ENGINE_SOURCE>/UnrealEngine-release/UnrealEngine-release/Engine/Source/Editor/ContentBrowserData/Public/ContentBrowserItemData.h
-<UNREAL_ENGINE_SOURCE>/UnrealEngine-release/UnrealEngine-release/Engine/Source/Editor/MaterialEditor/Private/MaterialEditor.cpp
-<UNREAL_ENGINE_SOURCE>/UnrealEngine-release/UnrealEngine-release/Engine/Source/Editor/BehaviorTreeEditor/Private/BehaviorTreeEditor.cpp
+I:/UECode/UnrealEngine-release/UnrealEngine-release/Engine/Source/Editor/UnrealEd/Private/LevelEditorViewport.cpp
+I:/UECode/UnrealEngine-release/UnrealEngine-release/Engine/Source/Editor/UnrealEd/Private/SEditorViewport.cpp
+I:/UECode/UnrealEngine-release/UnrealEngine-release/Engine/Source/Editor/UnrealEd/Private/Kismet2/DebuggerCommands.cpp
+I:/UECode/UnrealEngine-release/UnrealEngine-release/Engine/Source/Editor/MainFrame/Private/Frame/MainFrameActions.cpp
+I:/UECode/UnrealEngine-release/UnrealEngine-release/Engine/Source/Editor/ContentBrowserData/Public/IContentBrowserDataModule.h
+I:/UECode/UnrealEngine-release/UnrealEngine-release/Engine/Source/Editor/ContentBrowserData/Public/ContentBrowserItemData.h
+I:/UECode/UnrealEngine-release/UnrealEngine-release/Engine/Source/Editor/MaterialEditor/Private/MaterialEditor.cpp
+I:/UECode/UnrealEngine-release/UnrealEngine-release/Engine/Source/Editor/BehaviorTreeEditor/Private/BehaviorTreeEditor.cpp
 ```
 
 UE 的编辑器创作流程核心是：
@@ -230,14 +230,14 @@ ContentBrowserDataSubsystem 把资源浏览收敛到统一数据入口。
 源码参考：
 
 ```text
-<GODOT_SOURCE>/godot-master/godot-master/editor/editor_node.h
-<GODOT_SOURCE>/godot-master/godot-master/editor/editor_node.cpp
-<GODOT_SOURCE>/godot-master/godot-master/editor/editor_interface.cpp
-<GODOT_SOURCE>/godot-master/godot-master/editor/docks/filesystem_dock.cpp
-<GODOT_SOURCE>/godot-master/godot-master/editor/docks/scene_tree_dock.cpp
-<GODOT_SOURCE>/godot-master/godot-master/editor/run/editor_run_bar.cpp
-<GODOT_SOURCE>/godot-master/godot-master/editor/export/project_export.cpp
-<GODOT_SOURCE>/godot-master/godot-master/editor/register_editor_types.cpp
+I:/godotcode/godot-master/godot-master/editor/editor_node.h
+I:/godotcode/godot-master/godot-master/editor/editor_node.cpp
+I:/godotcode/godot-master/godot-master/editor/editor_interface.cpp
+I:/godotcode/godot-master/godot-master/editor/docks/filesystem_dock.cpp
+I:/godotcode/godot-master/godot-master/editor/docks/scene_tree_dock.cpp
+I:/godotcode/godot-master/godot-master/editor/run/editor_run_bar.cpp
+I:/godotcode/godot-master/godot-master/editor/export/project_export.cpp
+I:/godotcode/godot-master/godot-master/editor/register_editor_types.cpp
 ```
 
 Godot 的编辑器创作流程核心是：
@@ -276,11 +276,11 @@ Workflow state 应该独立成清晰模块，而不是继续膨胀 EditorSession
 源码参考：
 
 ```text
-<BEVY_SOURCE>/bevy-main/bevy-main/crates/bevy_app/src/app.rs
-<BEVY_SOURCE>/bevy-main/bevy-main/crates/bevy_app/src/sub_app.rs
-<BEVY_SOURCE>/bevy-main/bevy-main/crates/bevy_ecs/src/lib.rs
-<BEVY_SOURCE>/bevy-main/bevy-main/crates/bevy_reflect/src/serde/mod.rs
-<BEVY_SOURCE>/bevy-main/bevy-main/crates/bevy_asset/src/lib.rs
+I:/BevyCode/bevy-main/bevy-main/crates/bevy_app/src/app.rs
+I:/BevyCode/bevy-main/bevy-main/crates/bevy_app/src/sub_app.rs
+I:/BevyCode/bevy-main/bevy-main/crates/bevy_ecs/src/lib.rs
+I:/BevyCode/bevy-main/bevy-main/crates/bevy_reflect/src/serde/mod.rs
+I:/BevyCode/bevy-main/bevy-main/crates/bevy_asset/src/lib.rs
 ```
 
 Bevy 没有成熟官方 Unity/UE 式编辑器，但它给我们两个底层启发：

@@ -40,8 +40,8 @@ AI 生成项目逻辑时应该使用什么时间入口。
 本地源码参考：
 
 ```text
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Runtime\Export\Time\Time.bindings.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Runtime\Export\PlayerLoop\PlayerLoop.bindings.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Runtime\Export\Time\Time.bindings.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Runtime\Export\PlayerLoop\PlayerLoop.bindings.cs
 ```
 
 Unity 的核心心智：

@@ -122,9 +122,9 @@ UE 的项目逻辑通过 C++ / Blueprint 进入 Actor / Component Tick，再由 
 源码参考：
 
 ```text
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Engine\Private\TickTaskManager.cpp
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Engine\Private\Actor.cpp
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Engine\Private\Components\ActorComponent.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Engine\Private\TickTaskManager.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Engine\Private\Actor.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Engine\Private\Components\ActorComponent.cpp
 ```
 
 可学习：
@@ -149,7 +149,7 @@ Unity 的项目逻辑通过 C# 脚本编译后进入 PlayerLoop。
 源码参考：
 
 ```text
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Runtime\Export\PlayerLoop\PlayerLoop.bindings.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Runtime\Export\PlayerLoop\PlayerLoop.bindings.cs
 ```
 
 可学习：
@@ -173,7 +173,7 @@ Bevy 通过 System / Schedule / World 执行项目逻辑。
 源码参考：
 
 ```text
-<BEVY_SOURCE>\bevy-main\bevy-main\crates\bevy_ecs\src\schedule
+I:\BevyCode\bevy-main\bevy-main\crates\bevy_ecs\src\schedule
 ```
 
 可学习：

@@ -73,16 +73,16 @@ Capability-aware Tool Catalog 是 AI 的“当前能力解释器”：所有已�
 ### 5.1 Unity
 
 ```text
-<UNITY_CS_REFERENCE>/UnityCsReference-master/UnityCsReference-master/Editor/Mono/Tools/EditorTool.cs
+I:/UnityCode/UnityCsReference-master/UnityCsReference-master/Editor/Mono/Tools/EditorTool.cs
   EditorTool.IsAvailable()
 
-<UNITY_CS_REFERENCE>/UnityCsReference-master/UnityCsReference-master/Editor/Mono/Tools/EditorToolManager.cs
+I:/UnityCode/UnityCsReference-master/UnityCsReference-master/Editor/Mono/Tools/EditorToolManager.cs
   在 UI / execute 前重新检查 IsAvailable()
 
-<UNITY_CS_REFERENCE>/UnityCsReference-master/UnityCsReference-master/Editor/Mono/BuildPipeline/BuildPipeline.bindings.cs
+I:/UnityCode/UnityCsReference-master/UnityCsReference-master/Editor/Mono/BuildPipeline/BuildPipeline.bindings.cs
   BuildPipeline.IsBuildTargetSupported()
 
-<UNITY_CS_REFERENCE>/UnityCsReference-master/UnityCsReference-master/Editor/Mono/MenuItem.cs
+I:/UnityCode/UnityCsReference-master/UnityCsReference-master/Editor/Mono/MenuItem.cs
   validate function
 ```
 
@@ -93,16 +93,16 @@ Capability-aware Tool Catalog 是 AI 的“当前能力解释器”：所有已�
 ### 5.2 Unreal Engine
 
 ```text
-<UNREAL_ENGINE_SOURCE>/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/Core/Private/Features/ModularFeatures.cpp
+I:/UECode/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/Core/Private/Features/ModularFeatures.cpp
   RegisterModularFeature
 
-<UNREAL_ENGINE_SOURCE>/UnrealEngine-release/UnrealEngine-release/Engine/Source/Developer/TargetPlatform/Public/Interfaces/ITargetPlatformSettings.h
+I:/UECode/UnrealEngine-release/UnrealEngine-release/Engine/Source/Developer/TargetPlatform/Public/Interfaces/ITargetPlatformSettings.h
   SupportsFeature
 
-<UNREAL_ENGINE_SOURCE>/UnrealEngine-release/UnrealEngine-release/Engine/Source/Developer/TargetPlatform/Public/Interfaces/ITargetPlatformControls.h
+I:/UECode/UnrealEngine-release/UnrealEngine-release/Engine/Source/Developer/TargetPlatform/Public/Interfaces/ITargetPlatformControls.h
   IsSdkInstalled
 
-<UNREAL_ENGINE_SOURCE>/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/Slate/Public/Framework/Commands/UIAction.h
+I:/UECode/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/Slate/Public/Framework/Commands/UIAction.h
   FUIAction::CanExecute
 ```
 
@@ -113,10 +113,10 @@ Capability-aware Tool Catalog 是 AI 的“当前能力解释器”：所有已�
 ### 5.3 Godot
 
 ```text
-<GODOT_SOURCE>/godot/editor/export/editor_export_platform.cpp
+I:/godotAllCode/godot/editor/export/editor_export_platform.cpp
   can_export() 聚合平台、插件和项目配置，并返回原因
 
-<GODOT_SOURCE>/godot/editor/settings/editor_feature_profile.h
+I:/godotAllCode/godot/editor/settings/editor_feature_profile.h
   feature/class/property availability
 ```
 
@@ -127,10 +127,10 @@ Capability-aware Tool Catalog 是 AI 的“当前能力解释器”：所有已�
 ### 5.4 Bevy
 
 ```text
-<BEVY_SOURCE>/bevy-main/bevy-main/crates/bevy_app/src/plugin.rs
+I:/BevyCode/bevy-main/bevy-main/crates/bevy_app/src/plugin.rs
   Plugin::ready(&App)
 
-<BEVY_SOURCE>/bevy-main/bevy-main/crates/bevy_app/src/app.rs
+I:/BevyCode/bevy-main/bevy-main/crates/bevy_app/src/app.rs
   plugins_state() / is_plugin_added<T>()
 ```
 

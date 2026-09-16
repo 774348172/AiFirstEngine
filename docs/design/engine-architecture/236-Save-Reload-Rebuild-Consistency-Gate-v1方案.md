@@ -256,12 +256,12 @@ Runtime texture loader
 本地源码：
 
 ```text
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\EditorSceneManager.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Modules\AssetDatabase\Editor\ScriptBindings\AssetDatabase.bindings.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\AssetModificationProcessor.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\BuildPipeline\DataBuildDirtyTracker.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\BuildPipeline\BuildPipeline.bindings.cs
-<UNITY_LEGACY_SOURCE>\Editor\Src\AssetPipeline\AssetInterface.cpp
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\EditorSceneManager.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Modules\AssetDatabase\Editor\ScriptBindings\AssetDatabase.bindings.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\AssetModificationProcessor.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\BuildPipeline\DataBuildDirtyTracker.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\BuildPipeline\BuildPipeline.bindings.cs
+I:\Unity4.3.1f1\Editor\Src\AssetPipeline\AssetInterface.cpp
 ```
 
 关键实现：
@@ -306,12 +306,12 @@ https://docs.unity3d.com/6000.0/Documentation/ScriptReference/AssetDatabase.Forc
 本地源码：
 
 ```text
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\UnrealEd\Private\FileHelpers.cpp
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\UnrealEd\Private\PackageTools.cpp
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\CoreUObject\Private\UObject\PackageReload.cpp
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\UnrealEd\Private\Cooker\DiffPackageWriter.cpp
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\UnrealEd\Private\Cooker\CookDeterminismManager.cpp
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\UnrealEd\Private\Commandlets\DiffCookCommandlet.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\UnrealEd\Private\FileHelpers.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\UnrealEd\Private\PackageTools.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\CoreUObject\Private\UObject\PackageReload.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\UnrealEd\Private\Cooker\DiffPackageWriter.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\UnrealEd\Private\Cooker\CookDeterminismManager.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\UnrealEd\Private\Commandlets\DiffCookCommandlet.cpp
 ```
 
 关键实现：
@@ -353,10 +353,10 @@ https://dev.epicgames.com/documentation/en-us/unreal-engine/derived-data-cache
 本地源码：
 
 ```text
-<GODOT_SOURCE>\godot\editor\editor_node.cpp
-<GODOT_SOURCE>\godot\core\io\resource_saver.cpp
-<GODOT_SOURCE>\godot\editor\export\editor_export_platform.cpp
-<GODOT_SOURCE>\godot\tests\core\io\test_resource.cpp
+I:\godotAllCode\godot\editor\editor_node.cpp
+I:\godotAllCode\godot\core\io\resource_saver.cpp
+I:\godotAllCode\godot\editor\export\editor_export_platform.cpp
+I:\godotAllCode\godot\tests\core\io\test_resource.cpp
 ```
 
 关键实现：

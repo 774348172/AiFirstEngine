@@ -53,12 +53,12 @@ AUI Document / HUD Asset
 Unity4.3 关键源码入口：
 
 ```text
-<UNITY_LEGACY_SOURCE>\Runtime\IMGUI
-<UNITY_LEGACY_SOURCE>\Editor\Src\Application.cpp
-<UNITY_LEGACY_SOURCE>\Editor\Src\Utility\SerializedProperty.cpp
-<UNITY_LEGACY_SOURCE>\Editor\Src\Undo
-<UNITY_LEGACY_SOURCE>\Runtime\GfxDevice
-<UNITY_LEGACY_SOURCE>\Runtime\Camera
+I:\Unity4.3.1f1\Runtime\IMGUI
+I:\Unity4.3.1f1\Editor\Src\Application.cpp
+I:\Unity4.3.1f1\Editor\Src\Utility\SerializedProperty.cpp
+I:\Unity4.3.1f1\Editor\Src\Undo
+I:\Unity4.3.1f1\Runtime\GfxDevice
+I:\Unity4.3.1f1\Runtime\Camera
 ```
 
 复查结论：

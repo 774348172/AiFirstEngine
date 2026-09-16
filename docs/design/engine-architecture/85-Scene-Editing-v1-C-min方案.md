@@ -61,11 +61,11 @@ PreviewWorldSyncã€‚
 æºç å‚è€ƒï¼š
 
 ```text
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\SceneView\SceneView.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\Tools\BuiltinTools.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\Tools\EditorToolManager.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\EditorSceneManager.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\SceneHierarchy.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\SceneView\SceneView.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\Tools\BuiltinTools.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\Tools\EditorToolManager.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\EditorSceneManager.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\SceneHierarchy.cs
 ```
 
 Unity çš„æ ¸å¿ƒåšæ³•ï¼š
@@ -101,11 +101,11 @@ Unity ä¸ç›´æ¥ç…§æ¬ï¼š
 æºç å‚è€ƒï¼š
 
 ```text
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\LevelEditor\Public\SLevelViewport.h
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\UnrealEd\Private\LevelEditorViewport.cpp
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\UnrealEd\Private\EditorActor.cpp
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\UnrealEd\Private\EditorServer.cpp
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\UnrealEd\Private\AssetSelection.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\LevelEditor\Public\SLevelViewport.h
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\UnrealEd\Private\LevelEditorViewport.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\UnrealEd\Private\EditorActor.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\UnrealEd\Private\EditorServer.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\UnrealEd\Private\AssetSelection.cpp
 ```
 
 UE çš„æ ¸å¿ƒåšæ³•ï¼š
@@ -959,22 +959,22 @@ Asset Browser drag into Sceneã€‚
 å¤æ‚ Inspector ç¼–è¾‘å™¨ã€‚
 ```
 
-## 2026-06-28 ÊµÊ©ï¿½ï¿½É²ï¿½ï¿½ä£º85 Scene Editing v1 C-min
+## 2026-06-28 ÊµÊ©Íê³É²¹³ä£º85 Scene Editing v1 C-min
 
 ```text
-Ê©ï¿½ï¿½ï¿½Äµï¿½ï¿½ï¿½ï¿½ï¿½É²ï¿½ï¿½éµµï¿½ï¿½Ê©ï¿½ï¿½ï¿½Äµï¿½/ï¿½ï¿½ï¿½ï¿½ï¿½/85-ï¿½ï¿½Ç°ï¿½ï¿½ï¿½Ô¶ï¿½ï¿½ï¿½Ê©ï¿½ï¿½ï¿½Äµï¿½-SceneEditing-v1-C-min.md
-ï¿½×¶ï¿½ï¿½ï¿½É¼ï¿½Â¼ï¿½ï¿½ï¿½×¶ï¿½ï¿½ï¿½É¼ï¿½Â¼/2026-06-28-SceneEditing-v1-C-min/00-ï¿½ï¿½ï¿½ï¿½.md
+Ê©¹¤ÎÄµµÒÑÍê³É²¢¹éµµ£ºÊ©¹¤ÎÄµµ/ÒÑÍê³É/85-µ±Ç°¿É×Ô¶¯»¯Ê©¹¤ÎÄµµ-SceneEditing-v1-C-min.md
+½×¶ÎÍê³É¼ÇÂ¼£º½×¶ÎÍê³É¼ÇÂ¼/2026-06-28-SceneEditing-v1-C-min/00-×ÜÀÀ.md
 
-ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ø£ï¿½
+´úÂëÂäµØ£º
 rust/crates/editor_core/src/scene_editing.rs
 rust/crates/editor_core/src/lib.rs
 
-ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-EditorSceneDocument / EditorSceneEntity / SceneSelection / SceneEditRequest / SceneEditCommand / SceneEditTransaction / SceneEditTransactionReport / SceneDirtyState / SceneUndoStack / PreviewWorldSync full rebuild / SceneSavePipeline / EditorSession headless Scene Editing ï¿½ï¿½ï¿½ï¿½ / UI model ï¿½ï¿½Ğ¡Ë¢ï¿½ï¿½ / Console diagnostic ï¿½ï¿½Ğ¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ÒÑÂäµØÄÜÁ¦£º
+EditorSceneDocument / EditorSceneEntity / SceneSelection / SceneEditRequest / SceneEditCommand / SceneEditTransaction / SceneEditTransactionReport / SceneDirtyState / SceneUndoStack / PreviewWorldSync full rebuild / SceneSavePipeline / EditorSession headless Scene Editing ½ÓÈë / UI model ×îĞ¡Ë¢ĞÂ / Console diagnostic ×îĞ¡·´À¡¡£
 
-ï¿½ï¿½Ö¤ï¿½ï¿½
-cargo test -p editor_coreï¿½ï¿½59 passed
-cargo test --workspaceï¿½ï¿½passed
+ÑéÖ¤£º
+cargo test -p editor_core£º59 passed
+cargo test --workspace£ºpassed
 
-ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Â·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê©ï¿½ï¿½ï¿½Äµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Êµ UI ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ë¡¢Inspector ï¿½ï¿½Ğ¡ï¿½É±à¼­ï¿½Ö¶Î¡ï¿½Hierarchy ï¿½ï¿½Ğ¡ï¿½à¼­ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Viewport picking / Gizmo C-minï¿½ï¿½
+ºóĞøÈÔĞèĞÂ·½°¸»òĞÂÊ©¹¤ÎÄµµ´¦Àí£ºÕæÊµ UI ÃüÁî½ÓÈë¡¢Inspector ×îĞ¡¿É±à¼­×Ö¶Î¡¢Hierarchy ×îĞ¡±à¼­²Ù×÷¡¢Viewport picking / Gizmo C-min¡£
 ```

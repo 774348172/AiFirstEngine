@@ -106,9 +106,9 @@ UEnhancedPlayerInput
 关键源码参考：
 
 ```text
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Plugins\EnhancedInput\Source\EnhancedInput\Private\EnhancedInputSubsystems.cpp
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Plugins\EnhancedInput\Source\EnhancedInput\Private\InputMappingContext.cpp
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Plugins\EnhancedInput\Source\EnhancedInput\Public\EnhancedInputSubsystemInterface.h
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Plugins\EnhancedInput\Source\EnhancedInput\Private\EnhancedInputSubsystems.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Plugins\EnhancedInput\Source\EnhancedInput\Private\InputMappingContext.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Plugins\EnhancedInput\Source\EnhancedInput\Public\EnhancedInputSubsystemInterface.h
 ```
 
 UE 的路线是：
@@ -148,9 +148,9 @@ https://docs.unity3d.com/Packages/com.unity.inputsystem@1.12/manual/Actions.html
 UnityCsReference 中输入后端相关参考：
 
 ```text
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Modules\Input
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Modules\InputForUI
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\Inspector\PlayerSettingsEditor\PlayerSettingsEditor.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Modules\Input
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Modules\InputForUI
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\Inspector\PlayerSettingsEditor\PlayerSettingsEditor.cs
 ```
 
 Unity 的路线是：
@@ -175,8 +175,8 @@ Godot 的输入映射是 `InputMap`。
 关键源码参考：
 
 ```text
-<GODOT_SOURCE>\godot-master\godot-master\main\main.cpp
-<GODOT_SOURCE>\godot-master\godot-master\core\input\input_map.cpp
+I:\godotcode\godot-master\godot-master\main\main.cpp
+I:\godotcode\godot-master\godot-master\core\input\input_map.cpp
 ```
 
 Godot 启动时会从 ProjectSettings 的 `input/*` 加载项目输入：
@@ -206,9 +206,9 @@ InputPlugin
 关键源码参考：
 
 ```text
-<BEVY_SOURCE>\bevy-main\bevy-main\crates\bevy_input\src\lib.rs
-<BEVY_SOURCE>\bevy-main\bevy-main\crates\bevy_input\src\keyboard.rs
-<BEVY_SOURCE>\bevy-main\bevy-main\crates\bevy_input\src\mouse.rs
+I:\BevyCode\bevy-main\bevy-main\crates\bevy_input\src\lib.rs
+I:\BevyCode\bevy-main\bevy-main\crates\bevy_input\src\keyboard.rs
+I:\BevyCode\bevy-main\bevy-main\crates\bevy_input\src\mouse.rs
 ```
 
 Bevy 的核心层偏底层，高层 Action Mapping 通常由项目或插件提供。

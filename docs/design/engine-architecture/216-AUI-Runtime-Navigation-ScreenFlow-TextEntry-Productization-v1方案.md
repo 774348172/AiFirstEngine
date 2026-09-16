@@ -102,16 +102,16 @@ IME 没有 schema，后续中文输入会被临时补丁污染 input / AUI / edi
 本机源码参考：
 
 ```text
-<UNITY_UI_REFERENCE>\com.unity.ugui\Runtime\UGUI\EventSystem\InputModules\StandaloneInputModule.cs
+I:\com.unity.ugui\com.unity.ugui\Runtime\UGUI\EventSystem\InputModules\StandaloneInputModule.cs
   Process
   SendMoveEventToSelectedObject
   SendSubmitEventToSelectedObject
   submitButton / cancelButton
 
-<UNITY_UI_REFERENCE>\com.unity.ugui\Runtime\UGUI\UI\Core\Selectable.cs
+I:\com.unity.ugui\com.unity.ugui\Runtime\UGUI\UI\Core\Selectable.cs
   navigation / FindSelectable
 
-<UNITY_UI_REFERENCE>\com.unity.ugui\Runtime\UGUI\UI\Core\InputField.cs
+I:\com.unity.ugui\com.unity.ugui\Runtime\UGUI\UI\Core\InputField.cs
   compositionString
   OnUpdateSelected
   Append
@@ -140,22 +140,22 @@ InputField 是 focus + edit buffer + caret + selection + composition + submit �
 本机源码参考：
 
 ```text
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Plugins\Runtime\CommonUI\Source\CommonUI\Public\CommonActivatableWidget.h
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Plugins\Runtime\CommonUI\Source\CommonUI\Public\CommonActivatableWidget.h
   UCommonActivatableWidget
   ActivateWidget
   DeactivateWidget
   NativeOnHandleBackAction
 
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Plugins\Runtime\CommonUI\Source\CommonUI\Public\Widgets\CommonActivatableWidgetContainer.h
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Plugins\Runtime\CommonUI\Source\CommonUI\Public\Widgets\CommonActivatableWidgetContainer.h
   UCommonActivatableWidgetStack
   UCommonActivatableWidgetQueue
 
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Plugins\Runtime\CommonUI\Source\CommonUI\Public\Input\CommonUIActionRouterBase.h
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Plugins\Runtime\CommonUI\Source\CommonUI\Public\Input\CommonUIActionRouterBase.h
   GetLeafmostActivatableWidget
   SetActiveRoot
   RegisterWidgetBindings
 
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Plugins\Runtime\CommonUI\Source\CommonUI\Private\Input\UIActionRouterTypes.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Plugins\Runtime\CommonUI\Source\CommonUI\Private\Input\UIActionRouterTypes.cpp
   FActivatableTreeNode
   FActivatableTreeRoot
   UpdateLeafmostActiveNode
@@ -183,15 +183,15 @@ Screen stack 和 focus restore 是运行时状态，不是写回 UI 资源的结
 本机源码参考：
 
 ```text
-<GODOT_SOURCE>\godot-master\godot-master\scene\gui\control.*
+I:\GodotCode\godot-master\godot-master\scene\gui\control.*
   Control focus / gui input / focus neighbor。
 
-<GODOT_SOURCE>\godot-master\godot-master\scene\gui\line_edit.cpp
+I:\GodotCode\godot-master\godot-master\scene\gui\line_edit.cpp
   LineEdit edit / unedit / is_editing。
   has_ime_text / cancel_ime / apply_ime。
   set_text / get_text / caret / selection / insert_text_at_caret / delete_text。
 
-<GODOT_SOURCE>\godot-master\godot-master\scene\gui\text_edit.*
+I:\GodotCode\godot-master\godot-master\scene\gui\text_edit.*
   TextEdit 多行文本编辑和 caret/selection。
 ```
 

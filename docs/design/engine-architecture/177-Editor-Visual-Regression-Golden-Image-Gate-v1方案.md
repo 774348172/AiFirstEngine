@@ -54,9 +54,9 @@ UI 视觉没有退化
 参考路径：
 
 ```text
-<UNREAL_ENGINE_SOURCE>/UnrealEngine-release/UnrealEngine-release/Engine/Source/Developer/ScreenShotComparisonTools
-<UNREAL_ENGINE_SOURCE>/UnrealEngine-release/UnrealEngine-release/Engine/Source/Developer/AutomationController
-<UNREAL_ENGINE_SOURCE>/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/Engine/Private/GameViewportClient.cpp
+I:/UECode/UnrealEngine-release/UnrealEngine-release/Engine/Source/Developer/ScreenShotComparisonTools
+I:/UECode/UnrealEngine-release/UnrealEngine-release/Engine/Source/Developer/AutomationController
+I:/UECode/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/Engine/Private/GameViewportClient.cpp
 ```
 
 UE 的思路是：
@@ -81,8 +81,8 @@ baseline 更新是显式动作，不应该静默覆盖。
 参考路径：
 
 ```text
-<UNITY_CS_REFERENCE>/UnityCsReference-master/UnityCsReference-master/Editor/Mono/SceneView/SceneView.cs
-<UNITY_CS_REFERENCE>/UnityCsReference-master/UnityCsReference-master/Modules/DeviceSimulatorEditor/SimulatorWindow.cs
+I:/UnityCode/UnityCsReference-master/UnityCsReference-master/Editor/Mono/SceneView/SceneView.cs
+I:/UnityCode/UnityCsReference-master/UnityCsReference-master/Modules/DeviceSimulatorEditor/SimulatorWindow.cs
 ```
 
 Unity 编辑器侧通常通过：
@@ -106,8 +106,8 @@ EditorWindow / GUIView / UI Toolkit repaint
 参考路径：
 
 ```text
-<GODOT_SOURCE>/godot-master/godot-master/tests/test_main.cpp
-<GODOT_SOURCE>/godot-master/godot-master/tests/scene/test_viewport.cpp
+I:/godotcode/godot-master/godot-master/tests/test_main.cpp
+I:/godotcode/godot-master/godot-master/tests/scene/test_viewport.cpp
 ```
 
 Godot 的测试更强调：

@@ -57,10 +57,10 @@ Actor / Component
 源码参考：
 
 ```text
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Engine\Classes\Components\ActorComponent.h
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Engine\Private\Components\ActorComponent.cpp
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Engine\Private\Components\PrimitiveComponent.cpp
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Engine\Private\StaticMeshSceneProxy.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Engine\Classes\Components\ActorComponent.h
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Engine\Private\Components\ActorComponent.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Engine\Private\Components\PrimitiveComponent.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Engine\Private\StaticMeshSceneProxy.cpp
 ```
 
 关键启发：
@@ -85,9 +85,9 @@ Main World
 源码参考：
 
 ```text
-<BEVY_SOURCE>\bevy-main\bevy-main\crates\bevy_render\src\extract_component.rs
-<BEVY_SOURCE>\bevy-main\bevy-main\crates\bevy_sprite_render\src\lib.rs
-<BEVY_SOURCE>\bevy-main\bevy-main\crates\bevy_sprite_render\src\render\mod.rs
+I:\BevyCode\bevy-main\bevy-main\crates\bevy_render\src\extract_component.rs
+I:\BevyCode\bevy-main\bevy-main\crates\bevy_sprite_render\src\lib.rs
+I:\BevyCode\bevy-main\bevy-main\crates\bevy_sprite_render\src\render\mod.rs
 ```
 
 关键启发：
@@ -110,8 +110,8 @@ Node / CanvasItem / VisualInstance
 源码参考：
 
 ```text
-<GODOT_SOURCE>\godot-master\godot-master\scene\3d\visual_instance_3d.cpp
-<GODOT_SOURCE>\godot-master\godot-master\scene\2d\sprite_2d.cpp
+I:\godotcode\godot-master\godot-master\scene\3d\visual_instance_3d.cpp
+I:\godotcode\godot-master\godot-master\scene\2d\sprite_2d.cpp
 ```
 
 关键启发：
@@ -127,9 +127,9 @@ Unity 表面上有 `SpriteRenderer / MeshRenderer / Light` 等具体组件，但
 源码参考：
 
 ```text
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Runtime\2D\Common\ScriptBindings\SpriteRenderer.bindings.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Runtime\Export\Graphics\GraphicsRenderers.bindings.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Runtime\Transform\ScriptBindings\TransformHierarchy.bindings.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Runtime\2D\Common\ScriptBindings\SpriteRenderer.bindings.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Runtime\Export\Graphics\GraphicsRenderers.bindings.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Runtime\Transform\ScriptBindings\TransformHierarchy.bindings.cs
 ```
 
 关键启发：

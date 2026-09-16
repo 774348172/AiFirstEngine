@@ -43,11 +43,11 @@ Stop Play 后运行时改动丢弃。
 源码参考：
 
 ```text
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Modules\HierarchyEditor\Managed\HierarchyWindow.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Modules\Hierarchy\Managed\HierarchyView.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Modules\HierarchyCore\ScriptBindings\Hierarchy.bindings.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\Selection\Selection.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\Inspector
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Modules\HierarchyEditor\Managed\HierarchyWindow.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Modules\Hierarchy\Managed\HierarchyView.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Modules\HierarchyCore\ScriptBindings\Hierarchy.bindings.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\Selection\Selection.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\Inspector
 ```
 
 可学习：
@@ -72,9 +72,9 @@ UE 对标是 World Outliner + Details Panel + PIE World。
 源码参考：
 
 ```text
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\UnrealEd\Public\PlayInEditorDataTypes.h
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\UnrealEd\Private\PlayLevel.cpp
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\UnrealEd\Private\Kismet2\DebuggerCommands.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\UnrealEd\Public\PlayInEditorDataTypes.h
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\UnrealEd\Private\PlayLevel.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\UnrealEd\Private\Kismet2\DebuggerCommands.cpp
 Engine\Source\Editor\SceneOutliner
 Engine\Source\Editor\PropertyEditor
 ```

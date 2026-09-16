@@ -48,9 +48,9 @@ AI / Trace / Report 如何看懂渲染提交是否卡住、丢帧、失败或延
 源码参考：
 
 ```text
-<UNREAL_ENGINE_SOURCE>/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/RenderCore/Public/RenderingThread.h
-<UNREAL_ENGINE_SOURCE>/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/RenderCore/Public/RenderCommandFence.h
-<UNREAL_ENGINE_SOURCE>/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/RenderCore/Private/RenderResource.cpp
+I:/UECode/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/RenderCore/Public/RenderingThread.h
+I:/UECode/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/RenderCore/Public/RenderCommandFence.h
+I:/UECode/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/RenderCore/Private/RenderResource.cpp
 ```
 
 UE 的核心做法：
@@ -84,8 +84,8 @@ Fence 是资源释放、shutdown、强同步的基础。
 源码参考：
 
 ```text
-<UNITY_CS_REFERENCE>/UnityCsReference-master/UnityCsReference-master/Runtime/Export/RenderPipeline/ScriptableRenderContext.cs
-<UNITY_CS_REFERENCE>/UnityCsReference-master/UnityCsReference-master/Runtime/Export/PlayerLoop/PlayerLoop.bindings.cs
+I:/UnityCode/UnityCsReference-master/UnityCsReference-master/Runtime/Export/RenderPipeline/ScriptableRenderContext.cs
+I:/UnityCode/UnityCsReference-master/UnityCsReference-master/Runtime/Export/PlayerLoop/PlayerLoop.bindings.cs
 ```
 
 Unity 的核心做法：
@@ -115,9 +115,9 @@ SRP 使用 ScriptableRenderContext.ExecuteCommandBuffer / Submit 提交渲染命
 源码参考：
 
 ```text
-<BEVY_SOURCE>/bevy-main/bevy-main/crates/bevy_render/src/lib.rs
-<BEVY_SOURCE>/bevy-main/bevy-main/crates/bevy_render/src/pipelined_rendering.rs
-<BEVY_SOURCE>/bevy-main/bevy-main/crates/bevy_render/src/render_asset.rs
+I:/BevyCode/bevy-main/bevy-main/crates/bevy_render/src/lib.rs
+I:/BevyCode/bevy-main/bevy-main/crates/bevy_render/src/pipelined_rendering.rs
+I:/BevyCode/bevy-main/bevy-main/crates/bevy_render/src/render_asset.rs
 ```
 
 Bevy 的核心做法：

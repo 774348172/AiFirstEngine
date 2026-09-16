@@ -1122,8 +1122,8 @@ rust/crates/editor_core/src/tests/ai_service_tests.rs
 rust/crates/editor_core/src/tests/llm_patch_source_tests.rs
 rust/crates/editor_window_winit/src/application.rs
 
-<USER_HOME>/zenghaoran/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ureq-3.3.0/src/agent.rs
-<USER_HOME>/zenghaoran/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ureq-3.3.0/src/config.rs
+C:/Users/zenghaoran/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ureq-3.3.0/src/agent.rs
+C:/Users/zenghaoran/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ureq-3.3.0/src/config.rs
 
 https://doc.rust-lang.org/std/thread/struct.JoinHandle.html
 https://docs.unity.cn/ScriptReference/Networking.UnityWebRequest.Abort.html

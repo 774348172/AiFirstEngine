@@ -68,10 +68,10 @@ GameView maximizeOnPlay / Play Maximized
 源码 / 文档参考：
 
 ```text
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\EditorApplication.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\EditorApplication.bindings.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\PlayModeView\PlayModeView.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\GameView\GameView.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\EditorApplication.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\EditorApplication.bindings.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\PlayModeView\PlayModeView.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\GameView\GameView.cs
 框架设计/Unity源码参考/EditorPlayMode-GameView-BuildAndRun源码参考.md
 https://docs.unity3d.com/Manual/GameView.html
 https://github.com/Unity-Technologies/UnityCsReference/blob/master/Editor/Mono/GameView/GameView.cs
@@ -107,10 +107,10 @@ FRequestPlaySessionParams
 源码参考：
 
 ```text
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\UnrealEd\Public\PlayInEditorDataTypes.h
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\UnrealEd\Private\PlayLevel.cpp
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\UnrealEd\Private\PlayLevelNewProcess.cpp
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\UnrealEd\Private\Kismet2\DebuggerCommands.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\UnrealEd\Public\PlayInEditorDataTypes.h
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\UnrealEd\Private\PlayLevel.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\UnrealEd\Private\PlayLevelNewProcess.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\UnrealEd\Private\Kismet2\DebuggerCommands.cpp
 框架设计/UE源码参考/EditorPlaySession-PIE-Standalone源码参考.md
 ```
 
@@ -145,9 +145,9 @@ EditorRunBar
 源码参考：
 
 ```text
-<GODOT_SOURCE>\godot-master\godot-master\editor\run\editor_run_bar.cpp
-<GODOT_SOURCE>\godot-master\godot-master\editor\run\editor_run.cpp
-<GODOT_SOURCE>\godot-master\godot-master\editor\run\game_view_plugin.cpp
+I:\godotcode\godot-master\godot-master\editor\run\editor_run_bar.cpp
+I:\godotcode\godot-master\godot-master\editor\run\editor_run.cpp
+I:\godotcode\godot-master\godot-master\editor\run\game_view_plugin.cpp
 框架设计/Godot源码参考/11-EditorRun-GameView-PlaySession源码参考.md
 ```
 
@@ -172,9 +172,9 @@ App
 源码参考：
 
 ```text
-<BEVY_SOURCE>\bevy-main\bevy-main\crates\bevy_app\src\app.rs
-<BEVY_SOURCE>\bevy-main\bevy-main\crates\bevy_app\src\schedule_runner.rs
-<BEVY_SOURCE>\bevy-main\bevy-main\crates\bevy_winit\src\state.rs
+I:\BevyCode\bevy-main\bevy-main\crates\bevy_app\src\app.rs
+I:\BevyCode\bevy-main\bevy-main\crates\bevy_app\src\schedule_runner.rs
+I:\BevyCode\bevy-main\bevy-main\crates\bevy_winit\src\state.rs
 框架设计/Bevy源码参考/14-AppRunner-Winit-ScheduleRunner-RunSession源码参考.md
 ```
 

@@ -44,19 +44,19 @@ PublicationIdentity    = surfaceId + surfaceGeneration + publicationIndex
 Tower Defense P0-5 Gate G fresh run：
 
 ```text
-<TOWER_RUN_ROOT>\p0-5-gate-g-20260802-121707
+G:\AifeTowerRuns\p0-5-gate-g-20260802-121707
 ```
 
 1280x720 组织阶段 HUD 重叠：
 
 ```text
-<TOWER_RUN_ROOT>\p0-5-gate-g-20260802-121707\evidence\production-authority\tower-gate-g-organizing-1280\organizing-1280x720.png
+G:\AifeTowerRuns\p0-5-gate-g-20260802-121707\evidence\production-authority\tower-gate-g-organizing-1280\organizing-1280x720.png
 ```
 
 1600x900 战斗阶段 GameView 蓝灰空白：
 
 ```text
-<TOWER_RUN_ROOT>\p0-5-gate-g-20260802-121707\evidence\production-authority\tower-gate-g-full-flow-1600\combat-1600x900.png
+G:\AifeTowerRuns\p0-5-gate-g-20260802-121707\evidence\production-authority\tower-gate-g-full-flow-1600\combat-1600x900.png
 ```
 
 264 已解决业务状态等待语义，但明确没有修复视觉缺口。263/P0-5 Gate G 仍保持 blocked。
@@ -147,7 +147,7 @@ Bevy 0.19 使用 `Visibility / InheritedVisibility / ViewVisibility` 分离用�
 源码：
 
 ```text
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\PlayModeView\PlayModeView.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\PlayModeView\PlayModeView.cs
 ```
 
 Unity 6000.6.0a7 的 `PlayModeView.ConfigureTargetTexture` 保留同一个 `m_TargetTexture` 对象；
@@ -160,7 +160,7 @@ Unity 6000.6.0a7 的 `PlayModeView.ConfigureTargetTexture` 保留同一个 `m_Ta
 源码：
 
 ```text
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Engine\Private\Slate\SceneViewport.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Engine\Private\Slate\SceneViewport.cpp
 ```
 
 Unreal 5.8 的 `FSceneViewport` 长期持有 `FSlateRenderTargetRHI`，render-thread backing 通过

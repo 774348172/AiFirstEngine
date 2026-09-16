@@ -82,9 +82,9 @@ Undo / Dirty / Save
 本地源码参考：
 
 ```text
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\Inspector\Core\InspectorWindow.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\GUI
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\Inspector
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\Inspector\Core\InspectorWindow.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\GUI
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\Inspector
 ```
 
 Unity 的启发：
@@ -111,9 +111,9 @@ FScopedTransaction
 本地源码参考：
 
 ```text
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\PropertyEditor\Private\SDetailsView.cpp
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\PropertyEditor\Public\PropertyHandle.h
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\PropertyEditor\Private\UserInterface\PropertyEditor
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\PropertyEditor\Private\SDetailsView.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\PropertyEditor\Public\PropertyHandle.h
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\PropertyEditor\Private\UserInterface\PropertyEditor
 ```
 
 UE 的启发：
@@ -140,9 +140,9 @@ update_property
 本地源码参考：
 
 ```text
-<GODOT_SOURCE>\godot-master\godot-master\editor\inspector\editor_inspector.h
-<GODOT_SOURCE>\godot-master\godot-master\editor\inspector\editor_inspector.cpp
-<GODOT_SOURCE>\godot-master\godot-master\editor\inspector\editor_properties.cpp
+I:\godotcode\godot-master\godot-master\editor\inspector\editor_inspector.h
+I:\godotcode\godot-master\godot-master\editor\inspector\editor_inspector.cpp
+I:\godotcode\godot-master\godot-master\editor\inspector\editor_properties.cpp
 ```
 
 Godot 的启发：

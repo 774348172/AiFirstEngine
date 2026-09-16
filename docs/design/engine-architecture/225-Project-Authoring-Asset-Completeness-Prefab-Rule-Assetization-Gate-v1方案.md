@@ -84,9 +84,9 @@ https://docs.unity3d.com/Manual/class-ScriptableObject.html
 本地源码参考：
 
 ```text
-<UNITY_CS_REFERENCE>/UnityCsReference-master/UnityCsReference-master/Editor/Mono/Prefabs/PrefabUtility.cs
-<UNITY_CS_REFERENCE>/UnityCsReference-master/UnityCsReference-master/Editor/Mono/SceneManagement/StageManager/PrefabStage/PrefabStage.cs
-<UNITY_CS_REFERENCE>/UnityCsReference-master/UnityCsReference-master/Editor/Mono/ProjectBrowser/ProjectWindowUtil.cs
+I:/UnityCode/UnityCsReference-master/UnityCsReference-master/Editor/Mono/Prefabs/PrefabUtility.cs
+I:/UnityCode/UnityCsReference-master/UnityCsReference-master/Editor/Mono/SceneManagement/StageManager/PrefabStage/PrefabStage.cs
+I:/UnityCode/UnityCsReference-master/UnityCsReference-master/Editor/Mono/ProjectBrowser/ProjectWindowUtil.cs
 ```
 
 关键源码点：
@@ -138,9 +138,9 @@ https://dev.epicgames.com/documentation/en-us/unreal-engine/data-assets-in-unrea
 本地源码参考：
 
 ```text
-<UNREAL_ENGINE_SOURCE>/UnrealEngine-release/UnrealEngine-release/Engine/Source/Editor/Kismet/Private/BlueprintEditorViewportContextMenuExtender.cpp
-<UNREAL_ENGINE_SOURCE>/UnrealEngine-release/UnrealEngine-release/Engine/Source/Editor/Kismet/Public/BlueprintEditorModule.h
-<UNREAL_ENGINE_SOURCE>/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/Engine/Classes/Engine/DataAsset.h
+I:/UECode/UnrealEngine-release/UnrealEngine-release/Engine/Source/Editor/Kismet/Private/BlueprintEditorViewportContextMenuExtender.cpp
+I:/UECode/UnrealEngine-release/UnrealEngine-release/Engine/Source/Editor/Kismet/Public/BlueprintEditorModule.h
+I:/UECode/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/Engine/Classes/Engine/DataAsset.h
 ```
 
 关键源码点：

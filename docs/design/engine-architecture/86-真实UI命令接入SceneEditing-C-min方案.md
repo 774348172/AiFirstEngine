@@ -34,10 +34,10 @@ Toolbar 保存 / Undo / Redo 如何提交。
 参考源码方向：
 
 ```text
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\UIElements\Inspector\InspectorElement.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\UIElements\Bindings\BindingsInterface.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\SceneView\SceneView.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\EditorSceneManager.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\UIElements\Inspector\InspectorElement.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\UIElements\Bindings\BindingsInterface.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\SceneView\SceneView.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\EditorSceneManager.cs
 ```
 
 Unity 的核心模式：
@@ -71,9 +71,9 @@ Inspector 字段编辑不应该要求用户理解底层 ECS。
 参考源码方向：
 
 ```text
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\LevelEditor\Public\SLevelViewport.h
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\UnrealEd\Private\LevelEditorViewport.cpp
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\UnrealEd\Private\EditorActor.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\LevelEditor\Public\SLevelViewport.h
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\UnrealEd\Private\LevelEditorViewport.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\UnrealEd\Private\EditorActor.cpp
 ```
 
 UE 的核心模式：

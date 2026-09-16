@@ -71,8 +71,8 @@ https://docs.unity3d.com/ScriptReference/SerializedObject.ApplyModifiedPropertie
 源码参考：
 
 ```text
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\Inspector\TransformInspector.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\UIElements\Controls\PropertyField.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\Inspector\TransformInspector.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\UIElements\Controls\PropertyField.cs
 ```
 
 源码命中：
@@ -126,9 +126,9 @@ https://dev.epicgames.com/documentation/en-us/unreal-engine/API/Editor/UnrealEd/
 源码参考：
 
 ```text
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\UnrealEd\Private\EditorActor.cpp
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\UMGEditor\Private\WidgetBlueprintEditorUtils.cpp
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\UMGEditor\Private\WidgetBlueprintOperationUtils.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\UnrealEd\Private\EditorActor.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\UMGEditor\Private\WidgetBlueprintEditorUtils.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\UMGEditor\Private\WidgetBlueprintOperationUtils.cpp
 ```
 
 源码命中：
@@ -185,8 +185,8 @@ https://docs.godotengine.org/en/stable/classes/class_editorundoredomanager.html
 源码参考：
 
 ```text
-<GODOT_SOURCE>\godot-master\godot-master\editor\inspector\editor_inspector.cpp
-<GODOT_SOURCE>\godot-master\godot-master\editor\scene\3d\node_3d_editor_viewport.cpp
+I:\godotcode\godot-master\godot-master\editor\inspector\editor_inspector.cpp
+I:\godotcode\godot-master\godot-master\editor\scene\3d\node_3d_editor_viewport.cpp
 ```
 
 源码命中：
@@ -240,9 +240,9 @@ https://docs.rs/bevy_reflect/latest/bevy_reflect/struct.TypeRegistry.html
 源码参考：
 
 ```text
-<BEVY_SOURCE>\bevy-main\bevy-main\crates\bevy_app\src\app.rs
-<BEVY_SOURCE>\bevy-main\bevy-main\crates\bevy_asset\src\reflect.rs
-<BEVY_SOURCE>\bevy-main\bevy-main\crates\bevy_world_serialization\src\world_asset_spawner.rs
+I:\BevyCode\bevy-main\bevy-main\crates\bevy_app\src\app.rs
+I:\BevyCode\bevy-main\bevy-main\crates\bevy_asset\src\reflect.rs
+I:\BevyCode\bevy-main\bevy-main\crates\bevy_world_serialization\src\world_asset_spawner.rs
 ```
 
 源码命中：

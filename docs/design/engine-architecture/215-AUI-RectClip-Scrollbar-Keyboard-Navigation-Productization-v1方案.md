@@ -66,13 +66,13 @@ Mask / Clip / Scrollbar rendering。
 本项目已有 UGUI 源码参考：
 
 ```text
-<UNITY_UI_REFERENCE>/com.unity.ugui/Runtime/UGUI/UI/Core/RectMask2D.cs
-<UNITY_UI_REFERENCE>/com.unity.ugui/Runtime/UGUI/UI/Core/MaskableGraphic.cs
-<UNITY_UI_REFERENCE>/com.unity.ugui/Runtime/UGUI/UI/Core/ClipperRegistry.cs
-<UNITY_UI_REFERENCE>/com.unity.ugui/Runtime/UGUI/UI/Core/ScrollRect.cs
-<UNITY_UI_REFERENCE>/com.unity.ugui/Runtime/UGUI/UI/Core/Scrollbar.cs
-<UNITY_UI_REFERENCE>/com.unity.ugui/Runtime/UGUI/UI/Core/Selectable.cs
-<UNITY_UI_REFERENCE>/com.unity.ugui/Runtime/UGUI/UI/Core/Navigation.cs
+I:/com.unity.ugui/com.unity.ugui/Runtime/UGUI/UI/Core/RectMask2D.cs
+I:/com.unity.ugui/com.unity.ugui/Runtime/UGUI/UI/Core/MaskableGraphic.cs
+I:/com.unity.ugui/com.unity.ugui/Runtime/UGUI/UI/Core/ClipperRegistry.cs
+I:/com.unity.ugui/com.unity.ugui/Runtime/UGUI/UI/Core/ScrollRect.cs
+I:/com.unity.ugui/com.unity.ugui/Runtime/UGUI/UI/Core/Scrollbar.cs
+I:/com.unity.ugui/com.unity.ugui/Runtime/UGUI/UI/Core/Selectable.cs
+I:/com.unity.ugui/com.unity.ugui/Runtime/UGUI/UI/Core/Navigation.cs
 框架设计/Unity源码参考/UGUI-Canvas-EventSystem-Render源码参考.md
 ```
 

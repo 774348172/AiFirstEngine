@@ -22,9 +22,9 @@ UE 使用 `FUICommandList / FUIAction / CanExecuteAction` 将命令、执行函�
 参考源码：
 
 ```text
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Slate\Public\Framework\Commands\UICommandList.h
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Slate\Public\Framework\Commands\UIAction.h
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Slate\Public\Widgets\Input\SButton.h
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Slate\Public\Framework\Commands\UICommandList.h
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Slate\Public\Framework\Commands\UIAction.h
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Slate\Public\Widgets\Input\SButton.h
 ```
 
 ### Unity
@@ -34,10 +34,10 @@ Unity 的 Toolbar、Menu、UI Toolkit 控件都有 enabled/disabled 和 command/
 参考源码：
 
 ```text
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\MenuItem.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\Commands\CommandService.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Modules\EditorToolbar\Controls\EditorToolbarButton.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Modules\UIElements\Core\Controls\Button.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\MenuItem.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\Commands\CommandService.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Modules\EditorToolbar\Controls\EditorToolbarButton.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Modules\UIElements\Core\Controls\Button.cs
 ```
 
 ### Godot
@@ -51,8 +51,8 @@ Bevy UI 的 `Interaction::Pressed / Hovered / None` 与 `InteractionDisabled` �
 参考源码：
 
 ```text
-<BEVY_SOURCE>\bevy-main\bevy-main\crates\bevy_ui\src\focus.rs
-<BEVY_SOURCE>\bevy-main\bevy-main\crates\bevy_ui_widgets\src\button.rs
+I:\BevyCode\bevy-main\bevy-main\crates\bevy_ui\src\focus.rs
+I:\BevyCode\bevy-main\bevy-main\crates\bevy_ui_widgets\src\button.rs
 ```
 
 ## 推荐路线：C-min

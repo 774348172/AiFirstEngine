@@ -29,13 +29,13 @@ AUI hit-test、action-target authority 与诊断只消费这一份解析结果�
 Tower Defense P1-0 fresh Gate G run：
 
 ```text
-<TOWER_RUN_ROOT>\p1-0-gate-g-20260805-164431
+G:\AifeTowerRuns\p1-0-gate-g-20260805-164431
 ```
 
 结构化 blocked report：
 
 ```text
-<TOWER_RUN_ROOT>\p1-0-gate-g-20260805-164431\evidence\gate-g-blocked-report.json
+G:\AifeTowerRuns\p1-0-gate-g-20260805-164431\evidence\gate-g-blocked-report.json
 classification = real_editor_gameview_input_bridge
 failedStep = recruit-one
 nodeId = recruit-button
@@ -144,7 +144,7 @@ v1 不做：
 参考：
 
 ```text
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\PlayModeView\PlayModeView.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\PlayModeView\PlayModeView.cs
 ```
 
 关键实现：
@@ -167,9 +167,9 @@ reference 尺寸混成同一个值。
 参考：
 
 ```text
-<GODOT_SOURCE>\godot-master\godot-master\scene\main\viewport.cpp
-<GODOT_SOURCE>\godot-master\godot-master\doc\classes\Viewport.xml
-<GODOT_SOURCE>\godot-master\godot-master\doc\classes\Window.xml
+I:\GodotCode\godot-master\godot-master\scene\main\viewport.cpp
+I:\GodotCode\godot-master\godot-master\doc\classes\Viewport.xml
+I:\GodotCode\godot-master\godot-master\doc\classes\Window.xml
 ```
 
 关键合同：
@@ -192,8 +192,8 @@ Godot 明确区分 viewport coordinate 与 embedder coordinate；`push_input(...
 参考：
 
 ```text
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\SlateCore\Public\Layout\Geometry.h
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Engine\Private\Slate\SceneViewport.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\SlateCore\Public\Layout\Geometry.h
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Engine\Private\Slate\SceneViewport.cpp
 ```
 
 关键实现：

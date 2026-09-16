@@ -107,9 +107,9 @@ DrawCommand 没有通用 editor image/thumbnail present 能力。
 本地源码：
 
 ```text
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\ProjectBrowser\ProjectBrowser.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\ObjectSelector.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Modules\AssetDatabase\Editor\ScriptBindings\AssetDatabase.bindings.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\ProjectBrowser\ProjectBrowser.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\ObjectSelector.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Modules\AssetDatabase\Editor\ScriptBindings\AssetDatabase.bindings.cs
 ```
 
 关键实现：
@@ -151,10 +151,10 @@ https://github.com/Unity-Technologies/UnityCsReference/blob/master/Editor/Mono/P
 本地源码：
 
 ```text
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\ContentBrowser\Private\SContentBrowser.cpp
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\ContentBrowser\Private\SAssetView.cpp
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\ContentBrowser\Private\SAssetPicker.cpp
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\ContentBrowserData
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\ContentBrowser\Private\SContentBrowser.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\ContentBrowser\Private\SAssetView.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\ContentBrowser\Private\SAssetPicker.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Editor\ContentBrowserData
 ```
 
 关键实现：
@@ -194,10 +194,10 @@ https://dev.epicgames.com/documentation/en-us/unreal-engine/content-browser-inte
 本地源码：
 
 ```text
-<GODOT_SOURCE>\godot-master\godot-master\editor\docks\filesystem_dock.cpp
-<GODOT_SOURCE>\godot-master\godot-master\editor\file_system\editor_file_system.cpp
-<GODOT_SOURCE>\godot-master\godot-master\editor\file_system\editor_file_system.h
-<GODOT_SOURCE>\godot-master\godot-master\editor\inspector\editor_resource_preview.cpp
+I:\godotcode\godot-master\godot-master\editor\docks\filesystem_dock.cpp
+I:\godotcode\godot-master\godot-master\editor\file_system\editor_file_system.cpp
+I:\godotcode\godot-master\godot-master\editor\file_system\editor_file_system.h
+I:\godotcode\godot-master\godot-master\editor\inspector\editor_resource_preview.cpp
 ```
 
 关键实现：

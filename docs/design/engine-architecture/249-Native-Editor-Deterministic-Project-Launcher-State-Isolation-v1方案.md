@@ -2,7 +2,7 @@
 
 > 状态：已完成施工并归档。本文是 `125-Native-Editor-Project-OpenCreate-Persistence-C-min方案.md` 的增量收敛，不取代 125，也不修改 248 的 UI 架构结论。
 > 建立日期：2026-07-13。
-> 触发证据：P0-0.5 v2 Run 01 在 Manifest 前发现 Windows 文件夹选择器恢复并枚举历史目录 `<LOCAL_TEST_ROOT>\test2`，按协议终止为 `Invalidated`。
+> 触发证据：P0-0.5 v2 Run 01 在 Manifest 前发现 Windows 文件夹选择器恢复并枚举历史目录 `I:\AIFirstTest\test2`，按协议终止为 `Invalidated`。
 
 ## 1. 问题与结论
 
@@ -156,10 +156,10 @@ editor_host.isolated_picker_start_invalid
 
 249 只修引擎启动状态隔离，不直接修改 v1/v2 证据。v3 另行冻结：
 
-1. 新根 `<run-root>\gameEngin-p0-0-5-v3`，新 authority、plan/index、context、run/evidence ID。
+1. 新根 `G:\gameEngin-p0-0-5-v3`，新 authority、plan/index、context、run/evidence ID。
 2. 每个 run 都有独立空的 `<own_run_root>/picker-start` 与 run-local recent store。
 3. 三套引擎统一约束“正式创建项目入口从 run-local 空目录开始”；实现手段可以不同。
-4. `<LOCAL_TEST_ROOT>\test2` 和任何历史目录不得进入读取白名单。
+4. `I:\AIFirstTest\test2` 和任何历史目录不得进入读取白名单。
 5. v2 Run 01、Run 02 的 `Invalidated` 终态只读封存，不允许补写回执或候选产物。
 6. controller 派发并启动 app 后不得再修改本 run 的 root、`picker-start` 或 `state`；本轮合同是非对抗测量隔离，不宣称抵抗恶意并发路径替换。
 

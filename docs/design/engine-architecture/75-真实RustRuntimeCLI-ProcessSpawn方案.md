@@ -74,10 +74,10 @@ Editor / BuildRunOrchestrator
 本地源码参考：
 
 ```text
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Programs\AutomationTool\Scripts\RunProjectCommand.Automation.cs
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Programs\AutomationTool\AutomationUtils\Platform.cs
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Programs\AutomationTool\AutomationUtils\ProcessUtils.cs
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Programs\AutomationTool\Win\WinPlatform.Automation.cs
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Programs\AutomationTool\Scripts\RunProjectCommand.Automation.cs
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Programs\AutomationTool\AutomationUtils\Platform.cs
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Programs\AutomationTool\AutomationUtils\ProcessUtils.cs
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Programs\AutomationTool\Win\WinPlatform.Automation.cs
 ```
 
 UE 路线：
@@ -105,8 +105,8 @@ RunClient 是平台抽象点。
 本地源码参考：
 
 ```text
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\BuildPlayerWindow.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\BuildPipeline\BuildPipeline.bindings.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\BuildPlayerWindow.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\BuildPipeline\BuildPipeline.bindings.cs
 ```
 
 Unity 路线：
@@ -133,9 +133,9 @@ Editor Play 和 Build Player 不是完全同一条底层路径，复杂项目需
 本地源码参考：
 
 ```text
-<BEVY_SOURCE>\bevy-main\bevy-main\crates\bevy_app\src\app.rs
-<BEVY_SOURCE>\bevy-main\bevy-main\crates\bevy_app\src\schedule_runner.rs
-<BEVY_SOURCE>\bevy-main\bevy-main\crates\bevy_winit\src\lib.rs
+I:\BevyCode\bevy-main\bevy-main\crates\bevy_app\src\app.rs
+I:\BevyCode\bevy-main\bevy-main\crates\bevy_app\src\schedule_runner.rs
+I:\BevyCode\bevy-main\bevy-main\crates\bevy_winit\src\lib.rs
 ```
 
 Bevy 路线：

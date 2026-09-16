@@ -90,12 +90,12 @@ https://docs.unity3d.com/Packages/com.unity.inputsystem@1.14/manual/ActionAssets
 本地源码：
 
 ```text
-<LOCAL_TEST_ROOT>/AIPVtest/Library/PackageCache/com.unity.inputsystem@21a28c3a6c83/InputSystem/Actions/InputActionAsset.cs
-<LOCAL_TEST_ROOT>/AIPVtest/Library/PackageCache/com.unity.inputsystem@21a28c3a6c83/InputSystem/Editor/UITKAssetEditor/InputActionsEditorWindow.cs
-<LOCAL_TEST_ROOT>/AIPVtest/Library/PackageCache/com.unity.inputsystem@21a28c3a6c83/InputSystem/Editor/UITKAssetEditor/InputActionsEditorState.cs
-<LOCAL_TEST_ROOT>/AIPVtest/Library/PackageCache/com.unity.inputsystem@21a28c3a6c83/InputSystem/Editor/UITKAssetEditor/Commands/Commands.cs
-<LOCAL_TEST_ROOT>/AIPVtest/Library/PackageCache/com.unity.inputsystem@21a28c3a6c83/InputSystem/Editor/UITKAssetEditor/Views/InputActionsEditorView.cs
-<LOCAL_TEST_ROOT>/AIPVtest/Library/PackageCache/com.unity.inputsystem@21a28c3a6c83/InputSystem/Editor/UITKAssetEditor/PackageResources/InputActionsEditor.uxml
+I:/unityTestAI/AIPVtest/Library/PackageCache/com.unity.inputsystem@21a28c3a6c83/InputSystem/Actions/InputActionAsset.cs
+I:/unityTestAI/AIPVtest/Library/PackageCache/com.unity.inputsystem@21a28c3a6c83/InputSystem/Editor/UITKAssetEditor/InputActionsEditorWindow.cs
+I:/unityTestAI/AIPVtest/Library/PackageCache/com.unity.inputsystem@21a28c3a6c83/InputSystem/Editor/UITKAssetEditor/InputActionsEditorState.cs
+I:/unityTestAI/AIPVtest/Library/PackageCache/com.unity.inputsystem@21a28c3a6c83/InputSystem/Editor/UITKAssetEditor/Commands/Commands.cs
+I:/unityTestAI/AIPVtest/Library/PackageCache/com.unity.inputsystem@21a28c3a6c83/InputSystem/Editor/UITKAssetEditor/Views/InputActionsEditorView.cs
+I:/unityTestAI/AIPVtest/Library/PackageCache/com.unity.inputsystem@21a28c3a6c83/InputSystem/Editor/UITKAssetEditor/PackageResources/InputActionsEditor.uxml
 ```
 
 关键实现：
@@ -137,11 +137,11 @@ https://dev.epicgames.com/documentation/en-us/unreal-engine/enhanced-input-in-un
 本地源码：
 
 ```text
-<UNREAL_ENGINE_SOURCE>/UnrealEngine-release/UnrealEngine-release/Engine/Plugins/EnhancedInput/Source/EnhancedInput/Public/InputAction.h
-<UNREAL_ENGINE_SOURCE>/UnrealEngine-release/UnrealEngine-release/Engine/Plugins/EnhancedInput/Source/EnhancedInput/Public/InputMappingContext.h
-<UNREAL_ENGINE_SOURCE>/UnrealEngine-release/UnrealEngine-release/Engine/Plugins/EnhancedInput/Source/EnhancedInput/Public/EnhancedActionKeyMapping.h
-<UNREAL_ENGINE_SOURCE>/UnrealEngine-release/UnrealEngine-release/Engine/Plugins/EnhancedInput/Source/EnhancedInput/Private/EnhancedInputSubsystemInterface.cpp
-<UNREAL_ENGINE_SOURCE>/UnrealEngine-release/UnrealEngine-release/Engine/Plugins/EnhancedInput/Source/InputEditor/Private/ActionMappingDetails.cpp
+I:/UECode/UnrealEngine-release/UnrealEngine-release/Engine/Plugins/EnhancedInput/Source/EnhancedInput/Public/InputAction.h
+I:/UECode/UnrealEngine-release/UnrealEngine-release/Engine/Plugins/EnhancedInput/Source/EnhancedInput/Public/InputMappingContext.h
+I:/UECode/UnrealEngine-release/UnrealEngine-release/Engine/Plugins/EnhancedInput/Source/EnhancedInput/Public/EnhancedActionKeyMapping.h
+I:/UECode/UnrealEngine-release/UnrealEngine-release/Engine/Plugins/EnhancedInput/Source/EnhancedInput/Private/EnhancedInputSubsystemInterface.cpp
+I:/UECode/UnrealEngine-release/UnrealEngine-release/Engine/Plugins/EnhancedInput/Source/InputEditor/Private/ActionMappingDetails.cpp
 ```
 
 关键实现：
@@ -181,11 +181,11 @@ https://docs.godotengine.org/en/stable/classes/class_inputmap.html
 本地源码：
 
 ```text
-<GODOT_SOURCE>/godot-master/godot-master/editor/settings/action_map_editor.cpp
-<GODOT_SOURCE>/godot-master/godot-master/editor/settings/input_event_configuration_dialog.cpp
-<GODOT_SOURCE>/godot-master/godot-master/editor/settings/event_listener_line_edit.cpp
-<GODOT_SOURCE>/godot-master/godot-master/editor/settings/project_settings_editor.cpp
-<GODOT_SOURCE>/godot-master/godot-master/core/input/input_map.cpp
+I:/godotcode/godot-master/godot-master/editor/settings/action_map_editor.cpp
+I:/godotcode/godot-master/godot-master/editor/settings/input_event_configuration_dialog.cpp
+I:/godotcode/godot-master/godot-master/editor/settings/event_listener_line_edit.cpp
+I:/godotcode/godot-master/godot-master/editor/settings/project_settings_editor.cpp
+I:/godotcode/godot-master/godot-master/core/input/input_map.cpp
 ```
 
 关键实现：
@@ -216,8 +216,8 @@ Godot InputMap 缺少本项目已有的 Context priority / consume / Processor /
 本地源码：
 
 ```text
-<BEVY_SOURCE>/bevy-main/bevy-main/crates/bevy_input/src
-<BEVY_SOURCE>/bevy-main/bevy-main/crates/bevy_winit/src/converters.rs
+I:/BevyCode/bevy-main/bevy-main/crates/bevy_input/src
+I:/BevyCode/bevy-main/bevy-main/crates/bevy_winit/src/converters.rs
 ```
 
 关键判断：

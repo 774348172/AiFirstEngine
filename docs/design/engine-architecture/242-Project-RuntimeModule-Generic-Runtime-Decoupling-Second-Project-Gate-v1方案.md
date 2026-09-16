@@ -207,7 +207,7 @@ Provider Registry / Agent Planner。
 
 ```text
 https://dev.epicgames.com/documentation/en-us/unreal-engine/unreal-engine-modules
-<UNREAL_ENGINE_SOURCE>/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/Core/Public/Modules/ModuleInterface.h
+I:/UECode/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/Core/Public/Modules/ModuleInterface.h
 ```
 
 关键做法：
@@ -229,8 +229,8 @@ IModuleInterface::StartupModule / ShutdownModule 形成一次性生命周期。
 ```text
 https://github.com/bevyengine/bevy/blob/main/crates/bevy_app/src/plugin.rs
 https://github.com/bevyengine/bevy/blob/main/crates/bevy_app/src/app.rs
-<BEVY_SOURCE>/bevy-main/bevy-main/crates/bevy_app/src/plugin.rs
-<BEVY_SOURCE>/bevy-main/bevy-main/crates/bevy_app/src/app.rs
+I:/BevyCode/bevy-main/bevy-main/crates/bevy_app/src/plugin.rs
+I:/BevyCode/bevy-main/bevy-main/crates/bevy_app/src/app.rs
 ```
 
 关键调用链：
@@ -251,7 +251,7 @@ App::add_plugins
 
 ```text
 https://docs.unity3d.com/Manual/assembly-definition-files.html
-<UNITY_CS_REFERENCE>/UnityCsReference-master/UnityCsReference-master/Runtime/Export/PlayerLoop/PlayerLoop.bindings.cs
+I:/UnityCode/UnityCsReference-master/UnityCsReference-master/Runtime/Export/PlayerLoop/PlayerLoop.bindings.cs
 ```
 
 关键做法：项目脚本按 assembly 独立编译并显式控制依赖；通用 PlayerLoop 通过 `GetDefaultPlayerLoop` / `SetPlayerLoop` 承载已编译项目逻辑。

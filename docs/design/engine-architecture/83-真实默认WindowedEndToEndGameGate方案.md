@@ -104,10 +104,10 @@ Report schema
 源码参考：
 
 ```text
-<UNREAL_ENGINE_SOURCE>/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/Launch/Private/LaunchEngineLoop.cpp
-<UNREAL_ENGINE_SOURCE>/UnrealEngine-release/UnrealEngine-release/Engine/Source/Programs/AutomationTool
-<UNREAL_ENGINE_SOURCE>/UnrealEngine-release/UnrealEngine-release/Engine/Source/Programs/AutomationTool/Scripts/RunProjectCommand.Automation.cs
-<UNREAL_ENGINE_SOURCE>/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/RenderCore/Private/RenderingThread.cpp
+I:/UECode/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/Launch/Private/LaunchEngineLoop.cpp
+I:/UECode/UnrealEngine-release/UnrealEngine-release/Engine/Source/Programs/AutomationTool
+I:/UECode/UnrealEngine-release/UnrealEngine-release/Engine/Source/Programs/AutomationTool/Scripts/RunProjectCommand.Automation.cs
+I:/UECode/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/RenderCore/Private/RenderingThread.cpp
 ```
 
 UE 的核心路线：
@@ -145,9 +145,9 @@ Game Thread / Render Thread 分离。
 源码参考：
 
 ```text
-<UNITY_CS_REFERENCE>/UnityCsReference-master/UnityCsReference-master/Runtime/Export/PlayerLoop/PlayerLoop.bindings.cs
-<UNITY_CS_REFERENCE>/UnityCsReference-master/UnityCsReference-master/Editor/Mono/BuildPlayerWindow.cs
-<UNITY_CS_REFERENCE>/UnityCsReference-master/UnityCsReference-master/Editor/Mono/BuildPipeline
+I:/UnityCode/UnityCsReference-master/UnityCsReference-master/Runtime/Export/PlayerLoop/PlayerLoop.bindings.cs
+I:/UnityCode/UnityCsReference-master/UnityCsReference-master/Editor/Mono/BuildPlayerWindow.cs
+I:/UnityCode/UnityCsReference-master/UnityCsReference-master/Editor/Mono/BuildPipeline
 ```
 
 Unity 的核心路线：
@@ -179,10 +179,10 @@ BuildReport / PlayMode test 是诊断和自动化入口。
 源码参考：
 
 ```text
-<GODOT_SOURCE>/godot-master/godot-master/main/main.cpp
-<GODOT_SOURCE>/godot-master/godot-master/scene/main/scene_tree.cpp
-<GODOT_SOURCE>/godot-master/godot-master/servers/display_server.h
-<GODOT_SOURCE>/godot-master/godot-master/servers/rendering_server.h
+I:/godotcode/godot-master/godot-master/main/main.cpp
+I:/godotcode/godot-master/godot-master/scene/main/scene_tree.cpp
+I:/godotcode/godot-master/godot-master/servers/display_server.h
+I:/godotcode/godot-master/godot-master/servers/rendering_server.h
 ```
 
 Godot 的核心路线：
@@ -213,9 +213,9 @@ Scene / Viewport / Display / Render 分层明确。
 源码参考：
 
 ```text
-<BEVY_SOURCE>/bevy-main/bevy-main/crates/bevy_app/src/app.rs
-<BEVY_SOURCE>/bevy-main/bevy-main/crates/bevy_winit/src/state.rs
-<BEVY_SOURCE>/bevy-main/bevy-main/crates/bevy_render/src/extract_plugin.rs
+I:/BevyCode/bevy-main/bevy-main/crates/bevy_app/src/app.rs
+I:/BevyCode/bevy-main/bevy-main/crates/bevy_winit/src/state.rs
+I:/BevyCode/bevy-main/bevy-main/crates/bevy_render/src/extract_plugin.rs
 ```
 
 Bevy 的核心路线：

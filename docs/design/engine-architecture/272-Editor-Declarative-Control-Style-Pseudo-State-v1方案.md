@@ -79,9 +79,9 @@ Project Runtime AUI 样式迁移
 参考：
 
 ```text
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Modules\UIElements\Core\Clickable.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Modules\UIElements\Core\Controls\Button.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Modules\UIElements\Core\FocusController.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Modules\UIElements\Core\Clickable.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Modules\UIElements\Core\Controls\Button.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Modules\UIElements\Core\FocusController.cs
 ```
 
 `Clickable` 负责 pointer capture、active pseudo state 和 click，`VisualElement` 的 pseudo state 再由样式系统
@@ -93,7 +93,7 @@ Project Runtime AUI 样式迁移
 参考：
 
 ```text
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Slate\Public\Widgets\Input\SButton.h
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Slate\Public\Widgets\Input\SButton.h
 ```
 
 `SButton` 明确区分 `IsPressed`、hover/pressed sound、normal/pressed padding 与
@@ -105,8 +105,8 @@ Project Runtime AUI 样式迁移
 参考：
 
 ```text
-<GODOT_SOURCE>\godot-master\godot-master\scene\gui\base_button.cpp
-<GODOT_SOURCE>\godot-master\godot-master\scene\gui\button.cpp
+I:\godotcode\godot-master\godot-master\scene\gui\base_button.cpp
+I:\godotcode\godot-master\godot-master\scene\gui\button.cpp
 ```
 
 Godot `BaseButton` 集中处理 hover、pressed、toggle、button mask 与 action mode，`Button` 再从 Theme
@@ -118,8 +118,8 @@ Godot `BaseButton` 集中处理 hover、pressed、toggle、button mask 与 actio
 参考：
 
 ```text
-<BEVY_SOURCE>\bevy-main\bevy-main\crates\bevy_ui\src\focus.rs
-<BEVY_SOURCE>\bevy-main\bevy-main\crates\bevy_ui_widgets\src\button.rs
+I:\BevyCode\bevy-main\bevy-main\crates\bevy_ui\src\focus.rs
+I:\BevyCode\bevy-main\bevy-main\crates\bevy_ui_widgets\src\button.rs
 ```
 
 Bevy 使用 `Pressed` / `InteractionDisabled` 等数据状态；Button 默认在解除按下时发出 `Activate`，菜单可用

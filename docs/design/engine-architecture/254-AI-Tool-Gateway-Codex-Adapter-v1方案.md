@@ -5,8 +5,9 @@
 > 范围修订：2026-07-22；254 只负责向 AI 提供好用、自由、可审计的引擎工具，不负责证明某个精确引擎版本通过真实 AI 验收
 > 用户选择：总体方案 B，建设 AI Tool Gateway / Codex Adapter；按后续审查结论采用 Editor 托管 Gateway Core + 外置协议 Adapter  
 > 上游实现：`250-AI-Primary-ProjectProduction-Dual-Path-v1方案.md`、`251-Provider-independent-From-Blank-Creation-Golden-Gate-v1方案.md`、`253-AI-Capability-First-Tool-Kernel-Agent-Owned-Planning-v1方案.md`  
-> 竞争证据：`<LOCAL_TEST_ROOT>\Evidence\P0-0.5-v8\b8\三引擎B通道正式汇总对比.md`  
+> 竞争证据：`I:\EngineTest\Evidence\P0-0.5-v8\b8\三引擎B通道正式汇总对比.md`  
 > 文档性质：架构方案，不是施工文档、施工授权、Codex 配置说明或三引擎 B 通道重跑授权
+> 2026-08-31 authority 状态：保留 Gateway/Adapter 实现经验；`Editor-hosted Gateway Core + unique EditorSession` 默认拓扑已被 `00-AI-First-Game-Engine-权威架构设计-v1.md` 替代。Gateway 以后只能作为 Host Adapter 内部实现，不能成为 AI 可见中间层或项目 authority。
 
 ## 1. 决策
 
@@ -159,11 +160,11 @@ Codex 修改项目 C++ / Config
 本机源码依据：
 
 ```text
-<UNREAL_LAUNCHER_REFERENCE>\UE_5.8\Engine\Source\Runtime\Engine\Classes\Commandlets\Commandlet.h
-<UNREAL_LAUNCHER_REFERENCE>\UE_5.8\Engine\Plugins\Experimental\PythonScriptPlugin\Source\PythonScriptPlugin\Public\IPythonScriptPlugin.h
-<UNREAL_LAUNCHER_REFERENCE>\UE_5.8\Engine\Source\Editor\UnrealEd\Public\ScopedTransaction.h
-<UNREAL_LAUNCHER_REFERENCE>\UE_5.8\Engine\Plugins\VirtualProduction\RemoteControl
-<UNREAL_LAUNCHER_REFERENCE>\UE_5.8\Engine\Source\Programs\AutomationTool\Scripts\BuildCookRun.Automation.cs
+I:\UElacunch\UE_5.8\Engine\Source\Runtime\Engine\Classes\Commandlets\Commandlet.h
+I:\UElacunch\UE_5.8\Engine\Plugins\Experimental\PythonScriptPlugin\Source\PythonScriptPlugin\Public\IPythonScriptPlugin.h
+I:\UElacunch\UE_5.8\Engine\Source\Editor\UnrealEd\Public\ScopedTransaction.h
+I:\UElacunch\UE_5.8\Engine\Plugins\VirtualProduction\RemoteControl
+I:\UElacunch\UE_5.8\Engine\Source\Programs\AutomationTool\Scripts\BuildCookRun.Automation.cs
 ```
 
 官方入口：

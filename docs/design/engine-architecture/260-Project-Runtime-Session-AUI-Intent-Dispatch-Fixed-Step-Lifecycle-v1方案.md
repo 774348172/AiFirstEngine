@@ -171,7 +171,7 @@ closure，不是重复实现 213。
 参考：
 
 ```text
-<UNITY_UI_REFERENCE>\com.unity.ugui\Runtime\UGUI\UI\Core\Button.cs
+I:\com.unity.ugui\com.unity.ugui\Runtime\UGUI\UI\Core\Button.cs
 ```
 
 关键链路：
@@ -202,8 +202,8 @@ UI 控件负责把指针输入收敛为语义事件。
 参考：
 
 ```text
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\UMG\Public\Components\Button.h
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\UMG\Private\Components\Button.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\UMG\Public\Components\Button.h
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\UMG\Private\Components\Button.cpp
 ```
 
 关键链路：
@@ -232,8 +232,8 @@ SButton::OnClicked
 参考：
 
 ```text
-<GODOT_SOURCE>\godot-master\godot-master\scene\gui\control.cpp
-<GODOT_SOURCE>\godot-master\godot-master\scene\gui\base_button.cpp
+I:\godotcode\godot-master\godot-master\scene\gui\control.cpp
+I:\godotcode\godot-master\godot-master\scene\gui\base_button.cpp
 ```
 
 关键链路：
@@ -263,9 +263,9 @@ Control::_call_gui_input
 参考：
 
 ```text
-<BEVY_SOURCE>\bevy-main\bevy-main\crates\bevy_ui\src\focus.rs
-<BEVY_SOURCE>\bevy-main\bevy-main\examples\ui\ui_drag_and_drop.rs
-<BEVY_SOURCE>\bevy-main\bevy-main\examples\ui\widgets\button.rs
+I:\BevyCode\bevy-main\bevy-main\crates\bevy_ui\src\focus.rs
+I:\BevyCode\bevy-main\bevy-main\examples\ui\ui_drag_and_drop.rs
+I:\BevyCode\bevy-main\bevy-main\examples\ui\widgets\button.rs
 ```
 
 关键链路：

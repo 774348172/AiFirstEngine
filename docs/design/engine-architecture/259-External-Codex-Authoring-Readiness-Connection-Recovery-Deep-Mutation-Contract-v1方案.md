@@ -1,5 +1,7 @@
 # 259 External Codex Authoring Readiness: Connection Recovery + Deep Mutation Contract v1 方案
 
+> 2026-08-31 authority 状态：保留 deep mutation、Grant、receipt、rollback 和 drift 经验；Editor/Gateway/session authority 已被 `AuthoringProjectContext` 方向替代，本文不再定义默认 AI authoring topology。
+
 ## 1. 文档状态
 
 ```text
@@ -48,7 +50,7 @@ Native Editor：项目事实、授权、mutation 与结果呈现 owner
 
 ```toml
 [mcp_servers.ai_first_game_engine]
-command = '<LOCAL_TEST_ROOT>\GateF254R1Frozen\candidate-20260720-000200\bin\ai_engine_gateway_mcp.exe'
+command = 'I:\EngineTest\GateF254R1Frozen\candidate-20260720-000200\bin\ai_engine_gateway_mcp.exe'
 ```
 
 这使外部 Codex 的长期入口依赖一次性验收产物，而不是稳定安装产物。旧二进制
@@ -85,18 +87,18 @@ generation、context hash、validation、Grant/operation/receipt 等内部事实
 
 ```text
 Codex config：
-<CODEX_HOME>\config.toml
+C:\Users\zenghaoran\.codex\config.toml:278
 
 旧 frozen MCP：
-<LOCAL_TEST_ROOT>\GateF254R1Frozen\candidate-20260720-000200\bin\ai_engine_gateway_mcp.exe
+I:\EngineTest\GateF254R1Frozen\candidate-20260720-000200\bin\ai_engine_gateway_mcp.exe
 SHA256 E20C31559B94490020CEF18E045F4D97574970C570421D6CC0E13239E40DCC94
 
 当前 debug MCP：
-<repository-root>\rust\target\debug\ai_engine_gateway_mcp.exe
+G:\gameEngin\rust\target\debug\ai_engine_gateway_mcp.exe
 SHA256 A0BE25346A71CF44C2CEEF77875208FCD7F39D1630C3219808AD7F223FE3B74A
 
 当前 production Editor process：
-<repository-root>\rust\target\debug\editor_host.exe
+G:\gameEngin\rust\target\debug\editor_host.exe
 PID 9800
 SHA256 7FAF55B6C4E9BA6A004FCE0F8E51D0FA6C98ACC76B5CCB873C72FD1B0700B968
 

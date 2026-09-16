@@ -4,7 +4,7 @@
 > 确认日期：2026-07-17  
 > 用户选择：方案 C，能力优先工具内核 + AI 自主规划 + 有限授权 + 可选长期记忆  
 > 上游实现：`250-AI-Primary-ProjectProduction-Dual-Path-v1方案.md`、`251-Provider-independent-From-Blank-Creation-Golden-Gate-v1方案.md`、`252-Editor-Goal-level-Iterative-Project-Production-Workflow-v1方案.md`  
-> 竞争证据：`审查目录/其它AI审查目录/53-P0-0.5-v8-三引擎B通道已有项目持续修改对比协议.md`、`<LOCAL_TEST_ROOT>\Evidence\P0-0.5-v8\b8\三引擎B通道正式汇总对比.md`  
+> 竞争证据：`审查目录/其它AI审查目录/53-P0-0.5-v8-三引擎B通道已有项目持续修改对比协议.md`、`I:\EngineTest\Evidence\P0-0.5-v8\b8\三引擎B通道正式汇总对比.md`  
 > 文档性质：架构方案，不是施工文档、施工授权或 B 通道重跑授权
 
 ## 1. 决策
@@ -77,7 +77,7 @@ Unity 的 `BuildPipeline.BuildPlayer` 是一个深 Module：调用方只提出�
 本项目对应真实入口：
 
 ```text
-<LOCAL_TEST_ROOT>\Unity\unityTest\Assets\C01\Editor\C01ProjectBuilder.cs
+I:\EngineTest\Unity\unityTest\Assets\C01\Editor\C01ProjectBuilder.cs
 ```
 
 ### 3.2 UE
@@ -87,7 +87,7 @@ Codex 通常使用项目 C++ / Config、Editor API / Python / Commandlet、UObje
 本机正式源码依据：
 
 ```text
-<UNREAL_LAUNCHER_REFERENCE>\UE_5.8\Engine\Source\Programs\AutomationTool\Scripts\BuildCookRun.Automation.cs
+I:\UElacunch\UE_5.8\Engine\Source\Programs\AutomationTool\Scripts\BuildCookRun.Automation.cs
 DoBuildCookRun -> Project.Build -> Cook -> Stage -> Package -> Archive -> Deploy -> Run
 ```
 

@@ -85,9 +85,9 @@ OS 输入事件进入 Native Editor 主线程
 本地源码：
 
 ```text
-<UNITY_UI_REFERENCE>/com.unity.ugui/Runtime/UGUI/EventSystem/EventSystem.cs
-<UNITY_UI_REFERENCE>/com.unity.ugui/Runtime/UGUI/UI/Core/Selectable.cs
-<UNITY_UI_REFERENCE>/com.unity.ugui/Runtime/UGUI/UI/Core/Button.cs
+I:/com.unity.ugui/com.unity.ugui/Runtime/UGUI/EventSystem/EventSystem.cs
+I:/com.unity.ugui/com.unity.ugui/Runtime/UGUI/UI/Core/Selectable.cs
+I:/com.unity.ugui/com.unity.ugui/Runtime/UGUI/UI/Core/Button.cs
 ```
 
 关键顺序：
@@ -109,8 +109,8 @@ EventSystem.Update
 本地源码：
 
 ```text
-<UNREAL_ENGINE_SOURCE>/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/Slate/Private/Framework/Application/SlateApplication.cpp
-<UNREAL_ENGINE_SOURCE>/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/Slate/Private/Widgets/Input/SButton.cpp
+I:/UECode/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/Slate/Private/Framework/Application/SlateApplication.cpp
+I:/UECode/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/Slate/Private/Widgets/Input/SButton.cpp
 ```
 
 关键顺序：
@@ -132,7 +132,7 @@ ProcessMouseButtonDownEvent / ProcessMouseButtonUpEvent
 
 ```text
 https://docs.godotengine.org/en/stable/tutorials/inputs/inputevent.html
-<GODOT_SOURCE>/godot-master/godot-master/scene/gui/base_button.cpp
+I:/godotcode/godot-master/godot-master/scene/gui/base_button.cpp
 ```
 
 关键顺序：

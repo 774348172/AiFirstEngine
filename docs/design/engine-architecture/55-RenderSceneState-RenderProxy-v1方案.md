@@ -74,10 +74,10 @@ AI 默认读取哪一层？
 本地源码：
 
 ```text
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Renderer\Private\ScenePrivate.h
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Renderer\Private\RendererScene.cpp
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Renderer\Public\PrimitiveSceneInfo.h
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Engine\Public\PrimitiveSceneProxy.h
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Renderer\Private\ScenePrivate.h
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Renderer\Private\RendererScene.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Renderer\Public\PrimitiveSceneInfo.h
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Engine\Public\PrimitiveSceneProxy.h
 ```
 
 关键结构：
@@ -130,10 +130,10 @@ Nanite / Lumen / VSM / RayTracing / GPUScene 的所有字段。
 本地源码：
 
 ```text
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Runtime\Export\RenderPipeline\ScriptableRenderContext.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Runtime\Export\RenderPipeline\ScriptableRenderContext.bindings.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Runtime\Export\RenderPipeline\CullingResults.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Runtime\Export\RenderPipeline\RendererList.bindings.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Runtime\Export\RenderPipeline\ScriptableRenderContext.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Runtime\Export\RenderPipeline\ScriptableRenderContext.bindings.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Runtime\Export\RenderPipeline\CullingResults.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Runtime\Export\RenderPipeline\RendererList.bindings.cs
 ```
 
 关键公开结构：
@@ -185,11 +185,11 @@ Unity 的不足：
 本地源码：
 
 ```text
-<BEVY_SOURCE>\bevy-main\bevy-main\crates\bevy_render\src\lib.rs
-<BEVY_SOURCE>\bevy-main\bevy-main\crates\bevy_render\src\extract_plugin.rs
-<BEVY_SOURCE>\bevy-main\bevy-main\crates\bevy_render\src\sync_world.rs
-<BEVY_SOURCE>\bevy-main\bevy-main\crates\bevy_render\src\view\mod.rs
-<BEVY_SOURCE>\bevy-main\bevy-main\crates\bevy_pbr\src\render\mesh.rs
+I:\BevyCode\bevy-main\bevy-main\crates\bevy_render\src\lib.rs
+I:\BevyCode\bevy-main\bevy-main\crates\bevy_render\src\extract_plugin.rs
+I:\BevyCode\bevy-main\bevy-main\crates\bevy_render\src\sync_world.rs
+I:\BevyCode\bevy-main\bevy-main\crates\bevy_render\src\view\mod.rs
+I:\BevyCode\bevy-main\bevy-main\crates\bevy_pbr\src\render\mesh.rs
 ```
 
 关键结构：

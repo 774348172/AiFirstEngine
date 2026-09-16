@@ -37,11 +37,11 @@ ECS World / RenderSceneState
 源码参考：
 
 ```text
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Runtime\Export\Graphics\GraphicsRenderers.bindings.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Runtime\2D\Sorting\ScriptBindings\SortingGroup.bindings.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Runtime\Export\RenderPipeline\SortingCriteria.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Runtime\Export\RenderPipeline\FilteringSettings.cs
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Runtime\Export\RenderPipeline\ScriptableRenderContext.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Runtime\Export\Graphics\GraphicsRenderers.bindings.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Runtime\2D\Sorting\ScriptBindings\SortingGroup.bindings.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Runtime\Export\RenderPipeline\SortingCriteria.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Runtime\Export\RenderPipeline\FilteringSettings.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Runtime\Export\RenderPipeline\ScriptableRenderContext.cs
 ```
 
 Unity 对应关系：
@@ -75,10 +75,10 @@ Unity native 渲染黑盒不适合 AI-first。
 源码参考：
 
 ```text
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Plugins\2D\Paper2D\Source\Paper2D\Private\PaperSpriteComponent.cpp
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Plugins\2D\Paper2D\Source\Paper2D\Private\PaperRenderSceneProxy.h
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Plugins\2D\Paper2D\Source\Paper2D\Private\PaperRenderSceneProxy.cpp
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Engine\Classes\Components\PrimitiveComponent.h
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Plugins\2D\Paper2D\Source\Paper2D\Private\PaperSpriteComponent.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Plugins\2D\Paper2D\Source\Paper2D\Private\PaperRenderSceneProxy.h
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Plugins\2D\Paper2D\Source\Paper2D\Private\PaperRenderSceneProxy.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Engine\Classes\Components\PrimitiveComponent.h
 ```
 
 UE 对应关系：

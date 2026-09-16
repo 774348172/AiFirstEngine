@@ -72,13 +72,13 @@ https://docs.unity3d.com/6000.1/Documentation/Manual/UIE-faq-event-and-input-sys
 本机源码参考：
 
 ```text
-<UNITY_UI_REFERENCE>\com.unity.ugui\Runtime\UGUI\EventSystem\InputModules\StandaloneInputModule.cs
+I:\com.unity.ugui\com.unity.ugui\Runtime\UGUI\EventSystem\InputModules\StandaloneInputModule.cs
   Process / ProcessMouseEvent / ProcessMousePress / ProcessMove / ProcessDrag
 
-<UNITY_UI_REFERENCE>\com.unity.ugui\Runtime\UGUI\UI\Core\ScrollRect.cs
+I:\com.unity.ugui\com.unity.ugui\Runtime\UGUI\UI\Core\ScrollRect.cs
   OnInitializePotentialDrag / OnBeginDrag / OnDrag / OnEndDrag / OnScroll
 
-<UNITY_UI_REFERENCE>\com.unity.ugui\Runtime\UGUI\UI\Core\InputField.cs
+I:\com.unity.ugui\com.unity.ugui\Runtime\UGUI\UI\Core\InputField.cs
   OnSelect / OnDeselect / OnUpdateSelected / ProcessEvent / OnSubmit / OnPointerClick
 ```
 
@@ -126,16 +126,16 @@ https://dev.epicgames.com/documentation/unreal-engine/creating-user-interfaces-w
 本机源码参考：
 
 ```text
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Slate\Private\Framework\Application\SlateApplication.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Slate\Private\Framework\Application\SlateApplication.cpp
   ProcessReply / SetUserFocus / SetKeyboardFocus
 
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Slate\Public\Widgets\Layout\SScrollBox.h
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Slate\Public\Widgets\Layout\SScrollBox.h
   GetScrollOffset / SetScrollOffset / ScrollToStart / ScrollToEnd / OnMouseWheel
 
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Slate\Private\Widgets\Layout\SScrollBox.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Slate\Private\Widgets\Layout\SScrollBox.cpp
   SetScrollOffset / Tick / OnMouseWheel
 
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Slate\Public\Widgets\Input\SEditableText.h
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Slate\Public\Widgets\Input\SEditableText.h
   SupportsKeyboardFocus / SetText / GetText / OnTextChanged / OnTextCommitted
 ```
 
@@ -180,10 +180,10 @@ https://docs.rs/bevy/latest/bevy/input_focus/tab_navigation/index.html
 本机源码参考：
 
 ```text
-<BEVY_SOURCE>\bevy-main\bevy-main\crates\bevy_ui\src\focus.rs
+I:\BevyCode\bevy-main\bevy-main\crates\bevy_ui\src\focus.rs
   Interaction / FocusPolicy / ui_focus_system
 
-<BEVY_SOURCE>\bevy-main\bevy-main\crates\bevy_input_focus\src\lib.rs
+I:\BevyCode\bevy-main\bevy-main\crates\bevy_input_focus\src\lib.rs
   InputFocus / FocusedInput / FocusChangeEvents
 ```
 

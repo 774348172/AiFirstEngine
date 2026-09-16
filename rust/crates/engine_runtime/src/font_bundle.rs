@@ -84,7 +84,18 @@ pub struct CookedFontBundleAsset {
     pub pages: Vec<CookedFontBundlePage>,
     pub glyphs: Vec<CookedFontBundleGlyph>,
     pub kerning_adjustments: Vec<CookedFontBundleKerning>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub font_faces: Vec<RuntimeFontFaceDescriptor>,
     pub bundle_digest: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct RuntimeFontFaceDescriptor {
+    pub font_face_id: String,
+    pub face_index: u32,
+    pub source_digest: String,
+    pub payload_path: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -378,15 +389,28 @@ impl RuntimeFontBundleLoader {
                 "Recook metadata and all page payloads together.",
             ));
         }
-        for source in &source.font_face_sources {
-            let digest = sha256_prefixed(&source.bytes);
-            if digest != source.source_digest {
+        if source.metadata.font_faces.len() != source.font_face_sources.len() {
+            diagnostics.push(diagnostic(
+                "FontFaceSourceCountMismatch", &source.metadata.font_bundle_id,
+                "FontFace payload count differs from digest-bound metadata",
+                "Rebuild the complete FontBundle.",
+            ));
+        }
+        let mut face_ids = BTreeSet::new();
+        for face in &source.font_face_sources {
+            let descriptor = source.metadata.font_faces.iter().find(|entry| entry.font_face_id == face.font_face_id);
+            let digest = sha256_prefixed(&face.bytes);
+            if digest != face.source_digest || descriptor.is_none_or(|entry| entry.source_digest != digest || entry.face_index != face.face_index) {
                 diagnostics.push(diagnostic(
                     "FontFaceSourceDigestMismatch",
-                    &source.font_face_id,
+                    &face.font_face_id,
                     "font face source digest mismatch".to_string(),
                     "Re-cook the FontBundle from the declared FontFace source.",
                 ));
+            }
+            if !face_ids.insert(&face.font_face_id) || rustybuzz::Face::from_slice(&face.bytes, face.face_index).is_none() {
+                diagnostics.push(diagnostic("FontFaceSourceInvalid", &face.font_face_id,
+                    "Duplicate FontFace identity or invalid font collection index", "Recook the declared FontFace."));
             }
         }
         if diagnostics.is_empty() {

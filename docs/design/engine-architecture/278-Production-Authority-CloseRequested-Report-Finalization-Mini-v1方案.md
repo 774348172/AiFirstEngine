@@ -58,7 +58,7 @@ Tower 当前施工：UI-V2 战报主导镜像战场主界面 v2；Gate F BLOCKED
 权威失败证据：
 
 ```text
-<TOWER_RUN_ROOT>/ui-v2-gate-f-20260808-163440/evidence/gate-f-final-report.json
+G:/AifeTowerRuns/ui-v2-gate-f-20260808-163440/evidence/gate-f-final-report.json
 ```
 
 关键事实：

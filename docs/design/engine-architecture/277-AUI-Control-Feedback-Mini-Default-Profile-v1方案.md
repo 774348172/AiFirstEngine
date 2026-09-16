@@ -80,8 +80,8 @@ interaction snapshot 和本帧 command，输出 present-only visual override。
 
 - `https://docs.unity3d.com/6000.0/Documentation/Manual/UIE-Transitions.html`
 - `https://docs.unity3d.com/6000.0/Documentation/Manual/UIE-USS-Selectors-Pseudo-Classes.html`
-- `<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Modules\UIElements\Core\Clickable.cs`
-- `<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Modules\UIElements\Core\Controls\Button.cs`
+- `I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Modules\UIElements\Core\Clickable.cs`
+- `I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Modules\UIElements\Core\Controls\Button.cs`
 
 可学习点：`Clickable` 拥有 capture/active/click，VisualElement pseudo-state 由 style/transition 消费；输入命令和视觉
 过渡分离。不可照搬点：完整 USS/CSS property、selector 与 transition 面对当前 AUI Mini 过宽。
@@ -91,7 +91,7 @@ interaction snapshot 和本帧 command，输出 present-only visual override。
 参考：
 
 - `https://dev.epicgames.com/documentation/en-us/unreal-engine/API/Runtime/SlateCore/Styling/FButtonStyle`
-- `<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Slate\Public\Widgets\Input\SButton.h`
+- `I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Slate\Public\Widgets\Input\SButton.h`
 
 可学习点：Normal/Hovered/Pressed/Disabled visual、PressedPadding 与 click method 分开表达。不可照搬点：每种控件
 持有大型 style struct 会造成浅接口和逐控件重复配置。
@@ -101,8 +101,8 @@ interaction snapshot 和本帧 command，输出 present-only visual override。
 参考：
 
 - `https://docs.godotengine.org/en/stable/classes/class_basebutton.html`
-- `<GODOT_SOURCE>\godot-master\godot-master\scene\gui\base_button.cpp`
-- `<GODOT_SOURCE>\godot-master\godot-master\scene\gui\button.cpp`
+- `I:\godotcode\godot-master\godot-master\scene\gui\base_button.cpp`
+- `I:\godotcode\godot-master\godot-master\scene\gui\button.cpp`
 
 可学习点：BaseButton 集中拥有 hover/pressed/action mode，Button 从 Theme 解析视觉。不可照搬点：277 不引入完整
 Theme 继承树，也不把 Toggle、Shortcut、ButtonGroup 一次并入。

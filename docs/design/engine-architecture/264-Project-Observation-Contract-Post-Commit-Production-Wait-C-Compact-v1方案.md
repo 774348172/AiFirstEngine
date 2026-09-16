@@ -33,13 +33,13 @@ Rust 拥有的权威状态需要通过很窄的 Adapter 公开为 snapshot 值�
 fresh Tower Defense Gate G run：
 
 ```text
-<TOWER_RUN_ROOT>\p0-5-gate-g-20260802-121707
+G:\AifeTowerRuns\p0-5-gate-g-20260802-121707
 ```
 
 权威阻断报告：
 
 ```text
-<TOWER_RUN_ROOT>\p0-5-gate-g-20260802-121707\evidence\gate-g-blocked-report.json
+G:\AifeTowerRuns\p0-5-gate-g-20260802-121707\evidence\gate-g-blocked-report.json
 ```
 
 已证实：
@@ -106,7 +106,7 @@ project-owned Observation Contract asset
 源码：
 
 ```text
-<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Runtime\Export\Scripting\WaitUntil.cs
+I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Runtime\Export\Scripting\WaitUntil.cs
 ```
 
 `WaitUntil.keepWaiting` 在调度时重复检查 predicate；timeout 计时和 predicate 分离，并明确
@@ -117,7 +117,7 @@ project-owned Observation Contract asset
 源码：
 
 ```text
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Core\Public\Misc\AutomationTest.h
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Core\Public\Misc\AutomationTest.h
 ```
 
 `IAutomationLatentCommand::Update()` 以完成布尔值推进队列，`FUntilCommand` 把条件重试和有界
@@ -129,7 +129,7 @@ wait 完成才进入下一步，不照搬任意 `TFunction` callback。
 源码：
 
 ```text
-<GODOT_SOURCE>\godot-master\godot-master\scene\main\scene_tree.cpp
+I:\godotcode\godot-master\godot-master\scene\main\scene_tree.cpp
 ```
 
 `process_frame` signal 和 `SceneTreeTimer` 分开存在；帧推进和时间到期都不等于项目业务

@@ -213,7 +213,7 @@ piped stream 必须在 child 存活时持续 drain。
 源码：
 
 ```text
-<UNREAL_ENGINE_SOURCE>/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/Core/Private/Windows/WindowsPlatformProcess.cpp
+I:/UECode/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/Core/Private/Windows/WindowsPlatformProcess.cpp
   FWindowsPlatformProcess::ExecProcess
   ReadFromPipes
   ReadPipeToArray
@@ -237,8 +237,8 @@ CreatePipe stdout/stderr
 源码：
 
 ```text
-<UNITY_CS_REFERENCE>/UnityCsReference-master/UnityCsReference-master/Editor/Mono/Utils/Program.cs
-<UNITY_CS_REFERENCE>/UnityCsReference-master/UnityCsReference-master/Editor/Mono/Utils/ProcessOutputStreamReader.cs
+I:/UnityCode/UnityCsReference-master/UnityCsReference-master/Editor/Mono/Utils/Program.cs
+I:/UnityCode/UnityCsReference-master/UnityCsReference-master/Editor/Mono/Utils/ProcessOutputStreamReader.cs
 ```
 
 关键调用链：
@@ -279,7 +279,7 @@ DeleteFile 的删除与 open handle / FILE_SHARE_DELETE / delete-on-close 有独
 
 ```text
 https://learn.microsoft.com/en-us/windows/win32/menurc/versioninfo-resource
-<GODOT_SOURCE>/godot/platform/windows/export/template_modifier.cpp
+I:/godotAllCode/godot/platform/windows/export/template_modifier.cpp
   FixedFileInfo
   StringFileInfo
   GroupIcon
@@ -1122,10 +1122,10 @@ rust/crates/editor_core/src/release_package.rs
 rust/crates/runtime_cli/src/exported_player_verification.rs
 rust/crates/engine_runtime/src/atomic_directory_publish.rs
 
-<UNREAL_ENGINE_SOURCE>/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/Core/Private/Windows/WindowsPlatformProcess.cpp
-<UNITY_CS_REFERENCE>/UnityCsReference-master/UnityCsReference-master/Editor/Mono/Utils/Program.cs
-<UNITY_CS_REFERENCE>/UnityCsReference-master/UnityCsReference-master/Editor/Mono/Utils/ProcessOutputStreamReader.cs
-<GODOT_SOURCE>/godot/platform/windows/export/template_modifier.cpp
+I:/UECode/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/Core/Private/Windows/WindowsPlatformProcess.cpp
+I:/UnityCode/UnityCsReference-master/UnityCsReference-master/Editor/Mono/Utils/Program.cs
+I:/UnityCode/UnityCsReference-master/UnityCsReference-master/Editor/Mono/Utils/ProcessOutputStreamReader.cs
+I:/godotAllCode/godot/platform/windows/export/template_modifier.cpp
 
 https://doc.rust-lang.org/std/process/struct.Stdio.html
 https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-lockfileex

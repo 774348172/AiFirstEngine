@@ -50,13 +50,13 @@ StandaloneInputModule
 源码参考：
 
 ```text
-<UNITY_UI_REFERENCE>\com.unity.ugui\Runtime\UGUI\EventSystem\InputModules\StandaloneInputModule.cs
+I:\com.unity.ugui\com.unity.ugui\Runtime\UGUI\EventSystem\InputModules\StandaloneInputModule.cs
   Process / ProcessMouseEvent / ProcessMousePress
 
-<UNITY_UI_REFERENCE>\com.unity.ugui\Runtime\UGUI\UI\Core\Button.cs
+I:\com.unity.ugui\com.unity.ugui\Runtime\UGUI\UI\Core\Button.cs
   OnPointerClick
 
-<UNITY_UI_REFERENCE>\com.unity.ugui\Runtime\UGUI\UI\Core\ScrollRect.cs
+I:\com.unity.ugui\com.unity.ugui\Runtime\UGUI\UI\Core\ScrollRect.cs
   OnInitializePotentialDrag / OnBeginDrag / OnDrag / OnEndDrag / OnScroll
 ```
 
@@ -91,12 +91,12 @@ FSlateApplication
 源码参考：
 
 ```text
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Slate\Private\Framework\Application\SlateApplication.cpp
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Slate\Private\Framework\Application\SlateApplication.cpp
   ProcessMouseButtonDownEvent
   RoutePointerDownEvent
   ProcessReply
 
-<UNREAL_ENGINE_SOURCE>\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Slate\Public\Widgets\Input\SButton.h
+I:\UECode\UnrealEngine-release\UnrealEngine-release\Engine\Source\Runtime\Slate\Public\Widgets\Input\SButton.h
   OnMouseButtonDown
 ```
 
@@ -131,17 +131,17 @@ Viewport::_gui_input_event
 源码参考：
 
 ```text
-<GODOT_SOURCE>\godot-master\godot-master\scene\main\viewport.cpp
+I:\godotcode\godot-master\godot-master\scene\main\viewport.cpp
   _gui_input_event
   gui_find_control
   set_input_as_handled
 
-<GODOT_SOURCE>\godot-master\godot-master\scene\gui\control.cpp
+I:\godotcode\godot-master\godot-master\scene\gui\control.cpp
   _call_gui_input
   gui_input
   mouse_filter
 
-<GODOT_SOURCE>\godot-master\godot-master\scene\gui\base_button.cpp
+I:\godotcode\godot-master\godot-master\scene\gui\base_button.cpp
   BaseButton::gui_input
 ```
 
@@ -173,13 +173,13 @@ PointerLocation
 源码参考：
 
 ```text
-<BEVY_SOURCE>\bevy-main\bevy-main\crates\bevy_picking\src\backend.rs
+I:\BevyCode\bevy-main\bevy-main\crates\bevy_picking\src\backend.rs
   PointerHits
 
-<BEVY_SOURCE>\bevy-main\bevy-main\crates\bevy_picking\src\hover.rs
+I:\BevyCode\bevy-main\bevy-main\crates\bevy_picking\src\hover.rs
   HoverMap / PreviousHoverMap
 
-<BEVY_SOURCE>\bevy-main\bevy-main\crates\bevy_picking\src\events.rs
+I:\BevyCode\bevy-main\bevy-main\crates\bevy_picking\src\events.rs
   pointer_events
   Click / DragStart / Drag / DragDrop
 ```

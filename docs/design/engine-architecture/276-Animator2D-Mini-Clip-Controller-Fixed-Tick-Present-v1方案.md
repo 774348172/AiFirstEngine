@@ -90,11 +90,11 @@ Project Runtime fixed update
 
 - <https://docs.unity3d.com/6000.0/Documentation/Manual/class-AnimatorController.html>
 - <https://docs.unity3d.com/6000.0/Documentation/Manual/AnimationClips.html>
-- `<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Editor\Mono\Animation\AnimatorController.cs`
-- `<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Modules\Animation\ScriptBindings\Animator.bindings.cs`
-- `<UNITY_CS_REFERENCE>\UnityCsReference-master\UnityCsReference-master\Modules\Animation\ScriptBindings\AnimationClip.bindings.cs`
-- `<UNITY_LEGACY_SOURCE>\Runtime\Animation`
-- `<UNITY_LEGACY_SOURCE>\Runtime\mecanim`
+- `I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Editor\Mono\Animation\AnimatorController.cs`
+- `I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Modules\Animation\ScriptBindings\Animator.bindings.cs`
+- `I:\UnityCode\UnityCsReference-master\UnityCsReference-master\Modules\Animation\ScriptBindings\AnimationClip.bindings.cs`
+- `I:\Unity4.3.1f1\Runtime\Animation`
+- `I:\Unity4.3.1f1\Runtime\mecanim`
 
 可借鉴部分是 Clip、Controller、State、Transition 的职责分离，以及常量数据与每实例运行内存分离。
 Unity 的 `SetBool` / `SetTrigger` 也证明参数化 intent 是稳定项目接口。Unity 4.3 的

@@ -110,10 +110,10 @@ physical window coordinates
 本地源码：
 
 ```text
-<UNREAL_ENGINE_SOURCE>/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/SlateCore/Public/Widgets/SWidget.h
-<UNREAL_ENGINE_SOURCE>/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/SlateCore/Private/Input/HittestGrid.cpp
-<UNREAL_ENGINE_SOURCE>/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/Slate/Private/Framework/Application/SlateApplication.cpp
-<UNREAL_ENGINE_SOURCE>/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/Slate/Private/Framework/Docking/SDockingTabStack.cpp
+I:/UECode/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/SlateCore/Public/Widgets/SWidget.h
+I:/UECode/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/SlateCore/Private/Input/HittestGrid.cpp
+I:/UECode/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/Slate/Private/Framework/Application/SlateApplication.cpp
+I:/UECode/UnrealEngine-release/UnrealEngine-release/Engine/Source/Runtime/Slate/Private/Framework/Docking/SDockingTabStack.cpp
 ```
 
 核心链路：
@@ -136,10 +136,10 @@ SWidget Tree
 本地源码：
 
 ```text
-<GODOT_SOURCE>/godot/editor/editor_node.cpp
-<GODOT_SOURCE>/godot/editor/docks/editor_dock_manager.cpp
-<GODOT_SOURCE>/godot/scene/gui/control.cpp
-<GODOT_SOURCE>/godot/scene/main/viewport.cpp
+I:/godotAllCode/godot/editor/editor_node.cpp
+I:/godotAllCode/godot/editor/docks/editor_dock_manager.cpp
+I:/godotAllCode/godot/scene/gui/control.cpp
+I:/godotAllCode/godot/scene/main/viewport.cpp
 ```
 
 Godot 编辑器直接用 `Control`、`Container`、`DockSplitContainer`、`DockTabContainer`、`Button` 等长期对象组成编辑器树。
@@ -163,12 +163,12 @@ focus mode
 本地源码：
 
 ```text
-<UNITY_CS_REFERENCE>/UnityCsReference-master/UnityCsReference-master/Editor/Mono/EditorWindow.cs
-<UNITY_CS_REFERENCE>/UnityCsReference-master/UnityCsReference-master/Editor/Mono/GUIView.cs
-<UNITY_CS_REFERENCE>/UnityCsReference-master/UnityCsReference-master/Editor/Mono/HostView.cs
-<UNITY_CS_REFERENCE>/UnityCsReference-master/UnityCsReference-master/Modules/UIElements/Core/VisualElement.cs
-<UNITY_CS_REFERENCE>/UnityCsReference-master/UnityCsReference-master/Modules/UIElements/Core/Panel.cs
-<UNITY_CS_REFERENCE>/UnityCsReference-master/UnityCsReference-master/Modules/UIElements/Core/IMGUIContainer.cs
+I:/UnityCode/UnityCsReference-master/UnityCsReference-master/Editor/Mono/EditorWindow.cs
+I:/UnityCode/UnityCsReference-master/UnityCsReference-master/Editor/Mono/GUIView.cs
+I:/UnityCode/UnityCsReference-master/UnityCsReference-master/Editor/Mono/HostView.cs
+I:/UnityCode/UnityCsReference-master/UnityCsReference-master/Modules/UIElements/Core/VisualElement.cs
+I:/UnityCode/UnityCsReference-master/UnityCsReference-master/Modules/UIElements/Core/Panel.cs
+I:/UnityCode/UnityCsReference-master/UnityCsReference-master/Modules/UIElements/Core/IMGUIContainer.cs
 ```
 
 Unity 不是纯 retained：

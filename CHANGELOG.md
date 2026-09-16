@@ -63,3 +63,7 @@
 
 - 临时塔防项目以及其它样例游戏和项目专用代码。
 - 内部施工材料、历史原型、验证产物、二进制和压缩产物。
+
+## 0.0.4 — 2026-09-16
+Current Rust and architecture snapshot; see RELEASE_NOTES.md.
+

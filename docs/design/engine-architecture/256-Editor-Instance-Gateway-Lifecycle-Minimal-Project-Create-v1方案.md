@@ -1,5 +1,7 @@
 # 256 Editor-Instance Gateway Lifecycle + Minimal Project Create v1 方案
 
+> 2026-08-31 authority 状态：已完成实现继续作为历史能力和 `EditorProjectAdapter` 参考；Editor-instance identity 不再是 Headless AI 默认身份，也不是项目 authority。
+
 ## 0. 文档状态
 
 ```text

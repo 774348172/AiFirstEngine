@@ -88,7 +88,7 @@ Gate G authoritative regression：blocked_by_gate_f。
 
 ### 2.3 Fixture 不成立
 
-`<LOCAL_TEST_ROOT>\AiFirstGame` manifest 要求 `project.c01.runtime`；当前生产 Editor 只链接：
+`I:\EngineTest\AiFirstGame` manifest 要求 `project.c01.runtime`；当前生产 Editor 只链接：
 
 ```text
 empty.runtime
@@ -554,7 +554,7 @@ Gate F 通过后在 immutable frozen source + disposable execution copy 运行�
 
 ```text
 OS：Windows，真实 Named Pipe / Winit / WGPU surface。
-施工 target：<LOCAL_TEST_ROOT>\BuildTargets\254-r1-revision
+施工 target：I:\EngineTest\BuildTargets\254-r1-revision
 Gate F project：samples/complex_shooter_project disposable copy。
 源码：当前混合工作树必须先生成 scoped source manifest；最终权威运行使用等价隔离/frozen source。
 候选：代码、Cargo manifests/lock、binary、Codex config、fixture、evidence schema、binding manifest、acceptance plan schema/hash、外层 candidate manifest、exact direct inputs、output-derived parameter rules 或 artifact schema 任一变化都使 freeze 失效。任何上游变化都必须重新生成全部下游 digest，禁止原地改写已发布 candidate。
