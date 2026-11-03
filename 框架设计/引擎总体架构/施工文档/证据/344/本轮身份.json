@@ -1,0 +1,37 @@
+{
+  "providerSha256": "bf5c5edf73bfd23c30298f697d6d464134166cbd273b3be9b28db3ed35a1de53",
+  "build": {
+    "artifactIdentity": "sha256:4904274ecf5fff7097d033bb79e1a4c4cb7ab2b0044827c4c0d0eec3fb9894d6",
+    "deliveryIdentity": "sha256:c3733b4ee5d6b0293ab0d2260a2b4f92b529562d4b9fe3db433c475cf4ceafd2",
+    "deliveryRef": "engine-delivery:sha256:c3733b4ee5d6b0293ab0d2260a2b4f92b529562d4b9fe3db433c475cf4ceafd2",
+    "packageDir": "\\\\?\\G:\\gameEngin\\samples\\laser_house_project\\Library\\EngineTools\\Deliveries\\engine-op-344-final-three-rooms-2\\Build\\Windows\\dev",
+    "playerExecutable": "\\\\?\\G:\\gameEngin\\samples\\laser_house_project\\Library\\EngineTools\\Deliveries\\engine-op-344-final-three-rooms-2\\Build\\Windows\\dev\\Game.exe",
+    "prepareSummary": {
+      "durationMs": 4375.189899999999,
+      "missReasons": [],
+      "preparationIdentity": "sha256:d9eac5256ac776866c04f9e6b90647ac982750b2be3906c12f0ab884afde2ef8",
+      "producedCount": 0,
+      "producerCount": 48,
+      "reusedCount": 48,
+      "sourceIdentity": "sha256:6bcd5516d3e1f1a4e80ceda21c90ec73dae3468188094a42e465747ed5a8a88d",
+      "targetProfile": "windows-dev",
+      "uncachedStages": [
+        "source-validation",
+        "scene-prefab-rule-aui-input",
+        "runtime-glue",
+        "package-assembly"
+      ]
+    },
+    "runtimePackageDir": "\\\\?\\G:\\gameEngin\\samples\\laser_house_project\\Library\\EngineTools\\Deliveries\\engine-op-344-final-three-rooms-2\\Build\\Windows\\dev\\data\\runtime_package",
+    "status": "success",
+    "targetProfile": "windows-dev"
+  },
+  "projectRevision": "sha256:7c5cb9d587857ad69876507b6faecd931e2739cb75919ca13c3ebeeea3ef45f7",
+  "binaries": {
+    "engine_runtime.dll": "b72a7f845a1d832015ea9444ff57ddc6df12af6d29384b8becf6053a9e8834d6",
+    "Game.exe": "4904274ecf5fff7097d033bb79e1a4c4cb7ab2b0044827c4c0d0eec3fb9894d6",
+    "data\\bin\\sample_laser_house_runtime.dll": "0bdfc562b2820a10542c9388a9de0a57baf95dda793c959dddcdf44b6e833ff8"
+  },
+  "authorSourceManifest": "G:\\gameEngin\\.artifacts\\344\\final-three-rooms\\source-hashes.json",
+  "recordedUtc": "2026-09-15T08:15:23.581848+00:00"
+}

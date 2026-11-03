@@ -1,0 +1,418 @@
+{
+  "rust/quality/architecture-eval-corpus.v1.json": [
+    "rust/crates/architecture_review/src/eval.rs"
+  ],
+  "rust/crates/editor_ui_model/resources/localization/zh-CN.editor.json": [
+    "rust/crates/editor_ui_model/src/localization.rs"
+  ],
+  "rust/crates/editor_ui_model/resources/localization/en-US.editor.json": [
+    "rust/crates/editor_ui_model/src/localization.rs"
+  ],
+  "rust/resources/editor/themes/dark-neutral/control-style.v1.json": [
+    "rust/crates/editor_ui_renderer/src/control_style.rs"
+  ],
+  "rust/crates/editor_ui_renderer/src/panels/toolbar.rs": [
+    "rust/crates/editor_ui_renderer/src/control_style_coverage.rs",
+    "rust/crates/editor_ui_renderer/src/tests.rs"
+  ],
+  "rust/crates/editor_ui_renderer/src/panels/mod.rs": [
+    "rust/crates/editor_ui_renderer/src/control_style_coverage.rs"
+  ],
+  "rust/resources/editor/themes/dark-neutral/control-textures.v1.json": [
+    "rust/crates/editor_ui_renderer/src/control_texture.rs"
+  ],
+  "rust/resources/editor/themes/dark-neutral/tab-hover.png": [
+    "rust/crates/editor_ui_renderer/src/control_texture.rs"
+  ],
+  "rust/resources/editor/themes/dark-neutral/tab-active.png": [
+    "rust/crates/editor_ui_renderer/src/control_texture.rs"
+  ],
+  "rust/resources/editor/themes/dark-neutral/tab-selected.png": [
+    "rust/crates/editor_ui_renderer/src/control_texture.rs"
+  ],
+  "rust/resources/editor/themes/dark-neutral/tab-selected-hover.png": [
+    "rust/crates/editor_ui_renderer/src/control_texture.rs"
+  ],
+  "rust/crates/editor_ui_renderer/src/renderer.rs": [
+    "rust/crates/editor_ui_renderer/src/tests.rs",
+    "rust/crates/editor_ui_renderer/src/theme.rs"
+  ],
+  "rust/crates/editor_ui_renderer/src/panels/ai_panel.rs": [
+    "rust/crates/editor_ui_renderer/src/tests.rs"
+  ],
+  "rust/crates/editor_ui_renderer/src/panels/build_export.rs": [
+    "rust/crates/editor_ui_renderer/src/tests.rs"
+  ],
+  "rust/crates/editor_ui_renderer/src/panels/console.rs": [
+    "rust/crates/editor_ui_renderer/src/tests.rs"
+  ],
+  "rust/crates/editor_ui_renderer/src/panels/hierarchy.rs": [
+    "rust/crates/editor_ui_renderer/src/tests.rs"
+  ],
+  "rust/crates/editor_ui_renderer/src/panels/inspector.rs": [
+    "rust/crates/editor_ui_renderer/src/tests.rs"
+  ],
+  "rust/crates/editor_ui_renderer/src/panels/launcher.rs": [
+    "rust/crates/editor_ui_renderer/src/tests.rs",
+    "rust/crates/editor_ui_renderer/src/theme.rs"
+  ],
+  "rust/crates/editor_ui_renderer/src/panels/project_browser.rs": [
+    "rust/crates/editor_ui_renderer/src/tests.rs",
+    "rust/crates/editor_ui_renderer/src/theme.rs"
+  ],
+  "rust/crates/editor_ui_renderer/src/panels/runtime_trace.rs": [
+    "rust/crates/editor_ui_renderer/src/tests.rs"
+  ],
+  "rust/crates/editor_ui_renderer/src/panels/workspace.rs": [
+    "rust/crates/editor_ui_renderer/src/tests.rs"
+  ],
+  "rust/resources/editor/fonts/NotoSansSC-VF.ttf": [
+    "rust/crates/editor_wgpu_renderer/src/font_system.rs",
+    "rust/crates/engine_runtime/tests/aui_layout_c2_paragraph.rs",
+    "rust/crates/engine_runtime/tests/aui_performance_m5.rs",
+    "rust/crates/engine_runtime/tests/aui_text_m4d.rs",
+    "rust/crates/engine_runtime_core/src/aui/tests.rs",
+    "rust/crates/engine_runtime_core/src/aui_present_cache.rs",
+    "rust/crates/engine_runtime_core/src/runtime_package_builder.rs",
+    "rust/crates/engine_text/src/text_shaping.rs",
+    "rust/crates/project_authoring_execution/src/font_cook.rs",
+    "rust/crates/runtime_player_winit/src/tests/mod.rs"
+  ],
+  "rust/crates/engine_render_native/tests/fixtures/particle-effect.json": [
+    "rust/crates/engine_render_native/src/particle_gpu/tests.rs",
+    "rust/crates/engine_render_native/src/particle_render/tests.rs",
+    "rust/crates/engine_render_native/tests/native_template_work.rs"
+  ],
+  "rust/crates/engine_render_native/src/particle_render/common.wgsl": [
+    "rust/crates/engine_render_native/src/particle_render.rs"
+  ],
+  "rust/crates/engine_render_native/src/particle_render/compute.wgsl": [
+    "rust/crates/engine_render_native/src/particle_render.rs"
+  ],
+  "rust/crates/engine_render_native/src/particle_render/draw.wgsl": [
+    "rust/crates/engine_render_native/src/particle_render.rs"
+  ],
+  "rust/crates/engine_render_native/src/wgpu_backend/real/geometry/gpu_scale.wgsl": [
+    "rust/crates/engine_render_native/src/wgpu_backend/real/geometry/gpu_scale.rs"
+  ],
+  "rust/crates/engine_render_native/src/wgpu_backend/real/geometry/skin.wgsl": [
+    "rust/crates/engine_render_native/src/wgpu_backend/real/geometry/skin.rs"
+  ],
+  "rust/crates/engine_spine_runtime/tests/fixtures/probe.atlas": [
+    "rust/crates/engine_render_native/tests/spine374_pixels.rs",
+    "rust/crates/engine_runtime_core/src/spine_animation/control_tests.rs",
+    "rust/crates/engine_runtime_core/src/spine_animation/session.rs",
+    "rust/crates/engine_spine_runtime/src/geometry.rs",
+    "rust/crates/engine_spine_runtime/tests/gate_a.rs",
+    "rust/crates/engine_spine_runtime/tests/gate_b.rs",
+    "rust/crates/engine_spine_runtime/tests/gate_c.rs",
+    "rust/crates/engine_tool_provider/tests/spine374_tools.rs",
+    "rust/crates/project_authoring_execution/tests/spine374_project.rs"
+  ],
+  "rust/crates/engine_spine_runtime/tests/fixtures/probe.json": [
+    "rust/crates/engine_render_native/tests/spine374_pixels.rs",
+    "rust/crates/engine_render_native/tests/spine374_pixels/gate_f.rs",
+    "rust/crates/engine_runtime_core/src/spine_animation/control_tests.rs",
+    "rust/crates/engine_runtime_core/src/spine_animation/session.rs",
+    "rust/crates/engine_spine_runtime/src/geometry.rs",
+    "rust/crates/engine_spine_runtime/tests/gate_a.rs",
+    "rust/crates/engine_spine_runtime/tests/gate_b.rs",
+    "rust/crates/engine_spine_runtime/tests/gate_c.rs",
+    "rust/crates/engine_tool_provider/tests/spine374_tools.rs",
+    "rust/crates/project_authoring_execution/tests/spine374_project.rs"
+  ],
+  "rust/crates/engine_spine_runtime/tests/fixtures/recipe-single.json": [
+    "rust/crates/engine_render_native/tests/spine374_pixels/gate_f.rs",
+    "rust/crates/engine_spine_runtime/tests/gate_a.rs",
+    "rust/crates/engine_spine_runtime/tests/gate_b.rs",
+    "rust/crates/project_authoring_execution/tests/spine374_project/gate_f.rs"
+  ],
+  "rust/crates/engine_runtime/tests/fixtures/three_d_a0/runtime-scene-v2.json": [
+    "rust/crates/engine_runtime/tests/platform_3d_contracts.rs",
+    "rust/crates/engine_runtime/tests/platform_3d_foundation.rs",
+    "rust/crates/engine_runtime/tests/platform_3d_foundation.rs",
+    "rust/crates/engine_runtime/tests/support/s3b_pose.rs",
+    "rust/crates/engine_runtime/tests/support/streamed_cells.rs",
+    "rust/crates/engine_runtime/tests/three_d_contract_a0.rs",
+    "rust/crates/engine_runtime/tests/three_d_runtime_a.rs",
+    "rust/crates/engine_runtime_core/src/render_geometry/production/vegetation_tests.rs",
+    "rust/crates/project_authoring_execution/src/platform_3d_benchmark/foundation.rs",
+    "rust/crates/runtime_player_winit/src/tests/mod.rs",
+    "rust/crates/runtime_player_winit/src/tests/mod.rs",
+    "rust/crates/runtime_player_winit/src/tests/real_window_terminal.rs"
+  ],
+  "rust/crates/engine_runtime/tests/fixtures/three_d_a0/runtime-scene-v1.json": [
+    "rust/crates/engine_runtime/tests/platform_3d_contracts.rs",
+    "rust/crates/engine_runtime/tests/three_d_contract_a0.rs"
+  ],
+  "samples/platform_3d_benchmark_project/Benchmark/target-recipes.json": [
+    "rust/crates/engine_runtime/tests/support/foundation_hud.rs",
+    "rust/crates/project_authoring_execution/src/platform_3d_benchmark.rs"
+  ],
+  "rust/crates/engine_runtime/tests/fixtures/particle-effect.json": [
+    "rust/crates/engine_runtime/tests/support/s2c_presentation.rs",
+    "rust/crates/engine_runtime/tests/unified_render_execution_u2.rs",
+    "rust/crates/project_authoring_execution/src/particle_effect_cook/tests.rs",
+    "rust/crates/project_authoring_execution/tests/game_project_compiler_interface.rs"
+  ],
+  "rust/crates/engine_runtime_core/tests/fixtures/particle-effect.json": [
+    "rust/crates/engine_runtime/tests/support/s4c_environment.rs",
+    "rust/crates/engine_runtime_core/src/particle_effect/tests.rs",
+    "rust/crates/engine_runtime_core/src/runtime_particles_tests.rs",
+    "rust/crates/engine_runtime_core/tests/support/s2c_presentation.rs"
+  ],
+  "samples/platform_3d_world_project/Assets/S4Environment/vegetation.asset": [
+    "rust/crates/engine_runtime/tests/support/s4c_vegetation_gameplay.rs",
+    "rust/crates/engine_runtime_core/src/render_geometry/production/vegetation_tests.rs"
+  ],
+  "samples/platform_3d_benchmark_project/Input/default.json": [
+    "rust/crates/engine_runtime/tests/support/streamed_cells.rs",
+    "rust/crates/engine_runtime_core/tests/support/streamed_cells.rs"
+  ],
+  "rust/crates/engine_runtime/tests/fixtures/render_mesh_v1.json": [
+    "rust/crates/engine_runtime/tests/three_d_runtime_a.rs",
+    "rust/crates/engine_runtime/tests/three_d_runtime_a.rs",
+    "rust/crates/engine_runtime/tests/unified_render_assets_u1.rs",
+    "rust/crates/engine_runtime/tests/unified_render_assets_u1.rs",
+    "rust/crates/project_authoring_execution/src/render_asset_cook.rs"
+  ],
+  "rust/crates/engine_runtime/tests/fixtures/render_material_v1.json": [
+    "rust/crates/engine_runtime/tests/three_d_runtime_a.rs",
+    "rust/crates/engine_runtime/tests/unified_render_assets_u1.rs",
+    "rust/crates/project_authoring_execution/src/render_asset_cook.rs"
+  ],
+  "rust/crates/engine_runtime/tests/fixtures/three_d_a12/cube.json": [
+    "rust/crates/engine_runtime/tests/three_d_runtime_a/generated_gpu.rs",
+    "rust/crates/project_authoring_execution/tests/three_d_project_a/generated.rs",
+    "rust/crates/runtime_player_winit/src/tests/mod.rs"
+  ],
+  "rust/crates/engine_runtime/tests/fixtures/three_d_a12/plane.json": [
+    "rust/crates/engine_runtime/tests/three_d_runtime_a/generated_gpu.rs",
+    "rust/crates/project_authoring_execution/tests/three_d_project_a/generated.rs"
+  ],
+  "rust/crates/engine_runtime/tests/fixtures/three_d_a12/wide.json": [
+    "rust/crates/engine_runtime/tests/three_d_runtime_a/generated_gpu.rs",
+    "rust/crates/project_authoring_execution/tests/three_d_project_a/generated.rs"
+  ],
+  "rust/crates/engine_runtime/tests/fixtures/three_d_a12/blue.json": [
+    "rust/crates/engine_runtime/tests/three_d_runtime_a/generated_gpu.rs",
+    "rust/crates/project_authoring_execution/tests/three_d_project_a/generated.rs",
+    "rust/crates/runtime_player_winit/src/tests/mod.rs"
+  ],
+  "rust/crates/engine_runtime/tests/fixtures/three_d_a12/textured.json": [
+    "rust/crates/engine_runtime/tests/three_d_runtime_a/generated_gpu.rs",
+    "rust/crates/project_authoring_execution/tests/three_d_project_a/generated.rs"
+  ],
+  "rust/crates/engine_runtime_core/src/particle_effect/simulation.wgsl": [
+    "rust/crates/engine_runtime_core/src/particle_effect/program.rs"
+  ],
+  "rust/crates/engine_runtime_core/tests/fixtures/three_d_a0/runtime-scene-v2.json": [
+    "rust/crates/engine_runtime_core/src/project_runtime_native_adapter.rs",
+    "rust/crates/engine_runtime_core/src/project_runtime_session/tests.rs",
+    "rust/crates/engine_runtime_core/src/project_runtime_session/tests.rs",
+    "rust/crates/engine_runtime_core/src/project_runtime_session/tests.rs",
+    "rust/crates/engine_runtime_core/src/project_runtime_session/tests.rs",
+    "rust/crates/engine_runtime_core/src/project_runtime_session/tests.rs",
+    "rust/crates/engine_runtime_core/src/project_runtime_session/tests.rs",
+    "rust/crates/engine_runtime_core/src/project_runtime_session/tests.rs",
+    "rust/crates/engine_runtime_core/src/project_runtime_session/tests.rs",
+    "rust/crates/engine_runtime_core/src/render_extract.rs",
+    "rust/crates/engine_runtime_core/src/render_extract.rs",
+    "rust/crates/engine_runtime_core/tests/support/streamed_cells.rs"
+  ],
+  "samples/platform_3d_world_project/Assets/S4Environment/tree-mesh.asset": [
+    "rust/crates/engine_runtime_core/src/render_geometry/production/vegetation_tests.rs"
+  ],
+  "samples/platform_3d_world_project/Assets/S4Environment/tree-material.asset": [
+    "rust/crates/engine_runtime_core/src/render_geometry/production/vegetation_tests.rs"
+  ],
+  "rust/crates/engine_runtime_core/tests/fixtures/three_d_a12/cube.json": [
+    "rust/crates/engine_runtime_core/tests/three_d_runtime_a/generated_gpu.rs"
+  ],
+  "rust/crates/engine_runtime_core/tests/fixtures/three_d_a12/plane.json": [
+    "rust/crates/engine_runtime_core/tests/three_d_runtime_a/generated_gpu.rs"
+  ],
+  "rust/crates/engine_runtime_core/tests/fixtures/three_d_a12/wide.json": [
+    "rust/crates/engine_runtime_core/tests/three_d_runtime_a/generated_gpu.rs"
+  ],
+  "rust/crates/engine_runtime_core/tests/fixtures/three_d_a12/blue.json": [
+    "rust/crates/engine_runtime_core/tests/three_d_runtime_a/generated_gpu.rs"
+  ],
+  "rust/crates/engine_runtime_core/tests/fixtures/three_d_a12/textured.json": [
+    "rust/crates/engine_runtime_core/tests/three_d_runtime_a/generated_gpu.rs"
+  ],
+  "rust/crates/engine_spine_runtime/tests/fixtures/recipe-regular.json": [
+    "rust/crates/engine_spine_runtime/tests/gate_a.rs",
+    "rust/crates/engine_spine_runtime/tests/gate_b.rs",
+    "rust/crates/engine_spine_runtime/tests/gate_b.rs",
+    "rust/crates/project_authoring_execution/tests/spine374_project/gate_f.rs"
+  ],
+  "rust/crates/engine_spine_runtime/tests/fixtures/recipe-clipping.json": [
+    "rust/crates/engine_spine_runtime/tests/gate_a.rs",
+    "rust/crates/engine_spine_runtime/tests/gate_b.rs",
+    "rust/crates/engine_spine_runtime/tests/gate_b.rs",
+    "rust/crates/engine_spine_runtime/tests/gate_b.rs",
+    "rust/crates/project_authoring_execution/tests/spine374_project/gate_f.rs"
+  ],
+  "rust/fixtures/fonts/qualification/AifeNotoSCQualification.ttc": [
+    "rust/crates/engine_text/src/font_bundle.rs",
+    "rust/crates/engine_text/src/text_shaping.rs",
+    "rust/crates/project_authoring_execution/src/font_cook.rs"
+  ],
+  "rust/crates/project_authoring_execution/tests/fixtures/three_d_a0/scene.json": [
+    "rust/crates/engine_tool_provider/tests/host_adapter_equivalence.rs",
+    "rust/crates/engine_tool_provider/tests/host_adapter_equivalence.rs",
+    "rust/crates/project_authoring_execution/tests/three_d_project_a.rs"
+  ],
+  "rust/crates/project_authoring_execution/tests/fixtures/three_d_a0/mesh.json": [
+    "rust/crates/engine_tool_provider/tests/host_adapter_equivalence.rs",
+    "rust/crates/engine_tool_provider/tests/host_adapter_equivalence.rs",
+    "rust/crates/project_authoring_execution/tests/three_d_project_a.rs"
+  ],
+  "rust/crates/project_authoring_execution/tests/fixtures/three_d_a0/material.json": [
+    "rust/crates/engine_tool_provider/tests/host_adapter_equivalence.rs",
+    "rust/crates/engine_tool_provider/tests/host_adapter_equivalence.rs",
+    "rust/crates/project_authoring_execution/tests/three_d_project_a.rs"
+  ],
+  "rust/crates/project_authoring_execution/tests/fixtures/three_d_a0/import.json": [
+    "rust/crates/engine_tool_provider/tests/host_adapter_equivalence.rs",
+    "rust/crates/engine_tool_provider/tests/host_adapter_equivalence.rs",
+    "rust/crates/project_authoring_execution/src/model_import/tests.rs",
+    "rust/crates/project_authoring_execution/tests/three_d_project_a.rs"
+  ],
+  "samples/platform_3d_world_project/Assets/character.import.json": [
+    "rust/crates/engine_tool_provider/tests/platform_3d_tools.rs",
+    "rust/crates/project_authoring_execution/tests/platform_3d_delivery.rs"
+  ],
+  "samples/platform_3d_world_project/Models/character.gltf": [
+    "rust/crates/engine_tool_provider/tests/platform_3d_tools.rs",
+    "rust/crates/project_authoring_execution/tests/platform_3d_delivery.rs"
+  ],
+  "samples/platform_3d_world_project/Models/character.bin": [
+    "rust/crates/engine_tool_provider/tests/platform_3d_tools.rs"
+  ],
+  "samples/platform_3d_world_project/BuildProfiles/windows.release.json": [
+    "rust/crates/engine_tool_provider/tests/platform_3d_tools.rs"
+  ],
+  "samples/platform_3d_benchmark_project/project.aife.json": [
+    "rust/crates/project_authoring_execution/src/android_export.rs"
+  ],
+  "samples/platform_3d_benchmark_project/BuildProfiles/android.release.json": [
+    "rust/crates/project_authoring_execution/src/android_export.rs",
+    "rust/crates/project_authoring_execution/tests/platform_3d_delivery.rs"
+  ],
+  "samples/platform_3d_benchmark_project/RuntimeModule/Cargo.toml": [
+    "rust/crates/project_authoring_execution/src/android_export.rs"
+  ],
+  "samples/platform_3d_benchmark_project/RuntimeModule/src/lib.rs": [
+    "rust/crates/project_authoring_execution/src/android_export.rs"
+  ],
+  "rust/fixtures/fonts/qualification/AifeQualificationCFF-Regular.otf": [
+    "rust/crates/project_authoring_execution/src/font_cook.rs"
+  ],
+  "rust/crates/project_authoring_execution/src/generated_runtime_glue_template.rs.txt": [
+    "rust/crates/project_authoring_execution/src/generated_runtime_glue.rs"
+  ],
+  "rust/crates/project_authoring_execution/tests/fixtures/three_d_import/khronos_box/glTF/Box.gltf": [
+    "rust/crates/project_authoring_execution/src/model_import/tests.rs",
+    "rust/crates/project_authoring_execution/tests/three_d_project_a/import_scene.rs"
+  ],
+  "rust/crates/project_authoring_execution/tests/fixtures/three_d_import/khronos_box/glTF/Box0.bin": [
+    "rust/crates/project_authoring_execution/src/model_import/tests.rs",
+    "rust/crates/project_authoring_execution/tests/three_d_project_a/import_scene.rs"
+  ],
+  "rust/crates/project_authoring_execution/tests/fixtures/three_d_import/khronos_box/glTF-Binary/Box.glb": [
+    "rust/crates/project_authoring_execution/src/model_import/tests.rs",
+    "rust/crates/project_authoring_execution/tests/three_d_project_a/import_scene.rs"
+  ],
+  "samples/platform_3d_bm10_project/Tests/bm10.scenario.json": [
+    "rust/crates/project_authoring_execution/src/platform_3d_benchmark/combined.rs"
+  ],
+  "samples/platform_3d_bm06_project/Tests/bm06.scenario.json": [
+    "rust/crates/project_authoring_execution/src/platform_3d_benchmark/simulation.rs"
+  ],
+  "samples/platform_3d_bm06_project/Observations/project.observations.json": [
+    "rust/crates/project_authoring_execution/src/platform_3d_benchmark/simulation.rs"
+  ],
+  "samples/platform_3d_bm05_project/Tests/bm05.scenario.json": [
+    "rust/crates/project_authoring_execution/src/platform_3d_benchmark/simulation.rs"
+  ],
+  "samples/platform_3d_bm05_project/Observations/project.observations.json": [
+    "rust/crates/project_authoring_execution/src/platform_3d_benchmark/simulation.rs"
+  ],
+  "samples/platform_3d_bm07_project/Tests/bm07.scenario.json": [
+    "rust/crates/project_authoring_execution/src/platform_3d_benchmark/simulation_navigation.rs"
+  ],
+  "samples/platform_3d_bm07_project/Observations/project.observations.json": [
+    "rust/crates/project_authoring_execution/src/platform_3d_benchmark/simulation_navigation.rs"
+  ],
+  "samples/platform_3d_bm09_project/Tests/bm09.scenario.json": [
+    "rust/crates/project_authoring_execution/src/platform_3d_benchmark/simulation_precision.rs"
+  ],
+  "samples/platform_3d_bm09_project/Observations/project.observations.json": [
+    "rust/crates/project_authoring_execution/src/platform_3d_benchmark/simulation_precision.rs"
+  ],
+  "rust/crates/engine_spine_runtime/contracts/example.animator-description-2d.json": [
+    "rust/crates/project_authoring_execution/src/spine_description.rs"
+  ],
+  "samples/switch_puzzle_project/project.aife.json": [
+    "rust/crates/project_authoring_execution/tests/game_project_compiler_interface.rs"
+  ],
+  "samples/switch_puzzle_project/RuntimeModule/Cargo.toml": [
+    "rust/crates/project_authoring_execution/tests/game_project_compiler_interface.rs"
+  ],
+  "rust/crates/project_authoring_execution/tests/fixtures/generated_content_376_project.rs.txt": [
+    "rust/crates/project_authoring_execution/tests/game_project_compiler_interface/generated_content.rs"
+  ],
+  "samples/platform_3d_shadows_project/Scenes/main.json": [
+    "rust/crates/project_authoring_execution/tests/game_project_compiler_interface/generated_content.rs"
+  ],
+  "samples/platform_3d_benchmark_project/BuildProfiles/windows.release.json": [
+    "rust/crates/project_authoring_execution/tests/platform_3d_delivery.rs",
+    "rust/crates/project_authoring_execution/tests/three_d_project_a/reimport.rs"
+  ],
+  "samples/switch_puzzle_project/BuildProfiles/windows.release.json": [
+    "rust/crates/project_authoring_execution/tests/platform_3d_delivery.rs"
+  ],
+  "rust/crates/engine_spine_runtime/contracts/qualification-recipes.v1.json": [
+    "rust/crates/project_authoring_execution/tests/spine374_project/gate_f.rs"
+  ],
+  "rust/crates/project_authoring_execution/tests/spine374_project/gate_f_runtime.rs": [
+    "rust/crates/project_authoring_execution/tests/spine374_project/gate_f.rs",
+    "rust/crates/project_authoring_execution/tests/spine374_project/gate_f_baseline.rs",
+    "rust/crates/project_authoring_execution/tests/spine374_project/gate_f_memory.rs"
+  ],
+  "rust/crates/project_e2e_gate/src/c01_runtime_template.rs": [
+    "rust/crates/project_e2e_gate/src/c01_golden_gate.rs"
+  ],
+  "rust/crates/project_e2e_gate/Cargo.toml": [
+    "rust/crates/project_e2e_gate/src/c01_runtime_template.rs"
+  ],
+  "rust/crates/project_e2e_gate/src/lib.rs": [
+    "rust/crates/project_e2e_gate/src/c01_runtime_template.rs"
+  ],
+  "rust/crates/project_game_sdk/Cargo.toml": [
+    "rust/crates/project_game_sdk/src/lib.rs"
+  ],
+  "rust/crates/project_runtime_abi/Cargo.toml": [
+    "rust/crates/project_runtime_abi/src/lib.rs"
+  ],
+  "rust/crates/project_runtime_sdk/Cargo.toml": [
+    "rust/crates/project_runtime_sdk/src/lib.rs"
+  ],
+  "rust/quality/construction-validation-catalog.v1.json": [
+    "rust/crates/quality_gate/src/validation_catalog.rs"
+  ],
+  "rust/crates/quality_gate/src/local_ci.rs": [
+    "rust/crates/quality_gate/tests/ci_contract.rs"
+  ],
+  "samples/three_d_lab_project/Tests/spatial-controls.scenario.json": [
+    "rust/crates/runtime_player_winit/src/semantic_outcome.rs"
+  ],
+  "samples/platform_3d_bm13_k2_project/Tests/bm13-k2.scenario.json": [
+    "rust/crates/runtime_player_winit/src/semantic_outcome.rs"
+  ],
+  "samples/platform_3d_bm13_k2_project/Observations/project.observations.json": [
+    "rust/crates/runtime_player_winit/src/semantic_outcome.rs"
+  ]
+}

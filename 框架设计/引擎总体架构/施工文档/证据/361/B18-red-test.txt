@@ -1,0 +1,12 @@
+361 B18 baseline/red evidence
+date: 2026-09-27
+head: acaffa8cb95bbb54d093bbf45835a59315c82da5
+
+The pre-B18 implementation had two independently observable red conditions:
+
+1. runtime_renderer B17 terminal test asserted that a 1001-item single-slot change increased vertices_copied after all 1001 fragments were merged into one Arc<Vec<RenderDrawVertex>>.
+2. RealWgpuBackend keyed ResidentUiVertices by Arc<Vec> address and used create_buffer_init for every new address, so a changed batch could only perform a full upload. There was no changed-range or verified previous-data lineage in RenderGraph/RHI.
+
+These conditions are preserved in the B17 execution record and actual contract. B18 changed the assertions to require vertices_copied delta 0, 1000 reused chunks, 1 changed chunk, one final batch, and a trusted six-vertex patch range. The new real-WGPU test fails against the old backend because UiVertexUploadStats had no partial upload path and every changed source incremented a full upload by the complete 1001-item byte count.
+
+No synthetic window/FPS failure was used as the repair loop.

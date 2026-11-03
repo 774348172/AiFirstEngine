@@ -13,9 +13,11 @@ workspace = true
 path = "src/lib.rs"
 
 [features]
+spine = ["dep:engine_spine_runtime", "engine_runtime/spine", "runtime_player_winit/spine", "runtime_player_android/spine", "runtime_cli/spine"]
 real-wgpu = ["engine_runtime/real-wgpu"]
 
 [dependencies]
+engine_spine_runtime = { path = "../engine_spine_runtime", optional = true }
 authoring_project_context = { path = "../authoring_project_context" }
 cap-std = "4.0.2"
 engine_runtime = { path = "../engine_runtime" }
@@ -23,10 +25,15 @@ project_game_sdk = { path = "../project_game_sdk" }
 project_runtime_sdk = { path = "../project_runtime_sdk" }
 fdsm = "=0.8.0"
 fdsm-ttf-parser = "=0.2.0"
-image = { version = "=0.25.6", default-features = false }
+gltf = { version = "=1.4.1", default-features = false, features = ["utils", "names", "extras", "extensions", "KHR_materials_unlit"] }
+base64 = "=0.22.1"
+percent-encoding = "=2.3.2"
+image = { version = "=0.25.6", default-features = false, features = ["png", "jpeg"] }
+i_overlay = "=8.1.2"
 nalgebra = "=0.34.1"
 naga = { version = "26", features = ["wgsl-in"] }
 png = "0.17"
+texpresso = "=2.0.2"
 schemars = "1.2"
 semver = "1"
 serde = { version = "1", features = ["derive"] }
@@ -34,9 +41,14 @@ serde_json = "1"
 sha2 = "0.10"
 swash = "=0.2.10"
 runtime_cli = { path = "../runtime_cli" }
+runtime_player_android = { path = "../runtime_player_android" }
 runtime_player_winit = { path = "../runtime_player_winit" }
 ttf-parser = "=0.25.1"
 toml = "0.8"
+url = "2.5"
 
 [build-dependencies]
 serde_json = "1"
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+engine_navigation_native = { path = "../engine_navigation_native" }

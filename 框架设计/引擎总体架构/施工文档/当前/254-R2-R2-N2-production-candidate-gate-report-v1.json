@@ -1,0 +1,113 @@
+{
+  "schemaVersion": "254-r2-n2-production-candidate-gate-report.v1",
+  "completedAt": "2026-07-21",
+  "status": "passed",
+  "constructionState": "r2_n2_passed_awaiting_r2_n3_authorization",
+  "implementation": {
+    "publicEntry": "ProductionCandidateModule::production().produce(request)",
+    "producerOwnedSourceSnapshot": true,
+    "gitTrackedUntrackedClassifier": true,
+    "exactSnapshotReopen": true,
+    "releaseAndConformanceProcessEvidencePreserved": true,
+    "artifactBudgetEnforcedBeforeSeal": true,
+    "finalCandidateReopenRequired": true,
+    "durableFailureReopen": true,
+    "measuredCleanup": true,
+    "failedDispositionContainsCandidateId": false,
+    "legacyLifecycleExportsRetainedUntil": "R2-N4"
+  },
+  "snapshotNegativeCases": [
+    "ignored_excluded",
+    "missing",
+    "extra",
+    "tampered",
+    "cross_root",
+    "case_or_path_alias",
+    "link_or_reparse",
+    "non_utf8_git_path",
+    "post_copy_drift"
+  ],
+  "failureEvidence": {
+    "terminalKindsCovered": [
+      "spawn_failed",
+      "non_zero_exit",
+      "timeout",
+      "kill_error",
+      "wait_error",
+      "read_or_reader_join_error"
+    ],
+    "boundedStreamsPersisted": true,
+    "originalAndSavedLengthsPersisted": true,
+    "truncationMetadataPersisted": true,
+    "survivesStagingCleanup": true
+  },
+  "verification": [
+    {
+      "command": "cargo test -p ai_tool_gateway --no-fail-fast -- --test-threads=1",
+      "libPassed": 69,
+      "integrationPassed": 6,
+      "rustdocPassed": 1,
+      "failed": 0,
+      "ignored": 1,
+      "ignoredReason": "construction-only fresh R2-G environment preflight"
+    },
+    {
+      "command": "cargo test -p ai_tool_gateway --test r2_goal_modules_public_schema -- --test-threads=1",
+      "passed": 3,
+      "failed": 0
+    },
+    {
+      "command": "cargo test -p ai_tool_gateway --doc",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "command": "cargo fmt --all -- --check",
+      "status": "passed"
+    }
+  ],
+  "sourceFiles": [
+    {
+      "path": "rust/crates/ai_tool_gateway/src/lib.rs",
+      "sha256": "6aa6a09265f2108297aec73f773f6a726fb261de1264d4fa1fb70dc51e9e7e45"
+    },
+    {
+      "path": "rust/crates/ai_tool_gateway/src/production_candidate.rs",
+      "sha256": "44b6aa3bd2439b90deb56ef67f71fa1fca1fa493cc3a72c20222c19ab8201ca0"
+    },
+    {
+      "path": "rust/crates/ai_tool_gateway/src/source_snapshot.rs",
+      "sha256": "f6a9aa0c7018903e50558d027f3ce78af259f18504ad4b016ca089c5c3d625cd"
+    },
+    {
+      "path": "rust/crates/ai_tool_gateway/src/production_failure.rs",
+      "sha256": "3576781a0534ffcc58e5fc099bf9b855d0e93ce09fec18b309b8b55df03dca49"
+    },
+    {
+      "path": "rust/crates/ai_tool_gateway/src/release_package.rs",
+      "sha256": "6e84f5fbe1f26885347f796ed59b9cf1818f5082f94c7700a353d9d3ac9ceba9"
+    },
+    {
+      "path": "rust/crates/ai_tool_gateway/src/production_conformance.rs",
+      "sha256": "380c1601f99306c80f45c3d9077f7a66b3c4f63b1d5af60af800f0146416b07b"
+    },
+    {
+      "path": "rust/crates/ai_tool_gateway/tests/r2_goal_modules_public_schema.rs",
+      "sha256": "3048453dff0b4ac8950cb08b3a558bbf19198a683fd78809f1f2902e248c71a0"
+    }
+  ],
+  "workspaceTruth": {
+    "gatewayCrateTrackedByCurrentGitIndex": false,
+    "cleanCheckoutEquivalentClaimed": false,
+    "newGatewayWarnings": 0,
+    "preExistingEngineRuntimeDeadCodeWarnings": 3
+  },
+  "productionActionsExecuted": {
+    "freshSnapshot": false,
+    "productionCandidate": false,
+    "activation": false,
+    "realCodexEvaluation": false,
+    "r2G": false
+  },
+  "forbiddenActionsExecuted": []
+}

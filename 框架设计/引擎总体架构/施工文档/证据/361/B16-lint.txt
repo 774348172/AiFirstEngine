@@ -1,0 +1,12 @@
+Command: cargo clippy -p engine_runtime -p runtime_player_winit -p editor_core --lib --locked --message-format short
+Working directory: G:\gameEngin\rust
+Exit code: 0
+Result: passed
+
+Existing warning baseline remained visible, including engine_runtime 121 warnings,
+runtime_player_winit 1 warning, editor_core 63 warnings, and dependency warnings.
+No error was emitted and no new B16-owned warning was reported.
+
+Additional source check:
+git diff --check -- rust/crates/engine_runtime/src/aui.rs rust/crates/engine_runtime/src/aui_drawing_cache.rs rust/crates/engine_runtime/src/runtime_renderer.rs rust/crates/engine_runtime/src/render_thread.rs
+Exit code: 0 (line-ending notices only).

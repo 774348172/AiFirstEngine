@@ -78,7 +78,7 @@ fn desktop_export_owner_builds_windows_layout_and_verifies_player() {
             .with_player_verification(false),
         )
         .unwrap();
-    let report = built.desktop_export();
+    let report = built.desktop_export().unwrap();
     assert_eq!(report.status, DesktopExportStatus::Success, "{report:#?}");
     let package = Path::new(&report.package_dir);
     assert!(package.join("Game.exe").is_file());

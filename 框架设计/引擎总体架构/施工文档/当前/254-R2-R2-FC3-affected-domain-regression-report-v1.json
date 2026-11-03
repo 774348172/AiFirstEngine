@@ -1,0 +1,92 @@
+{
+  "schemaVersion": "254-r2-fc3-affected-domain-regression-report.v1",
+  "gate": "R2-FC3",
+  "recordedAt": "2026-07-22T16:19:41.9288190+08:00",
+  "status": "completed",
+  "source": {
+    "root": "H:\\gameEngin-worktrees\\254-r2-fc0-6ec4f62",
+    "branch": "codex/254-r2-fresh-candidate",
+    "parentCommit": "50597494b1403a53e9b8aac1f48b56582db96e8e",
+    "parentTree": "d5a78926297a0fbd37acac38ecd9e63398d197ea",
+    "gitlinkMode": "160000",
+    "gitlinkOid": "e332e0ba6d5c1b7772de57ef69804eebe28ea415",
+    "nestedClean": true,
+    "cargoTargetDir": "H:\\gameEngin-target\\254-r2-fc0-6ec4f62",
+    "tempRoot": "H:\\gameEngin-temp\\254-r2-fc0-6ec4f62"
+  },
+  "regressionFix": {
+    "path": "rust/crates/ai_tool_gateway/src/named_pipe.rs",
+    "sha256": "b046f116b3fdc0d0ccdf80110e824e454d6120b3938dda0566c5e4cf6d010f57",
+    "diagnostic": "GatewayNamedPipeServer shutdown used a single wake attempt after setting shutdown; the server could cross its shutdown check before creating the next pipe instance, making the wake arrive too early and join wait indefinitely.",
+    "resolution": "Retry CancelSynchronousIo and local pipe wake until the server thread finishes, with a five-second bounded shutdown diagnostic.",
+    "regressionTest": "named_pipe_server_shutdown_is_bounded_across_accept_rearm",
+    "publicInterfaceChanged": false,
+    "productionCandidateContractChanged": false
+  },
+  "failureConvergence": {
+    "originalCommandTimeouts": [604, 184],
+    "orphanProcessesObserved": [
+      "cargo",
+      "ai_tool_gateway test binary"
+    ],
+    "orphanProcessesTerminatedBeforeRerun": true,
+    "singleThreadLibDiagnostic": {
+      "passed": 96,
+      "failed": 0,
+      "ignored": 3
+    },
+    "parallelIsolation": {
+      "withoutNamedPipePassed": 90,
+      "withoutDiscoveryPassed": 93,
+      "namedPipeOnlyPassedBeforeFix": 6,
+      "classification": "named-pipe accept rearm shutdown race exposed by cross-module parallel scheduling"
+    }
+  },
+  "verification": {
+    "aiToolGateway": {
+      "command": "cargo test -p ai_tool_gateway",
+      "exitCode": 0,
+      "libPassed": 97,
+      "libFailed": 0,
+      "libIgnored": 3,
+      "integrationPassed": 11,
+      "docTestsPassed": 8
+    },
+    "editorHost": {
+      "command": "cargo test -p editor_host",
+      "exitCode": 0,
+      "passed": 26,
+      "failed": 0
+    },
+    "editorWindowWinit": {
+      "command": "cargo test -p editor_window_winit",
+      "exitCode": 0,
+      "passed": 120,
+      "failed": 0
+    },
+    "projectE2eGate": {
+      "command": "cargo test -p project_e2e_gate",
+      "exitCode": 0,
+      "passed": 65,
+      "failed": 0,
+      "ignoredLocalWindowGate": 1
+    },
+    "format": {
+      "command": "cargo fmt --all -- --check",
+      "exitCode": 0
+    },
+    "newWarnings": 0,
+    "newSuppressions": 0,
+    "generatedSampleLibraryCleaned": true
+  },
+  "authorizationBoundary": {
+    "realFreshCandidateProductionOperationStarted": false,
+    "candidateIdCreated": false,
+    "activationIdCreated": false,
+    "attemptIdCreated": false,
+    "evaluationStarted": false,
+    "realCodexStarted": false,
+    "fc4Started": false
+  },
+  "nextConstructionGate": "R2-FC4"
+}

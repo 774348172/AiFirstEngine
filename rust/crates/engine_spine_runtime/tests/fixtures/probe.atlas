@@ -1,0 +1,10 @@
+probe.png
+size: 2, 2
+format: RGBA8888
+filter: Nearest, Nearest
+repeat: none
+pma: false
+triangle
+bounds: 0, 0, 2, 2
+offsets: 0, 0, 2, 2
+rotate: false

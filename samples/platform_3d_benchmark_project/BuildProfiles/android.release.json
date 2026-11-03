@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "build-profile.v2",
+  "profile": "release",
+  "target": "android",
+  "runtimePackageMode": "debug-readable",
+  "frameLimit": 3,
+  "headlessSurfaceGate": true,
+  "realWindowSmoke": "optional",
+  "gameViewTarget": {
+    "extent": {
+      "width": 1920,
+      "height": 1080
+    },
+    "scalePolicy": "contain"
+  },
+  "architecture": "arm64-v8a",
+  "release": {
+    "layout": "compiler-delivery-v1",
+    "includeReports": true,
+    "includeDebugSymbols": false
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "status": "pc_build_feedback_measured",
+  "ownerTestsPassed": 19,
+  "compilerInterfaceTestsPassed": 25,
+  "harnessTestsPassed": 5,
+  "originalScalePrepareOnlyRunsPassed": 3,
+  "gameplayMeasurementWindows": 0,
+  "fmt": "passed, five unchanged frozen sources",
+  "clippy": "release real-wgpu lib and two direct targets, exit 0, warnings retained",
+  "clippyCommand": "cargo clippy --release -p project_authoring_execution --locked --features real-wgpu --lib --test game_project_compiler_interface --test platform_3d_release_lifecycle",
+  "interruptedUnrelatedFullLibSuite": "not counted as passed",
+  "finalSourceFreezeUnchanged": true,
+  "materialRestored": true,
+  "documentationLinksVerified": true,
+  "startedUtc": "2026-10-14T11:51:00Z",
+  "finishedUtc": "2026-10-14T12:52:09.702749+00:00",
+  "elapsedMinutes": 61.16
+}

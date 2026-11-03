@@ -1,0 +1,69 @@
+   Compiling hezi_shoucheng_runtime v0.1.0 (G:\gameEngin\samples\tower_defense_project\Projects\hezi_shoucheng\RuntimeModule)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 16.06s
+     Running unittests src\lib.rs (samples\tower_defense_project\Projects\hezi_shoucheng\RuntimeModule\target\debug\deps\hezi_shoucheng_runtime-a2837be1e34fb8d4.exe)
+
+running 55 tests
+test battle_ui::tests::overtaking_death_birth_and_restart_keep_generation_safe ... ok
+test battle_ui::tests::capacity_failure_does_not_half_rebind_pool ... ok
+test presentation::tests::merge_ring_is_valid_public_graphics ... ok
+test sdk::tests::drag_start_exposes_transient_feedback_for_the_source_piece ... ok
+test sdk::tests::entity_bindings_render_individual_units_and_hide_empty_slots ... ok
+test sdk::tests::drag_move_keeps_feedback_visible_until_drop ... ok
+test sdk::tests::battle_slot_keeps_identity_when_enemies_overtake ... ok
+test battle_ui::tests::typed_transport_moves_without_text_or_layout_edits_and_reuses_handles ... ok
+test sdk::tests::drag_to_sell_refunds_and_rejects_during_combat ... ok
+test sdk::tests::fps_uses_wall_time_and_ignores_duplicate_frame_callbacks ... ok
+test sdk::tests::audio_assets_and_scene_sources_are_project_owned_and_valid ... ok
+test sdk::tests::horse_dropped_on_deployed_person_combines_at_that_slot ... ok
+test sdk::tests::invalid_formation_merge_keeps_both_pieces_and_grain ... ok
+test sdk::tests::cue_events_are_one_shot_and_restarting_clears_feedback ... ok
+test sdk::tests::inventory_person_horse_merge_works_in_both_directions ... ok
+test sdk::tests::rejected_drop_preserves_inventory_and_grain ... ok
+test sdk::tests::settings_speed_accepts_only_matching_typed_slider_payloads ... ok
+test sdk::tests::victory_report_dynamic_glyphs_are_declared_in_project_font ... ok
+test sdk::tests::ui_drag_combines_and_deploys_without_internal_world_access ... ok
+test sdk::tests::wave_settlement_has_distinct_status_for_next_wave_and_terminal_states ... ok
+test sdk::tests::river_ui_renders_routes_and_unlock_specific_controls ... ok
+test sdk::tests::preview_and_leak_report_are_backed_by_wave_events ... ok
+test sdk::tests::victory_report_pages_factual_unit_totals_and_restart_resets_them ... ok
+test tests::cavalry_claim_different_targets_in_stable_order ... ok
+test sdk::tests::river_unlock_switch_restart_and_replay_are_scoped_to_session ... ok
+test tests::content_is_versioned_and_eight_waves_are_valid ... ok
+test sdk::tests::mountain_unlock_switch_restart_and_visible_lanes ... ok
+test tests::cavalry_charges_once_returns_and_rests ... ok
+test tests::combine_is_commutative_and_preserves_material_cost ... ok
+test tests::damage_report_counts_actual_health_lost_and_accumulates_by_wave ... ok
+test tests::intercept_report_counts_new_contacts_not_blocked_frames ... ok
+test tests::invalid_merge_or_deployment_does_not_change_state ... ok
+test tests::mountain_content_has_twelve_waves_and_matching_project_asset ... ok
+test tests::heavy_cavalry_blocks_siege_cart_for_two_seconds_then_is_knocked_back ... ok
+test tests::mounted_archer_moves_and_fires_without_cavalry_charge ... ok
+test tests::purchase_and_rejection_are_atomic ... ok
+test tests::river_branches_isolate_targets_then_merge ... ok
+test tests::drummer_aura_shortens_cooldown_once_and_obeys_lane ... ok
+test tests::mountain_recipes_converge_and_drum_cannot_deploy_alone ... ok
+test tests::river_bridge_has_ten_waves_and_new_recipes ... ok
+test tests::sale_refunds_half_of_material_cost_only_during_preparation ... ok
+test tests::leak_report_records_time_damage_and_nearest_defender ... ok
+test tests::shield_holds_two_enemies_and_takes_damage ... ok
+test tests::river_recipes_converge_and_spear_is_not_deployable_alone ... ok
+test tests::spear_pierces_two_armored_and_banner_boosts_same_branch ... ok
+test tests::siege_cart_knocks_away_stationary_blocker_without_killing_it ... ok
+test tests::wave_settlement_is_single_and_terminal_state_freezes ... ok
+test tests::river_unguarded_fails_and_reports_entry_lane ... ok
+test tests::unguarded_waves_eventually_defeat_the_gate ... ok
+test tests::planned_river_defense_can_clear_ten_waves ... ok
+test tests::planned_defense_can_complete_eight_waves ... ok
+test sdk::tests::every_active_binding_has_a_typed_value_when_drag_is_inactive ... ok
+test tests::planned_mountain_defense_can_clear_twelve_waves ... ok
+test sdk::tests::battle_asset_uses_controller_translation_without_rect_bindings ... ok
+test tests::sparse_defense_profiles_expose_uncovered_routes ... ok
+
+test result: ok. 55 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+   Doc-tests hezi_shoucheng_runtime
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

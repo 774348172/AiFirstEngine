@@ -1,0 +1,71 @@
+{
+  "schemaVersion": "255-c7-c8-fresh-preflight-report.v1",
+  "candidateCommit": "447c3810ddbf329cc7c81d5667dc390c23725504",
+  "candidateTree": "bb44a11753b503ae1c3f412b1329e2b784116b72",
+  "runDate": "2026-07-23",
+  "c7": {
+    "sourceRoot": "H:\\gameEngin-255-c7-447c381",
+    "isolationRoot": "H:\\EngineTest\\255-catalog\\c7-447c381",
+    "sourceCleanAfterCleanup": true,
+    "results": {
+      "editorCore": {
+        "passed": 548,
+        "ignored": 2,
+        "transientFailure": "build_service_release_profile_icon_picker_saves_with_source_guard",
+        "targetedStressPassed": 20,
+        "codeChangeRequired": false
+      },
+      "aiToolGatewayPassed": 57,
+      "editorHostPassed": 21,
+      "editorWindowWinitPassed": 119,
+      "projectE2eGatePassed": 65,
+      "projectE2eGateIgnored": 1
+    }
+  },
+  "c8": {
+    "sourceRoot": "H:\\gameEngin-255-c8-447c381",
+    "isolationRoot": "H:\\EngineTest\\255-catalog\\c8-447c381",
+    "sourceCleanAfterCleanup": true,
+    "lintLedger": {
+      "entries": 168,
+      "warningOccurrences": 371,
+      "suppressions": 11,
+      "previousLedgerReadable": true,
+      "addedDiagnostics": 0,
+      "removedDiagnostics": 0,
+      "changedDiagnostics": 0,
+      "newSuppressions": 0,
+      "expiredEntries": 0,
+      "candidateLedgerSha256": "fe64475de450c84138b3d41fdf3d2766bf69ece9959d16b57d90619283a08133",
+      "diffSha256": "0daf35bbc8556133023a548432b25aeb9e7c4f7b9669923874ab3553c84f0934"
+    },
+    "verifiedMatrix": {
+      "catalogPassed": 5,
+      "gatewayCatalogPassed": 3,
+      "gatewayMcpCatalogPassed": 1,
+      "gatewayExecuteRecheckPassed": 1,
+      "mcpProcessSmokePassed": 2,
+      "editorHostGatewayProcessPassed": 2,
+      "editorWindowWinitPassed": 119,
+      "projectE2eGatePassed": 65,
+      "projectE2eGateIgnored": 1,
+      "durationMs": 151224
+    },
+    "discardedWrapperRun": {
+      "reason": "PowerShell function output was mixed with the boolean return value, so per-command exit evidence was not trustworthy.",
+      "usedForFreeze": false
+    }
+  },
+  "capacity": {
+    "volume": "H:",
+    "freeBytesBeforeC8Worktree": 593107828736,
+    "freeBytesBeforeTargetCleanup": 574170103808,
+    "c7TargetBytes": 18842613115,
+    "c8TargetBytes": 19465975304,
+    "targetCleanup": "cargo clean --target-dir completed for C7 and C8",
+    "freeBytesAfterTargetCleanup": 607908388864,
+    "freeGiBAfterTargetCleanup": 566.16
+  },
+  "candidateFrozen": true,
+  "secondAuthoritativeC9Authorized": false
+}

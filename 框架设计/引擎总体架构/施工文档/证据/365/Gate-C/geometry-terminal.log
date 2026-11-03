@@ -1,0 +1,11 @@
+   Compiling engine_runtime v0.1.0 (G:\gameEngin\rust\crates\engine_runtime)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1m 03s
+     Running unittests src\lib.rs (target\debug\deps\engine_runtime-f2e49a160a17050d.exe)
+
+running 3 tests
+test aui::tests::aui_geometry_unrepresentable_parent_chain_is_diagnosed_without_panicking ... ok
+test aui::tests::aui_geometry_rotated_mirrored_slider_uses_local_axis_for_value ... ok
+test aui::tests::aui_geometry_affine_feedback_shares_hit_draw_and_inherited_clip_matrix ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 748 filtered out; finished in 0.00s
+

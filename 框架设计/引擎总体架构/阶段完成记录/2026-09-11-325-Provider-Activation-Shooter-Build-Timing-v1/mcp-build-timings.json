@@ -1,0 +1,200 @@
+{
+  "first": {
+    "method": "tools/call",
+    "elapsedMs": 116084,
+    "response": {
+      "id": 4,
+      "jsonrpc": "2.0",
+      "result": {
+        "content": [
+          {
+            "text": "{\"callId\":\"mcp-call-4\",\"diagnostics\":[],\"evidenceRefs\":[\"\\\\\\\\?\\\\G:\\\\gameEngin\\\\samples\\\\complex_shooter_project\\\\Library\\\\EngineTools\\\\Deliveries\\\\engine-op-325-measure-2\\\\Build\\\\Windows\\\\dev\\\\package-manifest.json\",\"\\\\\\\\?\\\\G:\\\\gameEngin\\\\samples\\\\complex_shooter_project\\\\Library\\\\EngineTools\\\\Deliveries\\\\engine-op-325-measure-2\\\\Build\\\\Windows\\\\dev\\\\data\\\\runtime_package\\\\reports\\\\build-runtime-package-report.json\",\"\\\\\\\\?\\\\G:\\\\gameEngin\\\\samples\\\\complex_shooter_project\\\\Library\\\\EngineTools\\\\Deliveries\\\\engine-op-325-measure-2\\\\Build\\\\Windows\\\\dev\\\\reports\\\\windowed-player-run-report.json\"],\"operationId\":\"engine-op-325-measure-2\",\"output\":{\"artifactIdentity\":\"sha256:5c208afc15959ac1aff66934fcd9beb8d4a1f42d4e015fce372855ef0dd490ae\",\"deliveryIdentity\":\"sha256:ea5bc57a8c8e4d9ec9865a495c08adb4fd76a32a1a942ca39037f4fe04a0bc2b\",\"deliveryRef\":\"engine-delivery:sha256:ea5bc57a8c8e4d9ec9865a495c08adb4fd76a32a1a942ca39037f4fe04a0bc2b\",\"packageDir\":\"\\\\\\\\?\\\\G:\\\\gameEngin\\\\samples\\\\complex_shooter_project\\\\Library\\\\EngineTools\\\\Deliveries\\\\engine-op-325-measure-2\\\\Build\\\\Windows\\\\dev\",\"playerExecutable\":\"\\\\\\\\?\\\\G:\\\\gameEngin\\\\samples\\\\complex_shooter_project\\\\Library\\\\EngineTools\\\\Deliveries\\\\engine-op-325-measure-2\\\\Build\\\\Windows\\\\dev\\\\Game.exe\",\"prepareSummary\":{\"missReasons\":[],\"preparationIdentity\":\"sha256:50ec133da5a7bd8081f841ab39f4518380d728697c38a71a8d50e9bb31688422\",\"producedCount\":0,\"producerCount\":10,\"reusedCount\":10,\"sourceIdentity\":\"sha256:98814e24d3effc7efc83b294a2ea8d8562692ae054ded06c7e757431a26e2124\",\"targetProfile\":\"windows-dev\",\"uncachedStages\":[\"source-validation\",\"scene-prefab-rule-aui-input\",\"runtime-glue\",\"package-assembly\"]},\"runtimePackageDir\":\"\\\\\\\\?\\\\G:\\\\gameEngin\\\\samples\\\\complex_shooter_project\\\\Library\\\\EngineTools\\\\Deliveries\\\\engine-op-325-measure-2\\\\Build\\\\Windows\\\\dev\\\\data\\\\runtime_package\",\"status\":\"success\",\"targetProfile\":\"windows-dev\"},\"projectRevision\":\"sha256:08d54716f1418d6cea93917de592093dd1ad662132acca8aa7809c76262c32ff\",\"receiptRef\":null,\"recommendedLocalTransitions\":[{\"category\":\"verify_delivery\",\"reason\":\"The completed build returned a delivery reference that can be verified.\",\"toolName\":\"engine_delivery_verify\"}],\"replayed\":false,\"retryability\":\"not_needed\",\"schemaVersion\":\"engine-tool-result.v2\",\"status\":\"completed\",\"toolName\":\"engine_project_build\"}",
+            "type": "text"
+          }
+        ],
+        "isError": false,
+        "structuredContent": {
+          "callId": "mcp-call-4",
+          "diagnostics": [],
+          "evidenceRefs": [
+            "\\\\?\\G:\\gameEngin\\samples\\complex_shooter_project\\Library\\EngineTools\\Deliveries\\engine-op-325-measure-2\\Build\\Windows\\dev\\package-manifest.json",
+            "\\\\?\\G:\\gameEngin\\samples\\complex_shooter_project\\Library\\EngineTools\\Deliveries\\engine-op-325-measure-2\\Build\\Windows\\dev\\data\\runtime_package\\reports\\build-runtime-package-report.json",
+            "\\\\?\\G:\\gameEngin\\samples\\complex_shooter_project\\Library\\EngineTools\\Deliveries\\engine-op-325-measure-2\\Build\\Windows\\dev\\reports\\windowed-player-run-report.json"
+          ],
+          "operationId": "engine-op-325-measure-2",
+          "output": {
+            "artifactIdentity": "sha256:5c208afc15959ac1aff66934fcd9beb8d4a1f42d4e015fce372855ef0dd490ae",
+            "deliveryIdentity": "sha256:ea5bc57a8c8e4d9ec9865a495c08adb4fd76a32a1a942ca39037f4fe04a0bc2b",
+            "deliveryRef": "engine-delivery:sha256:ea5bc57a8c8e4d9ec9865a495c08adb4fd76a32a1a942ca39037f4fe04a0bc2b",
+            "packageDir": "\\\\?\\G:\\gameEngin\\samples\\complex_shooter_project\\Library\\EngineTools\\Deliveries\\engine-op-325-measure-2\\Build\\Windows\\dev",
+            "playerExecutable": "\\\\?\\G:\\gameEngin\\samples\\complex_shooter_project\\Library\\EngineTools\\Deliveries\\engine-op-325-measure-2\\Build\\Windows\\dev\\Game.exe",
+            "prepareSummary": {
+              "missReasons": [],
+              "preparationIdentity": "sha256:50ec133da5a7bd8081f841ab39f4518380d728697c38a71a8d50e9bb31688422",
+              "producedCount": 0,
+              "producerCount": 10,
+              "reusedCount": 10,
+              "sourceIdentity": "sha256:98814e24d3effc7efc83b294a2ea8d8562692ae054ded06c7e757431a26e2124",
+              "targetProfile": "windows-dev",
+              "uncachedStages": [
+                "source-validation",
+                "scene-prefab-rule-aui-input",
+                "runtime-glue",
+                "package-assembly"
+              ]
+            },
+            "runtimePackageDir": "\\\\?\\G:\\gameEngin\\samples\\complex_shooter_project\\Library\\EngineTools\\Deliveries\\engine-op-325-measure-2\\Build\\Windows\\dev\\data\\runtime_package",
+            "status": "success",
+            "targetProfile": "windows-dev"
+          },
+          "projectRevision": "sha256:08d54716f1418d6cea93917de592093dd1ad662132acca8aa7809c76262c32ff",
+          "receiptRef": null,
+          "recommendedLocalTransitions": [
+            {
+              "category": "verify_delivery",
+              "reason": "The completed build returned a delivery reference that can be verified.",
+              "toolName": "engine_delivery_verify"
+            }
+          ],
+          "replayed": false,
+          "retryability": "not_needed",
+          "schemaVersion": "engine-tool-result.v2",
+          "status": "completed",
+          "toolName": "engine_project_build"
+        }
+      }
+    }
+  },
+  "repeat": {
+    "method": "tools/call",
+    "elapsedMs": 20689,
+    "response": {
+      "id": 5,
+      "jsonrpc": "2.0",
+      "result": {
+        "content": [
+          {
+            "text": "{\"callId\":\"mcp-call-5\",\"diagnostics\":[],\"evidenceRefs\":[\"\\\\\\\\?\\\\G:\\\\gameEngin\\\\samples\\\\complex_shooter_project\\\\Library\\\\EngineTools\\\\Deliveries\\\\engine-op-325-measure-3\\\\Build\\\\Windows\\\\dev\\\\package-manifest.json\",\"\\\\\\\\?\\\\G:\\\\gameEngin\\\\samples\\\\complex_shooter_project\\\\Library\\\\EngineTools\\\\Deliveries\\\\engine-op-325-measure-3\\\\Build\\\\Windows\\\\dev\\\\data\\\\runtime_package\\\\reports\\\\build-runtime-package-report.json\",\"\\\\\\\\?\\\\G:\\\\gameEngin\\\\samples\\\\complex_shooter_project\\\\Library\\\\EngineTools\\\\Deliveries\\\\engine-op-325-measure-3\\\\Build\\\\Windows\\\\dev\\\\reports\\\\windowed-player-run-report.json\"],\"operationId\":\"engine-op-325-measure-3\",\"output\":{\"artifactIdentity\":\"sha256:5c208afc15959ac1aff66934fcd9beb8d4a1f42d4e015fce372855ef0dd490ae\",\"deliveryIdentity\":\"sha256:54a0ac5a6e5dcb82f77e045e270dce243f41c351481513ef00c0a0b06ad09605\",\"deliveryRef\":\"engine-delivery:sha256:54a0ac5a6e5dcb82f77e045e270dce243f41c351481513ef00c0a0b06ad09605\",\"packageDir\":\"\\\\\\\\?\\\\G:\\\\gameEngin\\\\samples\\\\complex_shooter_project\\\\Library\\\\EngineTools\\\\Deliveries\\\\engine-op-325-measure-3\\\\Build\\\\Windows\\\\dev\",\"playerExecutable\":\"\\\\\\\\?\\\\G:\\\\gameEngin\\\\samples\\\\complex_shooter_project\\\\Library\\\\EngineTools\\\\Deliveries\\\\engine-op-325-measure-3\\\\Build\\\\Windows\\\\dev\\\\Game.exe\",\"prepareSummary\":{\"missReasons\":[],\"preparationIdentity\":\"sha256:50ec133da5a7bd8081f841ab39f4518380d728697c38a71a8d50e9bb31688422\",\"producedCount\":0,\"producerCount\":10,\"reusedCount\":10,\"sourceIdentity\":\"sha256:98814e24d3effc7efc83b294a2ea8d8562692ae054ded06c7e757431a26e2124\",\"targetProfile\":\"windows-dev\",\"uncachedStages\":[\"source-validation\",\"scene-prefab-rule-aui-input\",\"runtime-glue\",\"package-assembly\"]},\"runtimePackageDir\":\"\\\\\\\\?\\\\G:\\\\gameEngin\\\\samples\\\\complex_shooter_project\\\\Library\\\\EngineTools\\\\Deliveries\\\\engine-op-325-measure-3\\\\Build\\\\Windows\\\\dev\\\\data\\\\runtime_package\",\"status\":\"success\",\"targetProfile\":\"windows-dev\"},\"projectRevision\":\"sha256:08d54716f1418d6cea93917de592093dd1ad662132acca8aa7809c76262c32ff\",\"receiptRef\":null,\"recommendedLocalTransitions\":[{\"category\":\"verify_delivery\",\"reason\":\"The completed build returned a delivery reference that can be verified.\",\"toolName\":\"engine_delivery_verify\"}],\"replayed\":false,\"retryability\":\"not_needed\",\"schemaVersion\":\"engine-tool-result.v2\",\"status\":\"completed\",\"toolName\":\"engine_project_build\"}",
+            "type": "text"
+          }
+        ],
+        "isError": false,
+        "structuredContent": {
+          "callId": "mcp-call-5",
+          "diagnostics": [],
+          "evidenceRefs": [
+            "\\\\?\\G:\\gameEngin\\samples\\complex_shooter_project\\Library\\EngineTools\\Deliveries\\engine-op-325-measure-3\\Build\\Windows\\dev\\package-manifest.json",
+            "\\\\?\\G:\\gameEngin\\samples\\complex_shooter_project\\Library\\EngineTools\\Deliveries\\engine-op-325-measure-3\\Build\\Windows\\dev\\data\\runtime_package\\reports\\build-runtime-package-report.json",
+            "\\\\?\\G:\\gameEngin\\samples\\complex_shooter_project\\Library\\EngineTools\\Deliveries\\engine-op-325-measure-3\\Build\\Windows\\dev\\reports\\windowed-player-run-report.json"
+          ],
+          "operationId": "engine-op-325-measure-3",
+          "output": {
+            "artifactIdentity": "sha256:5c208afc15959ac1aff66934fcd9beb8d4a1f42d4e015fce372855ef0dd490ae",
+            "deliveryIdentity": "sha256:54a0ac5a6e5dcb82f77e045e270dce243f41c351481513ef00c0a0b06ad09605",
+            "deliveryRef": "engine-delivery:sha256:54a0ac5a6e5dcb82f77e045e270dce243f41c351481513ef00c0a0b06ad09605",
+            "packageDir": "\\\\?\\G:\\gameEngin\\samples\\complex_shooter_project\\Library\\EngineTools\\Deliveries\\engine-op-325-measure-3\\Build\\Windows\\dev",
+            "playerExecutable": "\\\\?\\G:\\gameEngin\\samples\\complex_shooter_project\\Library\\EngineTools\\Deliveries\\engine-op-325-measure-3\\Build\\Windows\\dev\\Game.exe",
+            "prepareSummary": {
+              "missReasons": [],
+              "preparationIdentity": "sha256:50ec133da5a7bd8081f841ab39f4518380d728697c38a71a8d50e9bb31688422",
+              "producedCount": 0,
+              "producerCount": 10,
+              "reusedCount": 10,
+              "sourceIdentity": "sha256:98814e24d3effc7efc83b294a2ea8d8562692ae054ded06c7e757431a26e2124",
+              "targetProfile": "windows-dev",
+              "uncachedStages": [
+                "source-validation",
+                "scene-prefab-rule-aui-input",
+                "runtime-glue",
+                "package-assembly"
+              ]
+            },
+            "runtimePackageDir": "\\\\?\\G:\\gameEngin\\samples\\complex_shooter_project\\Library\\EngineTools\\Deliveries\\engine-op-325-measure-3\\Build\\Windows\\dev\\data\\runtime_package",
+            "status": "success",
+            "targetProfile": "windows-dev"
+          },
+          "projectRevision": "sha256:08d54716f1418d6cea93917de592093dd1ad662132acca8aa7809c76262c32ff",
+          "receiptRef": null,
+          "recommendedLocalTransitions": [
+            {
+              "category": "verify_delivery",
+              "reason": "The completed build returned a delivery reference that can be verified.",
+              "toolName": "engine_delivery_verify"
+            }
+          ],
+          "replayed": false,
+          "retryability": "not_needed",
+          "schemaVersion": "engine-tool-result.v2",
+          "status": "completed",
+          "toolName": "engine_project_build"
+        }
+      }
+    }
+  },
+  "installed": {
+    "method": "tools/call",
+    "elapsedMs": 16130,
+    "response": {
+      "id": 9,
+      "jsonrpc": "2.0",
+      "result": {
+        "content": [
+          {
+            "text": "{\"callId\":\"mcp-call-9\",\"diagnostics\":[],\"evidenceRefs\":[\"\\\\\\\\?\\\\G:\\\\gameEngin\\\\samples\\\\complex_shooter_project\\\\Library\\\\EngineTools\\\\Deliveries\\\\engine-op-325-installed-2\\\\Build\\\\Windows\\\\dev\\\\package-manifest.json\",\"\\\\\\\\?\\\\G:\\\\gameEngin\\\\samples\\\\complex_shooter_project\\\\Library\\\\EngineTools\\\\Deliveries\\\\engine-op-325-installed-2\\\\Build\\\\Windows\\\\dev\\\\data\\\\runtime_package\\\\reports\\\\build-runtime-package-report.json\",\"\\\\\\\\?\\\\G:\\\\gameEngin\\\\samples\\\\complex_shooter_project\\\\Library\\\\EngineTools\\\\Deliveries\\\\engine-op-325-installed-2\\\\Build\\\\Windows\\\\dev\\\\reports\\\\windowed-player-run-report.json\"],\"operationId\":\"engine-op-325-installed-2\",\"output\":{\"artifactIdentity\":\"sha256:5c208afc15959ac1aff66934fcd9beb8d4a1f42d4e015fce372855ef0dd490ae\",\"deliveryIdentity\":\"sha256:8a2581519c0cbe4936fab0482a6d8093b931d5ae60789791c0e6a83c41f494df\",\"deliveryRef\":\"engine-delivery:sha256:8a2581519c0cbe4936fab0482a6d8093b931d5ae60789791c0e6a83c41f494df\",\"packageDir\":\"\\\\\\\\?\\\\G:\\\\gameEngin\\\\samples\\\\complex_shooter_project\\\\Library\\\\EngineTools\\\\Deliveries\\\\engine-op-325-installed-2\\\\Build\\\\Windows\\\\dev\",\"playerExecutable\":\"\\\\\\\\?\\\\G:\\\\gameEngin\\\\samples\\\\complex_shooter_project\\\\Library\\\\EngineTools\\\\Deliveries\\\\engine-op-325-installed-2\\\\Build\\\\Windows\\\\dev\\\\Game.exe\",\"prepareSummary\":{\"missReasons\":[],\"preparationIdentity\":\"sha256:50ec133da5a7bd8081f841ab39f4518380d728697c38a71a8d50e9bb31688422\",\"producedCount\":0,\"producerCount\":10,\"reusedCount\":10,\"sourceIdentity\":\"sha256:98814e24d3effc7efc83b294a2ea8d8562692ae054ded06c7e757431a26e2124\",\"targetProfile\":\"windows-dev\",\"uncachedStages\":[\"source-validation\",\"scene-prefab-rule-aui-input\",\"runtime-glue\",\"package-assembly\"]},\"runtimePackageDir\":\"\\\\\\\\?\\\\G:\\\\gameEngin\\\\samples\\\\complex_shooter_project\\\\Library\\\\EngineTools\\\\Deliveries\\\\engine-op-325-installed-2\\\\Build\\\\Windows\\\\dev\\\\data\\\\runtime_package\",\"status\":\"success\",\"targetProfile\":\"windows-dev\"},\"projectRevision\":\"sha256:08d54716f1418d6cea93917de592093dd1ad662132acca8aa7809c76262c32ff\",\"receiptRef\":null,\"recommendedLocalTransitions\":[{\"category\":\"verify_delivery\",\"reason\":\"The completed build returned a delivery reference that can be verified.\",\"toolName\":\"engine_delivery_verify\"}],\"replayed\":false,\"retryability\":\"not_needed\",\"schemaVersion\":\"engine-tool-result.v2\",\"status\":\"completed\",\"toolName\":\"engine_project_build\"}",
+            "type": "text"
+          }
+        ],
+        "isError": false,
+        "structuredContent": {
+          "callId": "mcp-call-9",
+          "diagnostics": [],
+          "evidenceRefs": [
+            "\\\\?\\G:\\gameEngin\\samples\\complex_shooter_project\\Library\\EngineTools\\Deliveries\\engine-op-325-installed-2\\Build\\Windows\\dev\\package-manifest.json",
+            "\\\\?\\G:\\gameEngin\\samples\\complex_shooter_project\\Library\\EngineTools\\Deliveries\\engine-op-325-installed-2\\Build\\Windows\\dev\\data\\runtime_package\\reports\\build-runtime-package-report.json",
+            "\\\\?\\G:\\gameEngin\\samples\\complex_shooter_project\\Library\\EngineTools\\Deliveries\\engine-op-325-installed-2\\Build\\Windows\\dev\\reports\\windowed-player-run-report.json"
+          ],
+          "operationId": "engine-op-325-installed-2",
+          "output": {
+            "artifactIdentity": "sha256:5c208afc15959ac1aff66934fcd9beb8d4a1f42d4e015fce372855ef0dd490ae",
+            "deliveryIdentity": "sha256:8a2581519c0cbe4936fab0482a6d8093b931d5ae60789791c0e6a83c41f494df",
+            "deliveryRef": "engine-delivery:sha256:8a2581519c0cbe4936fab0482a6d8093b931d5ae60789791c0e6a83c41f494df",
+            "packageDir": "\\\\?\\G:\\gameEngin\\samples\\complex_shooter_project\\Library\\EngineTools\\Deliveries\\engine-op-325-installed-2\\Build\\Windows\\dev",
+            "playerExecutable": "\\\\?\\G:\\gameEngin\\samples\\complex_shooter_project\\Library\\EngineTools\\Deliveries\\engine-op-325-installed-2\\Build\\Windows\\dev\\Game.exe",
+            "prepareSummary": {
+              "missReasons": [],
+              "preparationIdentity": "sha256:50ec133da5a7bd8081f841ab39f4518380d728697c38a71a8d50e9bb31688422",
+              "producedCount": 0,
+              "producerCount": 10,
+              "reusedCount": 10,
+              "sourceIdentity": "sha256:98814e24d3effc7efc83b294a2ea8d8562692ae054ded06c7e757431a26e2124",
+              "targetProfile": "windows-dev",
+              "uncachedStages": [
+                "source-validation",
+                "scene-prefab-rule-aui-input",
+                "runtime-glue",
+                "package-assembly"
+              ]
+            },
+            "runtimePackageDir": "\\\\?\\G:\\gameEngin\\samples\\complex_shooter_project\\Library\\EngineTools\\Deliveries\\engine-op-325-installed-2\\Build\\Windows\\dev\\data\\runtime_package",
+            "status": "success",
+            "targetProfile": "windows-dev"
+          },
+          "projectRevision": "sha256:08d54716f1418d6cea93917de592093dd1ad662132acca8aa7809c76262c32ff",
+          "receiptRef": null,
+          "recommendedLocalTransitions": [
+            {
+              "category": "verify_delivery",
+              "reason": "The completed build returned a delivery reference that can be verified.",
+              "toolName": "engine_delivery_verify"
+            }
+          ],
+          "replayed": false,
+          "retryability": "not_needed",
+          "schemaVersion": "engine-tool-result.v2",
+          "status": "completed",
+          "toolName": "engine_project_build"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,545 @@
+{
+  "os": {
+    "Caption": "Microsoft Windows 11 专业版中文版",
+    "Version": "10.0.26200",
+    "BuildNumber": "26200"
+  },
+  "date": "2026-09-11",
+  "runs": [
+    {
+      "case": "normal-a",
+      "player": "G:\\gameEngin\\samples\\complex_shooter_project\\Library\\EngineTools\\Deliveries\\engine-op-mcp-process-12864-13\\Playtest\\Windows\\dev\\Game.exe",
+      "playerSha256": "8521AFE630D7D3B8701C825229D3AE6ECD79468840CCA6C99F35EC52A6B5B6D4",
+      "elapsedMs": 25934,
+      "exitCode": 0,
+      "status": {
+        "request": "ok",
+        "package": "ok",
+        "asset": "ok",
+        "scene": "ok",
+        "world": "ok",
+        "logic": "ok",
+        "input": "ok",
+        "physics": "ok",
+        "projection": "ok",
+        "render": "ok",
+        "rdg": "ok",
+        "rhi": "ok",
+        "surface": "ok",
+        "present": "presented"
+      },
+      "initialCounters": {
+        "framesRequested": 720,
+        "framesCompleted": 720,
+        "entityCount": 9,
+        "archetypeCount": 7,
+        "hydratedEntityCount": 9,
+        "hydrationLoadedAssetCount": 6,
+        "hydrationDirtyRecordCount": 28,
+        "renderProxyCount": 5,
+        "runtimeTraceEventCount": 7200
+      },
+      "performance": {
+        "warmupFrames": 120,
+        "requestedSampleFrames": 600,
+        "observedSampleFrames": 600,
+        "meanCpuFrameMs": 15.355362833333334,
+        "p95CpuFrameMs": 18.0327,
+        "p99CpuFrameMs": 19.362,
+        "update": {
+          "observedSampleFrames": 600,
+          "meanMs": 13.0777045,
+          "p95Ms": 15.538,
+          "p99Ms": 16.5315
+        },
+        "renderSubmit": {
+          "observedSampleFrames": 600,
+          "meanMs": 2.1123083333333335,
+          "p95Ms": 2.5557,
+          "p99Ms": 2.962
+        },
+        "presentWait": {
+          "observedSampleFrames": 600,
+          "meanMs": 0.14519416666666665,
+          "p95Ms": 0.1804,
+          "p99Ms": 0.2125
+        }
+      },
+      "reportSha256": "7461CC64269410200CAB1207008AC52E136278E8317A9B7659D21162556D23D2",
+      "measurementSha256": "03A6E0E007E61F363E6B143470DC6955D6A23A05507FF205A21656C6E0D2EA16"
+    },
+    {
+      "case": "normal-b",
+      "player": "G:\\gameEngin\\samples\\complex_shooter_project\\Library\\EngineTools\\Deliveries\\engine-op-mcp-process-12864-13\\Playtest\\Windows\\dev\\Game.exe",
+      "playerSha256": "8521AFE630D7D3B8701C825229D3AE6ECD79468840CCA6C99F35EC52A6B5B6D4",
+      "elapsedMs": 25417,
+      "exitCode": 0,
+      "status": {
+        "request": "ok",
+        "package": "ok",
+        "asset": "ok",
+        "scene": "ok",
+        "world": "ok",
+        "logic": "ok",
+        "input": "ok",
+        "physics": "ok",
+        "projection": "ok",
+        "render": "ok",
+        "rdg": "ok",
+        "rhi": "ok",
+        "surface": "ok",
+        "present": "presented"
+      },
+      "initialCounters": {
+        "framesRequested": 720,
+        "framesCompleted": 720,
+        "entityCount": 9,
+        "archetypeCount": 7,
+        "hydratedEntityCount": 9,
+        "hydrationLoadedAssetCount": 6,
+        "hydrationDirtyRecordCount": 28,
+        "renderProxyCount": 5,
+        "runtimeTraceEventCount": 7200
+      },
+      "performance": {
+        "warmupFrames": 120,
+        "requestedSampleFrames": 600,
+        "observedSampleFrames": 600,
+        "meanCpuFrameMs": 15.028013,
+        "p95CpuFrameMs": 17.5626,
+        "p99CpuFrameMs": 19.1829,
+        "update": {
+          "observedSampleFrames": 600,
+          "meanMs": 12.734346333333335,
+          "p95Ms": 15.027,
+          "p99Ms": 16.5416
+        },
+        "renderSubmit": {
+          "observedSampleFrames": 600,
+          "meanMs": 2.1282368333333337,
+          "p95Ms": 2.5505,
+          "p99Ms": 2.9276
+        },
+        "presentWait": {
+          "observedSampleFrames": 600,
+          "meanMs": 0.14514133333333334,
+          "p95Ms": 0.177,
+          "p99Ms": 0.2224
+        }
+      },
+      "reportSha256": "59769A4D3323244A4DF9BD372D96E7DF96EC4AC44A3E7D7682122AEE6B46E707",
+      "measurementSha256": "C5D2212FCFB33B7E0E90A4445F3D343003DDEDFD2B44CC43F7CC08C7BD5A228F"
+    },
+    {
+      "case": "load-12-32-measure-ok1",
+      "player": "C:\\a320-0038\\load-12-32\\Library\\EngineTools\\Deliveries\\engine-op-load-12-32-1\\Build\\Windows\\dev\\Game.exe",
+      "playerSha256": "BE51CA0E1091A4550F26AFD22AC195A4D0F12B0C3F9B307F44BAC56F0871D2CB",
+      "elapsedMs": 31622,
+      "exitCode": 0,
+      "status": {
+        "request": "ok",
+        "package": "ok",
+        "asset": "ok",
+        "scene": "ok",
+        "world": "ok",
+        "logic": "ok",
+        "input": "ok",
+        "physics": "ok",
+        "projection": "ok",
+        "render": "ok",
+        "rdg": "ok",
+        "rhi": "ok",
+        "surface": "ok",
+        "present": "presented"
+      },
+      "initialCounters": {
+        "framesRequested": 720,
+        "framesCompleted": 720,
+        "entityCount": 51,
+        "archetypeCount": 8,
+        "hydratedEntityCount": 51,
+        "hydrationLoadedAssetCount": 48,
+        "hydrationDirtyRecordCount": 270,
+        "renderProxyCount": 47,
+        "runtimeTraceEventCount": 7200
+      },
+      "performance": {
+        "warmupFrames": 120,
+        "requestedSampleFrames": 600,
+        "observedSampleFrames": 600,
+        "meanCpuFrameMs": 21.621828166666667,
+        "p95CpuFrameMs": 23.4548,
+        "p99CpuFrameMs": 24.9591,
+        "update": {
+          "observedSampleFrames": 600,
+          "meanMs": 18.793965,
+          "p95Ms": 20.3957,
+          "p99Ms": 21.461
+        },
+        "renderSubmit": {
+          "observedSampleFrames": 600,
+          "meanMs": 2.6612981666666666,
+          "p95Ms": 3.1188,
+          "p99Ms": 3.3614
+        },
+        "presentWait": {
+          "observedSampleFrames": 600,
+          "meanMs": 0.14618533333333333,
+          "p95Ms": 0.1744,
+          "p99Ms": 0.1967
+        }
+      },
+      "reportSha256": "91E3C09AAEA8A2E078941DD38893E43531B0B243830D3C76303512E60CC790A3",
+      "measurementSha256": "94F9722516039FBDB36656225AECB2A04E4303C2018C46E293E4E93BDC956507"
+    },
+    {
+      "case": "load-24-64-measure",
+      "player": "C:\\a320-0038\\load-24-64\\Library\\EngineTools\\Deliveries\\engine-op-load-24-64-1\\Build\\Windows\\dev\\Game.exe",
+      "playerSha256": "DE0DC800A4FF6F216D32EFB6450B20148C71EC512146196470DFCC837652A833",
+      "elapsedMs": 42009,
+      "exitCode": 0,
+      "status": {
+        "request": "ok",
+        "package": "ok",
+        "asset": "ok",
+        "scene": "ok",
+        "world": "ok",
+        "logic": "ok",
+        "input": "ok",
+        "physics": "ok",
+        "projection": "ok",
+        "render": "ok",
+        "rdg": "ok",
+        "rhi": "ok",
+        "surface": "ok",
+        "present": "presented"
+      },
+      "initialCounters": {
+        "framesRequested": 720,
+        "framesCompleted": 720,
+        "entityCount": 95,
+        "archetypeCount": 8,
+        "hydratedEntityCount": 95,
+        "hydrationLoadedAssetCount": 92,
+        "hydrationDirtyRecordCount": 522,
+        "renderProxyCount": 91,
+        "runtimeTraceEventCount": 7200
+      },
+      "performance": {
+        "warmupFrames": 120,
+        "requestedSampleFrames": 600,
+        "observedSampleFrames": 600,
+        "meanCpuFrameMs": 35.372383166666665,
+        "p95CpuFrameMs": 37.9314,
+        "p99CpuFrameMs": 40.4695,
+        "update": {
+          "observedSampleFrames": 600,
+          "meanMs": 31.4105005,
+          "p95Ms": 33.9511,
+          "p99Ms": 35.9141
+        },
+        "renderSubmit": {
+          "observedSampleFrames": 600,
+          "meanMs": 3.7867633333333335,
+          "p95Ms": 4.2221,
+          "p99Ms": 4.7538
+        },
+        "presentWait": {
+          "observedSampleFrames": 600,
+          "meanMs": 0.15345516666666667,
+          "p95Ms": 0.1894,
+          "p99Ms": 0.218
+        }
+      },
+      "reportSha256": "4687F94FB03A31771A67E144799F530E3CAB9B5F0FCF8ECA1918AD24935968D8",
+      "measurementSha256": "FE18417BFB37E6681BA09A21EC93CA5996A33EF341E32D4FD5016AB3A0A928FF"
+    },
+    {
+      "case": "load-48-128-measure",
+      "player": "C:\\a320-0038\\load-48-128\\Library\\EngineTools\\Deliveries\\engine-op-load-48-128-1\\Build\\Windows\\dev\\Game.exe",
+      "playerSha256": "7E609B61BAB86ECB8FD87DB9A48ECC91DE704FB9513B70D790B8E983CC259F0B",
+      "elapsedMs": 64567,
+      "exitCode": 0,
+      "status": {
+        "request": "ok",
+        "package": "ok",
+        "asset": "ok",
+        "scene": "ok",
+        "world": "ok",
+        "logic": "ok",
+        "input": "ok",
+        "physics": "ok",
+        "projection": "ok",
+        "render": "ok",
+        "rdg": "ok",
+        "rhi": "ok",
+        "surface": "ok",
+        "present": "presented"
+      },
+      "initialCounters": {
+        "framesRequested": 720,
+        "framesCompleted": 720,
+        "entityCount": 183,
+        "archetypeCount": 8,
+        "hydratedEntityCount": 183,
+        "hydrationLoadedAssetCount": 180,
+        "hydrationDirtyRecordCount": 1026,
+        "renderProxyCount": 179,
+        "runtimeTraceEventCount": 7200
+      },
+      "performance": {
+        "warmupFrames": 120,
+        "requestedSampleFrames": 600,
+        "observedSampleFrames": 600,
+        "meanCpuFrameMs": 64.0911075,
+        "p95CpuFrameMs": 67.8518,
+        "p99CpuFrameMs": 72.1726,
+        "update": {
+          "observedSampleFrames": 600,
+          "meanMs": 57.90093666666667,
+          "p95Ms": 60.9663,
+          "p99Ms": 65.5385
+        },
+        "renderSubmit": {
+          "observedSampleFrames": 600,
+          "meanMs": 6.013088666666667,
+          "p95Ms": 6.6893,
+          "p99Ms": 7.2418
+        },
+        "presentWait": {
+          "observedSampleFrames": 600,
+          "meanMs": 0.15505033333333335,
+          "p95Ms": 0.1853,
+          "p99Ms": 0.214
+        }
+      },
+      "reportSha256": "6344BA42128923C71EF423BD52E1DB3E82245C254A73CE9647418D4B90E81E2C",
+      "measurementSha256": "5C02FCF84EE14E32F726AB4CFAD15C874C9C829067ECCB279982648D6EB1F751"
+    }
+  ],
+  "cpu": "12th Gen Intel(R) Core(TM) i5-12490F",
+  "restart": [
+    {
+      "overall": "passed",
+      "case": "restart-eight",
+      "reportSha256": "0D48D64D85CDBBA8AC09C8DDB2AEB0E89501F6950AFB6A8A10B5653BEE8581CD",
+      "simulationTicks": 3362,
+      "assertions": 64,
+      "memoryBins": [
+        {
+          "fromSeconds": 5,
+          "handlesMean": 584,
+          "privateMeanMiB": 403.84971217105266,
+          "sampleCount": 19,
+          "workingSetMeanMiB": 297.2750822368421
+        },
+        {
+          "fromSeconds": 15,
+          "handlesMean": 584.85,
+          "privateMeanMiB": 405.8376953125,
+          "sampleCount": 20,
+          "workingSetMeanMiB": 299.531640625
+        },
+        {
+          "fromSeconds": 25,
+          "handlesMean": 584.6,
+          "privateMeanMiB": 407.2587890625,
+          "sampleCount": 20,
+          "workingSetMeanMiB": 301.011328125
+        },
+        {
+          "fromSeconds": 35,
+          "handlesMean": 584.421052631579,
+          "privateMeanMiB": 407.59004934210526,
+          "sampleCount": 19,
+          "workingSetMeanMiB": 301.4009046052632
+        },
+        {
+          "fromSeconds": 45,
+          "handlesMean": 586,
+          "privateMeanMiB": 408.1171875,
+          "sampleCount": 20,
+          "workingSetMeanMiB": 301.949609375
+        },
+        {
+          "fromSeconds": 55,
+          "handlesMean": 584.8947368421053,
+          "privateMeanMiB": 408.8011924342105,
+          "sampleCount": 19,
+          "workingSetMeanMiB": 302.5668174342105
+        },
+        {
+          "fromSeconds": 65,
+          "handlesMean": 581.6,
+          "privateMeanMiB": 409.0501953125,
+          "sampleCount": 20,
+          "workingSetMeanMiB": 303.115234375
+        },
+        {
+          "fromSeconds": 75,
+          "handlesMean": 581,
+          "privateMeanMiB": 409.39925986842104,
+          "sampleCount": 19,
+          "workingSetMeanMiB": 303.45435855263156
+        },
+        {
+          "fromSeconds": 85,
+          "handlesMean": 581,
+          "privateMeanMiB": 409.7259114583333,
+          "sampleCount": 18,
+          "workingSetMeanMiB": 303.85069444444446
+        }
+      ],
+      "measurementSha256": "A685BAB4630D10C58B971F438C47599B57B079D099AA8D4D87CF269BE793A97B",
+      "process": {
+        "processId": 14644,
+        "exitReason": "completed",
+        "exitCode": 0,
+        "elapsedMs": 93845,
+        "stdoutSummary": "",
+        "stderrSummary": "",
+        "stdoutTotalBytes": 0,
+        "stderrTotalBytes": 0,
+        "stdoutTruncated": false,
+        "stderrTruncated": false,
+        "spawnError": null,
+        "killError": null,
+        "waitError": null,
+        "readerJoinError": null,
+        "ownership": {
+          "ownershipKind": "windows_job_object",
+          "processGroupCreated": true,
+          "rootProcessBound": true,
+          "terminationRequested": false,
+          "rootProcessWaitCompleted": true,
+          "processGroupReleaseCompleted": true,
+          "outputReadersJoined": true
+        },
+        "priority": {
+          "requested": "normal",
+          "effective": "normal",
+          "applied": true,
+          "error": null
+        }
+      },
+      "runId": "semantic-playtest:\\\\?\\C:\\a320-0038\\restart-eight\\semantic:11856:1789058298886888600"
+    },
+    {
+      "overall": "passed",
+      "case": "restart-idle-control",
+      "reportSha256": "D21762E7EAF3B5D2D92B5E3A7673EFB684D7B00F2A0036120ACA3862A5D7F272",
+      "simulationTicks": 3362,
+      "assertions": 64,
+      "memoryBins": [
+        {
+          "fromSeconds": 5,
+          "handlesMean": 584,
+          "privateMeanMiB": 404.4467516447368,
+          "sampleCount": 19,
+          "workingSetMeanMiB": 298.01048519736844
+        },
+        {
+          "fromSeconds": 15,
+          "handlesMean": 585.65,
+          "privateMeanMiB": 406.1201171875,
+          "sampleCount": 20,
+          "workingSetMeanMiB": 299.96328125
+        },
+        {
+          "fromSeconds": 25,
+          "handlesMean": 586.6315789473684,
+          "privateMeanMiB": 407.4854029605263,
+          "sampleCount": 19,
+          "workingSetMeanMiB": 301.3760279605263
+        },
+        {
+          "fromSeconds": 35,
+          "handlesMean": 586,
+          "privateMeanMiB": 407.798828125,
+          "sampleCount": 20,
+          "workingSetMeanMiB": 301.8015625
+        },
+        {
+          "fromSeconds": 45,
+          "handlesMean": 586,
+          "privateMeanMiB": 408.03536184210526,
+          "sampleCount": 19,
+          "workingSetMeanMiB": 302.0869654605263
+        },
+        {
+          "fromSeconds": 55,
+          "handlesMean": 584.8,
+          "privateMeanMiB": 408.4326171875,
+          "sampleCount": 20,
+          "workingSetMeanMiB": 302.4046875
+        },
+        {
+          "fromSeconds": 65,
+          "handlesMean": 581.6315789473684,
+          "privateMeanMiB": 408.51768092105266,
+          "sampleCount": 19,
+          "workingSetMeanMiB": 302.59888980263156
+        },
+        {
+          "fromSeconds": 75,
+          "handlesMean": 581,
+          "privateMeanMiB": 408.64765625,
+          "sampleCount": 20,
+          "workingSetMeanMiB": 302.73828125
+        },
+        {
+          "fromSeconds": 85,
+          "handlesMean": 581,
+          "privateMeanMiB": 409.01953125,
+          "sampleCount": 13,
+          "workingSetMeanMiB": 303.2034254807692
+        }
+      ],
+      "measurementSha256": "7CB45BA90F5C351600E033EE5C738E7EE412529E168E8182F012233066E28141",
+      "process": {
+        "processId": 5700,
+        "exitReason": "completed",
+        "exitCode": 0,
+        "elapsedMs": 91614,
+        "stdoutSummary": "",
+        "stderrSummary": "",
+        "stdoutTotalBytes": 0,
+        "stderrTotalBytes": 0,
+        "stdoutTruncated": false,
+        "stderrTruncated": false,
+        "spawnError": null,
+        "killError": null,
+        "waitError": null,
+        "readerJoinError": null,
+        "ownership": {
+          "ownershipKind": "windows_job_object",
+          "processGroupCreated": true,
+          "rootProcessBound": true,
+          "terminationRequested": false,
+          "rootProcessWaitCompleted": true,
+          "processGroupReleaseCompleted": true,
+          "outputReadersJoined": true
+        },
+        "priority": {
+          "requested": "normal",
+          "effective": "normal",
+          "applied": true,
+          "error": null
+        }
+      },
+      "runId": "semantic-playtest:\\\\?\\C:\\a320-0038\\restart-idle-control\\semantic:27924:1789058860440092600"
+    }
+  ],
+  "installedVideoControllers": [
+    {
+      "Name": "Todesk Virtual Display Adapter",
+      "DriverVersion": "16.44.2.509"
+    },
+    {
+      "Name": "NVIDIA GeForce RTX 3070",
+      "DriverVersion": "32.0.15.9186"
+    }
+  ],
+  "physicalMemoryBytes": 16980672512,
+  "classification": "windows-dev-opt0-baseline"
+}

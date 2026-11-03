@@ -1023,7 +1023,16 @@ impl ProjectRuntimeNativeModuleLoader {
             ));
         }
         // SAFETY: the table stays valid while the retained library guard is alive.
-        let api: ProjectRuntimeApi = unsafe { *api };
+        let api: ProjectRuntimeApi = unsafe { project_runtime_abi::copy_validated_api(api) }
+            .ok_or_else(|| {
+                diag(
+                    "project_runtime.native_module_abi_mismatch",
+                    "validate_api",
+                    "Native module ABI prefix mismatch.",
+                    Some(&dll_path),
+                    "Rebuild with matching SDK.",
+                )
+            })?;
         validate_loaded_api_header(&api, &dll_path)?;
         LoadedProjectRuntimeModuleAdapter::new_with_lifetime_guard(api, library).map_err(|error| {
             diag(
@@ -1730,6 +1739,9 @@ mod tests {
             fixed_update: None,
             resolve_ui_state: None,
             observe: None,
+            lifecycle: None,
+            ui_event: None,
+            ui_extension: None,
         };
         let error = validate_loaded_api_header(&api, Path::new("fixture.dll")).unwrap_err();
         assert_eq!(error.code, "project_runtime.native_module_abi_mismatch");

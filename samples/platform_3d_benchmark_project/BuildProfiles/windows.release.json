@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "build-profile.v2",
+  "profile": "release",
+  "target": "windows",
+  "runtimePackageMode": "debug-readable",
+  "frameLimit": 3,
+  "headlessSurfaceGate": true,
+  "realWindowSmoke": "optional",
+  "gameViewTarget": {
+    "extent": {
+      "width": 1920,
+      "height": 1080
+    },
+    "scalePolicy": "contain"
+  },
+  "architecture": "x86_64",
+  "release": {
+    "layout": "compiler-delivery-v1",
+    "includeReports": true,
+    "includeDebugSymbols": false
+  }
+}

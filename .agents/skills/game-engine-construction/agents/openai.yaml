@@ -1,0 +1,4 @@
+interface:
+  display_name: "Game Engine Construction"
+  short_description: "Execute AI First Game Engine construction gates safely"
+  default_prompt: "Use the active construction document, validate the exact baseline before editing, and execute gates with fail-fast evidence."

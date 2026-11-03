@@ -1,0 +1,24 @@
+   Compiling engine_runtime v0.1.0 (G:\gameEngin\rust\crates\engine_runtime)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1m 09s
+     Running unittests src\lib.rs (target\debug\deps\engine_runtime-f2e49a160a17050d.exe)
+
+running 1 test
+test aui_present_cache::tests::custom_paint_edit_reuses_preparation_and_layout_with_400_nodes ... FAILED
+
+failures:
+
+---- aui_present_cache::tests::custom_paint_edit_reuses_preparation_and_layout_with_400_nodes stdout ----
+
+thread 'aui_present_cache::tests::custom_paint_edit_reuses_preparation_and_layout_with_400_nodes' (11548) panicked at crates\engine_runtime\src\aui_present_cache.rs:3394:9:
+assertion `left == right` failed: a paint edit must not prepare 400 nodes
+  left: 1
+ right: 0
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    aui_present_cache::tests::custom_paint_edit_reuses_preparation_and_layout_with_400_nodes
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 775 filtered out; finished in 0.04s
+
+error: test failed, to rerun pass `-p engine_runtime --lib`

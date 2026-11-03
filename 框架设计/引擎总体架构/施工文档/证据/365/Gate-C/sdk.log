@@ -1,0 +1,61 @@
+    Blocking waiting for file lock on build directory
+   Compiling project_runtime_sdk v0.1.0 (G:\gameEngin\rust\crates\project_runtime_sdk)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1m 23s
+     Running unittests src\lib.rs (target\debug\deps\project_runtime_sdk-07e3536b9f616bf6.exe)
+
+running 52 tests
+test aui_animation::tests::clock_counts_frame_once_clamps_and_pauses_without_catchup ... ok
+test aui_animation::tests::parallel_conflict_check_preserves_gaps_in_nested_sequences ... ok
+test aui_animation::tests::fractional_speed_retains_submicroseconds_and_error_is_atomic ... ok
+test aui_animation::tests::instant_parallel_writes_conflict_but_serial_order_is_defined ... ok
+test aui_animation::tests::looping_yoyo_and_overflow_have_checked_timing ... ok
+test audio_source_wire_tests::audio_source_intents_preserve_wire_contract_and_reject_unknown_fields ... ok
+test aui_animation::tests::whole_cycle_overflow_and_zero_repeat_are_rejected ... ok
+test aui_animation::tests::sequential_same_property_is_valid_parallel_overlap_is_not ... ok
+test aui_animation::tests::mismatched_property_values_and_protocol_versions_are_rejected ... ok
+test aui_animation::tests::generation_and_property_distinguish_parallel_targets_and_description_round_trips ... ok
+test aui_animation::tests::deep_empty_containers_and_leaf_count_are_bounded ... ok
+test aui_animation::tests::interpolation_does_not_overflow_finite_endpoints ... ok
+test aui_draw2d::tests::degenerate_values_are_valid_but_negative_nonfinite_and_unbounded_arcs_are_not ... ok
+test aui_draw2d::tests::invalid_command_does_not_change_subpath_or_content ... ok
+test aui_draw2d::tests::deserialized_descriptions_require_state_and_version_validation ... ok
+test aui_draw2d::tests::curves_multiple_subpaths_and_full_arc_round_trip ... ok
+test aui_draw2d::tests::shape_helpers_validate_dimensions_and_asset_contract ... ok
+test aui_extension::tests::descriptor_and_mesh_limits_are_enforced ... ok
+test aui_draw2d::tests::aggregate_command_and_item_budgets_cannot_be_bypassed ... ok
+test aui_draw2d::tests::builder_rejects_command_overflow_without_losing_valid_prefix ... ok
+test aui_extension::tests::typed_properties_and_callback_identity_are_enforced ... ok
+test aui_host::tests::query_wire_rejects_unknown_fields ... ok
+test aui_extension::tests::graphics_extension_v2_roundtrips_and_rejects_old_reader_and_invalid_refs ... ok
+test aui_presentation::tests::matrix_and_point_overflow_are_errors ... ok
+test aui_presentation::tests::nested_parent_rotation_rotates_child_origin_once ... ok
+test aui_presentation::tests::pivot_rotation_and_mirror_round_trip ... ok
+test aui_presentation::tests::shear_precision_uses_largest_singular_value_and_dpi ... ok
+test aui_presentation::tests::small_uniform_scale_is_invertible_but_zero_and_ill_conditioned_are_not ... ok
+test aui_wire::tests::active_round_trips_as_an_independent_bounded_property ... ok
+test aui_wire::tests::custom_property_writes_coalesce_in_the_same_bounded_batch ... ok
+test aui_wire::tests::invalid_write_poison_cannot_be_ignored_by_callback ... ok
+test aui_wire::tests::last_setter_selects_notify_policy_without_extra_host_calls ... ok
+test aui_host::tests::stateful_stage_is_not_retried_and_read_size_is_bounded ... ok
+test aui_host::tests::structure_contract_rejects_operation_capacity_before_host_call ... ok
+test aui_wire::tests::ownership_transfer_is_bounded_typed_and_requires_an_atomic_controller_value ... ok
+test aui_wire::tests::malformed_versions_fields_duplicates_and_types_are_rejected ... ok
+test aui_wire::tests::slider_ref_is_typed_finite_and_preserves_notify_and_ownership ... ok
+test input_phase_tests::delivered_input_distinguishes_edges_held_and_unknown_without_changing_wire ... ok
+test lifecycle_wire_tests::focus_and_exit_preserve_typed_wire_intent ... ok
+test spawn_position_tests::prefab_spawn_wire_preserves_requested_position_and_accepts_legacy_request ... ok
+test tests::crate_has_no_engine_or_editor_dependency ... ok
+test spatial::tests::spatial_wire_rejects_unknown_intent_fields_and_legacy_euler_payloads ... ok
+test tests::invalid_input_and_small_output_fail_closed ... ok
+test tests::caller_owned_buffer_retries_without_transferring_memory ... ok
+test tests::facade_contains_panics_before_the_extern_boundary ... ok
+test tests::stateful_capacity_floor_sizes_without_invoking_the_callback ... ok
+test tests::stateful_boundary_rejects_null_and_contains_panics ... ok
+test aui_wire::tests::typed_writes_coalesce_without_per_setter_host_calls ... ok
+test tests::sdk_digest_is_stable_and_includes_wire_schema ... ok
+test aui_wire::tests::buffer_limit_poison_and_read_cache_are_bounded ... ok
+test aui_wire::tests::text_budget_counts_utf8_replacements_and_escaped_wire ... ok
+test aui_wire::tests::property_limit_and_decoder_limit_are_enforced ... ok
+
+test result: ok. 52 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+

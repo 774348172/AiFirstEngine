@@ -1,3 +1,6 @@
+mod foundation_observation;
+pub use foundation_observation::foundation_player_observation;
+pub mod android_export;
 use authoring_project_context::{
     CanonicalSourceInventory, ContextError, DocumentWriteReport, DocumentWriteRequest,
     EmbeddedAuthoringProjectContext, OpenOptions, ProjectHandle, ProjectLocator, ProjectMutation,
@@ -8,6 +11,7 @@ use authoring_project_context::{
 use std::path::{Path, PathBuf};
 
 mod artifact_cache;
+mod aui_tooling;
 mod builtin_font_pack;
 mod desktop_export;
 mod font_assets;
@@ -15,13 +19,28 @@ mod font_bundle;
 mod font_cook;
 mod game_project_compiler;
 mod generated_runtime_glue;
+mod model_import;
 mod neutral_assembler;
+mod spine_tooling;
+pub use spine_tooling::{
+    inspect_spine_project_snapshot, SpineActionInspection, SpineControllerInspection,
+    SpineProjectInspection,
+};
 mod particle_effect_cook;
+/// Offline benchmark recipes, measurements and request driver; not a Runtime API.
+pub mod platform_3d_benchmark;
 mod project_player_artifact;
 mod project_runtime_package_assembler;
 mod project_runtime_player_staging;
 mod project_schema;
 mod project_write_scope;
+pub mod three_d_contract;
+
+pub use model_import::{
+    inspect_model_import_snapshot, ImportDecodeNotice, ImportSourceDependency,
+    ModelImportDecodeReport, ModelImportInspectionReport, ModelImportInspectionRequest,
+    ModelImportMappingEvidence, ModelImportReferenceImpact, ModelImportSourceObject,
+};
 
 pub use artifact_cache::{
     ProjectAssemblyArtifactCache, ProjectAssemblyArtifactCacheError,
@@ -30,6 +49,12 @@ pub use artifact_cache::{
     ProjectAssemblyArtifactPublishStatus, ProjectAssemblyProducerReport,
     ProjectAssemblyProducerSubstageReport, PROJECT_ASSEMBLY_ARTIFACT_ENVELOPE_SCHEMA_VERSION,
     PROJECT_ASSEMBLY_PRODUCER_REPORT_SCHEMA_VERSION,
+};
+pub use aui_tooling::{
+    inspect_aui_project_snapshot, inspect_aui_project_snapshot_with_request, AuiDocumentInspection,
+    AuiInspectionMode, AuiInspectionRequest, AuiMigrationPreview, AuiNodeInspectionTrace,
+    AuiProjectInspectionReport, AuiProjectToolDiagnostic, AUI_MIGRATION_PREVIEW_SCHEMA_VERSION,
+    AUI_PROJECT_INSPECTION_SCHEMA_VERSION,
 };
 pub use builtin_font_pack::{
     load_engine_builtin_font_pack, EngineBuiltInFontPackError, EngineBuiltInFontPackManifest,
@@ -66,9 +91,9 @@ pub use project_player_artifact::runtime_module_source_digest;
 pub use project_player_artifact::{
     default_engine_sdk_root, default_project_runtime_player_build_root, ProjectPlayerArtifact,
     ProjectPlayerArtifactError, ProjectRuntimePlayerArtifactBuildDiagnostic,
-    ProjectRuntimePlayerArtifactBuildReport, ProjectRuntimePlayerArtifactBuildRequest,
-    ProjectRuntimePlayerArtifactBuildStatus, ProjectRuntimePlayerArtifactBuildStep,
-    PROJECT_PLAYER_ARTIFACT_SCHEMA_VERSION,
+    ProjectRuntimePlayerArtifactBuildProfile, ProjectRuntimePlayerArtifactBuildReport,
+    ProjectRuntimePlayerArtifactBuildRequest, ProjectRuntimePlayerArtifactBuildStatus,
+    ProjectRuntimePlayerArtifactBuildStep, PROJECT_PLAYER_ARTIFACT_SCHEMA_VERSION,
     PROJECT_RUNTIME_PLAYER_ARTIFACT_BUILD_REPORT_SCHEMA_VERSION,
     PROJECT_RUNTIME_PLAYER_ARTIFACT_BUILD_REQUEST_SCHEMA_VERSION,
 };
@@ -91,7 +116,7 @@ pub use project_runtime_player_staging::{
 pub use project_schema::{
     ProjectManifest, ProjectRuntimeModuleBuildSpec, ProjectRuntimeSourceKind,
     LEGACY_PROJECT_MANIFEST_SCHEMA_VERSION, PROJECT_MANIFEST_SCHEMA_VERSION,
-    PROJECT_RUNTIME_MODULE_INTERFACE_VERSION,
+    PROJECT_RUNTIME_MODULE_INTERFACE_VERSION, SPATIAL_PROJECT_MANIFEST_SCHEMA_VERSION,
 };
 pub use project_write_scope::{
     ProjectDirectoryWriter, ProjectRelativePath, ProjectWriteError, ProjectWriteOperation,
@@ -346,3 +371,4 @@ mod tests {
     }
 }
 pub(crate) use game_project_compiler::CompilerSourceView;
+pub mod web_export;

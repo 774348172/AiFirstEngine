@@ -1,0 +1,48 @@
+{
+  "schemaVersion": "r2-o1-gateway-observation-gate-report.v1",
+  "status": "passed",
+  "head": "9f5adc73ca02a5e3fed3f38c62bb9a420e6bd5de",
+  "baseline": "dirty_worktree_scoped_source_manifest",
+  "completedGates": [
+    "R2-O0",
+    "R2-O1"
+  ],
+  "nextGate": "R2-O2",
+  "tests": [
+    {
+      "command": "cargo test -p ai_tool_gateway --test r2_goal_modules_public_schema",
+      "result": "passed",
+      "passed": 3
+    },
+    {
+      "command": "cargo test -p ai_tool_gateway codex_outcome",
+      "result": "passed",
+      "passed": 6
+    },
+    {
+      "command": "cargo test -p ai_tool_gateway gateway_attempt_observation",
+      "result": "passed",
+      "passed": 2
+    },
+    {
+      "command": "cargo check -p ai_tool_gateway --all-targets",
+      "result": "passed"
+    }
+  ],
+  "redContract": {
+    "command": "cargo test -p ai_tool_gateway --test r2_production_observer_contract",
+    "result": "expected_red",
+    "confirmedMissing": [
+      "gateway_attempt_claim_and_journal",
+      "real_session_observer_adapter",
+      "native_editor_production_composition",
+      "externally_owned_cleanup_schema"
+    ],
+    "resolvedByR2O1": [
+      "gateway_attempt_claim_and_journal"
+    ]
+  },
+  "productionActionsExecuted": false,
+  "freshFreezeExecuted": false,
+  "historicalGateRetried": false
+}

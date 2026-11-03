@@ -11,7 +11,8 @@ use engine_runtime::windowed_player::{
     WindowedPlayerRunRequest, WindowedPlayerRuntimeReportLevel, WindowedPlayerScreenshotSummary,
 };
 use runtime_player_winit::{
-    NativePlayerInputScript, NativePlayerWindowRunRequest, NativeWindowPresentStatus,
+    NativeAuiPerformanceLoad, NativePlayerInputScript, NativePlayerWindowRunRequest,
+    NativeWindowPresentStatus,
 };
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -44,8 +45,9 @@ pub use exported_player_verification::{
 pub use fixed_player::run_fixed_player_from_env;
 pub use semantic_playtest::{
     read_semantic_playtest_evidence, retain_semantic_playtest_evidence,
-    run_bounded_semantic_playtest, runtime_package_digest, semantic_file_digest,
-    SemanticPlaytestEvidenceRef, SemanticPlaytestProcessReport, SemanticPlaytestProcessRequest,
+    run_bounded_semantic_playtest, run_bounded_semantic_playtest_unpaced, runtime_package_digest,
+    semantic_file_digest, SemanticPlaytestEvidenceRef, SemanticPlaytestProcessReport,
+    SemanticPlaytestProcessRequest,
 };
 
 pub fn run_from_env() -> i32 {
@@ -144,6 +146,7 @@ fn run_cli(cli: RuntimeCliArgs, linked_modules: Arc<LinkedProjectRuntimeSet>) ->
         let report = verify_exported_player_process_with_options(
             request,
             ExportedPlayerProcessVerificationOptions {
+                measurement: cli.measurement,
                 input_script_path: cli.input_script.clone(),
                 runtime_report_level: Some(
                     match cli.runtime_report_level {
@@ -287,6 +290,9 @@ fn run_native_player_via_engine_dll(
             std::process::id()
         ))
     });
+    // Keep the DLL's evidence separate from the translated Player report,
+    // including a report rejected by the bounded reader.
+    let engine_report_path = report_path.with_extension("engine-runtime.json");
     let mode = match request.mode {
         runtime_player_winit::NativePlayerWindowRunMode::HeadlessSurfaceGate => {
             WindowedPlayerMode::HeadlessGate
@@ -298,7 +304,7 @@ fn run_native_player_via_engine_dll(
         runtime_player_winit::engine_dll_execution::EngineRuntimeExecutionRequest {
             request: request.clone(),
             scenario: None,
-            report_path: report_path.clone(),
+            report_path: engine_report_path.clone(),
             capture_directory: None,
         },
     );
@@ -316,7 +322,7 @@ fn run_native_player_via_engine_dll(
     });
     let report = native_window_report(&paths.package, cli.frames, mode, native);
     if paths.report.is_none() {
-        let _ = fs::remove_file(&report_path);
+        let _ = fs::remove_file(&engine_report_path);
     }
     (report, paths.report.clone())
 }
@@ -562,6 +568,7 @@ fn run_packaged_release(
 ) -> Result<i32, PackagedEntrypointError> {
     let packaged = resolve_packaged_entrypoint(executable)?;
     let cli = RuntimeCliArgs {
+        measurement: None,
         package: Some(packaged.runtime_package.clone()),
         mode: Some("windowed".to_string()),
         frames: packaged.user_frame_limit.unwrap_or(u64::MAX),
@@ -575,6 +582,9 @@ fn run_packaged_release(
         runtime_report_level: WindowedPlayerRuntimeReportLevel::Off,
         performance_warmup_frames: 0,
         performance_sample_frames: 0,
+        aui_performance_load: None,
+        target_fps: 60,
+        present_mode: "Fifo".into(),
     };
     let exe_dir = packaged
         .entrypoint
@@ -805,9 +815,13 @@ fn configure_native_evidence_request(
     request: &mut NativePlayerWindowRunRequest,
     cli: &RuntimeCliArgs,
 ) {
+    request.measurement = cli.measurement;
+    request.config.target_fps = cli.target_fps;
+    request.config.present_mode = cli.present_mode.clone();
     request.runtime_report_level = cli.runtime_report_level;
     request.performance_warmup_frames = cli.performance_warmup_frames;
     request.performance_sample_frames = cli.performance_sample_frames;
+    request.aui_performance_load = cli.aui_performance_load;
     request.input_script = cli.input_script.as_ref().map(|path| {
         fs::read_to_string(path)
             .ok()
@@ -857,7 +871,11 @@ fn native_window_report(
     report.gameplay_trace_records = native_report.gameplay_trace_records.clone();
     report.exit_code = Some(native_report.exit_code);
     report.exit_reason = if native_report.exit_code == 0 {
-        "completed".to_string()
+        if native_report.session_exit_requested {
+            "session_exit_requested".to_string()
+        } else {
+            "completed".to_string()
+        }
     } else if native_report.logic_status == "error" {
         "runtime_logic_failed".to_string()
     } else {
@@ -928,6 +946,7 @@ fn resolve_native_player_paths(
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct RuntimeCliArgs {
+    measurement: Option<runtime_player_winit::measurement::MeasurementPolicy>,
     package: Option<PathBuf>,
     mode: Option<String>,
     frames: u64,
@@ -941,6 +960,9 @@ struct RuntimeCliArgs {
     runtime_report_level: WindowedPlayerRuntimeReportLevel,
     performance_warmup_frames: u64,
     performance_sample_frames: u64,
+    aui_performance_load: Option<NativeAuiPerformanceLoad>,
+    target_fps: u32,
+    present_mode: String,
 }
 
 impl RuntimeCliArgs {
@@ -949,6 +971,7 @@ impl RuntimeCliArgs {
             return Err(usage("missing arguments"));
         }
         let mut package = None;
+        let mut measurement = None;
         let mut mode = None;
         let mut frames = None;
         let mut report = None;
@@ -960,6 +983,9 @@ impl RuntimeCliArgs {
         let mut runtime_report_level = WindowedPlayerRuntimeReportLevel::Off;
         let mut performance_warmup_frames = 0;
         let mut performance_sample_frames = 0;
+        let mut aui_performance_load = None;
+        let mut target_fps = 60;
+        let mut present_mode = "Fifo".to_string();
         let mut index = 0;
         while index < args.len() {
             let key = &args[index];
@@ -970,6 +996,25 @@ impl RuntimeCliArgs {
                 }
                 "--package" => package = Some(read_value(&args, &mut index, key)?),
                 "--mode" => mode = Some(read_value(&args, &mut index, key)?),
+                "--target-fps" => {
+                    target_fps = read_value(&args, &mut index, key)?
+                        .parse::<u32>()
+                        .map_err(|_| usage("--target-fps must be an integer from 0 to 1000"))?;
+                    if target_fps > 1000 {
+                        return Err(usage("--target-fps must be from 0 to 1000"));
+                    }
+                }
+                "--present-mode" => {
+                    present_mode = match read_value(&args, &mut index, key)?.as_str() {
+                        "fifo" => "Fifo",
+                        "immediate" => "Immediate",
+                        "mailbox" => "Mailbox",
+                        _ => {
+                            return Err(usage("--present-mode must be fifo, immediate or mailbox"))
+                        }
+                    }
+                    .into();
+                }
                 "--frames" | "--frame-limit" => {
                     let value = read_value(&args, &mut index, key)?;
                     frames = Some(
@@ -1004,10 +1049,35 @@ impl RuntimeCliArgs {
                         .parse::<u64>()
                         .map_err(|_| usage(format!("{key} must be a non-negative integer")))?;
                 }
+                "--measurement-policy" => {
+                    let value = read_value(&args, &mut index, key)?;
+                    let policy: runtime_player_winit::measurement::MeasurementPolicy =
+                        serde_json::from_str(&value)
+                            .map_err(|e| usage(format!("invalid --measurement-policy: {e}")))?;
+                    policy.validate().map_err(usage)?;
+                    measurement = Some(policy);
+                }
                 "--performance-sample-frames" => {
                     performance_sample_frames = read_value(&args, &mut index, key)?
                         .parse::<u64>()
                         .map_err(|_| usage(format!("{key} must be a non-negative integer")))?;
+                }
+                "--aui-performance-load" => {
+                    aui_performance_load =
+                        Some(match read_value(&args, &mut index, key)?.as_str() {
+                            "theme-dpi" => NativeAuiPerformanceLoad::ThemeDpi,
+                            "virtual-list-lifecycle" => {
+                                NativeAuiPerformanceLoad::VirtualListLifecycle
+                            }
+                            "dpi-100" => NativeAuiPerformanceLoad::Dpi100,
+                            "dpi-150" => NativeAuiPerformanceLoad::Dpi150,
+                            "dpi-200" => NativeAuiPerformanceLoad::Dpi200,
+                            value => {
+                                return Err(usage(format!(
+                                    "--aui-performance-load must be theme-dpi, virtual-list-lifecycle, dpi-100, dpi-150 or dpi-200; got {value}"
+                                )))
+                            }
+                        });
                 }
                 "--headless" => mode = Some("headless".to_string()),
                 "--headless-gate" => mode = Some("headless-gate".to_string()),
@@ -1047,10 +1117,16 @@ impl RuntimeCliArgs {
             return Err(usage("missing --package"));
         }
         let frames = frames.unwrap_or(1);
+        if measurement.is_some() && !native_player && !verify_exported_player {
+            return Err(usage(
+                "--measurement-policy requires run-native-player or verify-exported-player",
+            ));
+        }
         if frames == 0 {
             return Err(usage("--frames must be greater than 0"));
         }
         Ok(Self {
+            measurement,
             package: package.map(PathBuf::from),
             mode: Some(mode),
             frames,
@@ -1064,6 +1140,9 @@ impl RuntimeCliArgs {
             runtime_report_level,
             performance_warmup_frames,
             performance_sample_frames,
+            aui_performance_load,
+            target_fps,
+            present_mode,
         })
     }
 }
@@ -1077,7 +1156,7 @@ fn read_value(args: &[String], index: &mut usize, key: &str) -> Result<String, S
 
 fn usage(message: impl Into<String>) -> String {
     format!(
-        "{}\nUsage: ai_engine_runtime_cli --package <runtime-package> --mode headless --frames <N> --report <windowed-player-run-report.json>\n       ai_engine_runtime_cli run-native-player [--package <runtime-package>] [--mode windowed|headless-gate] [--frames <N>] [--report <windowed-player-run-report.json>] [--screenshot] [--screenshot-path <png>]\n       ai_engine_runtime_cli verify-exported-player [--package <exported-package-dir>] [--mode headless-gate|windowed] [--frames <N>] [--report <exported-player-process-verification-report.json>] [--screenshot] [--screenshot-path <png>]",
+        "{}\nUsage: ai_engine_runtime_cli --package <runtime-package> --mode headless --frames <N> --report <windowed-player-run-report.json>\n       ai_engine_runtime_cli run-native-player [--package <runtime-package>] [--mode windowed|headless-gate] [--frames <N>] [--report <windowed-player-run-report.json>] [--measurement-policy <json>] [--screenshot] [--screenshot-path <png>]\n       ai_engine_runtime_cli verify-exported-player [--package <exported-package-dir>] [--mode headless-gate|windowed] [--frames <N>] [--report <exported-player-process-verification-report.json>] [--measurement-policy <json>] [--screenshot] [--screenshot-path <png>]",
         message.into()
     )
 }
@@ -1092,6 +1171,118 @@ pub fn failure_report_for_cli_error(message: impl Into<String>) -> RuntimeRunRep
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn explicit_measurement_policy_reaches_native_request_without_native_capture() {
+        use runtime_player_winit::measurement::{MeasurementLevel, MeasurementPolicy};
+        for entry in ["run-native-player", "verify-exported-player"] {
+            for (level, cpu_probe) in [
+                (MeasurementLevel::Off, false),
+                (MeasurementLevel::Off, true),
+                (MeasurementLevel::Summary, false),
+                (MeasurementLevel::Summary, true),
+                (MeasurementLevel::Trace, false),
+            ] {
+                let policy = MeasurementPolicy {
+                    level,
+                    cpu_probe,
+                    native_events: false,
+                    allocation_frame: None,
+                    allocation_end_frame: None,
+                    allocation_summary: false,
+                    first_frame: (level == MeasurementLevel::Trace).then_some(10),
+                    end_frame: (level == MeasurementLevel::Trace).then_some(310),
+                };
+                let args = super::RuntimeCliArgs::parse(vec![
+                    entry.into(),
+                    "--measurement-policy".into(),
+                    serde_json::to_string(&policy).unwrap(),
+                    "--performance-sample-frames".into(),
+                    "600".into(),
+                ])
+                .unwrap();
+                let mut request = super::NativePlayerWindowRunRequest::windowed("unused");
+                super::configure_native_evidence_request(&mut request, &args);
+                assert_eq!(request.measurement_policy(), policy);
+                assert!(!request.measurement_policy().native_events);
+            }
+        }
+        for invalid in [
+            r#"{"level":"trace","firstFrame":10,"endFrame":10,"nativeEvents":false}"#,
+            r#"{"level":"trcae","nativeEvents":false}"#,
+            r#"{"level":"trace","nativeEvents":false,"typo":1}"#,
+        ] {
+            assert!(super::RuntimeCliArgs::parse(vec![
+                "run-native-player".into(),
+                "--measurement-policy".into(),
+                invalid.into()
+            ])
+            .is_err());
+        }
+        assert!(super::RuntimeCliArgs::parse(vec![
+            "--package".into(),
+            "unused".into(),
+            "--measurement-policy".into(),
+            r#"{"level":"off","nativeEvents":false}"#.into()
+        ])
+        .is_err());
+    }
+    #[test]
+    fn high_rate_native_cli_preserves_requested_pacing_and_sync() {
+        let args = super::RuntimeCliArgs::parse(
+            vec![
+                "run-native-player",
+                "--mode",
+                "windowed",
+                "--target-fps",
+                "240",
+                "--present-mode",
+                "immediate",
+            ]
+            .into_iter()
+            .map(str::to_owned)
+            .collect(),
+        )
+        .unwrap();
+        let mut request = super::NativePlayerWindowRunRequest::windowed("unused");
+        super::configure_native_evidence_request(&mut request, &args);
+        assert_eq!(request.config.target_fps, 240);
+        assert_eq!(request.config.present_mode, "Immediate");
+        for value in ["-1", "1001", "240.5"] {
+            assert!(super::RuntimeCliArgs::parse(
+                vec!["run-native-player", "--target-fps", value]
+                    .into_iter()
+                    .map(str::to_owned)
+                    .collect()
+            )
+            .is_err());
+        }
+    }
+    #[test]
+    fn dll_request_preserves_fixed_dpi_qualification_modes() {
+        use runtime_player_winit::NativeAuiPerformanceLoad as Load;
+        for (name, expected) in [
+            ("dpi-100", Load::Dpi100),
+            ("dpi-150", Load::Dpi150),
+            ("dpi-200", Load::Dpi200),
+        ] {
+            let cli = super::RuntimeCliArgs::parse(
+                vec![
+                    "run-native-player",
+                    "--aui-performance-load",
+                    name,
+                    "--performance-sample-frames",
+                    "3600",
+                ]
+                .into_iter()
+                .map(str::to_owned)
+                .collect(),
+            )
+            .unwrap();
+            let request = super::native_request_for_cli(std::path::Path::new("package"), &cli);
+            assert_eq!(request.aui_performance_load, Some(expected));
+            assert_eq!(request.performance_sample_frames, 3600);
+        }
+    }
     #[test]
     fn dll_request_preserves_window_input_capture_and_frame_options() {
         let cli = super::RuntimeCliArgs::parse(
@@ -1113,6 +1304,8 @@ mod tests {
                 "10",
                 "--performance-sample-frames",
                 "20",
+                "--aui-performance-load",
+                "theme-dpi",
             ]
             .into_iter()
             .map(str::to_owned)
@@ -1125,6 +1318,10 @@ mod tests {
             runtime_player_winit::NativePlayerWindowRunMode::Windowed
         );
         assert_eq!(request.frame_limit, 120);
+        assert_eq!(
+            request.aui_performance_load,
+            Some(runtime_player_winit::NativeAuiPerformanceLoad::ThemeDpi)
+        );
         assert!(request.screenshot.enabled);
         assert_eq!(
             request.screenshot.path.as_deref(),
@@ -1151,6 +1348,46 @@ mod tests {
     }
 
     #[test]
+    fn dll_request_preserves_virtual_list_lifecycle_performance_load() {
+        let cli = super::RuntimeCliArgs::parse(
+            vec![
+                "run-native-player",
+                "--package",
+                "missing-package",
+                "--mode",
+                "windowed",
+                "--frames",
+                "720",
+                "--runtime-report-level",
+                "trace",
+                "--performance-warmup-frames",
+                "120",
+                "--performance-sample-frames",
+                "600",
+                "--aui-performance-load",
+                "virtual-list-lifecycle",
+            ]
+            .into_iter()
+            .map(str::to_owned)
+            .collect(),
+        )
+        .unwrap();
+
+        let request = super::native_request_for_cli(std::path::Path::new("missing-package"), &cli);
+        assert_eq!(
+            request.aui_performance_load,
+            Some(runtime_player_winit::NativeAuiPerformanceLoad::VirtualListLifecycle)
+        );
+        assert_eq!(
+            (
+                request.performance_warmup_frames,
+                request.performance_sample_frames
+            ),
+            (120, 600)
+        );
+    }
+
+    #[test]
     fn native_report_conversion_never_executes_a_missing_package() {
         let path = std::path::Path::new("missing-package-must-not-be-loaded-for-report");
         let mut native = runtime_player_winit::NativeWindowHostReport::base(
@@ -1165,6 +1402,30 @@ mod tests {
         assert_eq!(report.counters.frames_completed, 7);
         assert!(report.diagnostics.is_empty(), "{:#?}", report.diagnostics);
         assert!(report.package_summary.is_none());
+    }
+
+    #[test]
+    fn native_report_conversion_preserves_session_exit_reason() {
+        let path = Path::new("missing-package-exit-report-only");
+        let mut native = runtime_player_winit::NativeWindowHostReport::base(
+            &super::NativePlayerWindowRunRequest::windowed(path),
+        );
+        native.exit_code = 0;
+        native.session_exit_requested = true;
+        native.frames_completed = 29;
+        let report = super::native_window_report(
+            path,
+            100,
+            super::WindowedPlayerMode::Windowed,
+            native.clone(),
+        );
+        assert_eq!(report.exit_reason, "session_exit_requested");
+        assert_eq!(report.counters.frames_completed, 29);
+        native.exit_code = 1;
+        native.logic_status = "error".into();
+        let failed =
+            super::native_window_report(path, 100, super::WindowedPlayerMode::Windowed, native);
+        assert_eq!(failed.exit_reason, "runtime_logic_failed");
     }
 
     #[test]

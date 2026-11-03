@@ -1,0 +1,13 @@
+   Compiling engine_runtime v0.1.0 (G:\gameEngin\rust\crates\engine_runtime)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1m 14s
+     Running unittests src\lib.rs (target\debug\deps\engine_runtime-f2e49a160a17050d.exe)
+
+running 5 tests
+test aui_graphics::tests::aui_graphics_extreme_finite_coordinates_fail_without_panicking ... ok
+test aui_graphics::tests::aui_graphics_empty_degenerate_and_zero_strokes_have_no_fallback ... ok
+test aui_graphics::tests::aui_graphics_caps_joins_curves_produce_finite_bounded_geometry ... ok
+test aui_graphics::tests::aui_graphics_retention_precision_replacement_and_release_are_bounded ... ok
+test aui_graphics::tests::aui_graphics_capacity_failure_is_atomic_and_not_cached ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 770 filtered out; finished in 0.01s
+

@@ -1,0 +1,120 @@
+   Compiling engine_runtime v0.1.0 (G:\gameEngin\rust\crates\engine_runtime)
+warning: variant `IrInterpreter` is never constructed
+  --> crates\engine_runtime\src\project_logic.rs:19:5
+   |
+17 | pub(crate) enum RuleExecutorHint {
+   |                 ---------------- variant in this enum
+18 |     RustAot,
+19 |     IrInterpreter,
+   |     ^^^^^^^^^^^^^
+   |
+   = note: `RuleExecutorHint` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: associated function `validation_only_ir_interpreter` is never used
+  --> crates\engine_runtime\src\project_logic.rs:38:19
+   |
+29 | impl RuleCall {
+   | ------------- associated function in this implementation
+...
+38 |     pub(crate) fn validation_only_ir_interpreter(rule_id: impl Into<String>) -> Self {
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: method `remove_sprite_renderer2d` is never used
+   --> crates\engine_runtime\src\world.rs:529:19
+    |
+160 | impl World {
+    | ---------- method in this implementation
+...
+529 |     pub(crate) fn remove_sprite_renderer2d(&mut self, id: &EntityId) -> Option<SpriteRenderer2D> {
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: `engine_runtime` (lib) generated 3 warnings
+   Compiling runtime_player_winit v0.1.0 (G:\gameEngin\rust\crates\runtime_player_winit)
+    Finished `test` profile [unoptimized] target(s) in 47.82s
+     Running unittests src\lib.rs (target\debug\deps\runtime_player_winit-edc547a4dfc0e27c.exe)
+
+running 80 tests
+test engine_dll_execution::tests::engine_dll_execution_rejects_unknown_envelope_fields ... ok
+test engine_dll_execution::tests::engine_dll_execution_roundtrip_preserves_window_input_and_evidence_settings ... ok
+test semantic_outcome::tests::semantic_outcome_missing_required_capture_and_assertion_cannot_pass ... ok
+test replay_input::tests::ordered_wheel_and_unicode_text_share_raw_input_and_reject_invalid_values ... ok
+test replay_input::tests::ordered_input_all_modifiers_buttons_and_cross_tick_transitions ... ok
+test semantic_outcome::tests::semantic_outcome_engine_paths_are_typed_and_cannot_be_project_spoofed ... ok
+test semantic_outcome::tests::ordered_input_v2_accepts_same_tick_mouse_and_key_edges ... ok
+test replay_input::tests::ordered_input_raw_order_coordinates_and_legacy_order ... ok
+test semantic_outcome::tests::semantic_outcome_nonpasses_remain_distinct_and_empty_is_not_passed ... ok
+test engine_dll_execution::tests::ordered_input_engine_dll_roundtrip_retains_versions_and_event_order ... ok
+test semantic_outcome::tests::semantic_scenario_capture_clock_is_not_simulation_clock ... ok
+test semantic_outcome::tests::semantic_outcome_spatial_requests_are_versioned_bounded_and_off_is_explicit ... ok
+test semantic_outcome::tests::semantic_scenario_rejects_duplicate_ids_and_invalid_assertion_windows ... ok
+test replay_input::tests::ordered_input_rejects_bad_states_at_precise_event ... ok
+test semantic_outcome::tests::semantic_scenario_rejects_type_missing_contract_and_allowed_value_errors ... ok
+test replay_input::tests::ordered_input_shared_mapping_holds_modifiers_and_mouse_until_release ... ok
+test semantic_outcome::tests::semantic_scenario_roundtrip_and_typed_inclusive_samples ... ok
+test replay_input::tests::ordered_input_strict_fields_versions_and_limits ... ok
+test semantic_outcome::tests::semantic_scenario_rejects_unknown_observation_path ... ok
+test semantic_outcome::tests::semantic_outcome_ordinary_3d_fixture_uses_current_schema ... ok
+test semantic_outcome::tests::semantic_scenario_rejects_input_order_bounds_and_invalid_key_transitions ... ok
+test semantic_playtest::tests::semantic_playtest_rejects_repeated_or_skipped_tick_evidence ... ok
+test session_exit_tests::orderly_exit_without_presenting_is_success_but_does_not_hide_errors ... ok
+test tests::audio_absent_project_does_not_prepare_a_device_or_emit_an_audio_report ... ok
+test tests::audio_device_failure_reaches_completion_diagnostics_even_when_reports_are_off ... ok
+test tests::aui_feedback_player_pointer_down_updates_same_frame_overlay ... ok
+test semantic_outcome::tests::semantic_scenario_rejects_limits_seed_unknown_fields_and_targets ... ok
+test semantic_playtest::tests::aui_snapshot_reports_resolved_nodes_and_bounded_output ... ok
+test semantic_playtest::tests::semantic_playtest_spatial_snapshot_never_relabels_an_old_world_frame ... ok
+test semantic_playtest::tests::semantic_playtest_runtime_fault_and_observation_panic_preserve_failure ... ok
+test tests::aui_present_cache_reference_canvas_ignores_viewport_identity_changes ... ok
+test semantic_playtest::tests::semantic_playtest_zero_multi_step_input_dedup_and_deadline ... ok
+test tests::aui_present_cache_clean_hit_skips_extension_frame_scan_and_callback ... ok
+test semantic_playtest::tests::semantic_playtest_contract_violation_limits_and_capture_never_fake_success ... ok
+test tests::aui_text_ime_events_are_consumed_and_reported_by_native_input_chain ... ok
+test semantic_playtest::tests::ordered_input_semantic_host_mouse_hold_release_repeat_and_failure_count ... ok
+test semantic_playtest::tests::native_loop_preserves_rule_and_command_failures_through_later_successful_frames ... ok
+test tests::frame_deadline_overrun_is_ready_without_wait_or_catch_up_debt ... ok
+test tests::frame_deadline_waits_only_for_unused_frame_budget ... ok
+test tests::aui_present_cache_snapshot_failure_does_not_swallow_accepted_retained_updates ... ok
+test tests::frame_performance_reports_update_render_submit_and_present_wait ... ok
+test tests::gate_d_raw_frames_preserve_intervals_and_difference_owner_counters ... ok
+test tests::feature_disabled_windowed_reports_native_host_required ... ok
+test semantic_playtest::tests::semantic_playtest_actual_input_post_commit_repeatability_and_negative_expectation ... ok
+test tests::aui_present_cache_reuses_clean_frame_and_rebuilds_changed_values ... ok
+test tests::headless_native_player_reports_missing_package ... ok
+test tests::aui_present_cache_stops_oscillation_after_eight_rounds_without_final_publish ... ok
+test tests::native_input_held_key_drives_axis_across_frames ... ok
+test tests::ime_candidate_rect_uses_shared_reference_to_window_mapping ... ok
+test tests::feature_disabled_windowed_screenshot_reports_unsupported ... ok
+test tests::native_input_focus_lost_releases_pressed_inputs ... ok
+test tests::native_input_mouse_pointer_button_and_wheel_are_resolved ... ok
+test tests::native_window_host_report_serializes ... ok
+test tests::native_mouse_leave_uses_last_cursor_position_and_deterministic_fallback ... ok
+test tests::native_window_viewport_input_preserves_real_window_metrics ... ok
+test tests::native_input_space_key_generates_fire_action ... ok
+test tests::player_target_updates_initial_window_extent ... ok
+test tests::ordered_input_aui_dispatches_m4e_toggle_and_slider_values ... ok
+test tests::player_window_keeps_requested_extent_when_work_area_can_contain_it ... ok
+test tests::ordered_input_aui_filters_mouse_fire_and_dispatches_click_action ... ok
+test tests::pointer_replay_reaches_real_input_resolver_and_old_keyboard_scripts_still_parse ... ok
+test tests::primary_touch_mapping_preserves_physical_pixels_and_cancel_phase ... ok
+test tests::portrait_target_space_input_uses_shared_presentation_inverse ... ok
+test tests::headless_native_player_runs_package_one_frame ... ok
+test tests::portrait_player_window_fits_inside_work_area_without_changing_aspect ... ok
+test tests::screenshot_request_is_reported_without_running_real_window ... ok
+test tests::summary_command_failure_preserves_entity_and_error_without_full_trace ... ok
+test tests::summary_reports_rule_failure_and_off_still_marks_logic_error ... ok
+test tests::summary_keeps_bounded_failure_details_and_reads_old_reports ... ok
+test tests::suspend_resume_recreates_surface_without_recreating_gameplay_session ... ok
+test tests::windowed_session_advances_past_first_frame_until_limit ... ok
+test tests::headless_player_reports_runtime_package_input_mapping ... ok
+test tests::rgba_png_writer_outputs_png_file ... ok
+test tests::runtime_sprite_texture_collection_includes_scene_and_all_animator_frames ... ok
+test tests::runtime_player_project_runtime_session_headless_uses_shared_composition_and_reports_summary ... ok
+test tests::aui_present_cache_respects_binding_ownership_takeover_and_release ... ok
+test tests::aui_present_cache_rebuilds_for_viewport_resize_and_dpi_then_reuses ... ok
+test tests::aui_present_cache_reuses_c2_paragraphs_and_reshapes_changed_text ... ok
+test tests::aui_present_cache_retained_edits_bypass_snapshot_reuse_without_overwriting_bindings ... ok
+test tests::aui_present_cache_materializes_bounded_virtual_list_and_reconciles_recycled_slots ... ok
+
+test result: ok. 80 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.88s
+

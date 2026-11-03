@@ -1,4 +1,7 @@
-use crate::{ProjectManifest, ProjectRuntimeSourceKind, PROJECT_MANIFEST_SCHEMA_VERSION};
+use crate::{
+    ProjectManifest, ProjectRuntimeSourceKind, PROJECT_MANIFEST_SCHEMA_VERSION,
+    SPATIAL_PROJECT_MANIFEST_SCHEMA_VERSION,
+};
 use engine_runtime::canonical_digest::sha256_prefixed;
 use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
@@ -91,13 +94,15 @@ pub(crate) fn plan_project_runtime_player_staging(
             format!("Project manifest is invalid: {error}"),
         )
     })?;
-    if manifest.schema_version != PROJECT_MANIFEST_SCHEMA_VERSION
-        || manifest.runtime_module.resolved_source_kind() != ProjectRuntimeSourceKind::ProjectRust
+    if !matches!(
+        manifest.schema_version.as_str(),
+        PROJECT_MANIFEST_SCHEMA_VERSION | SPATIAL_PROJECT_MANIFEST_SCHEMA_VERSION
+    ) || manifest.runtime_module.resolved_source_kind() != ProjectRuntimeSourceKind::ProjectRust
         || manifest.runtime_module.cargo_manifest != RUNTIME_MANIFEST_PATH
     {
         return Err(ProjectRuntimePlayerStagingError::new(
             "project_runtime.player_artifact_staging_manifest_policy_rejected",
-            "Production staging requires an aife-project.v2 ProjectRust module at RuntimeModule/Cargo.toml.",
+            "Production staging requires an aife-project.v2 or v3 ProjectRust module at RuntimeModule/Cargo.toml.",
         ));
     }
     manifest.runtime_module.validate().map_err(|error| {
@@ -856,7 +861,10 @@ fn copy_runtime_tree(
         })?;
         if relative.components().any(|component| {
             component.as_os_str().to_str().is_some_and(|name| {
-                matches!(name, "target" | ".git" | ".cargo" | ".aife" | "Build")
+                matches!(
+                    name,
+                    "target" | ".git" | ".cargo" | ".aife" | "Build" | "Library"
+                )
             })
         }) || relative.file_name().and_then(|name| name.to_str()) == Some(".gitignore")
         {
@@ -1052,6 +1060,8 @@ pub struct Fixture { pub value: serde_json::Value }
         )
         .unwrap();
         fs::write(runtime.join("target/debug/stale.json"), b"stale").unwrap();
+        fs::create_dir_all(project.join("Library/Generated")).unwrap();
+        fs::write(project.join("Library/Generated/stale.bin"), b"stale").unwrap();
         fs::write(
             project.join("project.aife.json"),
             serde_json::to_vec_pretty(&project_manifest).unwrap(),
@@ -1061,6 +1071,39 @@ pub struct Fixture { pub value: serde_json::Value }
         let source_lock_before = fs::read(runtime.join("Cargo.lock")).unwrap();
 
         let plan = plan_project_runtime_player_staging(&project, &sdk).unwrap();
+        let mut spatial_manifest = project_manifest.clone();
+        spatial_manifest["schemaVersion"] = serde_json::json!("aife-project.v3");
+        fs::write(
+            project.join(PROJECT_MANIFEST_PATH),
+            serde_json::to_vec(&spatial_manifest).unwrap(),
+        )
+        .unwrap();
+        let spatial_plan = plan_project_runtime_player_staging(&project, &sdk).unwrap();
+        assert_eq!(
+            spatial_plan.normalized_dependency_digest,
+            plan.normalized_dependency_digest
+        );
+        assert_eq!(
+            spatial_plan.normalized_manifest_digest,
+            plan.normalized_manifest_digest
+        );
+        spatial_manifest["schemaVersion"] = serde_json::json!("aife-project.v4");
+        fs::write(
+            project.join(PROJECT_MANIFEST_PATH),
+            serde_json::to_vec(&spatial_manifest).unwrap(),
+        )
+        .unwrap();
+        assert_eq!(
+            plan_project_runtime_player_staging(&project, &sdk)
+                .unwrap_err()
+                .code,
+            "project_runtime.player_artifact_staging_manifest_policy_rejected"
+        );
+        fs::write(
+            project.join(PROJECT_MANIFEST_PATH),
+            serde_json::to_vec(&project_manifest).unwrap(),
+        )
+        .unwrap();
         stage_project_runtime_player_source(&project, &staged, &plan).unwrap();
 
         assert_eq!(
@@ -1072,6 +1115,7 @@ pub struct Fixture { pub value: serde_json::Value }
             source_lock_before
         );
         assert!(!staged.join("RuntimeModule/target").exists());
+        assert!(!staged.join("Library").exists());
         assert_eq!(
             fs::read(staged.join("RuntimeModule/Cargo.lock")).unwrap(),
             plan.dependency_lock_bytes

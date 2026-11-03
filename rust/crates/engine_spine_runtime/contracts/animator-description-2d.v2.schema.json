@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:aife:animator-description-2d:v2",
+  "title": "374 Spine authoring contract, implemented in Gate D",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "assetId", "backend", "skeleton", "default", "layers", "animations"],
+  "properties": {
+    "schema": {"const": "animator-description-2d.v2"},
+    "assetId": {"$ref": "#/$defs/name"},
+    "entity": {"$ref": "#/$defs/name"},
+    "backend": {"const": "spine"},
+    "skeleton": {"$ref": "#/$defs/assetRef"},
+    "default": {"$ref": "#/$defs/name"},
+    "parameters": {"type": "object", "maxProperties": 16, "propertyNames": {"$ref": "#/$defs/name"}, "additionalProperties": {"$ref": "#/$defs/parameter"}},
+    "layers": {"type": "array", "minItems": 1, "maxItems": 4, "items": {"$ref": "#/$defs/layer"}},
+    "masks": {"type": "object", "maxProperties": 16, "propertyNames": {"$ref": "#/$defs/name"}, "additionalProperties": {"type": "array", "minItems": 1, "maxItems": 256, "uniqueItems": true, "items": {"$ref": "#/$defs/sourceName"}}},
+    "animations": {"type": "object", "minProperties": 1, "maxProperties": 128, "propertyNames": {"$ref": "#/$defs/name"}, "additionalProperties": {"$ref": "#/$defs/action"}},
+    "rules": {"type": "array", "maxItems": 64, "items": {"$ref": "#/$defs/rule"}},
+    "sockets": {"type": "object", "maxProperties": 32, "propertyNames": {"$ref": "#/$defs/name"}, "additionalProperties": {"type": "object", "additionalProperties": false, "required": ["bone", "offset"], "properties": {"bone": {"$ref": "#/$defs/sourceName"}, "offset": {"type": "array", "prefixItems": [{"type":"number"},{"type":"number"},{"type":"number"}], "minItems":3, "maxItems":3}}}}
+  },
+  "$defs": {
+    "name": {"type":"string", "minLength":1, "maxLength":128, "pattern":"^[A-Za-z0-9_.-]+$"},
+    "sourceName": {"type":"string", "minLength":1, "maxLength":128, "pattern":"^[^\\u0000-\\u001f]+$"},
+    "assetRef": {"type":"object", "additionalProperties":false, "required":["assetId"], "properties":{"assetId":{"$ref":"#/$defs/name"}}},
+    "seconds": {"type":"number", "minimum":0, "maximum":60},
+    "parameter": {
+      "oneOf": [
+        {"type":"object", "additionalProperties":false, "required":["kind","default"], "properties":{"kind":{"const":"bool"},"default":{"type":"boolean"}}},
+        {"type":"object", "additionalProperties":false, "required":["kind"], "properties":{"kind":{"const":"trigger"}}}
+      ]
+    },
+    "layer": {"type":"object", "additionalProperties":false, "required":["name","blend"], "properties":{"name":{"$ref":"#/$defs/name"},"blend":{"enum":["replace","additive"]},"mask":{"$ref":"#/$defs/name"}}},
+    "action": {"type":"object", "additionalProperties":false, "required":["clip","layer","playback","speedPermille","mixInSeconds"], "properties":{"clip":{"$ref":"#/$defs/sourceName"},"layer":{"$ref":"#/$defs/name"},"playback":{"enum":["loop","once"]},"speedPermille":{"type":"integer","minimum":0,"maximum":4000},"mixInSeconds":{"$ref":"#/$defs/seconds"},"fadeOutSeconds":{"$ref":"#/$defs/seconds"},"onComplete":{"enum":["hold","fadeOutLayer"]}}},
+    "condition": {"oneOf":[
+      {"type":"object","additionalProperties":false,"required":["parameter","equals"],"properties":{"parameter":{"$ref":"#/$defs/name"},"equals":{"type":"boolean"}}},
+      {"type":"object","additionalProperties":false,"required":["triggered"],"properties":{"triggered":{"$ref":"#/$defs/name"}}}
+    ]},
+    "rule": {"type":"object","additionalProperties":false,"required":["all","play"],"properties":{"all":{"type":"array","minItems":1,"maxItems":8,"items":{"$ref":"#/$defs/condition"}},"play":{"$ref":"#/$defs/name"}}}
+  }
+}

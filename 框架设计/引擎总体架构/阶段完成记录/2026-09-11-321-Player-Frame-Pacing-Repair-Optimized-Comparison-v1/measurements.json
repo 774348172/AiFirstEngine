@@ -1,0 +1,558 @@
+{
+  "date": "2026-09-11",
+  "status": "source_integration_passed",
+  "scope": "Single-owner frame deadline repair; Windows dev delivery and isolated Cargo release comparison",
+  "evidenceRoot": "G:/a321-0842",
+  "sourceBeforeSha256": "A72003B2B51CB171CD61E80F7A5762208B20E15D22E541B140B85C21C9D71FCA",
+  "runs": [
+    {
+      "case": "old-dev",
+      "player": "G:\\gameEngin\\samples\\complex_shooter_project\\Library\\EngineTools\\Deliveries\\engine-op-mcp-process-12864-13\\Playtest\\Windows\\dev\\Game.exe",
+      "playerSha256": "8521AFE630D7D3B8701C825229D3AE6ECD79468840CCA6C99F35EC52A6B5B6D4",
+      "elapsedMs": 30714,
+      "exitCode": 0,
+      "status": {
+        "request": "ok",
+        "package": "ok",
+        "asset": "ok",
+        "scene": "ok",
+        "world": "ok",
+        "logic": "ok",
+        "input": "ok",
+        "physics": "ok",
+        "projection": "ok",
+        "render": "ok",
+        "rdg": "ok",
+        "rhi": "ok",
+        "surface": "ok",
+        "present": "presented"
+      },
+      "counters": {
+        "framesRequested": 720,
+        "framesCompleted": 720,
+        "entityCount": 9,
+        "archetypeCount": 7,
+        "hydratedEntityCount": 9,
+        "hydrationLoadedAssetCount": 6,
+        "hydrationDirtyRecordCount": 28,
+        "renderProxyCount": 5,
+        "runtimeTraceEventCount": 7200
+      },
+      "performance": {
+        "warmupFrames": 120,
+        "requestedSampleFrames": 600,
+        "observedSampleFrames": 600,
+        "meanCpuFrameMs": 19.613638666666667,
+        "p95CpuFrameMs": 25.2794,
+        "p99CpuFrameMs": 28.0416,
+        "update": {
+          "observedSampleFrames": 600,
+          "meanMs": 16.7029545,
+          "p95Ms": 21.9651,
+          "p99Ms": 24.6348
+        },
+        "renderSubmit": {
+          "observedSampleFrames": 600,
+          "meanMs": 2.711402,
+          "p95Ms": 4.2681,
+          "p99Ms": 5.369
+        },
+        "presentWait": {
+          "observedSampleFrames": 600,
+          "meanMs": 0.174202,
+          "p95Ms": 0.2968,
+          "p99Ms": 0.4735
+        }
+      },
+      "playerReportSha256": "79ED012A68C1945DCEECB8B4F5246EA3526B2DCDAC4043F9C43B583F48A2CA1F",
+      "measurementSha256": "3CA9D2393C27DC62F6224FD794015B66D5E596676A062A0DF5CBAF5101AFAC08"
+    },
+    {
+      "case": "dev-a",
+      "player": "G:\\gameEngin\\samples\\complex_shooter_project\\Library\\EngineTools\\Deliveries\\engine-op-mcp-process-12864-16\\Build\\Windows\\dev\\Game.exe",
+      "playerSha256": "604AABB67D7D154F2B5F4E7B80FA11B2AFD32A2B2C7DBEA253344403474C671C",
+      "elapsedMs": 15185,
+      "exitCode": 0,
+      "status": {
+        "request": "ok",
+        "package": "ok",
+        "asset": "ok",
+        "scene": "ok",
+        "world": "ok",
+        "logic": "ok",
+        "input": "ok",
+        "physics": "ok",
+        "projection": "ok",
+        "render": "ok",
+        "rdg": "ok",
+        "rhi": "ok",
+        "surface": "ok",
+        "present": "presented"
+      },
+      "counters": {
+        "framesRequested": 720,
+        "framesCompleted": 720,
+        "entityCount": 9,
+        "archetypeCount": 7,
+        "hydratedEntityCount": 9,
+        "hydrationLoadedAssetCount": 6,
+        "hydrationDirtyRecordCount": 28,
+        "renderProxyCount": 5,
+        "runtimeTraceEventCount": 7200
+      },
+      "performance": {
+        "warmupFrames": 120,
+        "requestedSampleFrames": 600,
+        "observedSampleFrames": 600,
+        "meanCpuFrameMs": 15.6764755,
+        "p95CpuFrameMs": 19.1546,
+        "p99CpuFrameMs": 23.1584,
+        "update": {
+          "observedSampleFrames": 600,
+          "meanMs": 13.297498666666666,
+          "p95Ms": 16.1097,
+          "p99Ms": 19.8265
+        },
+        "renderSubmit": {
+          "observedSampleFrames": 600,
+          "meanMs": 2.2228761666666665,
+          "p95Ms": 3.0199,
+          "p99Ms": 3.943
+        },
+        "presentWait": {
+          "observedSampleFrames": 600,
+          "meanMs": 0.13684166666666667,
+          "p95Ms": 0.19,
+          "p99Ms": 0.2759
+        }
+      },
+      "playerReportSha256": "D75427199EBAE690B53491EBB1BD97B8654EAE8AC3900026EAE76E7D7F425ECA",
+      "measurementSha256": "DDECFDE21DD31CB43E7ECFC36C6B951E1EE56363ACF6D72C5B3D3AC6A55F2213"
+    },
+    {
+      "case": "dev-b",
+      "player": "G:\\gameEngin\\samples\\complex_shooter_project\\Library\\EngineTools\\Deliveries\\engine-op-mcp-process-12864-16\\Build\\Windows\\dev\\Game.exe",
+      "playerSha256": "604AABB67D7D154F2B5F4E7B80FA11B2AFD32A2B2C7DBEA253344403474C671C",
+      "elapsedMs": 14876,
+      "exitCode": 0,
+      "status": {
+        "request": "ok",
+        "package": "ok",
+        "asset": "ok",
+        "scene": "ok",
+        "world": "ok",
+        "logic": "ok",
+        "input": "ok",
+        "physics": "ok",
+        "projection": "ok",
+        "render": "ok",
+        "rdg": "ok",
+        "rhi": "ok",
+        "surface": "ok",
+        "present": "presented"
+      },
+      "counters": {
+        "framesRequested": 720,
+        "framesCompleted": 720,
+        "entityCount": 9,
+        "archetypeCount": 7,
+        "hydratedEntityCount": 9,
+        "hydrationLoadedAssetCount": 6,
+        "hydrationDirtyRecordCount": 28,
+        "renderProxyCount": 5,
+        "runtimeTraceEventCount": 7200
+      },
+      "performance": {
+        "warmupFrames": 120,
+        "requestedSampleFrames": 600,
+        "observedSampleFrames": 600,
+        "meanCpuFrameMs": 14.716978666666666,
+        "p95CpuFrameMs": 17.3782,
+        "p99CpuFrameMs": 19.1292,
+        "update": {
+          "observedSampleFrames": 600,
+          "meanMs": 12.522550166666665,
+          "p95Ms": 14.9535,
+          "p99Ms": 16.2547
+        },
+        "renderSubmit": {
+          "observedSampleFrames": 600,
+          "meanMs": 2.0520205,
+          "p95Ms": 2.5138,
+          "p99Ms": 3.1166
+        },
+        "presentWait": {
+          "observedSampleFrames": 600,
+          "meanMs": 0.12546916666666666,
+          "p95Ms": 0.1655,
+          "p99Ms": 0.2517
+        }
+      },
+      "playerReportSha256": "FF005CB8FA9DF2A395A84C66B393F8045F86514CA9EF2509B9EF427A42A9B2F8",
+      "measurementSha256": "2F65EC3AD42B7215A3AFB00FBE415AA81F842301B177A5537BE3BC7FAA4E822C"
+    },
+    {
+      "case": "release-a",
+      "player": "G:\\a321-0842\\release-player\\Game.exe",
+      "playerSha256": "CD8B848D835BFFBBBA109E12470AAAE0F0521B513F3084296FDD64CF8F8C62A5",
+      "elapsedMs": 13616,
+      "exitCode": 0,
+      "status": {
+        "request": "ok",
+        "package": "ok",
+        "asset": "ok",
+        "scene": "ok",
+        "world": "ok",
+        "logic": "ok",
+        "input": "ok",
+        "physics": "ok",
+        "projection": "ok",
+        "render": "ok",
+        "rdg": "ok",
+        "rhi": "ok",
+        "surface": "ok",
+        "present": "presented"
+      },
+      "counters": {
+        "framesRequested": 720,
+        "framesCompleted": 720,
+        "entityCount": 9,
+        "archetypeCount": 7,
+        "hydratedEntityCount": 9,
+        "hydrationLoadedAssetCount": 6,
+        "hydrationDirtyRecordCount": 28,
+        "renderProxyCount": 5,
+        "runtimeTraceEventCount": 7200
+      },
+      "performance": {
+        "warmupFrames": 120,
+        "requestedSampleFrames": 600,
+        "observedSampleFrames": 600,
+        "meanCpuFrameMs": 3.9731923333333334,
+        "p95CpuFrameMs": 5.9912,
+        "p99CpuFrameMs": 7.0162,
+        "update": {
+          "observedSampleFrames": 600,
+          "meanMs": 3.257164,
+          "p95Ms": 5.0894,
+          "p99Ms": 6.1092
+        },
+        "renderSubmit": {
+          "observedSampleFrames": 600,
+          "meanMs": 0.641337,
+          "p95Ms": 0.9627,
+          "p99Ms": 1.3328
+        },
+        "presentWait": {
+          "observedSampleFrames": 600,
+          "meanMs": 0.071202,
+          "p95Ms": 0.1075,
+          "p99Ms": 0.2006
+        }
+      },
+      "playerReportSha256": "2AE83BF27078C8BE376487B17C043DBC3F85818DDAAC0F030BA9591ED09B9CF0",
+      "measurementSha256": "2D7A24F117BC95ADA54CC3FC2EE5F2D329D3184C462EE5E9874E5BA0CAA851D3"
+    },
+    {
+      "case": "release-b",
+      "player": "G:\\a321-0842\\release-player\\Game.exe",
+      "playerSha256": "CD8B848D835BFFBBBA109E12470AAAE0F0521B513F3084296FDD64CF8F8C62A5",
+      "elapsedMs": 13217,
+      "exitCode": 0,
+      "status": {
+        "request": "ok",
+        "package": "ok",
+        "asset": "ok",
+        "scene": "ok",
+        "world": "ok",
+        "logic": "ok",
+        "input": "ok",
+        "physics": "ok",
+        "projection": "ok",
+        "render": "ok",
+        "rdg": "ok",
+        "rhi": "ok",
+        "surface": "ok",
+        "present": "presented"
+      },
+      "counters": {
+        "framesRequested": 720,
+        "framesCompleted": 720,
+        "entityCount": 9,
+        "archetypeCount": 7,
+        "hydratedEntityCount": 9,
+        "hydrationLoadedAssetCount": 6,
+        "hydrationDirtyRecordCount": 28,
+        "renderProxyCount": 5,
+        "runtimeTraceEventCount": 7200
+      },
+      "performance": {
+        "warmupFrames": 120,
+        "requestedSampleFrames": 600,
+        "observedSampleFrames": 600,
+        "meanCpuFrameMs": 4.021455666666666,
+        "p95CpuFrameMs": 6.1025,
+        "p99CpuFrameMs": 7.5787,
+        "update": {
+          "observedSampleFrames": 600,
+          "meanMs": 3.3137668333333337,
+          "p95Ms": 5.1559,
+          "p99Ms": 6.2587
+        },
+        "renderSubmit": {
+          "observedSampleFrames": 600,
+          "meanMs": 0.6346308333333334,
+          "p95Ms": 0.9114,
+          "p99Ms": 1.3314
+        },
+        "presentWait": {
+          "observedSampleFrames": 600,
+          "meanMs": 0.0697505,
+          "p95Ms": 0.0945,
+          "p99Ms": 0.2657
+        }
+      },
+      "playerReportSha256": "55215A1C5599A7B1FEE80AC6F2F8EEC218AE68EE6B9DA1AE4AAF89EF81821644",
+      "measurementSha256": "1D09E9B08DAD646793A0D89BA5ED79DF5DCAB0EB24E3159D2A33B935D4CD46F5"
+    }
+  ],
+  "restart": [
+    {
+      "case": "dev-restart",
+      "overall": "passed",
+      "outcome": {
+        "technical": "passed",
+        "gameplay": "passed",
+        "visual": "not-checked",
+        "delivery": "not-checked"
+      },
+      "assertions": 64,
+      "frames": 3362,
+      "logicStatus": "ok",
+      "scenarioDigest": "sha256:c915a14ac2f97f434dae2be4d8c317cfcc1f5b8472a50751892d124cf89b6661",
+      "packageDigest": "sha256:dd3487824122852e67712a316ad1c367318f8df0ca0cb0544c710a95463b8c09",
+      "playerDigest": "sha256:604aabb67d7d154f2b5f4e7b80fa11b2afd32a2b2c7dbea253344403474c671c",
+      "process": {
+        "processId": 13364,
+        "exitReason": "completed",
+        "exitCode": 0,
+        "elapsedMs": 58690,
+        "stdoutSummary": "",
+        "stderrSummary": "",
+        "stdoutTotalBytes": 0,
+        "stderrTotalBytes": 0,
+        "stdoutTruncated": false,
+        "stderrTruncated": false,
+        "spawnError": null,
+        "killError": null,
+        "waitError": null,
+        "readerJoinError": null,
+        "ownership": {
+          "ownershipKind": "windows_job_object",
+          "processGroupCreated": true,
+          "rootProcessBound": true,
+          "terminationRequested": false,
+          "rootProcessWaitCompleted": true,
+          "processGroupReleaseCompleted": true,
+          "outputReadersJoined": true
+        },
+        "priority": {
+          "requested": "normal",
+          "effective": "normal",
+          "applied": true,
+          "error": null
+        }
+      },
+      "outerElapsedMs": 61089,
+      "resultSha256": "7216B8E56AE4EA05BCBFD783C1350DCC066EB253175700BD299061024D0489CD",
+      "measurementSha256": "E09046436BF91B9CBE63F96C7546E08DAA0F4BFDA2C53CF021690A51FD764643"
+    },
+    {
+      "case": "release-restart",
+      "overall": "passed",
+      "outcome": {
+        "technical": "passed",
+        "gameplay": "passed",
+        "visual": "not-checked",
+        "delivery": "not-checked"
+      },
+      "assertions": 64,
+      "frames": 3362,
+      "logicStatus": "ok",
+      "scenarioDigest": "sha256:c915a14ac2f97f434dae2be4d8c317cfcc1f5b8472a50751892d124cf89b6661",
+      "packageDigest": "sha256:dd3487824122852e67712a316ad1c367318f8df0ca0cb0544c710a95463b8c09",
+      "playerDigest": "sha256:cd8b848d835bffbbba109e12470aaae0f0521b513f3084296fdd64cf8f8c62a5",
+      "process": {
+        "processId": 10372,
+        "exitReason": "completed",
+        "exitCode": 0,
+        "elapsedMs": 58275,
+        "stdoutSummary": "",
+        "stderrSummary": "",
+        "stdoutTotalBytes": 0,
+        "stderrTotalBytes": 0,
+        "stdoutTruncated": false,
+        "stderrTruncated": false,
+        "spawnError": null,
+        "killError": null,
+        "waitError": null,
+        "readerJoinError": null,
+        "ownership": {
+          "ownershipKind": "windows_job_object",
+          "processGroupCreated": true,
+          "rootProcessBound": true,
+          "terminationRequested": false,
+          "rootProcessWaitCompleted": true,
+          "processGroupReleaseCompleted": true,
+          "outputReadersJoined": true
+        },
+        "priority": {
+          "requested": "normal",
+          "effective": "normal",
+          "applied": true,
+          "error": null
+        }
+      },
+      "outerElapsedMs": 58517,
+      "resultSha256": "5985261E518AE9EB69129BB6A098AD2438DA249904C946BFA4DD59F0B8E4DAFD",
+      "measurementSha256": "41112D23AED16D0FC444E5F02EE913E9E19B3930961A02FDEA48CC9D03E20DCF"
+    }
+  ],
+  "build": {
+    "callId": "mcp-call-17",
+    "diagnostics": [],
+    "evidenceRefs": [
+      "\\\\?\\G:\\gameEngin\\samples\\complex_shooter_project\\Library\\EngineTools\\Deliveries\\engine-op-mcp-process-12864-16\\Build\\Windows\\dev\\package-manifest.json",
+      "\\\\?\\G:\\gameEngin\\samples\\complex_shooter_project\\Library\\EngineTools\\Deliveries\\engine-op-mcp-process-12864-16\\Build\\Windows\\dev\\data\\runtime_package\\reports\\build-runtime-package-report.json",
+      "\\\\?\\G:\\gameEngin\\samples\\complex_shooter_project\\Library\\EngineTools\\Deliveries\\engine-op-mcp-process-12864-16\\Build\\Windows\\dev\\reports\\windowed-player-run-report.json"
+    ],
+    "operationId": "engine-op-mcp-process-12864-16",
+    "output": {
+      "artifactIdentity": "sha256:604aabb67d7d154f2b5f4e7b80fa11b2afd32a2b2c7dbea253344403474c671c",
+      "deliveryIdentity": "sha256:f6375bb8ae1f46b18e4c828319a6b12f28e030a8abedd3ab4b643ca72c6f1f63",
+      "deliveryRef": "engine-delivery:sha256:f6375bb8ae1f46b18e4c828319a6b12f28e030a8abedd3ab4b643ca72c6f1f63",
+      "packageDir": "\\\\?\\G:\\gameEngin\\samples\\complex_shooter_project\\Library\\EngineTools\\Deliveries\\engine-op-mcp-process-12864-16\\Build\\Windows\\dev",
+      "playerExecutable": "\\\\?\\G:\\gameEngin\\samples\\complex_shooter_project\\Library\\EngineTools\\Deliveries\\engine-op-mcp-process-12864-16\\Build\\Windows\\dev\\Game.exe",
+      "prepareSummary": {
+        "missReasons": [],
+        "preparationIdentity": "sha256:998533064ff3ee523c21493c1f9d913dd6e6ec6a9f7ce71cb368507fa5b4f88d",
+        "producedCount": 0,
+        "producerCount": 8,
+        "reusedCount": 8,
+        "sourceIdentity": "sha256:dbc5c716a0092ac0490e2e8346c539bb9d198426865fb6ef941f04ec9fd08eb4",
+        "targetProfile": "windows-dev",
+        "uncachedStages": [
+          "source-validation",
+          "scene-prefab-rule-aui-input",
+          "runtime-glue",
+          "package-assembly"
+        ]
+      },
+      "runtimePackageDir": "\\\\?\\G:\\gameEngin\\samples\\complex_shooter_project\\Library\\EngineTools\\Deliveries\\engine-op-mcp-process-12864-16\\Build\\Windows\\dev\\data\\runtime_package",
+      "status": "success",
+      "targetProfile": "windows-dev"
+    },
+    "projectRevision": "sha256:71017675481c35f47fee205143f5581b595cd22a453e05efa826a206cecf8a90",
+    "receiptRef": null,
+    "recommendedLocalTransitions": [
+      {
+        "category": "verify_delivery",
+        "reason": "The completed build returned a delivery reference that can be verified.",
+        "toolName": "engine_delivery_verify"
+      }
+    ],
+    "replayed": false,
+    "retryability": "not_needed",
+    "schemaVersion": "engine-tool-result.v2",
+    "status": "completed",
+    "toolName": "engine_project_build"
+  },
+  "hashes": [
+    {
+      "path": "G:\\gameEngin\\rust\\crates\\runtime_player_winit\\src\\lib.rs",
+      "sha256": "19A2DF690D6D8C1D50D426F523D0868B0513CEB50318AD693F7E8ECAC5A2A208"
+    },
+    {
+      "path": "G:\\gameEngin\\samples\\complex_shooter_project\\RuntimeModule\\src\\lib.rs",
+      "sha256": "72537DE1923E22B3CA31B8C407AD92E3F2648C9066041AA0D64435D12652931D"
+    },
+    {
+      "path": "G:\\gameEngin\\samples\\complex_shooter_project\\RuntimeModule\\src\\combat_loop.rs",
+      "sha256": "2E10CC68F48A50CF82611827C3E770FF648910D72D282D3F472880FEE7FB6441"
+    },
+    {
+      "path": "G:\\gameEngin\\samples\\complex_shooter_project\\project.aife.json",
+      "sha256": "A2D8BE27BA6122709472CCE6C1BBBA66AE0CAC0DBF0E28FE644EAFC00A222368"
+    },
+    {
+      "path": "G:\\gameEngin\\samples\\complex_shooter_project\\Tests\\Performance\\continuous-fire.input.json",
+      "sha256": "E2EABC341BB03423F8BFCD8D1D0EBD32EDB3DE98A4AF1F22866BE192A68B365D"
+    },
+    {
+      "path": "G:\\gameEngin\\samples\\complex_shooter_project\\Tests\\Performance\\restart-eight.scenario.json",
+      "sha256": "7B5DB230CACDABA845B6600D75D42BFED0982F2043D52DAF429E9DFD238B2E40"
+    },
+    {
+      "path": "G:\\gameEngin\\samples\\complex_shooter_project\\Tests\\Performance\\run-measurement.ps1",
+      "sha256": "844E418ABDF7CB8E9D7C7D0B6E21DFC7ED52309F8FCE860A0DEA2E7035EA48BE"
+    },
+    {
+      "path": "G:\\a321-0842\\release-source\\Host\\Cargo.toml",
+      "sha256": "0DAF46568C29A1D1C688B6FA6C1FC47DAADCE3FBD01A1F84217BB038168EA3FB"
+    },
+    {
+      "path": "G:\\a321-0842\\release-source\\Host\\Cargo.lock",
+      "sha256": "AA816395FB6B3CDEEA53E65C6E9304733664692CDB50E9F090CAB55BBFC4ED19"
+    },
+    {
+      "path": "G:\\a321-0842\\red.log",
+      "sha256": "7294C61BF6DDA583E10041538468A38733267F40A15D993816ADA33CD0F81749"
+    },
+    {
+      "path": "G:\\a321-0842\\owner-tests.log",
+      "sha256": "DF51A53AC27203583B5201B28001A75EC463A0D0972064C8DE0E77EF643AE2E1"
+    },
+    {
+      "path": "G:\\a321-0842\\dev-build.json",
+      "sha256": "64F6D60261034E7089191A5ED1C6230BA4E2E0E1817FD5C93A2F1928A451A332"
+    },
+    {
+      "path": "G:\\a321-0842\\release-build.log",
+      "sha256": "007504DC45D888FABB00C2DA34235F91662AA0FE6653239A6580A402BAEACECB"
+    },
+    {
+      "path": "G:\\a321-0842\\release-build-retry.log",
+      "sha256": "4CE6A1BDA200A0AB6BBA3B462223796E621FE285C6167CB6931E77C01C36A0D7"
+    }
+  ],
+  "tests": {
+    "command": "cargo test -p runtime_player_winit --lib --features real-window --locked",
+    "passed": 48,
+    "ignored": 3,
+    "failed": 0,
+    "executionSeconds": 0.08,
+    "compileSeconds": 92,
+    "redTestsFailed": 2
+  },
+  "optimizedBuild": {
+    "profile": "release",
+    "optLevel": 3,
+    "debugAssertions": false,
+    "toolchain": "1.96.0",
+    "target": "x86_64-pc-windows-msvc",
+    "jobs": 4,
+    "compileSeconds": 109,
+    "command": "cargo build --manifest-path G:/a321-0842/release-source/Host/Cargo.toml --release --locked --offline",
+    "cargoTargetDir": "G:/a321-0842/release-target",
+    "aotDigest": "sha256:6b5e92df93ddf21bd4e9151abfb618d9168fde0f098e8bdbc047ab71c5becb8e",
+    "player": "G:/a321-0842/release-player/Game.exe",
+    "generatedInputsMatchDevCompileWorkspace": true,
+    "formalReleaseQualified": false
+  },
+  "limits": [
+    "CPU frame timing excludes event-loop scheduling wait; elapsedMs includes startup/shutdown and is not displayed FPS",
+    "No GPU/VRAM/heap-leak qualification",
+    "Synthetic load tiers from 320 were not rerun under release",
+    "Installed Provider/config unchanged"
+  ]
+}

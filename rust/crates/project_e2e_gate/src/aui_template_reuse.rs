@@ -167,6 +167,8 @@ pub fn run_complex_shooter_aui_template_reuse_report(
             insertion_index: None,
             instance_id: format!("slot_instance_{}", index + 1),
             node_id_prefix: format!("slot{}", index + 1),
+            parameters: Vec::new(),
+            slot_fills: Vec::new(),
         };
         let instance_report =
             AuiTemplateWorkflow::instantiate_into_document(&asset, &request, &mut target);

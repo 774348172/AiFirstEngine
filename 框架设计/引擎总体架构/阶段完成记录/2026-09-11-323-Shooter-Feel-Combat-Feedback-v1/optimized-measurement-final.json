@@ -1,0 +1,235 @@
+{
+  "player": "G:\\a323-opt\\player\\Game.exe",
+  "playerSha256": "2C2843FADA9CBFDE9F4E49BC3795205BB474C4EDA4858FBE2289182C30C56D8A",
+  "arguments": [
+    "run-native-player",
+    "--mode",
+    "windowed",
+    "--frames",
+    "720",
+    "--runtime-report-level",
+    "off",
+    "--performance-warmup-frames",
+    "120",
+    "--performance-sample-frames",
+    "600",
+    "--report",
+    "G:\\a323-opt\\performance-replay-final\\player.json"
+  ],
+  "pid": 14832,
+  "exitCode": 0,
+  "timedOut": false,
+  "elapsedMs": 13587,
+  "stdout": "",
+  "stderr": "",
+  "samples": [
+    {
+      "elapsedMs": 529,
+      "pid": 14832,
+      "privateBytes": 116117504,
+      "workingSetBytes": 82255872,
+      "cpuSeconds": 0.484375,
+      "handles": 412
+    },
+    {
+      "elapsedMs": 1056,
+      "pid": 14832,
+      "privateBytes": 424615936,
+      "workingSetBytes": 306757632,
+      "cpuSeconds": 0.875,
+      "handles": 617
+    },
+    {
+      "elapsedMs": 1574,
+      "pid": 14832,
+      "privateBytes": 424882176,
+      "workingSetBytes": 307159040,
+      "cpuSeconds": 1.046875,
+      "handles": 617
+    },
+    {
+      "elapsedMs": 2091,
+      "pid": 14832,
+      "privateBytes": 425148416,
+      "workingSetBytes": 307445760,
+      "cpuSeconds": 1.140625,
+      "handles": 617
+    },
+    {
+      "elapsedMs": 2610,
+      "pid": 14832,
+      "privateBytes": 425414656,
+      "workingSetBytes": 307646464,
+      "cpuSeconds": 1.28125,
+      "handles": 617
+    },
+    {
+      "elapsedMs": 3127,
+      "pid": 14832,
+      "privateBytes": 425684992,
+      "workingSetBytes": 307843072,
+      "cpuSeconds": 1.421875,
+      "handles": 617
+    },
+    {
+      "elapsedMs": 3643,
+      "pid": 14832,
+      "privateBytes": 425951232,
+      "workingSetBytes": 308039680,
+      "cpuSeconds": 1.53125,
+      "handles": 617
+    },
+    {
+      "elapsedMs": 4157,
+      "pid": 14832,
+      "privateBytes": 425914368,
+      "workingSetBytes": 308178944,
+      "cpuSeconds": 1.59375,
+      "handles": 617
+    },
+    {
+      "elapsedMs": 4671,
+      "pid": 14832,
+      "privateBytes": 426180608,
+      "workingSetBytes": 308457472,
+      "cpuSeconds": 1.734375,
+      "handles": 617
+    },
+    {
+      "elapsedMs": 5186,
+      "pid": 14832,
+      "privateBytes": 426180608,
+      "workingSetBytes": 308596736,
+      "cpuSeconds": 1.859375,
+      "handles": 617
+    },
+    {
+      "elapsedMs": 5702,
+      "pid": 14832,
+      "privateBytes": 426446848,
+      "workingSetBytes": 308809728,
+      "cpuSeconds": 1.953125,
+      "handles": 617
+    },
+    {
+      "elapsedMs": 6216,
+      "pid": 14832,
+      "privateBytes": 426446848,
+      "workingSetBytes": 308813824,
+      "cpuSeconds": 2.0625,
+      "handles": 617
+    },
+    {
+      "elapsedMs": 6732,
+      "pid": 14832,
+      "privateBytes": 426979328,
+      "workingSetBytes": 309174272,
+      "cpuSeconds": 2.1875,
+      "handles": 617
+    },
+    {
+      "elapsedMs": 7250,
+      "pid": 14832,
+      "privateBytes": 427245568,
+      "workingSetBytes": 309514240,
+      "cpuSeconds": 2.28125,
+      "handles": 617
+    },
+    {
+      "elapsedMs": 7755,
+      "pid": 14832,
+      "privateBytes": 427245568,
+      "workingSetBytes": 309673984,
+      "cpuSeconds": 2.40625,
+      "handles": 617
+    },
+    {
+      "elapsedMs": 8271,
+      "pid": 14832,
+      "privateBytes": 427778048,
+      "workingSetBytes": 309981184,
+      "cpuSeconds": 2.546875,
+      "handles": 617
+    },
+    {
+      "elapsedMs": 8786,
+      "pid": 14832,
+      "privateBytes": 427778048,
+      "workingSetBytes": 310231040,
+      "cpuSeconds": 2.65625,
+      "handles": 617
+    },
+    {
+      "elapsedMs": 9302,
+      "pid": 14832,
+      "privateBytes": 428044288,
+      "workingSetBytes": 310452224,
+      "cpuSeconds": 2.78125,
+      "handles": 617
+    },
+    {
+      "elapsedMs": 9816,
+      "pid": 14832,
+      "privateBytes": 428044288,
+      "workingSetBytes": 310456320,
+      "cpuSeconds": 2.96875,
+      "handles": 618
+    },
+    {
+      "elapsedMs": 10320,
+      "pid": 14832,
+      "privateBytes": 428044288,
+      "workingSetBytes": 310456320,
+      "cpuSeconds": 3.171875,
+      "handles": 618
+    },
+    {
+      "elapsedMs": 10836,
+      "pid": 14832,
+      "privateBytes": 428044288,
+      "workingSetBytes": 310464512,
+      "cpuSeconds": 3.3125,
+      "handles": 618
+    },
+    {
+      "elapsedMs": 11352,
+      "pid": 14832,
+      "privateBytes": 428322816,
+      "workingSetBytes": 310751232,
+      "cpuSeconds": 3.484375,
+      "handles": 618
+    },
+    {
+      "elapsedMs": 11869,
+      "pid": 14832,
+      "privateBytes": 430690304,
+      "workingSetBytes": 313143296,
+      "cpuSeconds": 3.609375,
+      "handles": 618
+    },
+    {
+      "elapsedMs": 12387,
+      "pid": 14832,
+      "privateBytes": 430690304,
+      "workingSetBytes": 313147392,
+      "cpuSeconds": 3.8125,
+      "handles": 618
+    },
+    {
+      "elapsedMs": 12900,
+      "pid": 14832,
+      "privateBytes": 430690304,
+      "workingSetBytes": 313159680,
+      "cpuSeconds": 3.96875,
+      "handles": 618
+    },
+    {
+      "elapsedMs": 13413,
+      "pid": 14832,
+      "privateBytes": 384716800,
+      "workingSetBytes": 280879104,
+      "cpuSeconds": 4.34375,
+      "handles": 395
+    }
+  ]
+}

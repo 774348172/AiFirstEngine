@@ -1,0 +1,92 @@
+{
+  "schemaVersion": "254-r2-n7-gitlink-source-material-failure-report.v1",
+  "status": "r2_n7_failed_gateway_all_features_outer_timeout",
+  "recordedAt": "2026-07-21T17:45:45.3285160+08:00",
+  "authorization": {
+    "gate": "R2-N7",
+    "scope": "gitlink source-material remediation and three-layer regression",
+    "consumed": true,
+    "retryAuthorized": false,
+    "r2N8Authorized": false
+  },
+  "implementation": {
+    "sourcePath": "rust/crates/ai_tool_gateway/src/source_snapshot.rs",
+    "sourceSha256": "sha256:1e1392a478fd04be2b26badf77fd12435c01fd2955840a28fd84b787d5672051",
+    "currentReceiptSchema": "r2-source-snapshot-receipt.v2",
+    "legacyReadSchema": "r2-source-snapshot-receipt.v1",
+    "publicInterfaceChanged": false,
+    "gitlinkResolver": "local-exact-clean-gitlink/1",
+    "networkUsed": false,
+    "hooksEnabled": false,
+    "globalOrSystemGitConfigEnabled": false
+  },
+  "redEvidence": {
+    "command": "cargo test -p ai_tool_gateway 'source_snapshot::tests::gitlink_' -- --test-threads=1",
+    "result": "0 passed; 5 failed",
+    "expectedFailureConfirmed": true
+  },
+  "passedValidation": [
+    {
+      "command": "cargo test -p ai_tool_gateway 'source_snapshot::tests::gitlink_' -- --test-threads=1",
+      "result": "12 passed; 0 failed"
+    },
+    {
+      "command": "cargo test -p ai_tool_gateway 'source_snapshot::tests::producer_' -- --test-threads=1",
+      "result": "2 passed; 0 failed"
+    },
+    {
+      "command": "cargo test -p ai_tool_gateway 'production_candidate::tests::production_implementation_' -- --test-threads=1",
+      "result": "1 passed; 0 failed"
+    },
+    {
+      "command": "cargo test -p ai_tool_gateway --lib -- --test-threads=1",
+      "result": "87 passed; 0 failed; 2 ignored"
+    },
+    {
+      "command": "cargo test -p ai_tool_gateway -p editor_core -p editor_host --no-fail-fast -- --test-threads=1",
+      "result": "passed",
+      "elapsedSeconds": 328.5
+    }
+  ],
+  "terminalFailure": {
+    "layer": "affected-domain all-features regression",
+    "command": "cargo test -p ai_tool_gateway --all-features --no-fail-fast -- --test-threads=1",
+    "cargoTargetDir": "I:\\R2N7\\20260721-171126\\target",
+    "outerTimeoutMs": 304038,
+    "exitCode": 124,
+    "completedTestResultAvailable": false,
+    "diagnosticCode": "r2_n7.gateway_all_features_outer_timeout",
+    "retryCount": 0
+  },
+  "cleanup": {
+    "residualCargoPids": [8968, 22736],
+    "residualCargoProcessesTerminated": true,
+    "postCleanupResidualCargoProcesses": 0
+  },
+  "notExecuted": [
+    "cargo test --workspace --no-fail-fast -- --test-threads=1",
+    "cargo test --workspace --all-features --no-fail-fast -- --test-threads=1",
+    "cargo check --workspace --all-targets",
+    "cargo check --workspace --all-targets --all-features",
+    "cargo fmt --all -- --check",
+    "R2-N8",
+    "historical R2-N6 harness",
+    "R2-G",
+    "production candidate",
+    "activation",
+    "real Codex evaluation",
+    "F-A/F-B/G",
+    "three-engine B channel"
+  ],
+  "identityEvidence": {
+    "candidateCreated": false,
+    "activationCreated": false,
+    "attemptCreated": false,
+    "ignoredHarnessExecuted": false
+  },
+  "worktreeEquivalence": {
+    "cleanCheckoutEquivalent": false,
+    "aiToolGatewayTrackedByCurrentGitIndex": false
+  },
+  "disposition": "Stop after R2-N7 failure. Do not retry or enter R2-N8 without a new explicit decision and authorization."
+}

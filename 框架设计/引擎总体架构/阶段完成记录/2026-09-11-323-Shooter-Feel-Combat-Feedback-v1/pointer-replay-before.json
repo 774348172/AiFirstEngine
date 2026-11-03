@@ -1,0 +1,85 @@
+{
+  "schemaVersion": "windowed-player-run-report.v1",
+  "runId": "windowed-player-native_player_productization_v1",
+  "mode": "headless-gate",
+  "projectPath": "G:\\a323-opt\\player\\data\\runtime_package",
+  "runtimePackagePath": "G:\\a323-opt\\player\\data\\runtime_package",
+  "scenarioId": "native_player_productization_v1",
+  "status": {
+    "request": "ok",
+    "package": "not_started",
+    "asset": "ok",
+    "scene": "not_started",
+    "world": "not_started",
+    "logic": "not_started",
+    "input": "not_started",
+    "physics": "ok",
+    "projection": "ok",
+    "render": "not_started",
+    "rdg": "ok",
+    "rhi": "not_started",
+    "surface": "headless_surface",
+    "present": "not_presented"
+  },
+  "counters": {
+    "framesRequested": 120,
+    "framesCompleted": 0,
+    "entityCount": 37,
+    "archetypeCount": 7,
+    "hydratedEntityCount": 37,
+    "hydrationLoadedAssetCount": 34,
+    "hydrationDirtyRecordCount": 84,
+    "renderProxyCount": 33,
+    "runtimeTraceEventCount": 1200
+  },
+  "packageSummary": {
+    "projectName": "Complex Shooter Sample",
+    "projectVersion": "0.1.0",
+    "activeSceneId": "scene-main",
+    "sceneCount": 1,
+    "declaredAssetCount": 17,
+    "runtimeAssetRecordCount": 17,
+    "cookedAssetCount": 17,
+    "ruleMode": "rust-aot",
+    "contentHash": "sha256:b1e2887ea51d63363beb92296af92f324f7b3d6ee60ba5262ade33706140a2db"
+  },
+  "assetLoadSummary": {
+    "requestedAssetCount": 17,
+    "readyHandleCount": 17,
+    "decodedCacheCount": 17,
+    "diagnosticCount": 17
+  },
+  "gpuBindingSummary": {
+    "requestedHandleCount": 10,
+    "prepareRequestCount": 10,
+    "preparedAssetCount": 10,
+    "renderResourceRequestCount": 10,
+    "residentResourceCount": 10,
+    "diagnosticCount": 7
+  },
+  "rendererSummary": {
+    "drawItemCount": 33,
+    "rhiCommandCount": 37,
+    "rhiDrawCommandCount": 33,
+    "graphPassCount": 35
+  },
+  "screenshotSummary": {
+    "requested": false,
+    "status": "not_requested",
+    "path": null,
+    "width": 1280,
+    "height": 720,
+    "byteSize": null
+  },
+  "exitCode": 1,
+  "exitReason": "not_presented",
+  "diagnostics": [
+    {
+      "severity": "error",
+      "code": "native_host.invalid_input_script",
+      "layer": "request",
+      "message": "unsupported input script schema: input_script_load_failed:G:/a323-opt/pointer-right.input.json",
+      "path": null
+    }
+  ]
+}

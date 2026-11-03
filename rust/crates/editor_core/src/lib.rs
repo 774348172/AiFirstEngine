@@ -146,8 +146,12 @@ pub use aui_scene_authoring::{AuiSceneAuthoringBuildOutput, AuiSceneAuthoringSer
 pub use aui_template::{
     AuiTemplateAsset, AuiTemplateDependencyRef, AuiTemplateDiagnostic,
     AuiTemplateDiagnosticSeverity, AuiTemplateInstantiateReport, AuiTemplateInstantiateRequest,
-    AuiTemplateNodeIdRemap, AuiTemplateOperationStatus, AuiTemplateRef, AuiTemplateWorkflow,
-    AUI_TEMPLATE_ASSET_SCHEMA_VERSION, AUI_TEMPLATE_INSTANTIATE_REPORT_SCHEMA_VERSION,
+    AuiTemplateNamedPartDefinition, AuiTemplateNamedPartMap, AuiTemplateNodeIdRemap,
+    AuiTemplateOperationStatus, AuiTemplateParameterAssignment, AuiTemplateParameterBinding,
+    AuiTemplateParameterDefinition, AuiTemplateParameterTarget, AuiTemplateParameterType,
+    AuiTemplateParameterValue, AuiTemplateRef, AuiTemplateSlotDefinition, AuiTemplateSlotFill,
+    AuiTemplateSourceMapEntry, AuiTemplateWorkflow, AUI_TEMPLATE_ASSET_SCHEMA_VERSION,
+    AUI_TEMPLATE_INSTANTIATE_REPORT_SCHEMA_VERSION,
 };
 pub use authoring_system::{
     run_editor_authoring_system_headless, EditorAuthoringDiagnostic, EditorAuthoringReport,
@@ -453,9 +457,9 @@ pub use project_patch::{
 pub use project_player_artifact::{
     default_engine_sdk_root, default_project_runtime_player_build_root, ProjectPlayerArtifact,
     ProjectPlayerArtifactError, ProjectRuntimePlayerArtifactBuildDiagnostic,
-    ProjectRuntimePlayerArtifactBuildReport, ProjectRuntimePlayerArtifactBuildRequest,
-    ProjectRuntimePlayerArtifactBuildStatus, ProjectRuntimePlayerArtifactBuildStep,
-    PROJECT_PLAYER_ARTIFACT_SCHEMA_VERSION,
+    ProjectRuntimePlayerArtifactBuildProfile, ProjectRuntimePlayerArtifactBuildReport,
+    ProjectRuntimePlayerArtifactBuildRequest, ProjectRuntimePlayerArtifactBuildStatus,
+    ProjectRuntimePlayerArtifactBuildStep, PROJECT_PLAYER_ARTIFACT_SCHEMA_VERSION,
     PROJECT_RUNTIME_PLAYER_ARTIFACT_BUILD_REPORT_SCHEMA_VERSION,
     PROJECT_RUNTIME_PLAYER_ARTIFACT_BUILD_REQUEST_SCHEMA_VERSION,
 };

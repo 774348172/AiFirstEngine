@@ -1,0 +1,20 @@
+   Compiling engine_runtime v0.1.0 (G:\gameEngin\rust\crates\engine_runtime)
+crates\engine_runtime\src\aui.rs:10817:17: error[E0308]: arguments to this function are incorrect
+crates\engine_runtime\src\aui.rs:10821:18: error[E0308]: arguments to this function are incorrect
+crates\engine_runtime\src\aui.rs:10825:17: error[E0308]: arguments to this function are incorrect
+crates\engine_runtime\src\aui.rs:10829:18: error[E0308]: arguments to this function are incorrect
+crates\engine_runtime\src\aui.rs:10833:32: error[E0609]: no field `command_payloads_reused` on type `AuiDrawingStats`: unknown field
+crates\engine_runtime\src\aui.rs:10833:65: error[E0609]: no field `command_payloads_reused` on type `AuiDrawingStats`: unknown field
+crates\engine_runtime\src\aui.rs:10834:32: error[E0609]: no field `command_payloads_built` on type `AuiDrawingStats`: unknown field
+crates\engine_runtime\src\aui.rs:10834:64: error[E0609]: no field `command_payloads_built` on type `AuiDrawingStats`: unknown field
+crates\engine_runtime\src\aui.rs:10835:32: error[E0609]: no field `item_payloads_reused` on type `AuiDrawingStats`: unknown field
+crates\engine_runtime\src\aui.rs:10835:62: error[E0609]: no field `item_payloads_reused` on type `AuiDrawingStats`: unknown field
+crates\engine_runtime\src\aui.rs:10836:32: error[E0609]: no field `item_payloads_built` on type `AuiDrawingStats`: unknown field
+crates\engine_runtime\src\aui.rs:10836:61: error[E0609]: no field `item_payloads_built` on type `AuiDrawingStats`: unknown field
+crates\engine_runtime\src\aui.rs:10957:22: error[E0308]: arguments to this function are incorrect
+crates\engine_runtime\src\aui.rs:10958:21: error[E0308]: arguments to this function are incorrect
+crates\engine_runtime\src\aui.rs:10959:36: error[E0609]: no field `quad_payloads_built` on type `AuiDrawingStats`: unknown field
+crates\engine_runtime\src\aui.rs:10959:65: error[E0609]: no field `quad_payloads_built` on type `AuiDrawingStats`: unknown field
+crates\engine_runtime\src\aui.rs:10960:36: error[E0609]: no field `quad_payloads_reused` on type `AuiDrawingStats`: unknown field
+crates\engine_runtime\src\aui.rs:10960:66: error[E0609]: no field `quad_payloads_reused` on type `AuiDrawingStats`: unknown field
+error: could not compile `engine_runtime` (lib test) due to 18 previous errors

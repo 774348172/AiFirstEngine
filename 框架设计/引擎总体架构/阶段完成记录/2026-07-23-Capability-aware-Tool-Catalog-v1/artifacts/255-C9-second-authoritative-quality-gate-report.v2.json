@@ -1,0 +1,205 @@
+{
+  "schema_version": "quality-gate-report.v2",
+  "report_mode": "summary",
+  "started_at_epoch_seconds": 1784787473,
+  "duration_ms": 2051335,
+  "workspace_state": "clean",
+  "workspace_commit_sha": "447c3810ddbf329cc7c81d5667dc390c23725504",
+  "workspace_digest": "sha256:a4d6945364240c6b198c7d7cf3ee6039ec81636365c88fba59842c6d01f5e05a",
+  "lockfile_digest": "sha256:d8349ee962cf9ff458f6f48c0a061e208a61a72b704472e86cf911d274871b8d",
+  "toolchain_file_digest": "sha256:a66423362263724f4c028788ad3b66826a86521e5e6456cf58d4e076b5886fcd",
+  "manifest_set_digest": "sha256:d66aa3dd12e73ec28d1070a1029cbf06ab03bacabcde71e653bb351163a6e474",
+  "ledger_digest": "sha256:2bc41b256bc24fb2331b0b6e99951fad90deef69d176f74eceadb84131c4c119",
+  "toolchain": {
+    "expected_release": "1.96.0",
+    "rustc_version": "1.96.0",
+    "cargo_version": "cargo 1.96.0 (30a34c682 2026-05-25)",
+    "clippy_version": "clippy 0.1.96 (ac68faa20c 2026-05-25)",
+    "rustfmt_version": "rustfmt 1.9.0-stable (ac68faa20c 2026-05-25)",
+    "host": "x86_64-pc-windows-msvc",
+    "matched": true
+  },
+  "stages": [
+    {
+      "id": "toolchain_rustc",
+      "command_id": "toolchain_rustc",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_ms": 66,
+      "timed_out": false,
+      "output_truncated": false,
+      "next_action": null,
+      "trace": null
+    },
+    {
+      "id": "toolchain_cargo",
+      "command_id": "toolchain_cargo",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_ms": 66,
+      "timed_out": false,
+      "output_truncated": false,
+      "next_action": null,
+      "trace": null
+    },
+    {
+      "id": "toolchain_clippy",
+      "command_id": "toolchain_clippy",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_ms": 162,
+      "timed_out": false,
+      "output_truncated": false,
+      "next_action": null,
+      "trace": null
+    },
+    {
+      "id": "toolchain_rustfmt",
+      "command_id": "toolchain_rustfmt",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_ms": 65,
+      "timed_out": false,
+      "output_truncated": false,
+      "next_action": null,
+      "trace": null
+    },
+    {
+      "id": "workspace_metadata",
+      "command_id": "workspace_metadata",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_ms": 64,
+      "timed_out": false,
+      "output_truncated": false,
+      "next_action": null,
+      "trace": null
+    },
+    {
+      "id": "architecture_gate",
+      "command_id": null,
+      "status": "passed",
+      "exit_code": null,
+      "duration_ms": 0,
+      "timed_out": false,
+      "output_truncated": false,
+      "next_action": null,
+      "trace": null
+    },
+    {
+      "id": "format",
+      "command_id": "format",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_ms": 6216,
+      "timed_out": false,
+      "output_truncated": false,
+      "next_action": null,
+      "trace": null
+    },
+    {
+      "id": "source_suppression",
+      "command_id": null,
+      "status": "passed",
+      "exit_code": null,
+      "duration_ms": 0,
+      "timed_out": false,
+      "output_truncated": false,
+      "next_action": null,
+      "trace": null
+    },
+    {
+      "id": "clippy",
+      "command_id": "clippy",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_ms": 85892,
+      "timed_out": false,
+      "output_truncated": false,
+      "next_action": null,
+      "trace": null
+    },
+    {
+      "id": "default_workspace",
+      "command_id": "default_workspace",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_ms": 1037933,
+      "timed_out": false,
+      "output_truncated": false,
+      "next_action": null,
+      "trace": null
+    },
+    {
+      "id": "all_features_workspace",
+      "command_id": "all_features_workspace",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_ms": 905410,
+      "timed_out": false,
+      "output_truncated": false,
+      "next_action": null,
+      "trace": null
+    },
+    {
+      "id": "code_hygiene",
+      "command_id": "code_hygiene",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_ms": 12006,
+      "timed_out": false,
+      "output_truncated": false,
+      "next_action": null,
+      "trace": null
+    }
+  ],
+  "lint": {
+    "observed_occurrences": 371,
+    "known_entries": 168,
+    "new_entries": 0,
+    "resolved_entries": 0,
+    "stale_entries": 0,
+    "suppression_entries": 12,
+    "new_suppressions": 0
+  },
+  "lint_items": [],
+  "test_matrix": {
+    "default_workspace_passed": true,
+    "all_features_workspace_passed": true,
+    "hygiene_evidence_generated": true
+  },
+  "hygiene_summary": {
+    "schema_version": "code_hygiene.report.v2",
+    "files": 426,
+    "total_lines": 240330,
+    "recommendation_count": 4
+  },
+  "ci": {
+    "adapter": "local-git-worktree",
+    "adapter_configured": true,
+    "execution_scope": "local_commit",
+    "run_id": "local-447c3810ddbf-1784787443",
+    "commit_sha": "447c3810ddbf329cc7c81d5667dc390c23725504",
+    "execution_status": "observed_commit_passed"
+  },
+  "diagnostics": [],
+  "architecture": {
+    "profile": "fast",
+    "policy_digest": "",
+    "inventory_digest": "",
+    "debt_ledger_digest": "",
+    "coverage_ledger_digest": "",
+    "base_commit": null,
+    "head_commit": null,
+    "changed_subjects": 0,
+    "active_debt": 0,
+    "coverage_pending": 0,
+    "artifact_status": "not_required",
+    "finding_count": 0,
+    "disposition_count": 0,
+    "final_decision": "fast_pass",
+    "next_action": null
+  },
+  "architecture_diagnostics": [],
+  "passed": true
+}

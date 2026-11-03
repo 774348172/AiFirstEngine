@@ -1,0 +1,813 @@
+use crate::archetype::ComponentValue;
+use crate::component_value::RuntimeValue;
+use crate::components::{ComponentTypeId, Transform};
+use crate::field_path::FieldPath;
+use crate::ids::EntityId;
+use crate::math::Vec3;
+use crate::query::QuerySpec;
+use crate::world::World;
+pub use crate::world::WorldMutationError as WorldApiError;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WorldWriteRecord {
+    pub entity_id: EntityId,
+    pub component_type: ComponentTypeId,
+    pub field: String,
+    pub before: Option<String>,
+    pub after: Option<String>,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct WorldReadApi<'a> {
+    world: &'a World,
+    cells: Option<&'a crate::runtime_instance_loader::RuntimeInstanceLoader>,
+    physics: Option<&'a crate::physics_3d::PhysicsModule>,
+}
+
+impl<'a> WorldReadApi<'a> {
+    pub(crate) fn query_project_storage(
+        &self,
+        query: project_runtime_sdk::project_storage::StorageQuery,
+    ) -> project_runtime_sdk::project_storage::StorageQueryReply {
+        query.validate()?;
+        if let Some(owner) = self.cells {
+            return owner.query_project_storage(query);
+        }
+        let id = match query {
+            project_runtime_sdk::project_storage::StorageQuery::Request { request_id } => {
+                request_id
+            }
+            project_runtime_sdk::project_storage::StorageQuery::Ticket { ticket } => {
+                ticket.request_id
+            }
+        };
+        Err(storage_unavailable(id))
+    }
+    /// # Safety
+    /// Output is the live exclusive caller-owned ABI buffer for this synchronous call.
+    pub(crate) unsafe fn copy_project_storage_bytes(
+        &self,
+        ticket: project_runtime_sdk::generated_content::ContentTicket,
+        output: *mut project_runtime_abi::ProjectRuntimeByteBuffer,
+    ) -> project_runtime_abi::ProjectRuntimeAbiStatus {
+        if let Some(owner) = self.cells {
+            // SAFETY: forwards the caller's synchronous ABI buffer contract.
+            return unsafe { owner.copy_project_storage_bytes(ticket, output) };
+        }
+        // SAFETY: forwards the caller's synchronous ABI buffer contract.
+        unsafe {
+            project_runtime_sdk::project_storage::write_project_bytes_reply(
+                output,
+                Err(&storage_unavailable(ticket.request_id)),
+            )
+        }
+    }
+    pub(crate) fn query_generated_content(
+        &self,
+        query: project_runtime_sdk::generated_content::ContentQuery,
+    ) -> project_runtime_sdk::generated_content::ContentQueryReply {
+        query.validate()?;
+        match self.cells {
+            Some(owner) => owner.query_generated_content(query, self.world),
+            None => {
+                let mut error = project_runtime_sdk::generated_content::ContentError::invalid(
+                    "generatedContent.owner",
+                );
+                error.code =
+                    project_runtime_sdk::generated_content::ContentErrorCode::CapabilityGap;
+                error.next_action = "A RuntimePackage session is required.".into();
+                Err(error)
+            }
+        }
+    }
+
+    pub(crate) fn spatial_entity_key(
+        &self,
+        id: &EntityId,
+    ) -> Option<project_runtime_sdk::spatial_bulk::SpatialEntityKey> {
+        self.world.spatial_entity_key(id)
+    }
+
+    pub fn new(world: &'a World) -> Self {
+        Self {
+            world,
+            cells: None,
+            physics: None,
+        }
+    }
+
+    pub(crate) fn with_runtime_cells(
+        world: &'a World,
+        cells: Option<&'a crate::runtime_instance_loader::RuntimeInstanceLoader>,
+    ) -> Self {
+        Self {
+            world,
+            cells,
+            physics: None,
+        }
+    }
+    pub(crate) fn with_physics(
+        mut self,
+        physics: Option<&'a crate::physics_3d::PhysicsModule>,
+    ) -> Self {
+        self.physics = physics;
+        self
+    }
+    pub(crate) fn physics_query3d(
+        &self,
+        batch: &project_runtime_sdk::physics_query3d::PhysicsQueryBatch3D,
+    ) -> Result<
+        project_runtime_sdk::physics_query3d::PhysicsQueryResult3D,
+        project_runtime_abi::ProjectRuntimeAbiStatus,
+    > {
+        self.physics
+            .ok_or(project_runtime_abi::ProjectRuntimeAbiStatus::UNSUPPORTED)?
+            .query_batch3d(self.world, batch)
+    }
+    pub(crate) fn cell_receipt(
+        &self,
+        key: u64,
+    ) -> Option<&project_runtime_sdk::ProjectRuntimeCellReceipt> {
+        self.cells?.project_cell_receipt(key)
+    }
+    pub(crate) fn resolve_cell_entity(
+        &self,
+        placement: &str,
+        source: &str,
+    ) -> Option<(EntityId, u64)> {
+        self.cells?
+            .project_cell_entity(placement, source, self.world)
+    }
+    pub fn entity_generation(&self, id: &EntityId) -> Option<u64> {
+        self.world.entity_generation(id)
+    }
+
+    pub fn read_transform(&self, entity_id: &EntityId) -> Result<Transform, WorldApiError> {
+        self.world.transform(entity_id).cloned().ok_or_else(|| {
+            WorldApiError::missing_component(
+                "read_transform",
+                entity_id.clone(),
+                ComponentTypeId::transform(),
+            )
+        })
+    }
+
+    pub fn read_component(
+        &self,
+        entity_id: &EntityId,
+        component_type: &ComponentTypeId,
+    ) -> Result<ComponentValue, WorldApiError> {
+        if component_type == &ComponentTypeId::new("engine.world_persistence_state") {
+            if let Some(value) = self
+                .cells
+                .and_then(|cells| cells.persistence_state(entity_id, self.world))
+            {
+                return Ok(value);
+            }
+        }
+        if component_type == &ComponentTypeId::new("engine.world_streaming_state") {
+            if let Some(value) = self
+                .cells
+                .and_then(|cells| cells.streaming_state(entity_id, self.world))
+            {
+                return Ok(value);
+            }
+        }
+        if component_type == &ComponentTypeId::new("engine.physics3d_state") {
+            if let Some(value) = crate::physics_3d::read_state(self.world, entity_id) {
+                return Ok(value);
+            }
+        }
+        if component_type == &ComponentTypeId::new("engine.navigation3d_state") {
+            if let Some(value) = crate::navigation_3d::read_state(self.world, entity_id) {
+                return Ok(value);
+            }
+        }
+        self.world
+            .component_value(entity_id, component_type)
+            .ok_or_else(|| {
+                WorldApiError::missing_component(
+                    "read_component",
+                    entity_id.clone(),
+                    component_type.clone(),
+                )
+            })
+    }
+
+    pub fn query(&self, spec: &QuerySpec) -> Vec<EntityId> {
+        self.world.query_entities(spec)
+    }
+}
+
+fn storage_unavailable(request_id: u64) -> project_runtime_sdk::generated_content::ContentError {
+    let mut error = project_runtime_sdk::generated_content::ContentError::invalid("storage.owner");
+    error.code = project_runtime_sdk::generated_content::ContentErrorCode::CapabilityGap;
+    error.request_id = request_id;
+    error.next_action = "Use a host with an explicitly bound project storage owner.".into();
+    error
+}
+
+#[derive(Debug)]
+pub struct WorldWriteApi<'a> {
+    world: &'a mut World,
+}
+
+impl<'a> WorldWriteApi<'a> {
+    pub fn new(world: &'a mut World) -> Self {
+        Self { world }
+    }
+
+    pub fn entity_generation(&self, id: &EntityId) -> Option<u64> {
+        self.world.entity_generation(id)
+    }
+
+    pub fn read_transform(&self, entity_id: &EntityId) -> Result<Transform, WorldApiError> {
+        self.world.transform(entity_id).cloned().ok_or_else(|| {
+            WorldApiError::missing_component(
+                "read_transform",
+                entity_id.clone(),
+                ComponentTypeId::transform(),
+            )
+        })
+    }
+
+    pub fn read_component(
+        &self,
+        entity_id: &EntityId,
+        component_type: &ComponentTypeId,
+    ) -> Result<ComponentValue, WorldApiError> {
+        self.world
+            .component_value(entity_id, component_type)
+            .ok_or_else(|| {
+                WorldApiError::missing_component(
+                    "read_component",
+                    entity_id.clone(),
+                    component_type.clone(),
+                )
+            })
+    }
+
+    pub fn query(&self, spec: &QuerySpec) -> Vec<EntityId> {
+        self.world.query_entities(spec)
+    }
+
+    pub fn write_transform(
+        &mut self,
+        entity_id: EntityId,
+        transform: Transform,
+    ) -> Result<WorldWriteRecord, WorldApiError> {
+        let before = self.world.transform(&entity_id).cloned();
+        self.world
+            .try_insert_transform(entity_id.clone(), transform.clone())?;
+        Ok(WorldWriteRecord {
+            entity_id,
+            component_type: ComponentTypeId::transform(),
+            field: "*".to_string(),
+            before: before.map(|value| format!("{:?}", value)),
+            after: Some(format!("{:?}", transform)),
+        })
+    }
+
+    pub fn write_component(
+        &mut self,
+        entity_id: EntityId,
+        component_type: ComponentTypeId,
+        value: ComponentValue,
+    ) -> Result<WorldWriteRecord, WorldApiError> {
+        if value.component_type() != component_type {
+            return Err(WorldApiError::invalid_component_value(
+                "write_component",
+                entity_id,
+                component_type,
+            ));
+        }
+        let before = self.world.component_value(&entity_id, &component_type);
+        self.world.try_insert_component_value(
+            entity_id.clone(),
+            component_type.clone(),
+            value.clone(),
+        )?;
+        Ok(WorldWriteRecord {
+            entity_id,
+            component_type,
+            field: "*".to_string(),
+            before: before.map(|value| format!("{:?}", value)),
+            after: Some(format!("{:?}", value)),
+        })
+    }
+
+    pub fn write_component_field(
+        &mut self,
+        entity_id: EntityId,
+        component_type: ComponentTypeId,
+        field_path: &FieldPath,
+        value: RuntimeValue,
+    ) -> Result<WorldWriteRecord, WorldApiError> {
+        if component_type == ComponentTypeId::transform() {
+            return self.write_transform_field(entity_id, field_path, value);
+        }
+        let mut component = self.read_component(&entity_id, &component_type)?;
+        let before = field_value(&component, field_path);
+        set_component_field(&mut component, field_path, value.clone()).map_err(|()| {
+            WorldApiError::unsupported_field(entity_id.clone(), component_type.clone())
+        })?;
+        self.world.try_insert_component_value(
+            entity_id.clone(),
+            component_type.clone(),
+            component,
+        )?;
+        Ok(WorldWriteRecord {
+            entity_id,
+            component_type,
+            field: field_path.as_str().to_string(),
+            before: before.map(|value| format!("{:?}", value)),
+            after: Some(format!("{:?}", value)),
+        })
+    }
+
+    fn write_transform_field(
+        &mut self,
+        entity_id: EntityId,
+        field_path: &FieldPath,
+        value: RuntimeValue,
+    ) -> Result<WorldWriteRecord, WorldApiError> {
+        let mut transform = self.read_transform(&entity_id)?;
+        let before = transform_field_value(&transform, field_path);
+        let RuntimeValue::F64(number) = value else {
+            return Err(WorldApiError::unsupported_field(
+                entity_id,
+                ComponentTypeId::transform(),
+            ));
+        };
+        let number = number as f32;
+        match field_path.as_str() {
+            "local_position.x" => transform.local_position.x = number,
+            "local_position.y" => transform.local_position.y = number,
+            "local_position.z" => transform.local_position.z = number,
+            _ => {
+                return Err(WorldApiError::unsupported_field(
+                    entity_id,
+                    ComponentTypeId::transform(),
+                ));
+            }
+        }
+        self.world
+            .try_insert_transform(entity_id.clone(), transform)?;
+        Ok(WorldWriteRecord {
+            entity_id,
+            component_type: ComponentTypeId::transform(),
+            field: field_path.as_str().to_string(),
+            before: before.map(|value| format!("{:?}", value)),
+            after: Some(format!("{:?}", RuntimeValue::F64(number as f64))),
+        })
+    }
+
+    pub fn write_transform_local_position(
+        &mut self,
+        entity_id: EntityId,
+        local_position: Vec3,
+    ) -> Result<WorldWriteRecord, WorldApiError> {
+        let mut transform = self.read_transform(&entity_id)?;
+        let before = transform.local_position;
+        transform.local_position = local_position;
+        self.world
+            .try_insert_transform(entity_id.clone(), transform)?;
+        Ok(WorldWriteRecord {
+            entity_id,
+            component_type: ComponentTypeId::transform(),
+            field: "local_position".to_string(),
+            before: Some(format!("{:?}", before)),
+            after: Some(format!("{:?}", local_position)),
+        })
+    }
+}
+
+fn field_value(component: &ComponentValue, field_path: &FieldPath) -> Option<RuntimeValue> {
+    match component {
+        ComponentValue::Dynamic { value, .. } => runtime_field_value(value, field_path),
+        ComponentValue::SpriteRenderer2D(sprite) if field_path.as_str() == "visible" => {
+            Some(RuntimeValue::Bool(sprite.visible))
+        }
+        ComponentValue::SpriteRenderer2D(sprite) if field_path.as_str() == "color" => {
+            let [r, g, b, a] = sprite.color;
+            Some(RuntimeValue::Color { r, g, b, a })
+        }
+        _ => None,
+    }
+}
+
+fn runtime_field_value(value: &RuntimeValue, field_path: &FieldPath) -> Option<RuntimeValue> {
+    let mut current = value;
+    for segment in field_path.segments() {
+        let RuntimeValue::Object(fields) = current else {
+            return None;
+        };
+        current = fields.get(segment)?;
+    }
+    Some(current.clone())
+}
+
+fn transform_field_value(transform: &Transform, field_path: &FieldPath) -> Option<RuntimeValue> {
+    match field_path.as_str() {
+        "local_position.x" => Some(RuntimeValue::F64(transform.local_position.x as f64)),
+        "local_position.y" => Some(RuntimeValue::F64(transform.local_position.y as f64)),
+        "local_position.z" => Some(RuntimeValue::F64(transform.local_position.z as f64)),
+        _ => None,
+    }
+}
+
+fn set_component_field(
+    component: &mut ComponentValue,
+    field_path: &FieldPath,
+    value: RuntimeValue,
+) -> Result<(), ()> {
+    match component {
+        ComponentValue::SpriteRenderer2D(sprite) if field_path.as_str() == "flipX" => {
+            let RuntimeValue::Bool(flip) = value else {
+                return Err(());
+            };
+            sprite.flip_x = flip;
+            Ok(())
+        }
+        ComponentValue::Dynamic {
+            value: dynamic_value,
+            ..
+        } => set_runtime_field(dynamic_value, field_path, value),
+        ComponentValue::SpriteRenderer2D(sprite) if field_path.as_str() == "visible" => {
+            let RuntimeValue::Bool(visible) = value else {
+                return Err(());
+            };
+            sprite.visible = visible;
+            Ok(())
+        }
+        ComponentValue::SpriteRenderer2D(sprite) if field_path.as_str() == "color" => {
+            let RuntimeValue::Color { r, g, b, a } = value else {
+                return Err(());
+            };
+            let color = [r, g, b, a];
+            if !color.iter().all(|v| v.is_finite()) {
+                return Err(());
+            }
+            sprite.color = color;
+            Ok(())
+        }
+        _ => Err(()),
+    }
+}
+
+pub(crate) fn prepare_component_field_write(
+    entity_id: &EntityId,
+    component_type: &ComponentTypeId,
+    mut component: ComponentValue,
+    field_path: &FieldPath,
+    value: RuntimeValue,
+) -> Result<ComponentValue, WorldApiError> {
+    if component_type == &ComponentTypeId::transform() {
+        let ComponentValue::Transform(mut transform) = component else {
+            return Err(WorldApiError::invalid_component_value(
+                "prepare_component_field_write",
+                entity_id.clone(),
+                component_type.clone(),
+            ));
+        };
+        let RuntimeValue::F64(number) = value else {
+            return Err(WorldApiError::unsupported_field(
+                entity_id.clone(),
+                component_type.clone(),
+            ));
+        };
+        let number = number as f32;
+        match field_path.as_str() {
+            "local_position.x" => transform.local_position.x = number,
+            "local_position.y" => transform.local_position.y = number,
+            "local_position.z" => transform.local_position.z = number,
+            _ => {
+                return Err(WorldApiError::unsupported_field(
+                    entity_id.clone(),
+                    component_type.clone(),
+                ));
+            }
+        }
+        return Ok(ComponentValue::Transform(transform));
+    }
+    set_component_field(&mut component, field_path, value).map_err(|()| {
+        WorldApiError::unsupported_field(entity_id.clone(), component_type.clone())
+    })?;
+    Ok(component)
+}
+
+fn set_runtime_field(
+    root: &mut RuntimeValue,
+    field_path: &FieldPath,
+    value: RuntimeValue,
+) -> Result<(), ()> {
+    let mut segments = field_path.segments().peekable();
+    let mut current = root;
+    while let Some(segment) = segments.next() {
+        let RuntimeValue::Object(fields) = current else {
+            return Err(());
+        };
+        if segments.peek().is_none() {
+            fields.insert(segment.to_string(), value);
+            return Ok(());
+        }
+        current = fields.get_mut(segment).ok_or(())?;
+    }
+    Err(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::component_value::RuntimeValue;
+    use crate::components::Hierarchy;
+    use crate::field_path::FieldPath;
+    use crate::world::DirtyType;
+
+    fn hierarchy() -> Hierarchy {
+        Hierarchy {
+            parent_id: None,
+            sibling_order: 0,
+        }
+    }
+
+    #[test]
+    fn sprite_color_field_write_marks_render_dirty_and_rejects_invalid_values() {
+        use crate::components::SpriteRenderer2D;
+        let mut world = World::new();
+        let id = EntityId::from("fade-sprite");
+        world.spawn_entity(id.clone(), "FX", "visual", true, hierarchy());
+        world
+            .try_insert_sprite_renderer2d(id.clone(), SpriteRenderer2D::default())
+            .unwrap();
+        world.take_dirty_records();
+        let ty = ComponentTypeId::sprite_renderer2d();
+        let path = FieldPath::parse("color").unwrap();
+        WorldWriteApi::new(&mut world)
+            .write_component_field(
+                id.clone(),
+                ty.clone(),
+                &path,
+                RuntimeValue::Color {
+                    r: 1.0,
+                    g: 0.8,
+                    b: 0.2,
+                    a: 0.25,
+                },
+            )
+            .expect("project FX can fade");
+        assert_eq!(
+            world.sprite_renderer2d(&id).unwrap().color,
+            [1.0, 0.8, 0.2, 0.25]
+        );
+        assert!(
+            !world.dirty_records().is_empty(),
+            "render projection must see color change"
+        );
+        for invalid in [
+            RuntimeValue::Bool(false),
+            RuntimeValue::Color {
+                r: 1.0,
+                g: 1.0,
+                b: 1.0,
+                a: f32::NAN,
+            },
+        ] {
+            assert!(WorldWriteApi::new(&mut world)
+                .write_component_field(id.clone(), ty.clone(), &path, invalid)
+                .is_err());
+            assert_eq!(world.sprite_renderer2d(&id).unwrap().color[3], 0.25);
+        }
+    }
+
+    #[test]
+    fn animator2d_project_facing_flip_is_typed_and_marks_render_dirty() {
+        let mut world = World::new();
+        let id = EntityId::from("robot");
+        world.spawn_entity(id.clone(), "Robot", "actor", true, hierarchy());
+        world
+            .try_insert_sprite_renderer2d(
+                id.clone(),
+                crate::components::SpriteRenderer2D::default(),
+            )
+            .unwrap();
+        world.take_dirty_records();
+        let path = FieldPath::parse("flipX").unwrap();
+        WorldWriteApi::new(&mut world)
+            .write_component_field(
+                id.clone(),
+                ComponentTypeId::sprite_renderer2d(),
+                &path,
+                RuntimeValue::Bool(true),
+            )
+            .unwrap();
+        assert!(world.sprite_renderer2d(&id).unwrap().flip_x);
+        assert!(!world.dirty_records().is_empty());
+        assert!(WorldWriteApi::new(&mut world)
+            .write_component_field(
+                id.clone(),
+                ComponentTypeId::sprite_renderer2d(),
+                &path,
+                RuntimeValue::F64(1.0)
+            )
+            .is_err());
+        assert!(world.sprite_renderer2d(&id).unwrap().flip_x);
+    }
+
+    #[test]
+    fn world_write_api_write_transform_local_position_marks_dirty() {
+        let mut world = World::new();
+        let entity_id = EntityId::from("entity-a");
+        world.spawn_entity(entity_id.clone(), "A", "actor", true, hierarchy());
+        world.insert_transform(entity_id.clone(), Transform::identity());
+        world.take_dirty_records();
+        let mut api = WorldWriteApi::new(&mut world);
+
+        let record = api
+            .write_transform_local_position(
+                entity_id.clone(),
+                Vec3 {
+                    x: 2.0,
+                    y: 0.0,
+                    z: 0.0,
+                },
+            )
+            .expect("write should succeed");
+
+        assert_eq!(record.field, "local_position");
+        assert_eq!(world.dirty_records()[0].dirty_type, DirtyType::Transform);
+        assert_eq!(world.transform(&entity_id).unwrap().local_position.x, 2.0);
+    }
+
+    #[test]
+    fn world_read_api_reads_dynamic_component() {
+        let mut world = World::new();
+        let entity_id = EntityId::from("entity-a");
+        let component_type = ComponentTypeId::from("project.marker");
+        world.spawn_entity(entity_id.clone(), "A", "actor", true, hierarchy());
+        world.insert_dynamic_component(
+            entity_id.clone(),
+            component_type.clone(),
+            RuntimeValue::object([("count", RuntimeValue::I64(1))]),
+        );
+        let api = WorldReadApi::new(&world);
+
+        let component = api
+            .read_component(&entity_id, &component_type)
+            .expect("component should exist");
+
+        assert_eq!(
+            component,
+            ComponentValue::Dynamic {
+                component_type,
+                value: RuntimeValue::object([("count", RuntimeValue::I64(1))]),
+            }
+        );
+    }
+
+    #[test]
+    fn world_read_api_reports_missing_component() {
+        let mut world = World::new();
+        let entity_id = EntityId::from("entity-a");
+        world.spawn_entity(entity_id.clone(), "A", "actor", true, hierarchy());
+        let api = WorldReadApi::new(&world);
+
+        let error = api
+            .read_component(&entity_id, &ComponentTypeId::from("project.marker"))
+            .expect_err("component should be missing");
+
+        assert_eq!(error.code, "world.component.missing");
+    }
+
+    #[test]
+    fn world_write_api_missing_entity_returns_error_without_unwind() {
+        let mut world = World::new();
+        let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            WorldWriteApi::new(&mut world)
+                .write_transform(EntityId::from("missing"), Transform::identity())
+        }));
+
+        let error = outcome
+            .expect("WorldWriteApi must not unwind")
+            .expect_err("missing entity write must fail");
+        assert_eq!(error.code, "world.entity.missing");
+        assert_eq!(world.entity_count(), 0);
+        assert!(world.dirty_records().is_empty());
+    }
+
+    #[test]
+    fn write_component_field_updates_dynamic_object_field() {
+        let mut world = World::new();
+        let entity_id = EntityId::from("entity-a");
+        let component_type = ComponentTypeId::from("project.marker");
+        world.spawn_entity(entity_id.clone(), "A", "actor", true, hierarchy());
+        world.insert_dynamic_component(
+            entity_id.clone(),
+            component_type.clone(),
+            RuntimeValue::object([("count", RuntimeValue::I64(1))]),
+        );
+        world.take_dirty_records();
+        let mut api = WorldWriteApi::new(&mut world);
+
+        let record = api
+            .write_component_field(
+                entity_id.clone(),
+                component_type.clone(),
+                &FieldPath::parse("count").unwrap(),
+                RuntimeValue::I64(2),
+            )
+            .expect("write should succeed");
+
+        assert_eq!(record.before, Some("I64(1)".to_string()));
+        assert_eq!(record.after, Some("I64(2)".to_string()));
+        assert_eq!(world.dirty_records()[0].dirty_type, DirtyType::DynamicData);
+        assert_eq!(
+            world.component_value(&entity_id, &component_type),
+            Some(ComponentValue::Dynamic {
+                component_type,
+                value: RuntimeValue::object([("count", RuntimeValue::I64(2))]),
+            })
+        );
+    }
+
+    #[test]
+    fn write_component_field_updates_transform_local_position_x() {
+        let mut world = World::new();
+        let entity_id = EntityId::from("entity-a");
+        world.spawn_entity(entity_id.clone(), "A", "actor", true, hierarchy());
+        world.insert_transform(entity_id.clone(), Transform::identity());
+        world.take_dirty_records();
+        let mut api = WorldWriteApi::new(&mut world);
+
+        let record = api
+            .write_component_field(
+                entity_id.clone(),
+                ComponentTypeId::transform(),
+                &FieldPath::parse("local_position.x").unwrap(),
+                RuntimeValue::F64(3.0),
+            )
+            .expect("write should succeed");
+
+        assert_eq!(record.before, Some("F64(0.0)".to_string()));
+        assert_eq!(record.after, Some("F64(3.0)".to_string()));
+        assert_eq!(world.transform(&entity_id).unwrap().local_position.x, 3.0);
+        assert_eq!(world.dirty_records()[0].dirty_type, DirtyType::Transform);
+    }
+
+    #[test]
+    fn write_component_field_updates_sprite_renderer_visibility() {
+        let mut world = World::new();
+        let entity_id = EntityId::from("sprite-a");
+        world.spawn_entity(entity_id.clone(), "Sprite", "visual", true, hierarchy());
+        world
+            .try_insert_sprite_renderer2d(
+                entity_id.clone(),
+                crate::components::SpriteRenderer2D::default(),
+            )
+            .unwrap();
+
+        let record = WorldWriteApi::new(&mut world)
+            .write_component_field(
+                entity_id.clone(),
+                ComponentTypeId::sprite_renderer2d(),
+                &FieldPath::parse("visible").unwrap(),
+                RuntimeValue::Bool(false),
+            )
+            .unwrap();
+
+        assert_eq!(record.field, "visible");
+        assert!(!world.sprite_renderer2d(&entity_id).unwrap().visible);
+    }
+
+    #[test]
+    fn write_component_replaces_dynamic_component() {
+        let mut world = World::new();
+        let entity_id = EntityId::from("entity-a");
+        let component_type = ComponentTypeId::from("project.marker");
+        world.spawn_entity(entity_id.clone(), "A", "actor", true, hierarchy());
+        world.insert_dynamic_component(
+            entity_id.clone(),
+            component_type.clone(),
+            RuntimeValue::I64(1),
+        );
+        let mut api = WorldWriteApi::new(&mut world);
+
+        api.write_component(
+            entity_id.clone(),
+            component_type.clone(),
+            ComponentValue::Dynamic {
+                component_type: component_type.clone(),
+                value: RuntimeValue::I64(2),
+            },
+        )
+        .expect("write should succeed");
+
+        assert_eq!(
+            world.component_value(&entity_id, &component_type),
+            Some(ComponentValue::Dynamic {
+                component_type,
+                value: RuntimeValue::I64(2),
+            })
+        );
+    }
+}

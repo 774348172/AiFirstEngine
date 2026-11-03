@@ -1,0 +1,56 @@
+{
+  "schemaVersion": "255-c9-diagnostic-quality-failure.v1",
+  "authoritativeRunId": "local-71496ae0fa6f-1784779299",
+  "authoritativeRunCount": 1,
+  "candidateCommit": "71496ae0fa6ffd4a9d5f8a827fb3464e0c35c098",
+  "candidateTree": "130bdefd4625cca35b355f7d9fb70b2fc5d8d7e5",
+  "diagnosticCommandKind": "quality_gate_verify_not_local_ci",
+  "diagnosticDurationMs": 114915,
+  "workspaceState": "clean",
+  "lint": {
+    "observedOccurrences": 371,
+    "knownEntries": 168,
+    "newEntries": 0,
+    "resolvedEntries": 0,
+    "staleEntries": 0,
+    "newSuppressions": 0
+  },
+  "passedStages": [
+    "toolchain_rustc",
+    "toolchain_cargo",
+    "toolchain_clippy",
+    "toolchain_rustfmt",
+    "workspace_metadata",
+    "architecture_gate",
+    "format",
+    "source_suppression",
+    "clippy"
+  ],
+  "failedStages": [
+    {
+      "id": "default_workspace",
+      "exitCode": 101,
+      "durationMs": 33253,
+      "cause": "os error 112: no space on device"
+    },
+    {
+      "id": "all_features_workspace",
+      "exitCode": 101,
+      "durationMs": 9848,
+      "cause": "os error 112: no space on device"
+    },
+    {
+      "id": "code_hygiene",
+      "exitCode": 101,
+      "durationMs": 353,
+      "cause": "os error 112: no space on device"
+    },
+    {
+      "id": "report_write",
+      "cause": "os error 112: no space on device"
+    }
+  ],
+  "rootCause": "G: had 0 free bytes. The empty quality report was a secondary symptom after report_write failed.",
+  "cleanupStatus": "authoritative isolated worktree removed",
+  "retryAuthorized": false
+}

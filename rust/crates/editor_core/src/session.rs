@@ -1772,6 +1772,9 @@ impl EditorSession {
     ) -> Option<GameViewPresentReport> {
         let instance = self.editor_runtime_play_instance.as_mut()?;
         let report = instance.tick_next_descriptor_frame_with_fixed_steps(fixed_step_count);
+        if let Some(stopped) = self.consume_project_exit() {
+            return Some(stopped);
+        }
         self.last_game_view_runtime_frame = report.last_frame.clone();
         self.sync_animator2d_play_observations();
         self.last_game_view_present_report = Some(report.clone());
@@ -1784,6 +1787,9 @@ impl EditorSession {
     ) -> Option<GameViewPresentReport> {
         let instance = self.editor_runtime_play_instance.as_mut()?;
         let report = instance.tick_next_descriptor_frame_with_runtime_input(runtime_input_frame);
+        if let Some(stopped) = self.consume_project_exit() {
+            return Some(stopped);
+        }
         self.last_game_view_runtime_frame = report.last_frame.clone();
         self.sync_animator2d_play_observations();
         self.last_game_view_present_report = Some(report.clone());
@@ -1796,9 +1802,36 @@ impl EditorSession {
     ) -> Option<GameViewPresentReport> {
         let instance = self.editor_runtime_play_instance.as_mut()?;
         let report = instance.route_aui_input_immediately(runtime_input_frame);
+        if let Some(stopped) = self.consume_project_exit() {
+            return Some(stopped);
+        }
         self.last_game_view_runtime_frame = report.last_frame.clone();
         self.last_game_view_present_report = Some(report.clone());
         Some(report)
+    }
+
+    fn consume_project_exit(&mut self) -> Option<GameViewPresentReport> {
+        if !self
+            .editor_runtime_play_instance
+            .as_ref()
+            .is_some_and(EditorRuntimePlayInstance::exit_requested)
+        {
+            return None;
+        }
+        self.execute_command(UiCommand {
+            command_id: "stop_play_session".into(),
+            source: editor_ui_model::UiCommandSource::Viewport,
+            request_id: "project-runtime-exit".into(),
+            payload: UiCommandPayload::StopPlaySession,
+        });
+        self.last_game_view_present_report.clone()
+    }
+
+    pub fn set_active_game_view_focus(&mut self, focused: bool) {
+        if let Some(instance) = self.editor_runtime_play_instance.as_mut() {
+            instance.set_game_focus(focused);
+        }
+        self.consume_project_exit();
     }
 
     pub fn cancel_active_game_view_input(&mut self) {

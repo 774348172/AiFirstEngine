@@ -1,0 +1,72 @@
+{
+  "schemaVersion": "254-r2-fc5-final-authoritative-regression-report.v1",
+  "gate": "R2-FC5",
+  "recordedAt": "2026-07-22T17:50:41.1322030+08:00",
+  "status": "completed",
+  "source": {
+    "outerRoot": "H:\\gameEngin-worktrees\\254-r2-fc5-35e88d3-20260722-a",
+    "commit": "35e88d3f3a6e888d8db3b79606ea161f7de07ff8",
+    "tree": "2f2e6d2063e1fcefbf38cb3bd64aec5e0e259feb",
+    "gitlinkMode": "160000",
+    "gitlinkOid": "e332e0ba6d5c1b7772de57ef69804eebe28ea415"
+  },
+  "isolation": {
+    "cargoTargetDir": "H:\\gameEngin-target\\254-r2-fc5-35e88d3-20260722-a",
+    "tempRoot": "H:\\gameEngin-temp\\254-r2-fc5-35e88d3-20260722-a",
+    "evidenceRoot": "H:\\gameEngin-evidence\\254-r2-fc5-35e88d3-20260722-a",
+    "rootsFreshBefore": true,
+    "rootsMutuallyDisjoint": true,
+    "availableBytesBefore": 710832005120
+  },
+  "authoritative": {
+    "resultPath": "H:\\gameEngin-evidence\\254-r2-fc5-35e88d3-20260722-a\\authoritative-result.json",
+    "resultSha256": "b3677c69fec4c59d2caf3452799ffcfbb441c30346881918e28731bfdc901cf2",
+    "status": "passed",
+    "durationSeconds": 1764.517,
+    "runCount": 1,
+    "stages": [
+      {
+        "name": "workspace-default",
+        "command": "cargo test --workspace",
+        "exitCode": 0,
+        "durationSeconds": 901.965,
+        "passed": 1615,
+        "failed": 0,
+        "ignored": 8,
+        "logSha256": "678852b3377e267f79507ce7f00bc621fcea52d7d55d9735946976dacb11a5fa"
+      },
+      {
+        "name": "workspace-all-features",
+        "command": "cargo test --workspace --all-features",
+        "exitCode": 0,
+        "durationSeconds": 862.324,
+        "passed": 1667,
+        "failed": 0,
+        "ignored": 17,
+        "logSha256": "a3e85d6337a167e99316346d8d5bc1bda7eb90f810ddab2de3170d2cd5c32aba"
+      }
+    ],
+    "allFeaturesStartedOnlyAfterDefaultPassed": true
+  },
+  "postconditions": {
+    "commitUnchanged": true,
+    "treeUnchanged": true,
+    "outerWorkingTreeClean": true,
+    "outerStagedClean": true,
+    "nestedHeadExact": true,
+    "nestedWorkingTreeClean": true,
+    "generatedSampleBuildRestored": true,
+    "generatedSampleLibraryRemoved": true,
+    "ownedOrphanProcesses": 0
+  },
+  "authorizationBoundary": {
+    "fc6Started": false,
+    "productionCandidateOperationStarted": false,
+    "candidateIdCreated": false,
+    "activationIdCreated": false,
+    "attemptIdCreated": false,
+    "evaluationStarted": false,
+    "realCodexStarted": false
+  },
+  "nextConstructionGate": "R2-FC6"
+}

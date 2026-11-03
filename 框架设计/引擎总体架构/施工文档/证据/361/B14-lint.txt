@@ -1,0 +1,23 @@
+# 361 B14 lint与格式摘要
+
+日期：2026-09-26。cwd：`G:/gameEngin/rust`。
+
+```text
+cargo clippy -p engine_runtime --lib --locked --message-format short
+exit 0
+engine_runtime: 121 existing warnings
+engine_input: 2 existing warnings
+B14 changed locations: no new warning
+
+rustfmt --edition 2024 --check \
+  crates/engine_runtime/src/aui_layout_runtime.rs \
+  crates/engine_runtime/src/aui_geometry_cache.rs \
+  crates/engine_runtime/tests/aui_retained_layout.rs \
+  crates/engine_runtime/tests/aui_layout_c2_paragraph.rs
+exit 0
+
+changed-file trailing-whitespace scan: no matches
+git diff --check for tracked changed paths: pass (line-ending notice only)
+```
+
+`aui.rs`全文件仍含本块以外的既有rustfmt差异，本块未机械格式化crate大文件或无关测试。

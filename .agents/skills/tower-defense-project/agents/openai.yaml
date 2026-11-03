@@ -1,0 +1,4 @@
+interface:
+  display_name: "Tower Defense Project"
+  short_description: "Rules for building the tower defense sample project"
+  default_prompt: "Use $tower-defense-project to design or build the tower defense game strictly through public engine capabilities."

@@ -1,0 +1,114 @@
+{
+  "schemaVersion": "spine374-qualification-recipes.v1",
+  "tickRate": 60,
+  "warmupFrames": 600,
+  "sampleFrames": 3600,
+  "repetitions": 3,
+  "reportLevel": "off",
+  "windowPixels": [
+    1280,
+    720
+  ],
+  "totalFrameP95Ms": 13.3,
+  "totalFrameP99Ms": 16.67,
+  "minimumAvailablePhysicalBytes": 4831838208,
+  "mixSeconds": 0.5,
+  "interruptPeriodTicks": 120,
+  "interruptionTicksByMaxChain": {
+    "2": [
+      0,
+      30
+    ],
+    "3": [
+      0,
+      30,
+      36
+    ],
+    "4": [
+      0,
+      30,
+      36,
+      42
+    ]
+  },
+  "recipes": [
+    {
+      "id": "single",
+      "fixture": "recipe-single.json",
+      "actors": 1,
+      "bonesPerActor": 32,
+      "meshSlotsPerActor": 8,
+      "clippingSlotsPerActor": 0,
+      "rawVerticesPerActor": 512,
+      "weightedMeshSlotsPerActor": 4,
+      "influencesPerWeightedVertex": 2,
+      "constraintsPerActor": 0,
+      "deformActiveMeshesPerActor": 8,
+      "activeLayersPerActor": 2,
+      "maxMixingEntriesPerLayer": 2,
+      "eventKeysPerClip": 4,
+      "clipDurationUs": 1000000,
+      "sourceClipCount": 4,
+      "thresholds": {
+        "spineCpuP95Ms": 0.5,
+        "spineCpuP99Ms": 1,
+        "spineGpuP95Ms": 1,
+        "spineGpuP99Ms": 2,
+        "uploadBytesPerFrameMax": 1048576,
+        "incrementalProcessPeakBytes": 67108864
+      }
+    },
+    {
+      "id": "regular",
+      "fixture": "recipe-regular.json",
+      "actors": 64,
+      "bonesPerActor": 64,
+      "meshSlotsPerActor": 16,
+      "clippingSlotsPerActor": 2,
+      "rawVerticesPerActor": 2048,
+      "weightedMeshSlotsPerActor": 8,
+      "influencesPerWeightedVertex": 2,
+      "constraintsPerActor": 0,
+      "deformActiveMeshesPerActor": 16,
+      "activeLayersPerActor": 3,
+      "maxMixingEntriesPerLayer": 3,
+      "eventKeysPerClip": 4,
+      "clipDurationUs": 1000000,
+      "sourceClipCount": 4,
+      "thresholds": {
+        "spineCpuP95Ms": 5,
+        "spineCpuP99Ms": 8,
+        "spineGpuP95Ms": 4,
+        "spineGpuP99Ms": 6,
+        "uploadBytesPerFrameMax": 16777216,
+        "incrementalProcessPeakBytes": 536870912
+      }
+    },
+    {
+      "id": "clipping",
+      "fixture": "recipe-clipping.json",
+      "actors": 16,
+      "bonesPerActor": 128,
+      "meshSlotsPerActor": 32,
+      "clippingSlotsPerActor": 8,
+      "rawVerticesPerActor": 8192,
+      "weightedMeshSlotsPerActor": 16,
+      "influencesPerWeightedVertex": 2,
+      "constraintsPerActor": 0,
+      "deformActiveMeshesPerActor": 32,
+      "activeLayersPerActor": 4,
+      "maxMixingEntriesPerLayer": 4,
+      "eventKeysPerClip": 4,
+      "clipDurationUs": 1000000,
+      "sourceClipCount": 4,
+      "thresholds": {
+        "spineCpuP95Ms": 8,
+        "spineCpuP99Ms": 12,
+        "spineGpuP95Ms": 6,
+        "spineGpuP99Ms": 10,
+        "uploadBytesPerFrameMax": 33554432,
+        "incrementalProcessPeakBytes": 536870912
+      }
+    }
+  ]
+}

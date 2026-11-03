@@ -1,0 +1,117 @@
+{
+  "schemaVersion": "254-r2-n4-public-lifecycle-migration-gate-report.v1",
+  "completedAt": "2026-07-21",
+  "status": "passed",
+  "constructionState": "r2_n4_passed_awaiting_r2_n5_authorization",
+  "publicLifecycle": {
+    "goalLevelEntries": [
+      "ProductionCandidateModule::produce",
+      "CodexOutcomeEvaluationModule::evaluate"
+    ],
+    "removedExternalModules": [
+      "CandidatePreparationModule",
+      "CandidateRegistryModule",
+      "ActivationLeaseModule",
+      "RealCodexAcceptanceModule"
+    ],
+    "removedExternalStageTypes": [
+      "CandidatePreparationRequest",
+      "ActivationRequest",
+      "CandidateSealReceipt"
+    ],
+    "externalOldRustCallers": 0,
+    "internalLifecycleModulesRemainPrivate": true,
+    "internalAggregationVisibility": "pub(crate)",
+    "callerVisibleStageRecipe": false
+  },
+  "migration": {
+    "legacyR1FixedPlanTypedMcpDefault": false,
+    "legacyCandidateFreezePreflight": "fail_closed_with_r2_goal_level_entry_diagnostic",
+    "historicalReadCompatibility": "passed_under_all_features",
+    "oldWriterCompatibilityRetained": false,
+    "productionExecutorExposedToCallers": false,
+    "productionExecutorDisposition": "Real-client executor composition remains inside the separately authorized real evaluation boundary; N4 did not expose activation, attempt, timing, or stage controls and did not fabricate a production adapter."
+  },
+  "verification": [
+    {
+      "command": "cargo test -p ai_tool_gateway --test r2_goal_modules_public_schema -- --test-threads=1",
+      "passed": 3,
+      "failed": 0
+    },
+    {
+      "command": "cargo test -p ai_tool_gateway --doc",
+      "passed": 8,
+      "failed": 0
+    },
+    {
+      "command": "cargo test -p ai_tool_gateway --doc --all-features",
+      "passed": 8,
+      "failed": 0
+    },
+    {
+      "command": "cargo test -p editor_host --test gateway_process legacy_candidate_freeze_preflight_mode_is_not_a_current_entry -- --test-threads=1",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "command": "cargo test -p ai_tool_gateway --no-fail-fast -- --test-threads=1",
+      "libPassed": 73,
+      "integrationPassed": 14,
+      "failed": 0,
+      "ignored": 1
+    },
+    {
+      "command": "cargo test -p ai_tool_gateway --all-features --no-fail-fast -- --test-threads=1",
+      "libPassed": 93,
+      "integrationPassed": 32,
+      "failed": 0,
+      "ignored": 1
+    },
+    {
+      "command": "cargo check -p ai_tool_gateway --all-targets",
+      "status": "passed"
+    },
+    {
+      "command": "cargo check -p ai_tool_gateway --all-targets --all-features",
+      "status": "passed"
+    },
+    {
+      "command": "cargo fmt --all -- --check",
+      "status": "passed"
+    }
+  ],
+  "ignoredTest": {
+    "count": 1,
+    "reason": "construction-only fresh R2-G environment preflight",
+    "executed": false
+  },
+  "sourceFiles": [
+    {
+      "path": "rust/crates/ai_tool_gateway/src/lib.rs",
+      "sha256": "aee153ae2aca3251badc736b42b23b67ef36368b71ab55da509749663cbff6b6"
+    },
+    {
+      "path": "rust/crates/ai_tool_gateway/src/codex_outcome_evaluation.rs",
+      "sha256": "02ef1a363328b7ea9b09ea3864648a49e27e7fb87715c78819dd0e9075b206a1"
+    },
+    {
+      "path": "rust/crates/editor_host/src/main.rs",
+      "sha256": "52760841123b41803ff803fa46aa622866434c384692cb4f6333e68405995436"
+    }
+  ],
+  "workspaceTruth": {
+    "gatewayCrateTrackedByCurrentGitIndex": false,
+    "cleanCheckoutEquivalentClaimed": false,
+    "deadCodeSuppressionAdded": false
+  },
+  "productionActionsExecuted": {
+    "r2N5": false,
+    "r2N6": false,
+    "freshSnapshot": false,
+    "r2G": false,
+    "productionCandidate": false,
+    "realEnvironmentActivation": false,
+    "realCodexEvaluation": false
+  },
+  "forbiddenActionsExecuted": []
+}

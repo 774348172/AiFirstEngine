@@ -313,6 +313,11 @@ impl EditorSession {
                 self.last_game_view_runtime_frame = output.frame;
                 self.sync_animator2d_play_observations();
                 self.last_game_view_present_report = Some(output.present_report.clone());
+                if self.editor_runtime_play_instance.as_ref().is_some_and(
+                    crate::editor_gameview_play::EditorRuntimePlayInstance::exit_requested,
+                ) {
+                    return self.stop_play_session(transaction);
+                }
                 self.apply_maximize_on_play_start(transaction);
                 self.push_info(
                     transaction,
@@ -552,6 +557,9 @@ impl EditorSession {
         }
         let before = instance.control_state();
         let report = instance.step_next_frame();
+        if instance.exit_requested() {
+            return self.stop_play_session(transaction);
+        }
         self.last_game_view_runtime_frame = report.last_frame.clone();
         self.sync_animator2d_play_observations();
         self.last_game_view_present_report = Some(report.clone());

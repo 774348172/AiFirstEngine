@@ -1,0 +1,58 @@
+{
+  "schemaVersion": "256-p8r3b-lifecycle-stability-qualification-failure-report.v1",
+  "status": "failed",
+  "gate": "256-P8R3B",
+  "commit": "05a1203ebf653680a7c37ba1a84e0cb5b876db31",
+  "tree": "c0ae1e4e65f1d7033da405c01e4ab35d3a25e00a",
+  "freshSourceRoot": "G:\\gameEngin-256-p8r3b-05a1203",
+  "gateRoot": "G:\\EngineTest\\Gate256P8R3B-05a1203",
+  "externalArtifactSha256": "1b6b117b7b3eda79642b3ef325d2766e6a50771370b89ec3cae8859945432387",
+  "exactLifecycleBaseline": {
+    "status": "passed",
+    "passed": 1,
+    "failed": 0,
+    "stdoutSha256": "2a877357313375fc2882968a4d7ba343f9bb8fef09eb4ac46f419924ec8987cc",
+    "stderrSha256": "5dc241bfec15837189b376474d1d1c7a0987f9279e4bddfcc60b8950d642a6c2"
+  },
+  "stressQualification": {
+    "status": "failed",
+    "structuredTwelveWayReportProduced": false,
+    "invalidLauncherAttempts": 2,
+    "directControlExitCode": 101,
+    "directControlPassed": 0,
+    "directControlFailed": 1,
+    "directControlRuntimeSeconds": 10.16,
+    "testExecutableSha256": "fc7b296e32e4eac8058974ba51394c55fb8bded3a6c7dcedce56944d7659033a"
+  },
+  "firstValidFailure": {
+    "phase": "repair_attempt",
+    "lifecycleState": "CancelledJoined",
+    "taskJoinStatus": "Joined",
+    "credentialOwnerStatus": "Released",
+    "transportAbortObserved": true,
+    "connectionCloseObserved": true,
+    "requestCount": 2,
+    "cancelLatencyMs": 6,
+    "cancel": "Committed",
+    "stage": "Cancelling",
+    "busyWhileCancelling": true
+  },
+  "classification": "P8R3A test-fixture implementation defect",
+  "rootCause": "cancellation_release_sent is required even after an actual transport disconnect has already released the server and dropped the cancellation receiver",
+  "downstream": {
+    "projectE2eGateAllFeatures": "not_run_fail_fast",
+    "editorCoreLifecycleOwnerTests": "not_run_fail_fast",
+    "p8r3c": "not_authorized",
+    "p8r3d": "not_authorized",
+    "p8q": "not_authorized",
+    "p8f": "not_authorized",
+    "p8a": "not_authorized",
+    "p9": "not_authorized",
+    "p10": "not_authorized"
+  },
+  "cleanup": {
+    "residualCargoRustcProjectE2eGateProcesses": 0,
+    "gateRootRetained": true
+  },
+  "nextAction": "separate P8R3A-scoped remediation authorization required"
+}

@@ -501,11 +501,32 @@ impl Default for InputProcessorPreset {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum InputTriggerPreset {
+    /// One press edge. `JustPressed` is the explicit authoring alias.
+    #[serde(alias = "JustPressed")]
     Down,
+    /// Press edge and held ticks. `WhilePressed` is the explicit authoring alias.
+    #[serde(alias = "WhilePressed")]
     Pressed,
+    #[serde(alias = "JustReleased")]
     Released,
-    Hold { seconds: f32 },
-    Tap { max_seconds: f32 },
+    Hold {
+        seconds: f32,
+    },
+    Tap {
+        max_seconds: f32,
+    },
+}
+
+impl InputTriggerPreset {
+    pub fn just_pressed() -> Self {
+        Self::Down
+    }
+    pub fn while_pressed() -> Self {
+        Self::Pressed
+    }
+    pub fn just_released() -> Self {
+        Self::Released
+    }
 }
 
 impl Default for InputTriggerPreset {
@@ -1782,5 +1803,72 @@ mod tests {
             .iter()
             .any(|diagnostic| diagnostic.code == "input_mapping.unknown_action"));
         assert_eq!(result.action_snapshot.action_count(), 0);
+    }
+}
+
+#[cfg(test)]
+mod explicit_trigger_tests {
+    use super::*;
+
+    #[test]
+    fn explicit_trigger_aliases_keep_legacy_wire_and_resolve_edges_and_hold() {
+        for (alias, legacy, preset, counts) in [
+            (
+                "JustPressed",
+                "Down",
+                InputTriggerPreset::just_pressed(),
+                [1, 0, 0],
+            ),
+            (
+                "WhilePressed",
+                "Pressed",
+                InputTriggerPreset::while_pressed(),
+                [1, 1, 0],
+            ),
+            (
+                "JustReleased",
+                "Released",
+                InputTriggerPreset::just_released(),
+                [0, 0, 1],
+            ),
+        ] {
+            let decoded: InputTriggerPreset =
+                serde_json::from_value(serde_json::json!(alias)).unwrap();
+            assert_eq!(decoded, preset);
+            assert_eq!(
+                serde_json::to_value(&decoded).unwrap(),
+                serde_json::json!(legacy)
+            );
+            let mut binding = InputBindingDefinition::button("move", "Space");
+            binding.trigger = decoded;
+            let mapping = InputMappingAsset::new(
+                "input.example",
+                vec![InputActionDefinition::new(
+                    "move",
+                    InputActionValueType::Button,
+                )],
+                vec![InputContextDefinition::new("gameplay", 0)],
+                vec![binding],
+            );
+            for (event, count) in [
+                RuntimeInputEvent::KeyDown {
+                    key: "Space".into(),
+                },
+                RuntimeInputEvent::KeyHeld {
+                    key: "Space".into(),
+                },
+                RuntimeInputEvent::KeyUp {
+                    key: "Space".into(),
+                },
+            ]
+            .into_iter()
+            .zip(counts)
+            {
+                let mut frame = RuntimeInputFrame::new(1, "game");
+                frame.events.push(event);
+                let result = InputResolver::resolve(&frame, &mapping);
+                assert_eq!(result.action_snapshot.actions.len(), count, "{alias}");
+            }
+        }
     }
 }

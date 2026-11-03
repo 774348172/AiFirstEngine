@@ -163,6 +163,7 @@ unsafe extern "C" fn handle_aui_actions(
             rejected_action_count: 0,
             mutations: Vec::new(),
             diagnostics: Vec::new(),
+            host_control: None,
         })
     })
 }
@@ -276,5 +277,8 @@ pub unsafe extern "C" fn aife_project_runtime_entry_v1() -> *const ProjectRuntim
         fixed_update: Some(fixed_update),
         resolve_ui_state: Some(produce_ui_state),
         observe: Some(observe),
+        lifecycle: None,
+        ui_event: None,
+        ui_extension: None,
     })
 }

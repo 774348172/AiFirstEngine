@@ -1,5 +1,17 @@
 //! Project-facing schema and safe helpers for the stable project runtime ABI.
 
+pub mod animator;
+pub mod generated_content;
+pub mod project_storage;
+pub mod aui;
+pub mod aui_animation;
+pub mod aui_draw2d;
+pub mod aui_extension;
+pub mod aui_host;
+pub mod aui_presentation;
+pub mod aui_wire;
+pub use animator::ProjectRuntimeAnimatorIntent;
+
 use project_runtime_abi::{
     hex_digest, ProjectRuntimeAbiStatus, ProjectRuntimeByteBuffer, ProjectRuntimeByteSlice,
     ProjectRuntimeCallContext, ProjectRuntimeHostCall, ProjectRuntimeModuleCall,
@@ -10,13 +22,24 @@ use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 use std::panic::{catch_unwind, AssertUnwindSafe};
 
+mod cells;
+pub use cells::*;
+mod spatial;
+mod world_streaming;
+pub use world_streaming::*;
+mod world_persistence;
+pub use world_persistence::*;
+pub mod physics_query3d;
+pub mod spatial_bulk;
+pub use spatial::*;
+
 pub const PROJECT_RUNTIME_DEFAULT_STATEFUL_OUTPUT_CAPACITY_BYTES: usize = 256 * 1024;
 
 pub const PROJECT_RUNTIME_SDK_SCHEMA: &str = concat!(
     "project-runtime-sdk.v1;json-utf8;",
-    "descriptor;rules;session-create;session-call;rule-call;aui-actions;",
-    "fixed-update;conditional-ui-state;observations;world-query;world-read;",
-    "rule-input-actions;rule-collision-pairs;deferred-mutations;spawn-despawn;animator2d-session-intents;audio-source-session-intents"
+    "descriptor;rules;session-create;session-call;rule-call;aui-actions;aui-events.v1;aui-extension.v2;",
+    "fixed-update;conditional-ui-state;virtual-list-snapshots;observations;world-query;world-read;",
+    "rule-input-actions;rule-collision-pairs;deferred-mutations;spawn-despawn;animator2d-session-intents;audio-source-session-intents;lifecycle-focus;host-control-exit;spatial-session-intents.v1;world-entity-generation.v1;spatial-prefab-receipts.v1;spatial-foundation-intents.v1;cell-session-intents.v1;world-identity-query.v1;spatial-bulk.v1;animator-session-intents.v1;character3d-session-intents.v1;physics3d-session-intents.v1;world-streaming3d-session-intents.v1;world-logical3d-session-intents.v1;vegetation3d-promotion-session-intents.v1;physics3d-world-query.v1;generated-content-session.v1;spatial-bulk.v2;project-storage-session.v1"
 );
 
 pub struct ProjectRuntimeAotDigestSource<'a> {
@@ -128,6 +151,25 @@ pub struct ProjectRuntimeFrameRequest {
     pub time: ProjectRuntimeTime,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+pub enum ProjectRuntimeLifecycleEvent {
+    FocusChanged { focused: bool },
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct ProjectRuntimeLifecycleRequest {
+    pub frame: ProjectRuntimeFrameRequest,
+    pub event: ProjectRuntimeLifecycleEvent,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ProjectRuntimeHostControl {
+    Exit,
+}
+
 #[derive(Debug, Clone, Copy, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct ProjectRuntimeTime {
@@ -166,8 +208,80 @@ pub struct ProjectRuntimeInputAction {
 }
 
 impl ProjectRuntimeInputAction {
+    /// Phase of this delivered action, not an engine-wide state lookup.
+    pub fn input_phase(&self) -> Option<ProjectRuntimeInputPhase> {
+        match self.phase.as_deref() {
+            Some("pressed") => Some(ProjectRuntimeInputPhase::Pressed),
+            Some("held") => Some(ProjectRuntimeInputPhase::Held),
+            Some("released") => Some(ProjectRuntimeInputPhase::Released),
+            Some("changed") => Some(ProjectRuntimeInputPhase::Changed),
+            Some("pointer") => Some(ProjectRuntimeInputPhase::Pointer),
+            _ => None,
+        }
+    }
+
     pub fn is_pressed(&self) -> bool {
         matches!(self.phase.as_deref(), Some("pressed" | "held"))
+    }
+
+    pub fn is_just_pressed(&self) -> bool {
+        self.input_phase() == Some(ProjectRuntimeInputPhase::Pressed)
+    }
+
+    pub fn is_just_released(&self) -> bool {
+        self.input_phase() == Some(ProjectRuntimeInputPhase::Released)
+    }
+}
+
+/// Typed view of known wire phases; the wire remains forward-compatible strings.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ProjectRuntimeInputPhase {
+    Pressed,
+    Held,
+    Released,
+    Changed,
+    Pointer,
+}
+
+#[cfg(test)]
+mod input_phase_tests {
+    use super::*;
+
+    #[test]
+    fn delivered_input_distinguishes_edges_held_and_unknown_without_changing_wire() {
+        for (phase, pressed, down, up) in [
+            (Some("pressed"), true, true, false),
+            (Some("held"), true, false, false),
+            (Some("released"), false, false, true),
+            (Some("changed"), false, false, false),
+            (Some("pointer"), false, false, false),
+            (Some("future-phase"), false, false, false),
+            (None, false, false, false),
+        ] {
+            let action = ProjectRuntimeInputAction {
+                action_id: "move".into(),
+                phase: phase.map(str::to_string),
+                axis1: None,
+                axis2: None,
+            };
+            assert_eq!(
+                (
+                    action.is_pressed(),
+                    action.is_just_pressed(),
+                    action.is_just_released()
+                ),
+                (pressed, down, up)
+            );
+            assert_eq!(
+                action.input_phase().is_none(),
+                phase.is_none() || phase == Some("future-phase")
+            );
+            let wire = serde_json::to_string(&action).unwrap();
+            assert_eq!(
+                serde_json::from_str::<ProjectRuntimeInputAction>(&wire).unwrap(),
+                action
+            );
+        }
     }
 }
 
@@ -240,6 +354,20 @@ pub struct ProjectRuntimeUiStateResolveRequest {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct ProjectRuntimeVirtualListItem {
+    pub item_key: String,
+    pub text: String,
+    pub measured_extent: Option<f32>,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct ProjectRuntimeVirtualListSnapshot {
+    pub items: Vec<ProjectRuntimeVirtualListItem>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum ProjectRuntimeUiStateResolveOutput {
     Reuse {
@@ -253,6 +381,17 @@ pub enum ProjectRuntimeUiStateResolveOutput {
     Uncacheable {
         producer_id: String,
         values: BTreeMap<String, ProjectRuntimeValue>,
+    },
+    ReplaceWithVirtualLists {
+        identity: ProjectRuntimeUiStateIdentity,
+        producer_id: String,
+        values: BTreeMap<String, ProjectRuntimeValue>,
+        virtual_lists: BTreeMap<String, ProjectRuntimeVirtualListSnapshot>,
+    },
+    UncacheableWithVirtualLists {
+        producer_id: String,
+        values: BTreeMap<String, ProjectRuntimeValue>,
+        virtual_lists: BTreeMap<String, ProjectRuntimeVirtualListSnapshot>,
     },
 }
 
@@ -291,6 +430,7 @@ pub enum ProjectRuntimeStatus {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct ProjectRuntimeSessionOutput {
+    pub host_control: Option<ProjectRuntimeHostControl>,
     pub status: ProjectRuntimeStatus,
     pub handled_action_count: u64,
     pub unhandled_action_count: u64,
@@ -300,8 +440,15 @@ pub struct ProjectRuntimeSessionOutput {
 }
 
 impl ProjectRuntimeSessionOutput {
+    /// Request an orderly session exit. The host publishes it only after successful commit.
+    pub fn request_exit(&mut self) {
+        self.host_control = Some(ProjectRuntimeHostControl::Exit);
+        self.status = ProjectRuntimeStatus::Applied;
+    }
+
     pub fn no_op() -> Self {
         Self {
+            host_control: None,
             status: ProjectRuntimeStatus::NoOp,
             handled_action_count: 0,
             unhandled_action_count: 0,
@@ -315,6 +462,44 @@ impl ProjectRuntimeSessionOutput {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum ProjectRuntimeDeferredMutation {
+    GeneratedContent {
+        request: generated_content::GeneratedContentRequest,
+    },
+    GeneratedContentCancel {
+        ticket: generated_content::ContentTicket,
+    },
+    ProjectStorage {
+        request: project_storage::ProjectStorageRequest,
+    },
+    ProjectStorageAbandon {
+        ticket: generated_content::ContentTicket,
+    },
+    Animator {
+        entity_id: String,
+        generation: u64,
+        intent: ProjectRuntimeAnimatorIntent,
+    },
+    SpatialLocalTransform {
+        entity: spatial_bulk::SpatialEntityKey,
+        transform: ProjectRuntimeTransform3D,
+    },
+    Cell {
+        intent: ProjectRuntimeCellIntent,
+    },
+    InstantiateSpatialPrefab {
+        request_id: u64,
+        prefab: ProjectRuntimeSpatialAssetRef,
+    },
+    DespawnSpatialPrefab {
+        entity_id: String,
+        generation: u64,
+    },
+    Spatial {
+        #[serde(rename = "entityId")]
+        entity_id: String,
+        generation: u64,
+        intent: ProjectRuntimeSpatialIntent,
+    },
     ParticleEffect {
         entity_id: String,
         #[serde(default)]
@@ -485,17 +670,83 @@ pub enum ProjectRuntimeValue {
     Array(Vec<ProjectRuntimeValue>),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct ProjectRuntimeWorldQueryRequest {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub generated_content: Option<generated_content::ContentQuery>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub project_storage: Option<project_storage::StorageQuery>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub project_storage_take: Option<generated_content::ContentTicket>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub physics: Option<physics_query3d::PhysicsQueryBatch3D>,
+    /// Resolve one live incarnation. Exclusive with other query selectors.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub entity_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cell: Option<ProjectRuntimeCellQuery>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub spawn_request_id: Option<u64>,
+    #[serde(default)]
     pub all: Vec<String>,
+    #[serde(default)]
     pub none: Vec<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+impl ProjectRuntimeWorldQueryRequest {
+    pub fn validate_identity_query(&self) -> Result<(), ProjectRuntimeAbiStatus> {
+        let content_selectors = usize::from(self.generated_content.is_some())
+            + usize::from(self.project_storage.is_some())
+            + usize::from(self.project_storage_take.is_some());
+        if content_selectors != 0 {
+            return if content_selectors != 1
+                || self.physics.is_some()
+                || self.entity_id.is_some()
+                || self.cell.is_some()
+                || self.spawn_request_id.is_some()
+                || !self.all.is_empty()
+                || !self.none.is_empty()
+            {
+                Err(ProjectRuntimeAbiStatus::INVALID_ARGUMENT)
+            } else {
+                Ok(())
+            };
+        }
+        if let Some(batch) = &self.physics {
+            if !batch.is_valid()
+                || self.entity_id.is_some()
+                || self.cell.is_some()
+                || self.spawn_request_id.is_some()
+                || !self.all.is_empty()
+                || !self.none.is_empty()
+            {
+                return Err(ProjectRuntimeAbiStatus::INVALID_ARGUMENT);
+            }
+        }
+        if let Some(id) = &self.entity_id {
+            if id.trim().is_empty()
+                || self.cell.is_some()
+                || self.spawn_request_id.is_some()
+                || !self.all.is_empty()
+                || !self.none.is_empty()
+            {
+                return Err(ProjectRuntimeAbiStatus::INVALID_ARGUMENT);
+            }
+        }
+        Ok(())
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct ProjectRuntimeWorldQueryResponse {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub physics: Option<physics_query3d::PhysicsQueryResult3D>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cell: Option<ProjectRuntimeCellReceipt>,
     pub entity_ids: Vec<String>,
+    pub entity_generations: BTreeMap<String, u64>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -503,6 +754,8 @@ pub struct ProjectRuntimeWorldQueryResponse {
 pub struct ProjectRuntimeWorldReadRequest {
     pub entity_id: String,
     pub component_type: String,
+    #[serde(default)]
+    pub generation: u64,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -522,6 +775,18 @@ pub fn project_runtime_contract_digest() -> [u8; 32] {
     hasher.update(PROJECT_RUNTIME_ABI_SCHEMA.as_bytes());
     hasher.update([0]);
     hasher.update(PROJECT_RUNTIME_SDK_SCHEMA.as_bytes());
+    hasher.update([0]);
+    hasher.update(generated_content::GENERATED_CONTENT_SCHEMA.as_bytes());
+    hasher.update([0]);
+    hasher.update(project_storage::PROJECT_STORAGE_SCHEMA.as_bytes());
+    hasher.update([0]);
+    hasher.update(aui_wire::UI_UPDATE_SCHEMA.as_bytes());
+    hasher.update([0]);
+    hasher.update(aui_host::UI_HOST_SCHEMA.as_bytes());
+    hasher.update([0]);
+    hasher.update(aui_host::UI_STRUCTURE_SCHEMA.as_bytes());
+    hasher.update([0]);
+    hasher.update(aui_extension::UI_EXTENSION_SCHEMA.as_bytes());
     hasher.finalize().into()
 }
 
@@ -548,7 +813,11 @@ pub fn ffi_boundary<T: Serialize>(
 /// The regular caller-owned-buffer retry protocol may invoke a callback more than once. Project
 /// callbacks that mutate session state must use a capacity floor large enough for their bounded
 /// output so the retry only performs sizing and the callback itself executes exactly once.
-pub fn ffi_boundary_with_capacity_floor<T: Serialize>(
+/// # Safety
+/// A non-null `output` must point to a live, aligned, exclusively borrowed descriptor.
+/// Its non-null data pointer must reference `capacity` writable bytes for this call.
+/// Neither allocation may be accessed by the callback or invalidated until return.
+pub unsafe fn ffi_boundary_with_capacity_floor<T: Serialize>(
     output: *mut ProjectRuntimeByteBuffer,
     capacity_floor: usize,
     callback: impl FnOnce() -> Result<T, ProjectRuntimeAbiStatus>,
@@ -559,7 +828,7 @@ pub fn ffi_boundary_with_capacity_floor<T: Serialize>(
     let Ok(required) = u64::try_from(capacity_floor) else {
         return ProjectRuntimeAbiStatus::INVALID_ARGUMENT;
     };
-    // SAFETY: null was rejected and the ABI caller owns a live buffer descriptor for this call.
+    // SAFETY: null was rejected; validity and exclusive access are required of the caller.
     let output_ref = unsafe { &mut *output };
     if output_ref.capacity < required {
         output_ref.written = required;
@@ -658,6 +927,26 @@ pub fn call_json_once_with_buffer<Request: Serialize, Response: DeserializeOwned
     request: &Request,
     bytes: &mut [u8],
 ) -> Result<Response, ProjectRuntimeSdkError> {
+    call_once_with_buffer_decoder(
+        call,
+        module_context,
+        session,
+        call_context,
+        request,
+        bytes,
+        |data| serde_json::from_slice(data).map_err(|_| ProjectRuntimeAbiStatus::FAILED),
+    )
+}
+
+pub fn call_once_with_buffer_decoder<Request: Serialize, Response>(
+    call: ProjectRuntimeModuleCall,
+    module_context: ProjectRuntimeOpaqueHandle,
+    session: ProjectRuntimeOpaqueHandle,
+    call_context: Option<&ProjectRuntimeCallContext>,
+    request: &Request,
+    bytes: &mut [u8],
+    decode: impl FnOnce(&[u8]) -> Result<Response, ProjectRuntimeAbiStatus>,
+) -> Result<Response, ProjectRuntimeSdkError> {
     let request = serde_json::to_vec(request).map_err(|error| ProjectRuntimeSdkError {
         status: ProjectRuntimeAbiStatus::INVALID_ARGUMENT,
         message: error.to_string(),
@@ -697,9 +986,9 @@ pub fn call_json_once_with_buffer<Request: Serialize, Response: DeserializeOwned
             message: "module wrote beyond the caller-owned output buffer".to_string(),
         });
     }
-    serde_json::from_slice(&bytes[..written]).map_err(|error| ProjectRuntimeSdkError {
-        status: ProjectRuntimeAbiStatus::FAILED,
-        message: error.to_string(),
+    decode(&bytes[..written]).map_err(|status| ProjectRuntimeSdkError {
+        status,
+        message: "Invalid or unsupported one-shot session output".into(),
     })
 }
 
@@ -708,11 +997,22 @@ pub fn call_host_json<Request: Serialize, Response: DeserializeOwned>(
     host_context: ProjectRuntimeOpaqueHandle,
     request: &Request,
 ) -> Result<Response, ProjectRuntimeSdkError> {
+    call_host_json_with_capacity(call, host_context, request, 4096)
+}
+
+/// Reserves caller storage for a known large reply, avoiding a sizing retry in ordinary batches.
+/// This is an initial capacity hint; larger replies retain the same caller-owned retry protocol.
+pub fn call_host_json_with_capacity<Request: Serialize, Response: DeserializeOwned>(
+    call: ProjectRuntimeHostCall,
+    host_context: ProjectRuntimeOpaqueHandle,
+    request: &Request,
+    initial_capacity: usize,
+) -> Result<Response, ProjectRuntimeSdkError> {
     let request = serde_json::to_vec(request).map_err(|error| ProjectRuntimeSdkError {
         status: ProjectRuntimeAbiStatus::INVALID_ARGUMENT,
         message: error.to_string(),
     })?;
-    let mut bytes = vec![0_u8; 4096];
+    let mut bytes = vec![0_u8; initial_capacity];
     for _ in 0..2 {
         let mut output = ProjectRuntimeByteBuffer::from_slice(&mut bytes);
         // SAFETY: all pointers borrow caller-owned storage for only this callback.
@@ -782,6 +1082,45 @@ fn write_output(output: *mut ProjectRuntimeByteBuffer, bytes: &[u8]) -> ProjectR
 mod tests {
     use super::*;
 
+    #[test]
+    fn identity_query_is_exclusive_bounded_and_old_reader_rejects_it() {
+        #[derive(Deserialize)]
+        #[serde(rename_all = "camelCase", deny_unknown_fields)]
+        struct OldQuery {
+            #[serde(rename = "all")]
+            _all: Option<Vec<String>>,
+            #[serde(rename = "none")]
+            _none: Option<Vec<String>>,
+        }
+        let query: ProjectRuntimeWorldQueryRequest =
+            serde_json::from_value(serde_json::json!({"entityId":"camera","all":[],"none":[]}))
+                .unwrap();
+        assert!(query.validate_identity_query().is_ok());
+        assert!(serde_json::from_value::<OldQuery>(serde_json::to_value(&query).unwrap()).is_err());
+        for patch in [
+            serde_json::json!({"entityId":""}),
+            serde_json::json!({"all":["engine.transform3d"]}),
+            serde_json::json!({"none":["x"]}),
+            serde_json::json!({"spawnRequestId":1}),
+            serde_json::json!({"cell":{"requestId":1}}),
+        ] {
+            let mut wire = serde_json::to_value(&query).unwrap();
+            wire.as_object_mut()
+                .unwrap()
+                .extend(patch.as_object().unwrap().clone());
+            let invalid: ProjectRuntimeWorldQueryRequest = serde_json::from_value(wire).unwrap();
+            assert_eq!(
+                invalid.validate_identity_query(),
+                Err(ProjectRuntimeAbiStatus::INVALID_ARGUMENT)
+            );
+        }
+        let legacy: ProjectRuntimeWorldQueryRequest =
+            serde_json::from_value(serde_json::json!({"all":[],"none":[]})).unwrap();
+        assert!(legacy.entity_id.is_none());
+        assert!(legacy.validate_identity_query().is_ok());
+        assert!(serde_json::from_value::<OldQuery>(serde_json::to_value(legacy).unwrap()).is_ok());
+    }
+
     unsafe extern "C" fn echo_call(
         _module: ProjectRuntimeOpaqueHandle,
         _session: ProjectRuntimeOpaqueHandle,
@@ -798,6 +1137,12 @@ mod tests {
 
     #[test]
     fn sdk_digest_is_stable_and_includes_wire_schema() {
+        let mut legacy = Sha256::new();
+        legacy.update(PROJECT_RUNTIME_ABI_SCHEMA.as_bytes());
+        legacy.update([0]);
+        legacy.update(PROJECT_RUNTIME_SDK_SCHEMA.as_bytes());
+        let legacy: [u8; 32] = legacy.finalize().into();
+        assert_ne!(project_runtime_contract_digest(), legacy);
         assert_eq!(
             project_runtime_contract_digest(),
             project_runtime_contract_digest()
@@ -865,22 +1210,53 @@ mod tests {
         let mut small_bytes = [0_u8; 8];
         let mut small_output = ProjectRuntimeByteBuffer::from_slice(&mut small_bytes);
         let callback_count = std::cell::Cell::new(0);
-        let status = ffi_boundary_with_capacity_floor(&mut small_output, 4096, || {
-            callback_count.set(callback_count.get() + 1);
-            Ok(ProjectRuntimeSessionOutput::no_op())
-        });
+        // SAFETY: the descriptor and backing storage remain exclusively borrowed for this call.
+        let status = unsafe {
+            ffi_boundary_with_capacity_floor(&mut small_output, 4096, || {
+                callback_count.set(callback_count.get() + 1);
+                Ok(ProjectRuntimeSessionOutput::no_op())
+            })
+        };
         assert_eq!(status, ProjectRuntimeAbiStatus::BUFFER_TOO_SMALL);
         assert_eq!(small_output.written, 4096);
         assert_eq!(callback_count.get(), 0);
 
         let mut adequate_bytes = vec![0_u8; 4096];
         let mut adequate_output = ProjectRuntimeByteBuffer::from_slice(&mut adequate_bytes);
-        let status = ffi_boundary_with_capacity_floor(&mut adequate_output, 4096, || {
-            callback_count.set(callback_count.get() + 1);
-            Ok(ProjectRuntimeSessionOutput::no_op())
-        });
+        // SAFETY: the descriptor and backing storage remain exclusively borrowed for this call.
+        let status = unsafe {
+            ffi_boundary_with_capacity_floor(&mut adequate_output, 4096, || {
+                callback_count.set(callback_count.get() + 1);
+                Ok(ProjectRuntimeSessionOutput::no_op())
+            })
+        };
         assert_eq!(status, ProjectRuntimeAbiStatus::OK);
         assert_eq!(callback_count.get(), 1);
+    }
+
+    #[test]
+    fn stateful_boundary_rejects_null_and_contains_panics() {
+        let calls = std::cell::Cell::new(0);
+        // SAFETY: null is explicitly accepted as an invalid argument; it is never dereferenced.
+        let status = unsafe {
+            ffi_boundary_with_capacity_floor(std::ptr::null_mut(), 64, || {
+                calls.set(calls.get() + 1);
+                Ok(())
+            })
+        };
+        assert_eq!(status, ProjectRuntimeAbiStatus::INVALID_ARGUMENT);
+        assert_eq!(calls.get(), 0);
+        let mut storage = [0; 64];
+        let mut output = ProjectRuntimeByteBuffer::from_slice(&mut storage);
+        // SAFETY: descriptor and backing storage are live and exclusively borrowed during the call.
+        let status = unsafe {
+            ffi_boundary_with_capacity_floor::<()>(&mut output, 64, || {
+                calls.set(calls.get() + 1);
+                panic!("callback failed");
+            })
+        };
+        assert_eq!(status, ProjectRuntimeAbiStatus::PANICKED);
+        assert_eq!(calls.get(), 1);
     }
 
     #[test]
@@ -897,5 +1273,28 @@ mod tests {
                 "forbidden dependency: {forbidden}"
             );
         }
+    }
+}
+
+#[cfg(test)]
+mod lifecycle_wire_tests {
+    use super::*;
+    #[test]
+    fn focus_and_exit_preserve_typed_wire_intent() {
+        for focused in [false, true] {
+            let event = ProjectRuntimeLifecycleEvent::FocusChanged { focused };
+            let wire = serde_json::to_vec(&event).unwrap();
+            assert_eq!(
+                serde_json::from_slice::<ProjectRuntimeLifecycleEvent>(&wire).unwrap(),
+                event
+            );
+        }
+        let mut output = ProjectRuntimeSessionOutput::no_op();
+        output.request_exit();
+        output.request_exit();
+        let decoded: ProjectRuntimeSessionOutput =
+            serde_json::from_slice(&serde_json::to_vec(&output).unwrap()).unwrap();
+        assert_eq!(decoded.status, ProjectRuntimeStatus::Applied);
+        assert_eq!(decoded.host_control, Some(ProjectRuntimeHostControl::Exit));
     }
 }

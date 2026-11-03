@@ -208,7 +208,7 @@ fn feedback_fallback_identity(document: &AuiDocument) -> String {
 }
 
 fn detect_source_shape(value: &serde_json::Value) -> &'static str {
-    if value.get("canvases").is_some() && value.get("nodes").is_some() {
+    if value.get("canvases").is_some() || value.get("nodes").is_some() {
         "runtime_aui_document"
     } else {
         "legacy_authoring_tree"
@@ -253,6 +253,7 @@ fn cook_runtime_document(
             Some("Save the cooked document to persist the normalized v2 schema.".to_string()),
         ));
     }
+    engine_runtime::aui_layout_schema::normalize_source_version(&mut document)?;
     if let Some(registry) = &mut document.interaction_feedback {
         registry
             .profiles
@@ -266,6 +267,7 @@ fn cook_legacy_document(
     value: &serde_json::Value,
     diagnostics: &mut Vec<AuiDocumentCookDiagnostic>,
 ) -> Result<AuiDocument, String> {
+    engine_runtime::aui_layout_schema::validate_legacy_source(value)?;
     let document_id = value
         .get("documentId")
         .or_else(|| value.get("document_id"))
@@ -499,7 +501,7 @@ fn validate_document(
     document: &AuiDocument,
     diagnostics: &mut Vec<AuiDocumentCookDiagnostic>,
 ) -> Result<(), String> {
-    if document.schema_version != AUI_DOCUMENT_SCHEMA_VERSION {
+    if !engine_runtime::aui_layout_schema::supported_schema(&document.schema_version) {
         diagnostics.push(AuiDocumentCookDiagnostic::error(
             "AuiDocumentSchemaMismatch",
             format!(
@@ -510,6 +512,19 @@ fn validate_document(
             Some("Migrate source v1 through AuiDocumentCooker before packaging.".to_string()),
         ));
         return Err("AUI document must use normalized aui-document.v2 schema.".to_string());
+    }
+    let layout_errors = engine_runtime::aui_layout_schema::validate(document);
+    let invalid_layout = !layout_errors.is_empty();
+    for item in layout_errors {
+        diagnostics.push(AuiDocumentCookDiagnostic::error(
+            &item.code,
+            &item.message,
+            Some("nodes".to_string()),
+            item.suggested_fix,
+        ));
+    }
+    if invalid_layout {
+        return Err("AUI C2 layout contract validation failed.".to_string());
     }
     if document.document_id.trim().is_empty() {
         return Err("AUI document_id is required.".to_string());
@@ -752,6 +767,16 @@ fn collect_asset_refs(value: &serde_json::Value) -> BTreeSet<String> {
     refs
 }
 
+#[cfg(test)]
+mod presentation_resource_dependency_tests {
+    #[test]
+    fn typed_resource_fallback_is_part_of_aui_asset_dependency_closure() {
+        let value = serde_json::json!({"nodes":[{"binding_refs":[{"target_field":"resource","fallback":{"assetId":"texture-card","guid":"guid-card"}}]}]});
+        let refs = super::collect_asset_refs(&value);
+        assert!(refs.contains("texture-card"));
+    }
+}
+
 fn collect_asset_refs_recursive(value: &serde_json::Value, refs: &mut BTreeSet<String>) {
     match value {
         serde_json::Value::Object(map) => {
@@ -767,6 +792,15 @@ fn collect_asset_refs_recursive(value: &serde_json::Value, refs: &mut BTreeSet<S
             }
             if let Some(id) = map.get("asset_id").and_then(serde_json::Value::as_str) {
                 refs.insert(id.to_string());
+            }
+            if map
+                .get("guid")
+                .and_then(serde_json::Value::as_str)
+                .is_some()
+            {
+                if let Some(id) = map.get("assetId").and_then(serde_json::Value::as_str) {
+                    refs.insert(id.to_string());
+                }
             }
             for value in map.values() {
                 collect_asset_refs_recursive(value, refs);
@@ -825,6 +859,34 @@ mod feedback_tests {
             vec![AuiCanvas::screen_overlay("canvas", 1080.0, 1920.0, "root")],
             vec![root, button],
         )
+    }
+
+    #[test]
+    fn aui_document_c2_cook_preserves_layout_and_rejects_unknown_version() {
+        let mut document = feedback_document();
+        document.nodes[0].layout = Some(engine_runtime::aui_layout_schema::LayoutSpec {
+            mode: engine_runtime::aui_layout_schema::LayoutMode::Column,
+            ..Default::default()
+        });
+        let request = |doc: &AuiDocument| AuiDocumentCookRequest {
+            source_path: PathBuf::from("Project/AUI/c2.aui.json"),
+            document: serde_json::to_value(doc).unwrap(),
+        };
+        let output = AuiDocumentCooker::cook(request(&document)).unwrap();
+        assert_eq!(
+            output.document.schema_version,
+            engine_runtime::aui_layout_schema::AUI_LAYOUT_SCHEMA_VERSION
+        );
+        assert_eq!(output.document.nodes[0].layout, document.nodes[0].layout);
+        document.schema_version = "aui-document.v999".into();
+        assert!(AuiDocumentCooker::cook(request(&document)).is_err());
+        document.schema_version = "aui-document.v3".into();
+        document.nodes[0].layout.as_mut().unwrap().gap.row = -1.0;
+        let report = AuiDocumentCooker::cook(request(&document)).unwrap_err();
+        assert!(report
+            .diagnostics
+            .iter()
+            .any(|d| d.code == "aui_layout_metrics_invalid"));
     }
 
     #[test]
@@ -987,5 +1049,62 @@ mod feedback_tests {
             .diagnostics
             .iter()
             .any(|diagnostic| diagnostic.code == "AuiFeedbackEasingInvalid"));
+    }
+
+    #[test]
+    fn aui_document_cooker_preserves_m4e_control_values_and_bindings() {
+        let root = AuiNode::new("root", AuiNodeKind::Panel, AuiRect::stretch_full())
+            .with_children(["toggle", "slider"]);
+        let mut toggle = AuiNode::new(
+            "toggle",
+            AuiNodeKind::Toggle,
+            AuiRect::fixed_position(0.0, 0.0, 100.0, 40.0),
+        )
+        .with_parent("root")
+        .with_toggle_checked(true);
+        toggle.binding_refs.push(AuiBindingRef::new(
+            "toggle.checked",
+            AuiBindingTarget::ToggleChecked,
+            "settings.sound",
+            Some(AuiBindingValue::Bool(false)),
+        ));
+        let mut slider = AuiNode::new(
+            "slider",
+            AuiNodeKind::Slider,
+            AuiRect::fixed_position(0.0, 50.0, 100.0, 40.0),
+        )
+        .with_parent("root")
+        .with_slider(0.6, 0.0, 1.0, 0.1);
+        slider.binding_refs.push(AuiBindingRef::new(
+            "slider.value",
+            AuiBindingTarget::SliderValue,
+            "settings.volume",
+            Some(AuiBindingValue::Number(0.5)),
+        ));
+        let mut document = AuiDocument::new(
+            "m4e-controls",
+            vec![AuiCanvas::screen_overlay("main", 200.0, 120.0, "root")],
+            vec![root, toggle, slider],
+        );
+        document.schema_version =
+            engine_runtime::aui_layout_schema::AUI_LAYOUT_SCHEMA_VERSION.into();
+
+        let cooked = AuiDocumentCooker::cook(AuiDocumentCookRequest {
+            source_path: PathBuf::from("Project/AUI/m4e-controls.aui.json"),
+            document: serde_json::to_value(document).unwrap(),
+        })
+        .expect("M4-E controls should cook");
+
+        assert_eq!(cooked.report.binding_count, 2);
+        assert_eq!(cooked.document.nodes[1].toggle_checked, Some(true));
+        assert_eq!(
+            cooked.document.nodes[1].binding_refs[0].target_field,
+            AuiBindingTarget::ToggleChecked
+        );
+        assert_eq!(cooked.document.nodes[2].slider_value, Some(0.6));
+        assert_eq!(
+            cooked.document.nodes[2].binding_refs[0].target_field,
+            AuiBindingTarget::SliderValue
+        );
     }
 }

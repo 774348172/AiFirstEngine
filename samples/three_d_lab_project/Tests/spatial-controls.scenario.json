@@ -1,0 +1,299 @@
+{
+  "schemaVersion": "playtest-scenario.v2",
+  "scenarioId": "three-d.spatial-controls",
+  "initialSceneId": "main",
+  "target": "windows-windowed",
+  "maxSimulationTicks": 21,
+  "maxPresentationFrames": 21,
+  "timeoutMs": 30000,
+  "inputs": [
+    {
+      "simulationTick": 3,
+      "events": [
+        {
+          "type": "pointerMove",
+          "position": [
+            210,
+            160
+          ]
+        },
+        {
+          "type": "mouseDown",
+          "button": "Left"
+        }
+      ]
+    },
+    {
+      "simulationTick": 4,
+      "events": [
+        {
+          "type": "mouseUp",
+          "button": "Left"
+        }
+      ]
+    },
+    {
+      "simulationTick": 6,
+      "events": [
+        {
+          "type": "keyDown",
+          "key": "Enter"
+        }
+      ]
+    },
+    {
+      "simulationTick": 7,
+      "events": [
+        {
+          "type": "keyUp",
+          "key": "Enter"
+        }
+      ]
+    },
+    {
+      "simulationTick": 9,
+      "events": [
+        {
+          "type": "pointerMove",
+          "position": [
+            370,
+            160
+          ]
+        },
+        {
+          "type": "mouseDown",
+          "button": "Left"
+        }
+      ]
+    },
+    {
+      "simulationTick": 10,
+      "events": [
+        {
+          "type": "mouseUp",
+          "button": "Left"
+        }
+      ]
+    },
+    {
+      "simulationTick": 12,
+      "events": [
+        {
+          "type": "pointerMove",
+          "position": [
+            370,
+            160
+          ]
+        },
+        {
+          "type": "mouseDown",
+          "button": "Left"
+        }
+      ]
+    },
+    {
+      "simulationTick": 13,
+      "events": [
+        {
+          "type": "mouseUp",
+          "button": "Left"
+        }
+      ]
+    },
+    {
+      "simulationTick": 15,
+      "events": [
+        {
+          "type": "pointerMove",
+          "position": [
+            520,
+            160
+          ]
+        },
+        {
+          "type": "mouseDown",
+          "button": "Left"
+        }
+      ]
+    },
+    {
+      "simulationTick": 16,
+      "events": [
+        {
+          "type": "mouseUp",
+          "button": "Left"
+        }
+      ]
+    },
+    {
+      "simulationTick": 18,
+      "events": [
+        {
+          "type": "pointerMove",
+          "position": [
+            670,
+            160
+          ]
+        },
+        {
+          "type": "mouseDown",
+          "button": "Left"
+        }
+      ]
+    },
+    {
+      "simulationTick": 19,
+      "events": [
+        {
+          "type": "mouseUp",
+          "button": "Left"
+        }
+      ]
+    }
+  ],
+  "assertions": [
+    {
+      "assertionId": "camera-x-1",
+      "fromSimulationTick": 1,
+      "throughSimulationTick": 1,
+      "path": "engine.spatial/camera/x",
+      "equals": 0.0
+    },
+    {
+      "assertionId": "camera-mainCamera-1",
+      "fromSimulationTick": 1,
+      "throughSimulationTick": 1,
+      "path": "engine.spatial/camera/mainCamera",
+      "equals": true
+    },
+    {
+      "assertionId": "cube-front-resourceReady-1",
+      "fromSimulationTick": 1,
+      "throughSimulationTick": 1,
+      "path": "engine.spatial/cube-front/resourceReady",
+      "equals": true
+    },
+    {
+      "assertionId": "cube-front-inView-1",
+      "fromSimulationTick": 1,
+      "throughSimulationTick": 1,
+      "path": "engine.spatial/cube-front/inView",
+      "equals": true
+    },
+    {
+      "assertionId": "camera-x-5",
+      "fromSimulationTick": 5,
+      "throughSimulationTick": 5,
+      "path": "engine.spatial/camera/x",
+      "equals": 0.25
+    },
+    {
+      "assertionId": "camera-x-8",
+      "fromSimulationTick": 8,
+      "throughSimulationTick": 8,
+      "path": "engine.spatial/camera/x",
+      "equals": 0.5
+    },
+    {
+      "assertionId": "cube-front-visible-11",
+      "fromSimulationTick": 11,
+      "throughSimulationTick": 11,
+      "path": "engine.spatial/cube-front/visible",
+      "equals": false
+    },
+    {
+      "assertionId": "cube-front-inView-11",
+      "fromSimulationTick": 11,
+      "throughSimulationTick": 11,
+      "path": "engine.spatial/cube-front/inView",
+      "equals": false
+    },
+    {
+      "assertionId": "cube-front-visible-14",
+      "fromSimulationTick": 14,
+      "throughSimulationTick": 14,
+      "path": "engine.spatial/cube-front/visible",
+      "equals": true
+    },
+    {
+      "assertionId": "cube-front-material-17",
+      "fromSimulationTick": 17,
+      "throughSimulationTick": 17,
+      "path": "engine.spatial/cube-front/material/surface",
+      "equals": "magenta"
+    },
+    {
+      "assertionId": "camera-x-20",
+      "fromSimulationTick": 20,
+      "throughSimulationTick": 20,
+      "path": "engine.spatial/camera/x",
+      "equals": 0.0
+    },
+    {
+      "assertionId": "cube-front-material-20",
+      "fromSimulationTick": 20,
+      "throughSimulationTick": 20,
+      "path": "engine.spatial/cube-front/material/surface",
+      "equals": "direction-material"
+    },
+    {
+      "assertionId": "cube-front-inView-20",
+      "fromSimulationTick": 20,
+      "throughSimulationTick": 20,
+      "path": "engine.spatial/cube-front/inView",
+      "equals": true
+    }
+  ],
+  "captures": [
+    {
+      "captureId": "frame-1",
+      "presentationFrame": 1,
+      "required": true,
+      "subjectiveReview": false
+    },
+    {
+      "captureId": "frame-5",
+      "presentationFrame": 5,
+      "required": true,
+      "subjectiveReview": false
+    },
+    {
+      "captureId": "frame-8",
+      "presentationFrame": 8,
+      "required": true,
+      "subjectiveReview": false
+    },
+    {
+      "captureId": "frame-11",
+      "presentationFrame": 11,
+      "required": true,
+      "subjectiveReview": false
+    },
+    {
+      "captureId": "frame-14",
+      "presentationFrame": 14,
+      "required": true,
+      "subjectiveReview": false
+    },
+    {
+      "captureId": "frame-17",
+      "presentationFrame": 17,
+      "required": true,
+      "subjectiveReview": false
+    },
+    {
+      "captureId": "frame-20",
+      "presentationFrame": 20,
+      "required": true,
+      "subjectiveReview": false
+    }
+  ],
+  "spatialObservation": {
+    "schemaVersion": "spatial-observation-request.v1",
+    "level": "summary",
+    "entities": [
+      "camera",
+      "cube-front"
+    ]
+  }
+}

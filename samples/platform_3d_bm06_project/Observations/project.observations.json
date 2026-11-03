@@ -1,0 +1,151 @@
+{
+  "schemaVersion": "project-observation-contract.v1",
+  "contractId": "bm06.actual-physics-state",
+  "observations": [
+    {
+      "path": "bm06.tick",
+      "type": "integer",
+      "description": "Actual committed Physics3D state in the original full BM06 population"
+    },
+    {
+      "path": "bm06.actualDynamicBodies",
+      "type": "integer",
+      "description": "Actual committed Physics3D state in the original full BM06 population"
+    },
+    {
+      "path": "bm06.actualAwakeBodies",
+      "type": "integer",
+      "description": "Actual committed Physics3D state in the original full BM06 population"
+    },
+    {
+      "path": "bm06.drivenAwakeTargetMet",
+      "type": "bool",
+      "description": "Actual committed Physics3D state in the original full BM06 population"
+    },
+    {
+      "path": "bm06.actualContactEndpoints",
+      "type": "integer",
+      "description": "Actual committed Physics3D state in the original full BM06 population"
+    },
+    {
+      "path": "bm06.actualMotorStates",
+      "type": "integer",
+      "description": "Actual committed Physics3D state in the original full BM06 population"
+    },
+    {
+      "path": "bm06.queryBatches",
+      "type": "integer",
+      "description": "Actual synchronous Jolt batch results; not manifest counts"
+    },
+    {
+      "path": "bm06.queryTick",
+      "type": "integer",
+      "description": "Actual synchronous Jolt batch results; not manifest counts"
+    },
+    {
+      "path": "bm06.raycastsPerTick",
+      "type": "integer",
+      "description": "Actual synchronous Jolt batch results; not manifest counts"
+    },
+    {
+      "path": "bm06.sweepsPerTick",
+      "type": "integer",
+      "description": "Actual synchronous Jolt batch results; not manifest counts"
+    },
+    {
+      "path": "bm06.queryBatchHasHit",
+      "type": "bool",
+      "description": "Actual synchronous Jolt batch results; not manifest counts"
+    },
+    {
+      "path": "bm06.querySnapshotIsPriorTick",
+      "type": "bool",
+      "description": "Actual synchronous Jolt batch results; not manifest counts"
+    },
+    {
+      "path": "bm06.motors.stepCount",
+      "type": "integer",
+      "description": "Count of the two actual motors meeting the committed route result, not issued commands"
+    },
+    {
+      "path": "bm06.motors.slopeCount",
+      "type": "integer",
+      "description": "Count of the two actual motors meeting the committed route result, not issued commands"
+    },
+    {
+      "path": "bm06.motors.steepCount",
+      "type": "integer",
+      "description": "Count of the two actual motors meeting the committed route result, not issued commands"
+    },
+    {
+      "path": "bm06.motors.ceilingCount",
+      "type": "integer",
+      "description": "Count of the two actual motors meeting the committed route result, not issued commands"
+    },
+    {
+      "path": "bm06.motors.platformCount",
+      "type": "integer",
+      "description": "Count of the two actual motors meeting the committed route result, not issued commands"
+    },
+    {
+      "path": "bm06.motors.teleportCount",
+      "type": "integer",
+      "description": "Count of the two actual motors meeting the committed route result, not issued commands"
+    },
+    {
+      "path": "bm06.motors.crossCellCount",
+      "type": "integer",
+      "description": "Count of the two actual motors meeting the committed route result, not issued commands"
+    },
+    {
+      "path": "bm06.motors.returnCellCount",
+      "type": "integer",
+      "description": "Count of the two actual motors meeting the committed route result, not issued commands"
+    },
+    {
+      "path": "bm06.motor0.x",
+      "type": "number",
+      "description": "Actual motor pose from the preceding committed step, or observed peak beneath the roof"
+    },
+    {
+      "path": "bm06.motor0.y",
+      "type": "number",
+      "description": "Actual motor pose from the preceding committed step, or observed peak beneath the roof"
+    },
+    {
+      "path": "bm06.motor0.z",
+      "type": "number",
+      "description": "Actual motor pose from the preceding committed step, or observed peak beneath the roof"
+    },
+    {
+      "path": "bm06.motor0.ceilingPeak",
+      "type": "number",
+      "description": "Actual motor pose from the preceding committed step, or observed peak beneath the roof"
+    },
+    {
+      "path": "bm06.motor1.x",
+      "type": "number",
+      "description": "Actual motor pose from the preceding committed step, or observed peak beneath the roof"
+    },
+    {
+      "path": "bm06.motor1.y",
+      "type": "number",
+      "description": "Actual motor pose from the preceding committed step, or observed peak beneath the roof"
+    },
+    {
+      "path": "bm06.motor1.z",
+      "type": "number",
+      "description": "Actual motor pose from the preceding committed step, or observed peak beneath the roof"
+    },
+    {
+      "path": "bm06.motor1.ceilingPeak",
+      "type": "number",
+      "description": "Actual motor pose from the preceding committed step, or observed peak beneath the roof"
+    },
+    {
+      "type": "integer",
+      "description": "Committed tick sampled for cached body diagnostics; refreshed at original phase checkpoints",
+      "path": "bm06.bodyObservationTick"
+    }
+  ]
+}

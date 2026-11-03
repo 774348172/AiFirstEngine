@@ -1,0 +1,26 @@
+{
+  "schema_version": "local-ci-run-report.v1",
+  "started_at_epoch_seconds": 1784779299,
+  "duration_ms": 263589,
+  "run_id": "local-71496ae0fa6f-1784779299",
+  "requested_revision": "HEAD",
+  "commit_sha": "71496ae0fa6ffd4a9d5f8a827fb3464e0c35c098",
+  "source_workspace_state": "clean",
+  "isolated_workspace_state": "created",
+  "quality_gate_report_path": null,
+  "quality_gate_report_digest": null,
+  "cleanup_status": "removed",
+  "diagnostics": [
+    {
+      "code": "quality_gate.local_ci_report_invalid",
+      "message": "isolated quality report is invalid: EOF while parsing a value at line 1 column 0",
+      "next_action": "Repair quality-gate-report.v2 serialization and retry."
+    },
+    {
+      "code": "quality_gate.local_ci_gate_failed",
+      "message": "local_ci_verify failed with exit code Some(1)",
+      "next_action": "Repair the failing quality gate stage on the local integration commit."
+    }
+  ],
+  "passed": false
+}

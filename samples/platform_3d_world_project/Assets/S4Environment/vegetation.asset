@@ -1,0 +1,1497 @@
+{
+  "schemaVersion": "vegetation3d-asset.v1",
+  "assetId": "s4-forest",
+  "assetGuid": "guid-s4-forest",
+  "clusters": [
+    {
+      "key": "west",
+      "mesh": {
+        "expectedKind": "mesh",
+        "reference": {
+          "id": "s4-tree-mesh",
+          "guid": "guid-s4-tree-mesh",
+          "type": "mesh"
+        }
+      },
+      "material": {
+        "expectedKind": "material",
+        "reference": {
+          "id": "s4-tree-material",
+          "guid": "guid-s4-tree-material",
+          "type": "material"
+        }
+      },
+      "meshBounds": [
+        [
+          -0.65,
+          0,
+          -0.65
+        ],
+        [
+          0.65,
+          3,
+          0.65
+        ]
+      ],
+      "wind": {
+        "direction": [
+          1,
+          0
+        ],
+        "amplitude": 0.08,
+        "frequencyHz": 0.7
+      },
+      "instances": [
+        {
+          "sourceId": "tree-west-000",
+          "translation": [
+            2,
+            0.0123426,
+            2
+          ],
+          "yawRadians": 0.0,
+          "scale": 0.85,
+          "windPhase": 0.0
+        },
+        {
+          "sourceId": "tree-west-001",
+          "translation": [
+            6,
+            0.0337648,
+            2
+          ],
+          "yawRadians": 0.71,
+          "scale": 0.93,
+          "windPhase": 0.37
+        },
+        {
+          "sourceId": "tree-west-002",
+          "translation": [
+            10,
+            0.0462609,
+            2
+          ],
+          "yawRadians": 1.42,
+          "scale": 1.01,
+          "windPhase": 0.74
+        },
+        {
+          "sourceId": "tree-west-003",
+          "translation": [
+            14,
+            0.0465274,
+            2
+          ],
+          "yawRadians": 2.13,
+          "scale": 1.09,
+          "windPhase": 1.11
+        },
+        {
+          "sourceId": "tree-west-004",
+          "translation": [
+            18,
+            0.0344939,
+            2
+          ],
+          "yawRadians": 2.84,
+          "scale": 0.85,
+          "windPhase": 1.48
+        },
+        {
+          "sourceId": "tree-west-005",
+          "translation": [
+            22,
+            0.0133414,
+            2
+          ],
+          "yawRadians": 3.55,
+          "scale": 0.93,
+          "windPhase": 1.85
+        },
+        {
+          "sourceId": "tree-west-006",
+          "translation": [
+            26,
+            -0.0113379,
+            2
+          ],
+          "yawRadians": 4.26,
+          "scale": 1.01,
+          "windPhase": 2.22
+        },
+        {
+          "sourceId": "tree-west-007",
+          "translation": [
+            30,
+            -0.03302,
+            2
+          ],
+          "yawRadians": 4.97,
+          "scale": 1.09,
+          "windPhase": 2.59
+        },
+        {
+          "sourceId": "tree-west-008",
+          "translation": [
+            2,
+            0.0346765,
+            6
+          ],
+          "yawRadians": 5.68,
+          "scale": 0.85,
+          "windPhase": 2.96
+        },
+        {
+          "sourceId": "tree-west-009",
+          "translation": [
+            6,
+            0.0948623,
+            6
+          ],
+          "yawRadians": 0.106815,
+          "scale": 0.93,
+          "windPhase": 3.33
+        },
+        {
+          "sourceId": "tree-west-010",
+          "translation": [
+            10,
+            0.1299702,
+            6
+          ],
+          "yawRadians": 0.816815,
+          "scale": 1.01,
+          "windPhase": 3.7
+        },
+        {
+          "sourceId": "tree-west-011",
+          "translation": [
+            14,
+            0.130719,
+            6
+          ],
+          "yawRadians": 1.526815,
+          "scale": 1.09,
+          "windPhase": 4.07
+        },
+        {
+          "sourceId": "tree-west-012",
+          "translation": [
+            18,
+            0.0969106,
+            6
+          ],
+          "yawRadians": 2.236815,
+          "scale": 0.85,
+          "windPhase": 4.44
+        },
+        {
+          "sourceId": "tree-west-013",
+          "translation": [
+            22,
+            0.0374828,
+            6
+          ],
+          "yawRadians": 2.946815,
+          "scale": 0.93,
+          "windPhase": 4.81
+        },
+        {
+          "sourceId": "tree-west-014",
+          "translation": [
+            26,
+            -0.031854,
+            6
+          ],
+          "yawRadians": 3.656815,
+          "scale": 1.01,
+          "windPhase": 5.18
+        },
+        {
+          "sourceId": "tree-west-015",
+          "translation": [
+            30,
+            -0.0927698,
+            6
+          ],
+          "yawRadians": 4.366815,
+          "scale": 1.09,
+          "windPhase": 5.55
+        },
+        {
+          "sourceId": "tree-west-016",
+          "translation": [
+            2,
+            0.0504047,
+            10
+          ],
+          "yawRadians": 5.076815,
+          "scale": 0.85,
+          "windPhase": 5.92
+        },
+        {
+          "sourceId": "tree-west-017",
+          "translation": [
+            6,
+            0.1378889,
+            10
+          ],
+          "yawRadians": 5.786815,
+          "scale": 0.93,
+          "windPhase": 6.29
+        },
+        {
+          "sourceId": "tree-west-018",
+          "translation": [
+            10,
+            0.1889206,
+            10
+          ],
+          "yawRadians": 0.213629,
+          "scale": 1.01,
+          "windPhase": 6.66
+        },
+        {
+          "sourceId": "tree-west-019",
+          "translation": [
+            14,
+            0.190009,
+            10
+          ],
+          "yawRadians": 0.923629,
+          "scale": 1.09,
+          "windPhase": 7.03
+        },
+        {
+          "sourceId": "tree-west-020",
+          "translation": [
+            18,
+            0.1408662,
+            10
+          ],
+          "yawRadians": 1.633629,
+          "scale": 0.85,
+          "windPhase": 7.4
+        },
+        {
+          "sourceId": "tree-west-021",
+          "translation": [
+            22,
+            0.0544839,
+            10
+          ],
+          "yawRadians": 2.343629,
+          "scale": 0.93,
+          "windPhase": 7.77
+        },
+        {
+          "sourceId": "tree-west-022",
+          "translation": [
+            26,
+            -0.0463019,
+            10
+          ],
+          "yawRadians": 3.053629,
+          "scale": 1.01,
+          "windPhase": 8.14
+        },
+        {
+          "sourceId": "tree-west-023",
+          "translation": [
+            30,
+            -0.1348473,
+            10
+          ],
+          "yawRadians": 3.763629,
+          "scale": 1.09,
+          "windPhase": 8.51
+        },
+        {
+          "sourceId": "tree-west-024",
+          "translation": [
+            2,
+            0.0565309,
+            14
+          ],
+          "yawRadians": 4.473629,
+          "scale": 0.85,
+          "windPhase": 8.88
+        },
+        {
+          "sourceId": "tree-west-025",
+          "translation": [
+            6,
+            0.1546481,
+            14
+          ],
+          "yawRadians": 5.183629,
+          "scale": 0.93,
+          "windPhase": 9.25
+        },
+        {
+          "sourceId": "tree-west-026",
+          "translation": [
+            10,
+            0.2118823,
+            14
+          ],
+          "yawRadians": 5.893629,
+          "scale": 1.01,
+          "windPhase": 9.62
+        },
+        {
+          "sourceId": "tree-west-027",
+          "translation": [
+            14,
+            0.2131029,
+            14
+          ],
+          "yawRadians": 0.320444,
+          "scale": 1.09,
+          "windPhase": 9.99
+        },
+        {
+          "sourceId": "tree-west-028",
+          "translation": [
+            18,
+            0.1579873,
+            14
+          ],
+          "yawRadians": 1.030444,
+          "scale": 0.85,
+          "windPhase": 10.36
+        },
+        {
+          "sourceId": "tree-west-029",
+          "translation": [
+            22,
+            0.0611059,
+            14
+          ],
+          "yawRadians": 1.740444,
+          "scale": 0.93,
+          "windPhase": 10.73
+        },
+        {
+          "sourceId": "tree-west-030",
+          "translation": [
+            26,
+            -0.0519295,
+            14
+          ],
+          "yawRadians": 2.450444,
+          "scale": 1.01,
+          "windPhase": 11.1
+        },
+        {
+          "sourceId": "tree-west-031",
+          "translation": [
+            30,
+            -0.1512368,
+            14
+          ],
+          "yawRadians": 3.160444,
+          "scale": 1.09,
+          "windPhase": 11.47
+        },
+        {
+          "sourceId": "tree-west-032",
+          "translation": [
+            2,
+            0.0518882,
+            18
+          ],
+          "yawRadians": 3.870444,
+          "scale": 0.85,
+          "windPhase": 11.84
+        },
+        {
+          "sourceId": "tree-west-033",
+          "translation": [
+            6,
+            0.1419474,
+            18
+          ],
+          "yawRadians": 4.580444,
+          "scale": 0.93,
+          "windPhase": 12.21
+        },
+        {
+          "sourceId": "tree-west-034",
+          "translation": [
+            10,
+            0.1944811,
+            18
+          ],
+          "yawRadians": 5.290444,
+          "scale": 1.01,
+          "windPhase": 12.58
+        },
+        {
+          "sourceId": "tree-west-035",
+          "translation": [
+            14,
+            0.1956014,
+            18
+          ],
+          "yawRadians": 6.000444,
+          "scale": 1.09,
+          "windPhase": 12.95
+        },
+        {
+          "sourceId": "tree-west-036",
+          "translation": [
+            18,
+            0.1450123,
+            18
+          ],
+          "yawRadians": 0.427259,
+          "scale": 0.85,
+          "windPhase": 13.32
+        },
+        {
+          "sourceId": "tree-west-037",
+          "translation": [
+            22,
+            0.0560875,
+            18
+          ],
+          "yawRadians": 1.137259,
+          "scale": 0.93,
+          "windPhase": 13.69
+        },
+        {
+          "sourceId": "tree-west-038",
+          "translation": [
+            26,
+            -0.0476647,
+            18
+          ],
+          "yawRadians": 1.847259,
+          "scale": 1.01,
+          "windPhase": 14.06
+        },
+        {
+          "sourceId": "tree-west-039",
+          "translation": [
+            30,
+            -0.1388162,
+            18
+          ],
+          "yawRadians": 2.557259,
+          "scale": 1.09,
+          "windPhase": 14.43
+        },
+        {
+          "sourceId": "tree-west-040",
+          "translation": [
+            2,
+            0.037361,
+            22
+          ],
+          "yawRadians": 3.267259,
+          "scale": 0.85,
+          "windPhase": 14.8
+        },
+        {
+          "sourceId": "tree-west-041",
+          "translation": [
+            6,
+            0.1022061,
+            22
+          ],
+          "yawRadians": 3.977259,
+          "scale": 0.93,
+          "windPhase": 15.17
+        },
+        {
+          "sourceId": "tree-west-042",
+          "translation": [
+            10,
+            0.1400319,
+            22
+          ],
+          "yawRadians": 4.687259,
+          "scale": 1.01,
+          "windPhase": 15.54
+        },
+        {
+          "sourceId": "tree-west-043",
+          "translation": [
+            14,
+            0.1408386,
+            22
+          ],
+          "yawRadians": 5.397259,
+          "scale": 1.09,
+          "windPhase": 15.91
+        },
+        {
+          "sourceId": "tree-west-044",
+          "translation": [
+            18,
+            0.104413,
+            22
+          ],
+          "yawRadians": 6.107259,
+          "scale": 0.85,
+          "windPhase": 16.28
+        },
+        {
+          "sourceId": "tree-west-045",
+          "translation": [
+            22,
+            0.0403846,
+            22
+          ],
+          "yawRadians": 0.534073,
+          "scale": 0.93,
+          "windPhase": 16.65
+        },
+        {
+          "sourceId": "tree-west-046",
+          "translation": [
+            26,
+            -0.0343199,
+            22
+          ],
+          "yawRadians": 1.244073,
+          "scale": 1.01,
+          "windPhase": 17.02
+        },
+        {
+          "sourceId": "tree-west-047",
+          "translation": [
+            30,
+            -0.0999516,
+            22
+          ],
+          "yawRadians": 1.954073,
+          "scale": 1.09,
+          "windPhase": 17.39
+        },
+        {
+          "sourceId": "tree-west-048",
+          "translation": [
+            2,
+            0.0157166,
+            26
+          ],
+          "yawRadians": 2.664073,
+          "scale": 0.85,
+          "windPhase": 17.76
+        },
+        {
+          "sourceId": "tree-west-049",
+          "translation": [
+            6,
+            0.0429949,
+            26
+          ],
+          "yawRadians": 3.374073,
+          "scale": 0.93,
+          "windPhase": 18.13
+        },
+        {
+          "sourceId": "tree-west-050",
+          "translation": [
+            10,
+            0.058907,
+            26
+          ],
+          "yawRadians": 4.084073,
+          "scale": 1.01,
+          "windPhase": 18.5
+        },
+        {
+          "sourceId": "tree-west-051",
+          "translation": [
+            14,
+            0.0592464,
+            26
+          ],
+          "yawRadians": 4.794073,
+          "scale": 1.09,
+          "windPhase": 18.87
+        },
+        {
+          "sourceId": "tree-west-052",
+          "translation": [
+            18,
+            0.0439233,
+            26
+          ],
+          "yawRadians": 5.504073,
+          "scale": 0.85,
+          "windPhase": 19.24
+        },
+        {
+          "sourceId": "tree-west-053",
+          "translation": [
+            22,
+            0.0169885,
+            26
+          ],
+          "yawRadians": 6.214073,
+          "scale": 0.93,
+          "windPhase": 19.61
+        },
+        {
+          "sourceId": "tree-west-054",
+          "translation": [
+            26,
+            -0.0144373,
+            26
+          ],
+          "yawRadians": 0.640888,
+          "scale": 1.01,
+          "windPhase": 19.98
+        },
+        {
+          "sourceId": "tree-west-055",
+          "translation": [
+            30,
+            -0.0420465,
+            26
+          ],
+          "yawRadians": 1.350888,
+          "scale": 1.09,
+          "windPhase": 20.35
+        },
+        {
+          "sourceId": "tree-west-056",
+          "translation": [
+            2,
+            -0.0089217,
+            30
+          ],
+          "yawRadians": 2.060888,
+          "scale": 0.85,
+          "windPhase": 20.72
+        },
+        {
+          "sourceId": "tree-west-057",
+          "translation": [
+            6,
+            -0.0244066,
+            30
+          ],
+          "yawRadians": 2.770888,
+          "scale": 0.93,
+          "windPhase": 21.09
+        },
+        {
+          "sourceId": "tree-west-058",
+          "translation": [
+            10,
+            -0.0334394,
+            30
+          ],
+          "yawRadians": 3.480888,
+          "scale": 1.01,
+          "windPhase": 21.46
+        },
+        {
+          "sourceId": "tree-west-059",
+          "translation": [
+            14,
+            -0.033632,
+            30
+          ],
+          "yawRadians": 4.190888,
+          "scale": 1.09,
+          "windPhase": 21.83
+        },
+        {
+          "sourceId": "tree-west-060",
+          "translation": [
+            18,
+            -0.0249336,
+            30
+          ],
+          "yawRadians": 4.900888,
+          "scale": 0.85,
+          "windPhase": 22.2
+        },
+        {
+          "sourceId": "tree-west-061",
+          "translation": [
+            22,
+            -0.0096438,
+            30
+          ],
+          "yawRadians": 5.610888,
+          "scale": 0.93,
+          "windPhase": 22.57
+        },
+        {
+          "sourceId": "tree-west-062",
+          "translation": [
+            26,
+            0.0081955,
+            30
+          ],
+          "yawRadians": 0.037703,
+          "scale": 1.01,
+          "windPhase": 22.94
+        },
+        {
+          "sourceId": "tree-west-063",
+          "translation": [
+            30,
+            0.0238683,
+            30
+          ],
+          "yawRadians": 0.747703,
+          "scale": 1.09,
+          "windPhase": 23.31
+        }
+      ]
+    },
+    {
+      "key": "east",
+      "mesh": {
+        "expectedKind": "mesh",
+        "reference": {
+          "id": "s4-tree-mesh",
+          "guid": "guid-s4-tree-mesh",
+          "type": "mesh"
+        }
+      },
+      "material": {
+        "expectedKind": "material",
+        "reference": {
+          "id": "s4-tree-material",
+          "guid": "guid-s4-tree-material",
+          "type": "material"
+        }
+      },
+      "meshBounds": [
+        [
+          -0.65,
+          0,
+          -0.65
+        ],
+        [
+          0.65,
+          3,
+          0.65
+        ]
+      ],
+      "wind": {
+        "direction": [
+          1,
+          0
+        ],
+        "amplitude": 0.08,
+        "frequencyHz": 0.7
+      },
+      "instances": [
+        {
+          "sourceId": "tree-east-000",
+          "translation": [
+            34,
+            -0.0459729,
+            2
+          ],
+          "yawRadians": 0.0,
+          "scale": 0.85,
+          "windPhase": 0.0
+        },
+        {
+          "sourceId": "tree-east-001",
+          "translation": [
+            38,
+            -0.0467722,
+            2
+          ],
+          "yawRadians": 0.71,
+          "scale": 0.93,
+          "windPhase": 0.37
+        },
+        {
+          "sourceId": "tree-east-002",
+          "translation": [
+            42,
+            -0.0352068,
+            2
+          ],
+          "yawRadians": 1.42,
+          "scale": 1.01,
+          "windPhase": 0.74
+        },
+        {
+          "sourceId": "tree-east-003",
+          "translation": [
+            46,
+            -0.0143341,
+            2
+          ],
+          "yawRadians": 2.13,
+          "scale": 1.09,
+          "windPhase": 1.11
+        },
+        {
+          "sourceId": "tree-east-004",
+          "translation": [
+            50,
+            0.010328,
+            2
+          ],
+          "yawRadians": 2.84,
+          "scale": 0.85,
+          "windPhase": 1.48
+        },
+        {
+          "sourceId": "tree-east-005",
+          "translation": [
+            54,
+            0.0322598,
+            2
+          ],
+          "yawRadians": 3.55,
+          "scale": 0.93,
+          "windPhase": 1.85
+        },
+        {
+          "sourceId": "tree-east-006",
+          "translation": [
+            58,
+            0.0456633,
+            2
+          ],
+          "yawRadians": 4.26,
+          "scale": 1.01,
+          "windPhase": 2.22
+        },
+        {
+          "sourceId": "tree-east-007",
+          "translation": [
+            62,
+            0.0469952,
+            2
+          ],
+          "yawRadians": 4.97,
+          "scale": 1.09,
+          "windPhase": 2.59
+        },
+        {
+          "sourceId": "tree-east-008",
+          "translation": [
+            34,
+            -0.1291609,
+            6
+          ],
+          "yawRadians": 5.68,
+          "scale": 0.85,
+          "windPhase": 2.96
+        },
+        {
+          "sourceId": "tree-east-009",
+          "translation": [
+            38,
+            -0.1314068,
+            6
+          ],
+          "yawRadians": 0.106815,
+          "scale": 0.93,
+          "windPhase": 3.33
+        },
+        {
+          "sourceId": "tree-east-010",
+          "translation": [
+            42,
+            -0.0989137,
+            6
+          ],
+          "yawRadians": 0.816815,
+          "scale": 1.01,
+          "windPhase": 3.7
+        },
+        {
+          "sourceId": "tree-east-011",
+          "translation": [
+            46,
+            -0.0402717,
+            6
+          ],
+          "yawRadians": 1.526815,
+          "scale": 1.09,
+          "windPhase": 4.07
+        },
+        {
+          "sourceId": "tree-east-012",
+          "translation": [
+            50,
+            0.0290166,
+            6
+          ],
+          "yawRadians": 2.236815,
+          "scale": 0.85,
+          "windPhase": 4.44
+        },
+        {
+          "sourceId": "tree-east-013",
+          "translation": [
+            54,
+            0.0906341,
+            6
+          ],
+          "yawRadians": 2.946815,
+          "scale": 0.93,
+          "windPhase": 4.81
+        },
+        {
+          "sourceId": "tree-east-014",
+          "translation": [
+            58,
+            0.1282913,
+            6
+          ],
+          "yawRadians": 3.656815,
+          "scale": 1.01,
+          "windPhase": 5.18
+        },
+        {
+          "sourceId": "tree-east-015",
+          "translation": [
+            62,
+            0.1320333,
+            6
+          ],
+          "yawRadians": 4.366815,
+          "scale": 1.09,
+          "windPhase": 5.55
+        },
+        {
+          "sourceId": "tree-east-016",
+          "translation": [
+            34,
+            -0.1877442,
+            10
+          ],
+          "yawRadians": 5.076815,
+          "scale": 0.85,
+          "windPhase": 5.92
+        },
+        {
+          "sourceId": "tree-east-017",
+          "translation": [
+            38,
+            -0.1910087,
+            10
+          ],
+          "yawRadians": 5.786815,
+          "scale": 0.93,
+          "windPhase": 6.29
+        },
+        {
+          "sourceId": "tree-east-018",
+          "translation": [
+            42,
+            -0.1437779,
+            10
+          ],
+          "yawRadians": 0.213629,
+          "scale": 1.01,
+          "windPhase": 6.66
+        },
+        {
+          "sourceId": "tree-east-019",
+          "translation": [
+            46,
+            -0.0585377,
+            10
+          ],
+          "yawRadians": 0.923629,
+          "scale": 1.09,
+          "windPhase": 7.03
+        },
+        {
+          "sourceId": "tree-east-020",
+          "translation": [
+            50,
+            0.0421776,
+            10
+          ],
+          "yawRadians": 1.633629,
+          "scale": 0.85,
+          "windPhase": 7.4
+        },
+        {
+          "sourceId": "tree-east-021",
+          "translation": [
+            54,
+            0.1317428,
+            10
+          ],
+          "yawRadians": 2.343629,
+          "scale": 0.93,
+          "windPhase": 7.77
+        },
+        {
+          "sourceId": "tree-east-022",
+          "translation": [
+            58,
+            0.1864802,
+            10
+          ],
+          "yawRadians": 3.053629,
+          "scale": 1.01,
+          "windPhase": 8.14
+        },
+        {
+          "sourceId": "tree-east-023",
+          "translation": [
+            62,
+            0.1919195,
+            10
+          ],
+          "yawRadians": 3.763629,
+          "scale": 1.09,
+          "windPhase": 8.51
+        },
+        {
+          "sourceId": "tree-east-024",
+          "translation": [
+            34,
+            -0.2105629,
+            14
+          ],
+          "yawRadians": 4.473629,
+          "scale": 0.85,
+          "windPhase": 8.88
+        },
+        {
+          "sourceId": "tree-east-025",
+          "translation": [
+            38,
+            -0.2142242,
+            14
+          ],
+          "yawRadians": 5.183629,
+          "scale": 0.93,
+          "windPhase": 9.25
+        },
+        {
+          "sourceId": "tree-east-026",
+          "translation": [
+            42,
+            -0.1612528,
+            14
+          ],
+          "yawRadians": 5.893629,
+          "scale": 1.01,
+          "windPhase": 9.62
+        },
+        {
+          "sourceId": "tree-east-027",
+          "translation": [
+            46,
+            -0.0656524,
+            14
+          ],
+          "yawRadians": 0.320444,
+          "scale": 1.09,
+          "windPhase": 9.99
+        },
+        {
+          "sourceId": "tree-east-028",
+          "translation": [
+            50,
+            0.047304,
+            14
+          ],
+          "yawRadians": 1.030444,
+          "scale": 0.85,
+          "windPhase": 10.36
+        },
+        {
+          "sourceId": "tree-east-029",
+          "translation": [
+            54,
+            0.147755,
+            14
+          ],
+          "yawRadians": 1.740444,
+          "scale": 0.93,
+          "windPhase": 10.73
+        },
+        {
+          "sourceId": "tree-east-030",
+          "translation": [
+            58,
+            0.2091453,
+            14
+          ],
+          "yawRadians": 2.450444,
+          "scale": 1.01,
+          "windPhase": 11.1
+        },
+        {
+          "sourceId": "tree-east-031",
+          "translation": [
+            62,
+            0.2152456,
+            14
+          ],
+          "yawRadians": 3.160444,
+          "scale": 1.09,
+          "windPhase": 11.47
+        },
+        {
+          "sourceId": "tree-east-032",
+          "translation": [
+            34,
+            -0.19327,
+            18
+          ],
+          "yawRadians": 3.870444,
+          "scale": 0.85,
+          "windPhase": 11.84
+        },
+        {
+          "sourceId": "tree-east-033",
+          "translation": [
+            38,
+            -0.1966306,
+            18
+          ],
+          "yawRadians": 4.580444,
+          "scale": 0.93,
+          "windPhase": 12.21
+        },
+        {
+          "sourceId": "tree-east-034",
+          "translation": [
+            42,
+            -0.1480097,
+            18
+          ],
+          "yawRadians": 5.290444,
+          "scale": 1.01,
+          "windPhase": 12.58
+        },
+        {
+          "sourceId": "tree-east-035",
+          "translation": [
+            46,
+            -0.0602606,
+            18
+          ],
+          "yawRadians": 6.000444,
+          "scale": 1.09,
+          "windPhase": 12.95
+        },
+        {
+          "sourceId": "tree-east-036",
+          "translation": [
+            50,
+            0.043419,
+            18
+          ],
+          "yawRadians": 0.427259,
+          "scale": 0.85,
+          "windPhase": 13.32
+        },
+        {
+          "sourceId": "tree-east-037",
+          "translation": [
+            54,
+            0.1356204,
+            18
+          ],
+          "yawRadians": 1.137259,
+          "scale": 0.93,
+          "windPhase": 13.69
+        },
+        {
+          "sourceId": "tree-east-038",
+          "translation": [
+            58,
+            0.1919689,
+            18
+          ],
+          "yawRadians": 1.847259,
+          "scale": 1.01,
+          "windPhase": 14.06
+        },
+        {
+          "sourceId": "tree-east-039",
+          "translation": [
+            62,
+            0.1975682,
+            18
+          ],
+          "yawRadians": 2.557259,
+          "scale": 1.09,
+          "windPhase": 14.43
+        },
+        {
+          "sourceId": "tree-east-040",
+          "translation": [
+            34,
+            -0.1391599,
+            22
+          ],
+          "yawRadians": 3.267259,
+          "scale": 0.85,
+          "windPhase": 14.8
+        },
+        {
+          "sourceId": "tree-east-041",
+          "translation": [
+            38,
+            -0.1415796,
+            22
+          ],
+          "yawRadians": 3.977259,
+          "scale": 0.93,
+          "windPhase": 15.17
+        },
+        {
+          "sourceId": "tree-east-042",
+          "translation": [
+            42,
+            -0.1065711,
+            22
+          ],
+          "yawRadians": 4.687259,
+          "scale": 1.01,
+          "windPhase": 15.54
+        },
+        {
+          "sourceId": "tree-east-043",
+          "translation": [
+            46,
+            -0.0433893,
+            22
+          ],
+          "yawRadians": 5.397259,
+          "scale": 1.09,
+          "windPhase": 15.91
+        },
+        {
+          "sourceId": "tree-east-044",
+          "translation": [
+            50,
+            0.0312629,
+            22
+          ],
+          "yawRadians": 6.107259,
+          "scale": 0.85,
+          "windPhase": 16.28
+        },
+        {
+          "sourceId": "tree-east-045",
+          "translation": [
+            54,
+            0.0976505,
+            22
+          ],
+          "yawRadians": 0.534073,
+          "scale": 0.93,
+          "windPhase": 16.65
+        },
+        {
+          "sourceId": "tree-east-046",
+          "translation": [
+            58,
+            0.138223,
+            22
+          ],
+          "yawRadians": 1.244073,
+          "scale": 1.01,
+          "windPhase": 17.02
+        },
+        {
+          "sourceId": "tree-east-047",
+          "translation": [
+            62,
+            0.1422546,
+            22
+          ],
+          "yawRadians": 1.954073,
+          "scale": 1.09,
+          "windPhase": 17.39
+        },
+        {
+          "sourceId": "tree-east-048",
+          "translation": [
+            34,
+            -0.0585402,
+            26
+          ],
+          "yawRadians": 2.664073,
+          "scale": 0.85,
+          "windPhase": 17.76
+        },
+        {
+          "sourceId": "tree-east-049",
+          "translation": [
+            38,
+            -0.0595581,
+            26
+          ],
+          "yawRadians": 3.374073,
+          "scale": 0.93,
+          "windPhase": 18.13
+        },
+        {
+          "sourceId": "tree-east-050",
+          "translation": [
+            42,
+            -0.0448312,
+            26
+          ],
+          "yawRadians": 4.084073,
+          "scale": 1.01,
+          "windPhase": 18.5
+        },
+        {
+          "sourceId": "tree-east-051",
+          "translation": [
+            46,
+            -0.0182525,
+            26
+          ],
+          "yawRadians": 4.794073,
+          "scale": 1.09,
+          "windPhase": 18.87
+        },
+        {
+          "sourceId": "tree-east-052",
+          "translation": [
+            50,
+            0.0131513,
+            26
+          ],
+          "yawRadians": 5.504073,
+          "scale": 0.85,
+          "windPhase": 19.24
+        },
+        {
+          "sourceId": "tree-east-053",
+          "translation": [
+            54,
+            0.0410785,
+            26
+          ],
+          "yawRadians": 6.214073,
+          "scale": 0.93,
+          "windPhase": 19.61
+        },
+        {
+          "sourceId": "tree-east-054",
+          "translation": [
+            58,
+            0.0581461,
+            26
+          ],
+          "yawRadians": 0.640888,
+          "scale": 1.01,
+          "windPhase": 19.98
+        },
+        {
+          "sourceId": "tree-east-055",
+          "translation": [
+            62,
+            0.0598421,
+            26
+          ],
+          "yawRadians": 1.350888,
+          "scale": 1.09,
+          "windPhase": 20.35
+        },
+        {
+          "sourceId": "tree-east-056",
+          "translation": [
+            34,
+            0.0332311,
+            30
+          ],
+          "yawRadians": 2.060888,
+          "scale": 0.85,
+          "windPhase": 20.72
+        },
+        {
+          "sourceId": "tree-east-057",
+          "translation": [
+            38,
+            0.033809,
+            30
+          ],
+          "yawRadians": 2.770888,
+          "scale": 0.93,
+          "windPhase": 21.09
+        },
+        {
+          "sourceId": "tree-east-058",
+          "translation": [
+            42,
+            0.025449,
+            30
+          ],
+          "yawRadians": 3.480888,
+          "scale": 1.01,
+          "windPhase": 21.46
+        },
+        {
+          "sourceId": "tree-east-059",
+          "translation": [
+            46,
+            0.0103613,
+            30
+          ],
+          "yawRadians": 4.190888,
+          "scale": 1.09,
+          "windPhase": 21.83
+        },
+        {
+          "sourceId": "tree-east-060",
+          "translation": [
+            50,
+            -0.0074655,
+            30
+          ],
+          "yawRadians": 4.900888,
+          "scale": 0.85,
+          "windPhase": 22.2
+        },
+        {
+          "sourceId": "tree-east-061",
+          "translation": [
+            54,
+            -0.0233188,
+            30
+          ],
+          "yawRadians": 5.610888,
+          "scale": 0.93,
+          "windPhase": 22.57
+        },
+        {
+          "sourceId": "tree-east-062",
+          "translation": [
+            58,
+            -0.0330074,
+            30
+          ],
+          "yawRadians": 0.037703,
+          "scale": 1.01,
+          "windPhase": 22.94
+        },
+        {
+          "sourceId": "tree-east-063",
+          "translation": [
+            62,
+            -0.0339702,
+            30
+          ],
+          "yawRadians": 0.747703,
+          "scale": 1.09,
+          "windPhase": 23.31
+        }
+      ]
+    }
+  ]
+}

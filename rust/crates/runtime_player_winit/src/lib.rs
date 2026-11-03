@@ -1,28 +1,43 @@
 #[cfg(feature = "real-window")]
+mod geometry_loading;
+pub mod measurement;
+mod project_storage;
+pub use project_storage::NativePlayerProjectStorage;
+#[cfg(any(test, feature = "real-window"))]
+mod memory_observation;
+#[cfg(feature = "real-window")]
 use engine_input::RawInputValue;
 use engine_input::{
     ActionSnapshot, InputDeviceState, InputDeviceStateReport, InputMappingAsset, InputResolver,
     InputTraceSummary, RawInputEvent,
 };
 use engine_runtime::aui::{
-    AuiInteractionConfig, AuiInteractionProductizationReport, AuiInteractionResult,
-    AuiInteractionState, AuiInteractionSystem, AuiLayoutEngine,
+    AuiImePlatformRequest, AuiInteractionConfig, AuiInteractionProductizationReport,
+    AuiInteractionResult, AuiInteractionState, AuiInteractionSystem, AuiLayoutEngine,
     AuiRuntimeNavigationScreenFlowTextEntryProductizationReport, AuiRuntimePresentOutput,
-    AuiRuntimePresentStatus, AuiRuntimePresenter, AuiSnapshotSource, ProjectUiStateReportMode,
-    ProjectUiStateSnapshotCache, ProjectUiStateSnapshotCacheResult, ProjectUiStateSnapshotProducer,
+    AuiRuntimePresentStatus, AuiRuntimePresenter, AuiSnapshotSource,
+    ProjectUiStateSnapshotProducer,
 };
 use engine_runtime::aui_control_feedback::{
     presentation_delta_us_from_seconds, AuiControlFeedbackState,
 };
+use engine_runtime::aui_present_cache::{
+    AuiPresentCache as NativeAuiPresentCache, AuiPresentContext as NativeAuiPresentContext,
+};
+use engine_runtime::aui_viewport::AuiViewportInput;
+#[cfg(feature = "real-window")]
+use engine_runtime::aui_viewport::AuiViewportResolver;
 use engine_runtime::diagnostics::{DiagnosticSeverity, RuntimeDiagnostic};
 use engine_runtime::engine_host_loop::{EngineFrameInput, EngineHostLoop, EngineHostMode};
 use engine_runtime::frame_loop::RuntimeFrameContext;
 #[cfg(feature = "real-window")]
 use engine_runtime::game_view_presentation::{
-    CanvasReferenceFact, GameViewExtent, GameViewPoint, GameViewPresentationModule,
-    GameViewPresentationSpec, GameViewRect,
+    CanvasReferenceFact, GameViewExtent, GameViewPresentationModule, GameViewPresentationSpec,
+    GameViewRect,
 };
-use engine_runtime::game_view_presentation::{GameViewTargetSpec, ResolvedGameViewPresentation};
+use engine_runtime::game_view_presentation::{
+    GameViewPoint, GameViewTargetSpec, ResolvedGameViewPresentation,
+};
 use engine_runtime::project_runtime_module::{
     BoundProjectRuntimeParts, LinkedProjectRuntimeSet, ProjectRuntimeBindReceipt,
     ProjectRuntimeBootstrap, ProjectRuntimeError,
@@ -48,11 +63,11 @@ use std::fs;
 use std::path::PathBuf;
 use std::time::Instant;
 
+#[cfg(all(any(windows, target_os = "android"), feature = "real-window"))]
+mod device_audio;
 pub mod engine_dll_execution;
 pub mod semantic_outcome;
 mod semantic_playtest;
-#[cfg(all(windows, feature = "real-window"))]
-mod windows_audio;
 pub use semantic_playtest::{
     PlaytestAssertionResult, PlaytestCaptureEvidence, SemanticPlaytestReport,
 };
@@ -67,6 +82,80 @@ fn frame_deadline(frame_started: Instant, frame_finished: Instant) -> Instant {
     // Rendering (including any present wait) consumes this frame's budget.
     // An overrun is ready immediately, without accumulating catch-up frames.
     (frame_started + REAL_WINDOW_FRAME_INTERVAL).max(frame_finished)
+}
+
+#[cfg(any(test, feature = "real-window"))]
+fn presentation_deadline(scheduled: Instant, finished: Instant, fps: u32) -> Instant {
+    if fps == 0 {
+        return finished;
+    }
+    (scheduled + std::time::Duration::from_secs_f64(1. / f64::from(fps))).max(finished)
+}
+
+#[cfg(any(test, feature = "real-window"))]
+fn next_redraw_deadline(
+    scheduled: Instant,
+    started: Instant,
+    finished: Instant,
+    fps: u32,
+    spatial: bool,
+) -> Instant {
+    if fps == 60 && !spatial {
+        frame_deadline(started, finished)
+    } else {
+        presentation_deadline(scheduled, finished, fps)
+    }
+}
+
+fn default_target_fps() -> u32 {
+    60
+}
+
+#[cfg(any(test, feature = "real-window"))]
+#[derive(Default)]
+struct PresentationFixedClock {
+    remainder: u128,
+}
+#[cfg(any(test, feature = "real-window"))]
+impl PresentationFixedClock {
+    fn advance(&mut self, elapsed: std::time::Duration) -> usize {
+        self.remainder += elapsed
+            .min(std::time::Duration::from_millis(250))
+            .as_nanos()
+            * 60;
+        let ticks = self.remainder / 1_000_000_000;
+        self.remainder %= 1_000_000_000;
+        ticks as usize
+    }
+}
+
+#[cfg(any(test, feature = "real-window"))]
+#[derive(Default)]
+struct FixedActionLatch {
+    pressed: std::collections::BTreeMap<String, engine_input::InputActionState>,
+}
+#[cfg(any(test, feature = "real-window"))]
+impl FixedActionLatch {
+    fn resolve(&mut self, mut snapshot: ActionSnapshot, consume: bool) -> ActionSnapshot {
+        for action in &snapshot.actions {
+            if matches!(
+                action.value,
+                engine_input::ActionValue::Button {
+                    phase: engine_input::ActionPhase::Pressed
+                }
+            ) {
+                self.pressed
+                    .insert(action.action_id.clone(), action.clone());
+            }
+        }
+        if consume {
+            for (id, action) in std::mem::take(&mut self.pressed) {
+                snapshot.actions.retain(|current| current.action_id != id);
+                snapshot.actions.push(action);
+            }
+        }
+        snapshot
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -100,6 +189,70 @@ pub fn primary_touch_raw_event(
         NativePrimaryTouchPhase::Cancelled => {
             RawInputEvent::touch_cancel(frame_id, window_id, touch_id, x, y)
         }
+    }
+}
+
+#[cfg(any(test, feature = "real-window"))]
+fn native_mouse_leave_raw_event(
+    frame_id: u64,
+    window_id: impl Into<String>,
+    last_cursor_position: Option<(f32, f32)>,
+) -> RawInputEvent {
+    let (x, y) = last_cursor_position.unwrap_or((0.0, 0.0));
+    RawInputEvent::mouse_leave(frame_id, window_id, x, y)
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq)]
+pub struct NativeImeCursorArea {
+    pub x: f64,
+    pub y: f64,
+    pub width: f64,
+    pub height: f64,
+}
+
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct NativeImePlatformRequest {
+    pub enabled: bool,
+    pub node_id: Option<String>,
+    pub cursor_area: Option<NativeImeCursorArea>,
+}
+
+pub fn native_ime_platform_request(
+    request: &AuiImePlatformRequest,
+    presentation: &ResolvedGameViewPresentation,
+) -> NativeImePlatformRequest {
+    let (Some(canvas_id), Some(rect)) = (request.canvas_id.as_deref(), request.cursor_rect) else {
+        return NativeImePlatformRequest::default();
+    };
+    if !request.enabled {
+        return NativeImePlatformRequest::default();
+    }
+    let Ok(top_left_target) =
+        presentation.reference_to_target(canvas_id, GameViewPoint::new(rect.x, rect.y))
+    else {
+        return NativeImePlatformRequest::default();
+    };
+    let Ok(bottom_right_target) = presentation.reference_to_target(
+        canvas_id,
+        GameViewPoint::new(rect.x + rect.width, rect.y + rect.height),
+    ) else {
+        return NativeImePlatformRequest::default();
+    };
+    let Ok(top_left) = presentation.target_to_display(top_left_target) else {
+        return NativeImePlatformRequest::default();
+    };
+    let Ok(bottom_right) = presentation.target_to_display(bottom_right_target) else {
+        return NativeImePlatformRequest::default();
+    };
+    NativeImePlatformRequest {
+        enabled: true,
+        node_id: request.node_id.clone(),
+        cursor_area: Some(NativeImeCursorArea {
+            x: f64::from(top_left.x),
+            y: f64::from(top_left.y),
+            width: f64::from((bottom_right.x - top_left.x).max(1.0)),
+            height: f64::from((bottom_right.y - top_left.y).max(1.0)),
+        }),
     }
 }
 
@@ -173,6 +326,8 @@ pub struct NativePlayerWindowConfig {
     pub resizable: bool,
     pub surface_format: String,
     pub present_mode: String,
+    #[serde(default = "default_target_fps")]
+    pub target_fps: u32,
 }
 
 impl Default for NativePlayerWindowConfig {
@@ -186,6 +341,7 @@ impl Default for NativePlayerWindowConfig {
             resizable: true,
             surface_format: "Bgra8UnormSrgb".to_string(),
             present_mode: "Fifo".to_string(),
+            target_fps: 60,
         }
     }
 }
@@ -203,9 +359,41 @@ pub enum NativePlayerWindowRunMode {
     Windowed,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum NativeAuiPerformanceLoad {
+    ThemeDpi,
+    VirtualListLifecycle,
+    Dpi100,
+    Dpi150,
+    Dpi200,
+}
+
+impl NativeAuiPerformanceLoad {
+    /// Explicit qualification input; does not modify the OS/window scale setting.
+    fn fixed_dpi_scale(self) -> Option<f64> {
+        match self {
+            Self::Dpi100 => Some(1.0),
+            Self::Dpi150 => Some(1.5),
+            Self::Dpi200 => Some(2.0),
+            _ => None,
+        }
+    }
+}
+
+#[cfg(any(test, feature = "real-window"))]
+fn gpu_performance_sample_frames(cpu_samples: u64) -> u64 {
+    cpu_samples
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NativePlayerWindowRunRequest {
+    /// Trusted launcher override. Identity always comes from the verified package project ID.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub project_storage: Option<NativePlayerProjectStorage>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub measurement: Option<measurement::MeasurementPolicy>,
     pub runtime_package_path: PathBuf,
     pub frame_limit: u64,
     pub mode: NativePlayerWindowRunMode,
@@ -216,11 +404,70 @@ pub struct NativePlayerWindowRunRequest {
     pub runtime_report_level: WindowedPlayerRuntimeReportLevel,
     pub performance_warmup_frames: u64,
     pub performance_sample_frames: u64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub aui_performance_load: Option<NativeAuiPerformanceLoad>,
 }
 
 impl NativePlayerWindowRunRequest {
+    pub fn measurement_policy(&self) -> measurement::MeasurementPolicy {
+        self.measurement.unwrap_or(measurement::MeasurementPolicy {
+            level: if self.performance_sample_frames == 0 {
+                measurement::MeasurementLevel::Off
+            } else {
+                measurement::MeasurementLevel::Trace
+            },
+            first_frame: None,
+            end_frame: None,
+            native_events: self.performance_sample_frames > 0,
+            allocation_frame: None,
+            allocation_end_frame: None,
+            allocation_summary: false,
+            cpu_probe: false,
+        })
+    }
+
+    pub fn validate_measurement(&self) -> Result<(), &'static str> {
+        let policy = self.measurement_policy();
+        policy.validate()?;
+        if policy.allocation_summary
+            && (self.mode != NativePlayerWindowRunMode::Windowed
+                || self.performance_sample_frames == 0)
+        {
+            return Err("measurement_allocation_summary_requires_sampled_window");
+        }
+        for frame in policy.allocation_frames() {
+            if self.mode != NativePlayerWindowRunMode::Windowed
+                || frame <= self.performance_warmup_frames
+                || frame
+                    > self
+                        .performance_warmup_frames
+                        .saturating_add(self.performance_sample_frames)
+                || frame > self.frame_limit
+            {
+                return Err("measurement_allocation_frame_requires_sampled_window");
+            }
+        }
+        Ok(())
+    }
+
+    pub fn measurement_enabled(&self) -> bool {
+        self.performance_sample_frames > 0 && self.measurement_policy().enabled()
+    }
+
+    pub fn cpu_sampling_enabled(&self) -> bool {
+        self.performance_sample_frames > 0
+            && (self.measurement_policy().enabled() || self.measurement_policy().cpu_probe)
+    }
+
+    pub fn with_measurement_policy(mut self, policy: measurement::MeasurementPolicy) -> Self {
+        self.measurement = Some(policy);
+        self
+    }
+
     pub fn headless_surface_gate(runtime_package_path: impl Into<PathBuf>) -> Self {
         Self {
+            project_storage: None,
+            measurement: None,
             runtime_package_path: runtime_package_path.into(),
             frame_limit: 1,
             mode: NativePlayerWindowRunMode::HeadlessSurfaceGate,
@@ -231,11 +478,14 @@ impl NativePlayerWindowRunRequest {
             runtime_report_level: WindowedPlayerRuntimeReportLevel::Off,
             performance_warmup_frames: 0,
             performance_sample_frames: 0,
+            aui_performance_load: None,
         }
     }
 
     pub fn windowed(runtime_package_path: impl Into<PathBuf>) -> Self {
         Self {
+            project_storage: None,
+            measurement: None,
             runtime_package_path: runtime_package_path.into(),
             frame_limit: 1,
             mode: NativePlayerWindowRunMode::Windowed,
@@ -246,6 +496,7 @@ impl NativePlayerWindowRunRequest {
             runtime_report_level: WindowedPlayerRuntimeReportLevel::Off,
             performance_warmup_frames: 0,
             performance_sample_frames: 0,
+            aui_performance_load: None,
         }
     }
 
@@ -281,19 +532,50 @@ impl NativePlayerWindowRunRequest {
     }
 }
 
+fn cpu_frame_history<T>(request: &NativePlayerWindowRunRequest) -> Vec<T> {
+    // Request validation bounds enabled histories before any session is made.
+    // Reserve before warmup so Vec growth is not measured as Player retention.
+    let frames = if request.cpu_sampling_enabled() {
+        request.frame_limit.min(measurement::MAX_CAPTURE_FRAMES)
+    } else {
+        0
+    };
+    Vec::with_capacity(frames as usize)
+}
+
+fn record_cpu_frame_sample<T>(enabled: bool, samples: &mut Vec<T>, sample: impl FnOnce() -> T) {
+    if enabled {
+        samples.push(sample());
+    }
+}
+
 #[cfg(any(test, feature = "real-window"))]
 fn windowed_session_has_more_frames(frames_completed: u64, frame_limit: u64) -> bool {
     frames_completed < frame_limit
 }
 
+#[cfg(any(test, feature = "real-window"))]
+fn uses_presentation_elapsed(target_fps: u32, spatial: bool, semantic: bool) -> bool {
+    (target_fps != 60 || spatial) && !semantic
+}
+
 pub const NATIVE_PLAYER_INPUT_SCRIPT_SCHEMA_VERSION: &str = "native-player-input-script.v1";
+pub const NATIVE_PLAYER_INPUT_SCRIPT_V2_SCHEMA_VERSION: &str = "native-player-input-script.v2";
+pub mod replay_input;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct NativePlayerInputScript {
     pub schema_version: String,
     pub script_id: String,
+    #[serde(deserialize_with = "deserialize_script_frames")]
     pub frames: Vec<NativePlayerInputScriptFrame>,
+}
+
+fn deserialize_script_frames<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> Result<Vec<NativePlayerInputScriptFrame>, D::Error> {
+    replay_input::deserialize_points(deserializer, "frames")
 }
 
 impl NativePlayerInputScript {
@@ -306,7 +588,9 @@ impl NativePlayerInputScript {
     }
 
     pub fn validate(&self) -> Result<(), String> {
-        if self.schema_version != NATIVE_PLAYER_INPUT_SCRIPT_SCHEMA_VERSION {
+        if self.schema_version != NATIVE_PLAYER_INPUT_SCRIPT_SCHEMA_VERSION
+            && self.schema_version != NATIVE_PLAYER_INPUT_SCRIPT_V2_SCHEMA_VERSION
+        {
             return Err(format!(
                 "unsupported input script schema: {}",
                 self.schema_version
@@ -325,6 +609,42 @@ impl NativePlayerInputScript {
         if self.frames.iter().any(|frame| frame.frame_index == 0) {
             return Err("input script frame indexes are one-based".to_string());
         }
+        let ordered = self.schema_version == NATIVE_PLAYER_INPUT_SCRIPT_V2_SCHEMA_VERSION;
+        let mut state = replay_input::ReplayInputState::default();
+        if ordered && self.frames.len() > semantic_outcome::MAX_PLAYTEST_INPUTS {
+            return Err("native-player-input-script.v2: /frames exceeds 4096 input points".into());
+        }
+        for (i, frame) in self.frames.iter().enumerate() {
+            if ordered {
+                if frame.frame_index > semantic_outcome::MAX_PLAYTEST_FRAMES {
+                    return Err(format!(
+                        "/frames/{i}/frameIndex exceeds {}",
+                        semantic_outcome::MAX_PLAYTEST_FRAMES
+                    ));
+                }
+                if !frame.key_down.is_empty()
+                    || !frame.key_up.is_empty()
+                    || frame.pointer_position.is_some()
+                {
+                    return Err(format!("/frames/{i}: v2 cannot contain legacy fields"));
+                }
+                let events = frame.events.as_ref().ok_or_else(|| {
+                    format!("/frames/{i}/events: native-player-input-script.v2 requires events")
+                })?;
+                state
+                    .validate(events, &format!("/frames/{i}/events"))
+                    .map_err(|(path, message)| {
+                        format!("native-player-input-script.v2: {path}: {message}")
+                    })?;
+            } else if frame.events.is_some() {
+                return Err(format!(
+                    "/frames/{i}/events: native-player-input-script.v1 does not accept events"
+                ));
+            }
+        }
+        if !state.released() {
+            return Err("native-player-input-script.v2: /frames: release all keys and mouse buttons before the timeline ends".into());
+        }
         Ok(())
     }
 }
@@ -336,10 +656,12 @@ pub struct NativePlayerInputScriptFrame {
     /// Target-canvas pixels; replay enters after the display/DPI coordinate mapping.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub pointer_position: Option<[i32; 2]>,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub key_down: Vec<String>,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub key_up: Vec<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub events: Option<Vec<replay_input::ReplayInputEvent>>,
 }
 
 impl NativePlayerInputScriptFrame {
@@ -351,6 +673,7 @@ impl NativePlayerInputScriptFrame {
         Self {
             frame_index,
             pointer_position: None,
+            events: None,
             key_down: key_down.into_iter().map(Into::into).collect(),
             key_up: key_up.into_iter().map(Into::into).collect(),
         }
@@ -518,6 +841,10 @@ impl NativeWindowScreenshotStatus {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NativeWindowScreenshotReport {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub frame_identity: Option<std::sync::Arc<engine_runtime::render_thread::RenderFrameIdentity>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub submission: Option<engine_runtime::render_thread::GpuSubmissionToken>,
     pub requested: bool,
     pub status: NativeWindowScreenshotStatus,
     pub path: Option<String>,
@@ -533,6 +860,8 @@ impl NativeWindowScreenshotReport {
         config: &NativePlayerWindowConfig,
     ) -> Self {
         Self {
+            frame_identity: None,
+            submission: None,
             requested: request.enabled,
             status: if request.enabled {
                 NativeWindowScreenshotStatus::Unsupported
@@ -673,9 +1002,28 @@ impl NativeInputSummary {
     }
 }
 
+/// Explicit loading presentations are not game frames or performance samples.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NativeGeometryLoadingSummary {
+    pub presented_frames: u64,
+    pub wait_wall_ns: u64,
+    pub uploaded_bytes: u64,
+    pub max_frame_uploaded_bytes: u64,
+    pub peak_staging_bytes: u64,
+    pub peak_in_flight: usize,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NativeWindowHostReport {
+    /// Absent in historical reports; absence must not relabel an old Trace as Off.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub measurement_policy: Option<measurement::MeasurementPolicy>,
+    #[serde(default)]
+    pub session_exit_requested: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub geometry_loading: Option<NativeGeometryLoadingSummary>,
     pub schema_version: String,
     pub run_id: String,
     pub mode: NativePlayerWindowRunMode,
@@ -700,6 +1048,8 @@ pub struct NativeWindowHostReport {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub frame_performance_summary: Option<WindowedPlayerFramePerformanceSummary>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub resource_memory_summary: Option<engine_runtime::resource_memory::ResourceMemoryRunSummary>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub gameplay_trace_summary: Option<WindowedPlayerGameplayTraceSummary>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub gameplay_trace_records: Vec<WindowedPlayerGameplayTraceRecord>,
@@ -707,10 +1057,17 @@ pub struct NativeWindowHostReport {
     pub project_runtime_bind_receipt: Option<ProjectRuntimeBindReceipt>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub project_runtime_session_report: Option<ProjectRuntimeSessionFrameReport>,
+    /// Existing project observation owner frozen once at Trace shutdown. Values
+    /// retain their original runtime frame/contract; absence is not a zero reading.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub final_project_observation:
+        Option<engine_runtime::project_observation::ProjectRuntimeObservationState>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub semantic_playtest: Option<SemanticPlaytestReport>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub audio: Option<engine_runtime::runtime_audio::RuntimeAudioReport>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub spine: Option<engine_runtime::spine_animation::session::SpineObservation>,
     pub render_thread_report_schema: Option<String>,
     pub rhi_command_count: usize,
     pub exit_code: i32,
@@ -720,6 +1077,9 @@ pub struct NativeWindowHostReport {
 impl NativeWindowHostReport {
     pub fn base(request: &NativePlayerWindowRunRequest) -> Self {
         Self {
+            session_exit_requested: false,
+            geometry_loading: None,
+            measurement_policy: Some(request.measurement_policy()),
             schema_version: NATIVE_WINDOW_HOST_REPORT_SCHEMA_VERSION.to_string(),
             run_id: "native-player-window-host".to_string(),
             mode: request.mode,
@@ -745,7 +1105,9 @@ impl NativeWindowHostReport {
             input: NativeInputSummary::empty(),
             aui: NativeAuiPresentSummary::empty(),
             frame_performance_summary: None,
+            resource_memory_summary: None,
             audio: None,
+            spine: None,
             gameplay_trace_summary: (request.runtime_report_level
                 != WindowedPlayerRuntimeReportLevel::Off)
                 .then(|| WindowedPlayerGameplayTraceSummary {
@@ -759,6 +1121,7 @@ impl NativeWindowHostReport {
             gameplay_trace_records: Vec::new(),
             project_runtime_bind_receipt: None,
             project_runtime_session_report: None,
+            final_project_observation: None,
             semantic_playtest: None,
             render_thread_report_schema: None,
             rhi_command_count: 0,
@@ -770,9 +1133,52 @@ impl NativeWindowHostReport {
     pub fn has_errors(&self) -> bool {
         self.logic_status == "error"
             || self
+                .project_runtime_session_report
+                .as_ref()
+                .is_some_and(|session| session.terminal_fault)
+            || self
                 .diagnostics
                 .iter()
                 .any(|diagnostic| diagnostic.severity == NativeWindowHostDiagnosticSeverity::Error)
+    }
+
+    fn record_project_runtime_session(
+        &mut self,
+        session: Option<ProjectRuntimeSessionFrameReport>,
+    ) {
+        if let Some(fault) = session.as_ref().filter(|session| session.terminal_fault) {
+            self.logic_status = "error".into();
+            for stage in &fault.stages {
+                for code in &stage.diagnostics {
+                    if !self
+                        .diagnostics
+                        .iter()
+                        .any(|item| item.code == *code && item.layer == "project_runtime_session")
+                    {
+                        self.diagnostics.push(NativeWindowHostDiagnostic::error(
+                            code,
+                            "project_runtime_session",
+                            format!(
+                                "Project session {} failed at {:?} in frame {}.",
+                                fault.session_id, stage.stage, fault.frame_index
+                            ),
+                        ));
+                    }
+                }
+            }
+            if !self
+                .diagnostics
+                .iter()
+                .any(|item| item.layer == "project_runtime_session")
+            {
+                self.diagnostics.push(NativeWindowHostDiagnostic::error(
+                    "project_runtime.session_faulted",
+                    "project_runtime_session",
+                    "Project session reached a terminal fault.",
+                ));
+            }
+        }
+        self.project_runtime_session_report = session;
     }
 
     fn mark_runtime_advanced(&mut self) {
@@ -782,7 +1188,11 @@ impl NativeWindowHostReport {
     }
 
     fn completion_exit_code(&self) -> i32 {
-        i32::from(self.has_errors() || self.present_status != NativeWindowPresentStatus::Presented)
+        i32::from(
+            self.has_errors()
+                || (!self.session_exit_requested
+                    && self.present_status != NativeWindowPresentStatus::Presented),
+        )
     }
 }
 
@@ -1155,11 +1565,21 @@ fn resolve_native_input_frame_with_aui(
             )
         };
         filtered_frame = runtime_frame.filter_consumed_events(&result.consumed_event_indices);
-        let layout_after_interaction = AuiLayoutEngine::layout_with_interaction_state(
-            &aui_present.resolved_document,
-            frame_id,
-            aui_state,
-        );
+        // C2 geometry (including retained translation) belongs to the presenter. A legacy
+        // layout pass here both discards that geometry and adds an unnecessary full traversal.
+        let legacy_layout = (aui_present.resolved_document.schema_version
+            != engine_runtime::aui_layout_schema::AUI_LAYOUT_SCHEMA_VERSION)
+            .then(|| {
+                AuiLayoutEngine::layout_with_interaction_state(
+                    &aui_present.resolved_document,
+                    frame_id,
+                    aui_state,
+                )
+            });
+        let layout_report = legacy_layout
+            .as_ref()
+            .map(|layout| &layout.report)
+            .unwrap_or(&aui_present.layout.report);
         let report = AuiInteractionProductizationReport::from_result(
             &aui_present.resolved_document,
             runtime_frame.events.len(),
@@ -1169,7 +1589,7 @@ fn resolve_native_input_frame_with_aui(
             aui_state.active_drag_source().map(ToOwned::to_owned),
         )
         .with_focus_state(&aui_state.focus)
-        .with_layout_report(&layout_after_interaction.report);
+        .with_layout_report(layout_report);
         let navigation_screenflow_textentry_report =
             AuiRuntimeNavigationScreenFlowTextEntryProductizationReport::from_result(
                 &aui_present.resolved_document,
@@ -1218,6 +1638,37 @@ fn hydrate_active_scene_for_player(
 ) -> Option<(World, RuntimeSceneHydrator)> {
     let mut world = World::new();
     let mut hydrator = RuntimeSceneHydrator::from_package(package);
+    #[cfg(target_os = "windows")]
+    if package.active_scene.entities.iter().any(|entity| {
+        matches!(
+            entity.spatial,
+            Some(engine_runtime::spatial_contract::RuntimeSpatial::World3D { .. })
+        )
+    }) {
+        // The desktop 3D profile is selected before hydration creates consumer
+        // leases. Existing full terrain meshes have ~42MiB JSON source and
+        // <32MiB typed backing. Keep decode, aggregate in-flight and GPU upload
+        // caps; admit these files through the bounded geometry decoder.
+        let budget = engine_runtime::runtime_asset_loader::StreamingBudget {
+            max_handles: 65_536,
+            max_operations: 256,
+            max_asset_bytes: 64 * 1024 * 1024,
+            max_cpu_resident_bytes: 2 * 1024 * 1024 * 1024,
+            ..Default::default()
+        };
+        if let Err(error) = hydrator
+            .instance_loader_mut()
+            .asset_loader_mut()
+            .set_streaming_budget(budget)
+        {
+            report.diagnostics.push(NativeWindowHostDiagnostic::error(
+                "resource_profile_rejected",
+                "scene",
+                format!("Windows 3D resource profile rejected: {error:?}"),
+            ));
+            return None;
+        }
+    }
     let hydration = hydrator.hydrate_active_scene(package, &mut world);
     for diagnostic in &hydration.instantiate_report.diagnostics {
         let severity = match diagnostic.severity {
@@ -1243,6 +1694,48 @@ fn hydrate_active_scene_for_player(
         return None;
     }
     Some((world, hydrator))
+}
+
+#[cfg(any(test, feature = "real-window"))]
+fn defer_unready_geometry(
+    error: Option<engine_runtime::render_contract::ContractError>,
+    started: &mut Option<Instant>,
+    now: Instant,
+) -> Result<bool, &'static str> {
+    if error.is_some_and(|e| {
+        e.code == engine_runtime::render_contract::ContractErrorCode::ResourceNotReady
+    }) {
+        let first = started.get_or_insert(now);
+        if now.saturating_duration_since(*first) >= std::time::Duration::from_secs(120) {
+            return Err("three_d.resource_timeout");
+        }
+        Ok(true)
+    } else {
+        *started = None;
+        Ok(false)
+    }
+}
+
+#[cfg(all(target_os = "windows", feature = "real-window"))]
+fn windows_3d_geometry_upload_budget(
+    package: &RuntimePackage,
+) -> Option<engine_runtime::wgpu_backend::real::GeometryUploadBudget> {
+    package
+        .active_scene
+        .entities
+        .iter()
+        .any(|e| {
+            matches!(
+                e.spatial,
+                Some(engine_runtime::spatial_contract::RuntimeSpatial::World3D { .. })
+            )
+        })
+        .then_some(engine_runtime::wgpu_backend::real::GeometryUploadBudget {
+            resident_bytes: 4 * 1024 * 1024 * 1024,
+            staging_bytes: 128 * 1024 * 1024,
+            bytes_per_frame: 16 * 1024 * 1024,
+            max_tickets: 256,
+        })
 }
 
 fn push_project_runtime_error(report: &mut NativeWindowHostReport, error: ProjectRuntimeError) {
@@ -1285,10 +1778,38 @@ fn validate_run_evidence_request(
         ));
         return false;
     }
+    if let Err(code) = request.validate_measurement() {
+        report.diagnostics.push(NativeWindowHostDiagnostic::error(
+            code,
+            "request",
+            "invalid measurement policy",
+        ));
+        return false;
+    }
+    if request
+        .measurement
+        .is_some_and(|p| p.enabled() || p.cpu_probe)
+        && request.performance_sample_frames == 0
+    {
+        report.diagnostics.push(NativeWindowHostDiagnostic::error(
+            "measurement_requires_samples",
+            "request",
+            "enabled measurement requires a nonzero sample count",
+        ));
+        return false;
+    }
+    if request.cpu_sampling_enabled() && request.frame_limit > measurement::MAX_CAPTURE_FRAMES {
+        report.diagnostics.push(NativeWindowHostDiagnostic::error(
+            "measurement_frame_limit_exceeded",
+            "request",
+            "measurement histories are limited to 262144 frames per request",
+        ));
+        return false;
+    }
     let required_frames = request
         .performance_warmup_frames
         .saturating_add(request.performance_sample_frames);
-    if request.performance_sample_frames > 0 && request.frame_limit < required_frames {
+    if request.cpu_sampling_enabled() && request.frame_limit < required_frames {
         report.diagnostics.push(NativeWindowHostDiagnostic::error(
             "insufficient_performance_frames",
             "request",
@@ -1296,6 +1817,22 @@ fn validate_run_evidence_request(
                 "frame_limit {} is smaller than warm-up + sample frames {}",
                 request.frame_limit, required_frames
             ),
+        ));
+        return false;
+    }
+    if request.aui_performance_load.is_some()
+        && (request.mode != NativePlayerWindowRunMode::Windowed
+            || !request.measurement_enabled()
+            || (request
+                .aui_performance_load
+                .and_then(NativeAuiPerformanceLoad::fixed_dpi_scale)
+                .is_none()
+                && request.runtime_report_level != WindowedPlayerRuntimeReportLevel::Trace))
+    {
+        report.diagnostics.push(NativeWindowHostDiagnostic::error(
+            "invalid_aui_performance_load",
+            "request",
+            "AUI performance load requires windowed mode and a non-zero performance sample; mutation loads also require Trace reporting.",
         ));
         return false;
     }
@@ -1316,29 +1853,20 @@ fn scripted_input_events(
     else {
         return Vec::new();
     };
-    frame
-        .key_down
+    let events = frame.events.clone().unwrap_or_else(|| {
+        replay_input::legacy_events(&frame.key_down, &frame.key_up, frame.pointer_position)
+    });
+    events
         .iter()
-        .map(|key| RawInputEvent::keyboard_down(frame_index, request.config.window_id.clone(), key))
-        .chain(frame.key_up.iter().map(|key| {
-            RawInputEvent::keyboard_up(frame_index, request.config.window_id.clone(), key)
-        }))
-        .chain(frame.pointer_position.map(|[x, y]| {
-            RawInputEvent::mouse_move(
-                frame_index,
-                request.config.window_id.clone(),
-                x as f32,
-                y as f32,
-            )
-        }))
+        .map(|event| event.raw(frame_index, &request.config.window_id))
         .collect()
 }
 
 fn configure_runtime_audio(host: &mut EngineHostLoop, request: &NativePlayerWindowRunRequest) {
     let trace = request.runtime_report_level == WindowedPlayerRuntimeReportLevel::Trace;
-    #[cfg(all(windows, feature = "real-window"))]
+    #[cfg(all(any(windows, target_os = "android"), feature = "real-window"))]
     if request.mode == NativePlayerWindowRunMode::Windowed {
-        host.set_audio_output(Box::<windows_audio::WindowsAudioOutput>::default(), trace);
+        host.set_audio_output(Box::<device_audio::DeviceAudioOutput>::default(), trace);
         return;
     }
     host.set_audio_output(
@@ -1352,6 +1880,17 @@ fn record_runtime_audio(
     host: &EngineHostLoop,
     level: WindowedPlayerRuntimeReportLevel,
 ) {
+    report.spine = host.observe_spine(match level {
+        WindowedPlayerRuntimeReportLevel::Off => {
+            engine_runtime::render_contract::DiagnosticLevel::Off
+        }
+        WindowedPlayerRuntimeReportLevel::Summary => {
+            engine_runtime::render_contract::DiagnosticLevel::Summary
+        }
+        WindowedPlayerRuntimeReportLevel::Trace => {
+            engine_runtime::render_contract::DiagnosticLevel::Trace
+        }
+    });
     let audio = host.audio_report();
     for diagnostic in &audio.diagnostics {
         if !report
@@ -1453,6 +1992,322 @@ fn bounded_failure_text(value: &str, limit: usize) -> String {
     format!("{}...", &value[..end])
 }
 
+#[derive(Clone, Default)]
+struct AuiFrameWorkCounters {
+    #[cfg(any(test, feature = "real-window"))]
+    tick_pair: Option<[u64; 2]>,
+    spine: Option<engine_runtime::spine_animation::measurement::SpineCpuFrameSample>,
+    cell_receipts: Vec<engine_runtime::windowed_player::WindowedPlayerCellReceipt>,
+    spatial_gpu: Option<engine_runtime::windowed_player::WindowedPlayerSpatialGpuSample>,
+    frame_identity: Option<std::sync::Arc<engine_runtime::render_thread::RenderFrameIdentity>>,
+    process_memory: Option<engine_runtime::windowed_player::WindowedPlayerProcessMemorySample>,
+    resource_memory: Option<engine_runtime::resource_memory::ResourceMemorySample>,
+    sampling_wall_ns: Option<u64>,
+    streaming_resources:
+        Option<engine_runtime::windowed_player::WindowedPlayerStreamingResourceSample>,
+    graphics_tessellation_builds: u64,
+    graphics_cache_hits: u64,
+    graphics_cache_resident_bytes: u64,
+    input_dispatch_ime_ns: u64,
+    work: engine_runtime::aui::AuiUpdateWork,
+    frame_index: u64,
+    timings: engine_runtime::aui::AuiUpdateTimings,
+    drawing: engine_runtime::aui::AuiDrawingStats,
+    feedback_drawing: engine_runtime::aui::AuiDrawingStats,
+    feedback_cpu_ns: u64,
+    feedback_source_nodes_visited: u64,
+    projection: Option<engine_runtime::runtime_renderer::UiProjectionStats>,
+    cpu_draw_buffer_prepare_ns: u64,
+    ui_full_upload_cold_or_evicted: u64,
+    ui_full_upload_untrusted_lineage: u64,
+    present_rebuilds: u64,
+    present_hits: u64,
+    layout_nodes_visited: u64,
+    layout_measure_calls: u64,
+    layout_geometry_nodes: u64,
+    geometry_nodes_updated: u64,
+    geometry_source_nodes_compared: u64,
+    geometry_snapshot_nodes_copied: u64,
+    drawing_nodes_compared: u64,
+    drawing_nodes_built: u64,
+    drawing_nodes_reused: u64,
+    drawing_payloads_built: u64,
+    drawing_payloads_reused: u64,
+    paragraph_cache_hits: u64,
+    paragraph_cache_misses: u64,
+    paragraph_reshapes: u64,
+    paragraph_evictions: u64,
+    paragraph_cache_resident_bytes: u64,
+    extension_calls: u64,
+    extension_request_bytes: u64,
+    extension_response_bytes: u64,
+    ui_uploads: u64,
+    ui_full_uploads: u64,
+    ui_partial_uploads: u64,
+    ui_uploaded_bytes: u64,
+    retained_geometry_uploaded_bytes: u64,
+    retained_parameter_uploaded_bytes: u64,
+    retained_cache_hits: u64,
+    retained_draw_calls: u64,
+    retained_instances: u64,
+
+    ui_upload_hits: u64,
+    ui_resident_bytes: u64,
+    virtual_list_materialized_instances: u64,
+    virtual_list_recycled_instances: u64,
+    virtual_list_disposed_instances: u64,
+    theme_change_events: u64,
+    dpi_change_events: u64,
+}
+
+#[derive(Clone, Copy, Default)]
+struct AuiGpuUploadCounters {
+    cpu_draw_buffer_prepare_ns: u64,
+    full_upload_cold_or_evicted: u64,
+    full_upload_untrusted_lineage: u64,
+    uploads: u64,
+    full_uploads: u64,
+    partial_uploads: u64,
+    uploaded_bytes: u64,
+    retained_geometry_uploaded_bytes: u64,
+    retained_parameter_uploaded_bytes: u64,
+    retained_cache_hits: u64,
+    retained_draw_calls: u64,
+    retained_instances: u64,
+    hits: u64,
+    resident_bytes: u64,
+}
+
+#[cfg(feature = "real-window")]
+fn aui_gpu_upload_counters(
+    stats: engine_runtime::wgpu_backend::real::UiVertexUploadStats,
+    retained: engine_runtime::wgpu_backend::real::RetainedUiStats,
+) -> AuiGpuUploadCounters {
+    AuiGpuUploadCounters {
+        cpu_draw_buffer_prepare_ns: stats.cpu_draw_buffer_prepare_ns,
+        full_upload_cold_or_evicted: stats.full_upload_cold_or_evicted,
+        full_upload_untrusted_lineage: stats.full_upload_untrusted_lineage,
+        uploads: stats.uploads,
+        full_uploads: stats.full_uploads,
+        partial_uploads: stats.partial_uploads,
+        uploaded_bytes: stats.uploaded_bytes,
+        retained_geometry_uploaded_bytes: retained.geometry_uploaded_bytes,
+        retained_parameter_uploaded_bytes: retained.parameter_uploaded_bytes,
+        retained_cache_hits: retained.cache_hits,
+        retained_draw_calls: retained.draws,
+        retained_instances: retained.instances,
+
+        hits: stats.hits,
+        resident_bytes: stats.resident_bytes as u64,
+    }
+}
+
+fn capture_aui_work_with_input(
+    cache: &NativeAuiPresentCache,
+    host: &EngineHostLoop,
+    upload: Option<AuiGpuUploadCounters>,
+    feedback: &AuiControlFeedbackState,
+    frame_index: u64,
+    input_dispatch_ime_ns: u64,
+) -> AuiFrameWorkCounters {
+    let runtime = cache.c2_runtime();
+    let drawing = runtime.drawing_stats();
+    let measured_work = runtime.update_work();
+    let paragraph = runtime.paragraph_cache_stats();
+    let graphics = runtime.graphics_cache_measurement();
+    let extension = host.aui_extension_stats();
+    let virtual_list = cache.virtual_list_lifecycle_stats();
+    let upload = upload.unwrap_or_default();
+    AuiFrameWorkCounters {
+        #[cfg(any(test, feature = "real-window"))]
+        tick_pair: None,
+        spine: host.spine_cpu_measurement(),
+        cell_receipts: Vec::new(),
+        spatial_gpu: None,
+        frame_identity: None,
+        process_memory: None,
+        resource_memory: None,
+        sampling_wall_ns: None,
+        streaming_resources: None,
+        graphics_tessellation_builds: graphics.0,
+        graphics_cache_hits: graphics.1,
+        graphics_cache_resident_bytes: graphics.2 as u64,
+        input_dispatch_ime_ns,
+        work: runtime.update_work(),
+        frame_index,
+        timings: cache.update_timings(),
+        drawing,
+        feedback_drawing: feedback.drawing_stats(),
+        feedback_cpu_ns: feedback.measurement().0,
+        feedback_source_nodes_visited: feedback.measurement().1,
+        projection: host.ui_projection_stats(),
+        cpu_draw_buffer_prepare_ns: upload.cpu_draw_buffer_prepare_ns,
+        ui_full_upload_cold_or_evicted: upload.full_upload_cold_or_evicted,
+        ui_full_upload_untrusted_lineage: upload.full_upload_untrusted_lineage,
+        present_rebuilds: cache.rebuild_count,
+        present_hits: cache.hit_count,
+        layout_nodes_visited: measured_work.layout_nodes_visited,
+        layout_measure_calls: measured_work.layout_measure_calls,
+        layout_geometry_nodes: measured_work.layout_geometry_nodes,
+        geometry_nodes_updated: measured_work.geometry_nodes_updated,
+        geometry_source_nodes_compared: measured_work.geometry_source_nodes_compared,
+        geometry_snapshot_nodes_copied: measured_work.geometry_snapshot_nodes_copied,
+        drawing_nodes_compared: drawing.nodes_compared,
+        drawing_nodes_built: drawing.nodes_built,
+        drawing_nodes_reused: drawing.nodes_reused,
+        drawing_payloads_built: drawing
+            .command_payloads_built
+            .saturating_add(drawing.item_payloads_built)
+            .saturating_add(drawing.text_items_built)
+            .saturating_add(drawing.quad_payloads_built)
+            .saturating_add(drawing.glyph_hash_leaves_built),
+        drawing_payloads_reused: drawing
+            .command_payloads_reused
+            .saturating_add(drawing.item_payloads_reused)
+            .saturating_add(drawing.text_items_reused)
+            .saturating_add(drawing.quad_payloads_reused)
+            .saturating_add(drawing.glyph_hash_leaves_reused),
+        paragraph_cache_hits: paragraph.hits as u64,
+        paragraph_cache_misses: paragraph.misses as u64,
+        paragraph_reshapes: paragraph.reshapes as u64,
+        paragraph_evictions: paragraph.evictions as u64,
+        paragraph_cache_resident_bytes: runtime.paragraph_cache_resident_bytes() as u64,
+        extension_calls: extension.calls,
+        extension_request_bytes: extension.request_bytes,
+        extension_response_bytes: extension.response_bytes,
+        ui_uploads: upload.uploads,
+        ui_full_uploads: upload.full_uploads,
+        ui_partial_uploads: upload.partial_uploads,
+        ui_uploaded_bytes: upload.uploaded_bytes,
+        retained_geometry_uploaded_bytes: upload.retained_geometry_uploaded_bytes,
+        retained_parameter_uploaded_bytes: upload.retained_parameter_uploaded_bytes,
+        retained_cache_hits: upload.retained_cache_hits,
+        retained_draw_calls: upload.retained_draw_calls,
+        retained_instances: upload.retained_instances,
+
+        ui_upload_hits: upload.hits,
+        ui_resident_bytes: upload.resident_bytes,
+        virtual_list_materialized_instances: virtual_list.materialized_instance_count,
+        virtual_list_recycled_instances: virtual_list.recycled_instance_count,
+        virtual_list_disposed_instances: virtual_list.disposed_instance_count,
+        theme_change_events: 0,
+        dpi_change_events: 0,
+    }
+}
+
+fn summarize_aui_work(
+    values: &[AuiFrameWorkCounters],
+    request: &NativePlayerWindowRunRequest,
+) -> engine_runtime::windowed_player::WindowedPlayerAuiWorkSummary {
+    use engine_runtime::windowed_player::WindowedPlayerAuiWorkSummary;
+    let start = request.performance_warmup_frames as usize;
+    let sample = values
+        .iter()
+        .skip(start)
+        .take(request.performance_sample_frames as usize)
+        .cloned()
+        .collect::<Vec<_>>();
+    let Some(last) = sample.last().cloned() else {
+        return WindowedPlayerAuiWorkSummary::default();
+    };
+    let baseline = start
+        .checked_sub(1)
+        .and_then(|slot| values.get(slot))
+        .cloned()
+        .unwrap_or_default();
+    let delta = |end: u64, begin: u64| end.saturating_sub(begin);
+    let sum = |read: fn(&AuiFrameWorkCounters) -> u64| {
+        sample.iter().map(read).fold(0_u64, u64::saturating_add)
+    };
+    let high_water =
+        |read: fn(&AuiFrameWorkCounters) -> u64| sample.iter().map(read).max().unwrap_or_default();
+    let drawing_nodes_built = delta(last.drawing_nodes_built, baseline.drawing_nodes_built);
+    let drawing_payloads_built =
+        delta(last.drawing_payloads_built, baseline.drawing_payloads_built);
+    let paragraph_cache_misses =
+        delta(last.paragraph_cache_misses, baseline.paragraph_cache_misses);
+    WindowedPlayerAuiWorkSummary {
+        graphics_tessellation_builds: delta(
+            last.graphics_tessellation_builds,
+            baseline.graphics_tessellation_builds,
+        ),
+        graphics_cache_hits: delta(last.graphics_cache_hits, baseline.graphics_cache_hits),
+        graphics_cache_high_water_bytes: high_water(|value| value.graphics_cache_resident_bytes),
+        observed_sample_frames: sample.len() as u64,
+        present_rebuilds: delta(last.present_rebuilds, baseline.present_rebuilds),
+        present_hits: delta(last.present_hits, baseline.present_hits),
+        layout_nodes_visited: delta(last.layout_nodes_visited, baseline.layout_nodes_visited),
+        layout_measure_calls: delta(last.layout_measure_calls, baseline.layout_measure_calls),
+        layout_geometry_nodes: delta(last.layout_geometry_nodes, baseline.layout_geometry_nodes),
+        geometry_nodes_updated: delta(last.geometry_nodes_updated, baseline.geometry_nodes_updated),
+        geometry_source_nodes_compared: delta(
+            last.geometry_source_nodes_compared,
+            baseline.geometry_source_nodes_compared,
+        ),
+        geometry_snapshot_nodes_copied: delta(
+            last.geometry_snapshot_nodes_copied,
+            baseline.geometry_snapshot_nodes_copied,
+        ),
+        drawing_nodes_compared: delta(last.drawing_nodes_compared, baseline.drawing_nodes_compared),
+        drawing_nodes_built,
+        drawing_nodes_reused: delta(last.drawing_nodes_reused, baseline.drawing_nodes_reused),
+        drawing_payloads_built,
+        drawing_payloads_reused: delta(
+            last.drawing_payloads_reused,
+            baseline.drawing_payloads_reused,
+        ),
+        paragraph_cache_hits: delta(last.paragraph_cache_hits, baseline.paragraph_cache_hits),
+        paragraph_cache_misses,
+        paragraph_reshapes: delta(last.paragraph_reshapes, baseline.paragraph_reshapes),
+        paragraph_evictions: delta(last.paragraph_evictions, baseline.paragraph_evictions),
+        tracked_cache_allocation_events: drawing_nodes_built
+            .saturating_add(drawing_payloads_built)
+            .saturating_add(paragraph_cache_misses),
+        paragraph_cache_high_water_bytes: high_water(|value| value.paragraph_cache_resident_bytes),
+        extension_calls: delta(last.extension_calls, baseline.extension_calls),
+        extension_request_bytes: delta(
+            last.extension_request_bytes,
+            baseline.extension_request_bytes,
+        ),
+        extension_response_bytes: delta(
+            last.extension_response_bytes,
+            baseline.extension_response_bytes,
+        ),
+        ui_uploads: delta(last.ui_uploads, baseline.ui_uploads),
+        ui_full_uploads: delta(last.ui_full_uploads, baseline.ui_full_uploads),
+        ui_partial_uploads: delta(last.ui_partial_uploads, baseline.ui_partial_uploads),
+        ui_uploaded_bytes: delta(last.ui_uploaded_bytes, baseline.ui_uploaded_bytes),
+        retained_geometry_uploaded_bytes: delta(
+            last.retained_geometry_uploaded_bytes,
+            baseline.retained_geometry_uploaded_bytes,
+        ),
+        retained_parameter_uploaded_bytes: delta(
+            last.retained_parameter_uploaded_bytes,
+            baseline.retained_parameter_uploaded_bytes,
+        ),
+        retained_cache_hits: delta(last.retained_cache_hits, baseline.retained_cache_hits),
+        retained_draw_calls: delta(last.retained_draw_calls, baseline.retained_draw_calls),
+        retained_instances: delta(last.retained_instances, baseline.retained_instances),
+
+        ui_upload_hits: delta(last.ui_upload_hits, baseline.ui_upload_hits),
+        ui_resident_high_water_bytes: high_water(|value| value.ui_resident_bytes),
+        virtual_list_materialized_instances: delta(
+            last.virtual_list_materialized_instances,
+            baseline.virtual_list_materialized_instances,
+        ),
+        virtual_list_recycled_instances: delta(
+            last.virtual_list_recycled_instances,
+            baseline.virtual_list_recycled_instances,
+        ),
+        virtual_list_disposed_instances: delta(
+            last.virtual_list_disposed_instances,
+            baseline.virtual_list_disposed_instances,
+        ),
+        theme_change_events: sum(|value| value.theme_change_events),
+        dpi_change_events: sum(|value| value.dpi_change_events),
+    }
+}
+
 fn summarize_frame_phase(
     values: &[u64],
     request: &NativePlayerWindowRunRequest,
@@ -1478,24 +2333,33 @@ fn summarize_frame_phase(
         engine_runtime::windowed_player::WindowedPlayerFramePhasePerformanceSummary {
             observed_sample_frames: sample.len() as u64,
             mean_ms: mean_ns / 1_000_000.0,
+            p50_ms: percentile_ms(0.50),
             p95_ms: percentile_ms(0.95),
             p99_ms: percentile_ms(0.99),
+            max_ms: *sample.last().unwrap() as f64 / 1_000_000.0,
         },
     )
+}
+
+struct FramePerformanceSamples<'a> {
+    cpu_ns: &'a [u64],
+    aui_cpu_ns: &'a [u64],
+    aui_work: &'a [AuiFrameWorkCounters],
+    update_ns: &'a [u64],
+    render_submit_ns: &'a [u64],
+    present_wait_ns: &'a [u64],
 }
 
 fn finalize_frame_performance(
     report: &mut NativeWindowHostReport,
     request: &NativePlayerWindowRunRequest,
-    frame_cpu_ns: &[u64],
-    frame_update_ns: &[u64],
-    frame_render_submit_ns: &[u64],
-    frame_present_wait_ns: &[u64],
+    samples: FramePerformanceSamples<'_>,
 ) {
-    if request.performance_sample_frames == 0 {
+    if !request.cpu_sampling_enabled() {
         return;
     }
-    let mut sample = frame_cpu_ns
+    let mut sample = samples
+        .cpu_ns
         .iter()
         .skip(request.performance_warmup_frames as usize)
         .take(request.performance_sample_frames as usize)
@@ -1505,13 +2369,16 @@ fn finalize_frame_performance(
     if sample.is_empty() {
         return;
     }
-    let Some(update) = summarize_frame_phase(frame_update_ns, request) else {
+    let Some(aui_cpu) = summarize_frame_phase(samples.aui_cpu_ns, request) else {
         return;
     };
-    let Some(render_submit) = summarize_frame_phase(frame_render_submit_ns, request) else {
+    let Some(update) = summarize_frame_phase(samples.update_ns, request) else {
         return;
     };
-    let Some(present_wait) = summarize_frame_phase(frame_present_wait_ns, request) else {
+    let Some(render_submit) = summarize_frame_phase(samples.render_submit_ns, request) else {
+        return;
+    };
+    let Some(present_wait) = summarize_frame_phase(samples.present_wait_ns, request) else {
         return;
     };
     let mean_ns = sample.iter().map(|value| *value as f64).sum::<f64>() / sample.len() as f64;
@@ -1522,17 +2389,146 @@ fn finalize_frame_performance(
         sample[rank] as f64 / 1_000_000.0
     };
     report.frame_performance_summary = Some(WindowedPlayerFramePerformanceSummary {
+        sampling_window: None,
+        cpu_excluding_present_wait: summarize_frame_phase(
+            &samples
+                .cpu_ns
+                .iter()
+                .zip(samples.present_wait_ns)
+                .map(|(cpu, wait)| cpu.saturating_sub(*wait))
+                .collect::<Vec<_>>(),
+            request,
+        ),
+        raw_cpu_frames: samples
+            .aui_work
+            .iter()
+            .enumerate()
+            .filter(|(index, work)| {
+                request
+                    .measurement_policy()
+                    .trace_frame(if work.frame_index == 0 {
+                        *index as u64 + 1
+                    } else {
+                        work.frame_index
+                    })
+            })
+            .filter_map(|(index, work)| {
+                let previous = index
+                    .checked_sub(1)
+                    .and_then(|i| samples.aui_work.get(i))
+                    .cloned()
+                    .unwrap_or_default();
+                let delta = |now: u64, old: u64| now.saturating_sub(old);
+                let stages = work.timings.since(previous.timings);
+                let feedback_cpu_ns = delta(work.feedback_cpu_ns, previous.feedback_cpu_ns);
+                let aui_cpu_ns = *samples.aui_cpu_ns.get(index)?;
+                let accounted = stages
+                    .total_ns()
+                    .saturating_add(feedback_cpu_ns)
+                    .saturating_add(work.input_dispatch_ime_ns);
+                Some(
+                    engine_runtime::windowed_player::WindowedPlayerCpuFrameSample {
+                        spine: work.spine,
+                        cell_receipts: work.cell_receipts.clone(),
+                        spatial_gpu: work.spatial_gpu,
+                        sampling_wall_ns: work.sampling_wall_ns,
+                        frame_identity: work.frame_identity.clone(),
+                        process_memory: work.process_memory,
+                        resource_memory: work.resource_memory.clone(),
+                        streaming_resources: work.streaming_resources,
+                        frame_index: if work.frame_index == 0 {
+                            index as u64 + 1
+                        } else {
+                            work.frame_index
+                        },
+                        warmup: (index as u64) < request.performance_warmup_frames,
+                        sampled: (index as u64) >= request.performance_warmup_frames
+                            && (index as u64)
+                                < request.performance_warmup_frames
+                                    + request.performance_sample_frames,
+                        cpu_frame_ns: *samples.cpu_ns.get(index)?,
+                        aui_cpu_ns,
+                        update_ns: *samples.update_ns.get(index)?,
+                        render_submit_ns: *samples.render_submit_ns.get(index)?,
+                        present_wait_ns: *samples.present_wait_ns.get(index)?,
+                        aui_stages: stages,
+                        preparation_layout_geometry: work.work.since(previous.work),
+                        feedback_cpu_ns,
+                        input_dispatch_ime_ns: work.input_dispatch_ime_ns,
+                        input_ime_schedule_other_ns: aui_cpu_ns.saturating_sub(accounted),
+                        aui_intervals_consistent: accounted <= aui_cpu_ns,
+                        drawing: work.drawing.since(previous.drawing),
+                        feedback_drawing: work.feedback_drawing.since(previous.feedback_drawing),
+                        feedback_source_nodes_visited: delta(
+                            work.feedback_source_nodes_visited,
+                            previous.feedback_source_nodes_visited,
+                        ),
+                        projection: work
+                            .projection
+                            .map(|now| now.since(previous.projection.unwrap_or_default())),
+                        cpu_draw_buffer_prepare_ns: delta(
+                            work.cpu_draw_buffer_prepare_ns,
+                            previous.cpu_draw_buffer_prepare_ns,
+                        ),
+                        ui_uploaded_bytes: delta(
+                            work.ui_uploaded_bytes,
+                            previous.ui_uploaded_bytes,
+                        ),
+                        retained_geometry_uploaded_bytes: delta(
+                            work.retained_geometry_uploaded_bytes,
+                            previous.retained_geometry_uploaded_bytes,
+                        ),
+                        retained_parameter_uploaded_bytes: delta(
+                            work.retained_parameter_uploaded_bytes,
+                            previous.retained_parameter_uploaded_bytes,
+                        ),
+                        retained_cache_hits: delta(
+                            work.retained_cache_hits,
+                            previous.retained_cache_hits,
+                        ),
+                        retained_draw_calls: delta(
+                            work.retained_draw_calls,
+                            previous.retained_draw_calls,
+                        ),
+                        retained_instances: delta(
+                            work.retained_instances,
+                            previous.retained_instances,
+                        ),
+                        ui_full_uploads: delta(work.ui_full_uploads, previous.ui_full_uploads),
+                        ui_partial_uploads: delta(
+                            work.ui_partial_uploads,
+                            previous.ui_partial_uploads,
+                        ),
+                        ui_full_upload_cold_or_evicted: delta(
+                            work.ui_full_upload_cold_or_evicted,
+                            previous.ui_full_upload_cold_or_evicted,
+                        ),
+                        ui_full_upload_untrusted_lineage: delta(
+                            work.ui_full_upload_untrusted_lineage,
+                            previous.ui_full_upload_untrusted_lineage,
+                        ),
+                    },
+                )
+            })
+            .collect(),
         gpu: None,
         warmup_frames: request.performance_warmup_frames,
         requested_sample_frames: request.performance_sample_frames,
         observed_sample_frames: sample.len() as u64,
         mean_cpu_frame_ms: mean_ns / 1_000_000.0,
+        p50_cpu_frame_ms: percentile_ms(0.50),
         p95_cpu_frame_ms: percentile_ms(0.95),
         p99_cpu_frame_ms: percentile_ms(0.99),
+        max_cpu_frame_ms: *sample.last().unwrap() as f64 / 1_000_000.0,
+        aui_cpu,
         update,
         render_submit,
         present_wait,
+        aui_work: summarize_aui_work(samples.aui_work, request),
     });
+    if let Some(summary) = &mut report.frame_performance_summary {
+        request.measurement_policy().filter_cpu(summary);
+    }
 }
 
 pub fn run_headless_native_player_from_package(
@@ -1715,6 +2711,15 @@ fn run_headless_native_player(
     };
     report.scene_status = "ok".to_string();
     report.world_status = "ok".to_string();
+    if !project_storage::bind(
+        &request,
+        &package,
+        linked_modules,
+        &mut hydrator,
+        &mut report,
+    ) {
+        return report;
+    }
     let (sprite_texture_bindings, runtime_texture_bindings) =
         match prepare_headless_texture_bindings(&package) {
             Ok(bindings) => bindings,
@@ -1732,10 +2737,12 @@ fn run_headless_native_player(
     let mut last_render_schema = None;
     let mut last_rhi_command_count = 0;
     let mut aui_present_cache = NativeAuiPresentCache::for_package(&package);
-    let mut frame_cpu_ns = Vec::with_capacity(request.frame_limit as usize);
-    let mut frame_update_ns = Vec::with_capacity(request.frame_limit as usize);
-    let mut frame_render_submit_ns = Vec::with_capacity(request.frame_limit as usize);
-    let mut frame_present_wait_ns = Vec::with_capacity(request.frame_limit as usize);
+    let mut frame_cpu_ns = cpu_frame_history(&request);
+    let mut frame_aui_cpu_ns = cpu_frame_history(&request);
+    let mut frame_aui_work = cpu_frame_history(&request);
+    let mut frame_update_ns = cpu_frame_history(&request);
+    let mut frame_render_submit_ns = cpu_frame_history(&request);
+    let mut frame_present_wait_ns = cpu_frame_history(&request);
     for frame_index in 0..request.frame_limit {
         if playtest
             .as_mut()
@@ -1751,13 +2758,31 @@ fn run_headless_native_player(
         } else {
             scripted_input_events(&request, frame_index + 1)
         };
-        let mut aui_present = aui_present_cache.take_or_rebuild(
+        let measuring = request.measurement_enabled();
+        let cpu_sampling = request.cpu_sampling_enabled();
+        aui_present_cache.set_measurement_enabled(measuring);
+        aui_feedback_state.set_measurement_enabled(measuring);
+        host.set_ui_measurement_enabled(measuring);
+        host.begin_spine_measurement_frame(measuring);
+        let aui_started = Instant::now();
+        let mut aui_present = aui_present_cache.take_or_rebuild_stabilized(
             &package,
             &world,
             frame_index + 1,
             ui_state_producer.as_mut(),
-            None,
+            &mut host,
+            NativeAuiPresentContext::new(
+                None,
+                Some(&AuiViewportInput::new(
+                    request.game_view_target.extent.width,
+                    request.game_view_target.extent.height,
+                    1.0,
+                )),
+                &mut aui_interaction_state,
+            )
+            .with_feedback_cache(&mut aui_feedback_state),
         );
+        let input_dispatch_started = measuring.then(Instant::now);
         let (action_snapshot, input_trace_summary, input_summary, aui_interaction) =
             resolve_native_input_frame_with_aui(
                 &mut input_device_state,
@@ -1773,9 +2798,40 @@ fn run_headless_native_player(
                 None,
                 &mut aui_interaction_state,
             );
+        let input_dispatch_ime_ns = input_dispatch_started.map_or(0, |start| {
+            start.elapsed().as_nanos().min(u128::from(u64::MAX)) as u64
+        });
+        if let Some(playtest) = &mut playtest {
+            playtest.record_injected_events(scripted_events.len());
+        }
+        aui_present = aui_present_cache.advance_animations_for_present(
+            aui_present,
+            &package,
+            &world,
+            ui_state_producer.as_mut(),
+            &mut host,
+            engine_runtime::aui_present_cache::AuiAnimationPresentContext {
+                frame_index: frame_index + 1,
+                delta_us: presentation_delta_us_from_seconds(
+                    engine_runtime::runtime_time::DEFAULT_FIXED_DELTA_TIME,
+                ),
+                interaction_result: aui_interaction.as_ref().map(|i| &i.result),
+                presentation: NativeAuiPresentContext::new(
+                    None,
+                    Some(&AuiViewportInput::new(
+                        request.game_view_target.extent.width,
+                        request.game_view_target.extent.height,
+                        1.0,
+                    )),
+                    &mut aui_interaction_state,
+                )
+                .with_feedback_cache(&mut aui_feedback_state),
+            },
+        );
         if let (Some(present), Some(interaction)) = (aui_present.as_mut(), aui_interaction.as_ref())
         {
-            AuiRuntimePresenter::apply_control_feedback_with_fonts(
+            aui_present_cache.apply_virtual_list_actions(present, &interaction.result.actions);
+            AuiRuntimePresenter::apply_control_feedback_with_fonts_and_themes(
                 present,
                 &interaction.result,
                 &mut aui_feedback_state,
@@ -1784,14 +2840,20 @@ fn run_headless_native_player(
                 ),
                 &package.font_atlases,
                 &package.font_bundles,
+                &package.aui_themes,
             );
+            host.publish_ui_geometry(present);
         }
+        record_cpu_frame_sample(cpu_sampling, &mut frame_aui_cpu_ns, || {
+            aui_started.elapsed().as_nanos().min(u128::from(u64::MAX)) as u64
+        });
         report.input = input_summary;
         report.input_status = "ok".to_string();
         let mut frame_input = EngineFrameInput::new(EngineHostMode::ExportedGame)
             .with_action_snapshot(action_snapshot)
             .with_input_trace_summary(input_trace_summary)
-            .with_runtime_texture_bindings(runtime_texture_bindings.clone());
+            .with_runtime_texture_bindings(runtime_texture_bindings.clone())
+            .with_deferred_render_submission();
         if playtest.is_some() {
             frame_input = frame_input.with_fixed_step_count(1);
         }
@@ -1819,17 +2881,39 @@ fn run_headless_native_player(
         let output = host.tick_with_runtime_context(
             frame_input,
             &mut world,
-            RuntimeFrameContext {
-                package: &package,
-                instance_loader: hydrator.instance_loader_mut(),
-            },
+            RuntimeFrameContext::new(&package, hydrator.instance_loader_mut()),
         );
-        report.project_runtime_session_report = output.project_runtime_session_report.clone();
+        if output.host_control.is_some() {
+            record_runtime_audio(&mut report, &host, request.runtime_report_level);
+            report.record_project_runtime_session(output.project_runtime_session_report.clone());
+            report.session_exit_requested = true;
+            record_runtime_trace(
+                &mut report,
+                &output.runtime_trace,
+                request.runtime_report_level,
+            );
+            break;
+        }
+        report.record_project_runtime_session(output.project_runtime_session_report.clone());
         record_runtime_audio(&mut report, &host, request.runtime_report_level);
         if let Some(playtest) = &mut playtest {
-            playtest.sample(&output, &mut report);
+            if !playtest.spatial_ids().is_empty() {
+                playtest.set_spatial_sample(host.observe_spatial(
+                    &world,
+                    playtest.spatial_ids(),
+                    playtest.spatial_level(),
+                ));
+            }
+            playtest.sample(
+                &output,
+                &mut report,
+                aui_present.as_ref(),
+                Some(&aui_interaction_state),
+            );
         }
-        frame_update_ns.push(frame_started.elapsed().as_nanos().min(u128::from(u64::MAX)) as u64);
+        record_cpu_frame_sample(cpu_sampling, &mut frame_update_ns, || {
+            frame_started.elapsed().as_nanos().min(u128::from(u64::MAX)) as u64
+        });
         let render_started = Instant::now();
         record_runtime_trace(
             &mut report,
@@ -1850,6 +2934,22 @@ fn run_headless_native_player(
             Some(&runtime_texture_bindings),
         );
         aui_present_cache.store(aui_present);
+        record_cpu_frame_sample(cpu_sampling, &mut frame_aui_work, || {
+            if !measuring {
+                return AuiFrameWorkCounters {
+                    frame_index: frame_index + 1,
+                    ..Default::default()
+                };
+            }
+            capture_aui_work_with_input(
+                &aui_present_cache,
+                &host,
+                None,
+                &aui_feedback_state,
+                frame_index + 1,
+                input_dispatch_ime_ns,
+            )
+        });
         report
             .aui
             .apply_render_frame_report(&render_thread_frame.renderer_output.render_frame_report);
@@ -1864,23 +2964,29 @@ fn run_headless_native_player(
             report.present_status = NativeWindowPresentStatus::RhiFailed;
         }
         report.frames_completed += 1;
-        frame_render_submit_ns.push(
+        record_cpu_frame_sample(cpu_sampling, &mut frame_render_submit_ns, || {
             render_started
                 .elapsed()
                 .as_nanos()
-                .min(u128::from(u64::MAX)) as u64,
-        );
-        frame_present_wait_ns.push(0);
-        frame_cpu_ns.push(frame_started.elapsed().as_nanos().min(u128::from(u64::MAX)) as u64);
+                .min(u128::from(u64::MAX)) as u64
+        });
+        record_cpu_frame_sample(cpu_sampling, &mut frame_present_wait_ns, || 0);
+        record_cpu_frame_sample(cpu_sampling, &mut frame_cpu_ns, || {
+            frame_started.elapsed().as_nanos().min(u128::from(u64::MAX)) as u64
+        });
     }
 
     finalize_frame_performance(
         &mut report,
         &request,
-        &frame_cpu_ns,
-        &frame_update_ns,
-        &frame_render_submit_ns,
-        &frame_present_wait_ns,
+        FramePerformanceSamples {
+            cpu_ns: &frame_cpu_ns,
+            aui_cpu_ns: &frame_aui_cpu_ns,
+            aui_work: &frame_aui_work,
+            update_ns: &frame_update_ns,
+            render_submit_ns: &frame_render_submit_ns,
+            present_wait_ns: &frame_present_wait_ns,
+        },
     );
 
     report.render_thread_report_schema = last_render_schema;
@@ -1948,7 +3054,8 @@ fn prepare_headless_texture_bindings(
         .values()
         .flat_map(|document| document.nodes.iter())
         .filter_map(|node| node.image.as_ref())
-        .map(|image| image.asset_id.clone());
+        .map(|image| image.asset_id.clone())
+        .chain(package.aui_themes.texture_asset_ids());
     let registry = RuntimeTextureUploadRegistry::load(
         &package.package_dir,
         &package.runtime_asset_index,
@@ -2004,8 +3111,7 @@ impl NativeAuiPresentSummary {
                 next_actions.push(format!("resolve_ui_state_path:{path}"));
             }
         }
-        let (_, render_report) =
-            AuiLayoutEngine::extract_draw_list(&output.resolved_document, &output.layout);
+        let render_report = output.base_draw_report();
         Self {
             package_document_count: package.aui_manifest.documents.len(),
             loaded_document_count: package.aui_documents.len(),
@@ -2229,96 +3335,13 @@ fn snapshot_source_id(source: AuiSnapshotSource) -> &'static str {
     }
 }
 
-struct NativeAuiPresentCache {
-    snapshot_cache: ProjectUiStateSnapshotCache,
-    last_present: Option<AuiRuntimePresentOutput>,
-    rebuild_count: u64,
-    hit_count: u64,
-    presentation_revision: u64,
-}
-
-impl NativeAuiPresentCache {
-    fn for_package(package: &RuntimePackage) -> Self {
-        let active_binding_paths = package
-            .aui_manifest
-            .documents
-            .first()
-            .and_then(|entry| package.aui_documents.get(&entry.document_id))
-            .map(active_aui_binding_paths)
-            .unwrap_or_default();
-        Self {
-            snapshot_cache: ProjectUiStateSnapshotCache::new(active_binding_paths),
-            last_present: None,
-            rebuild_count: 0,
-            hit_count: 0,
-            presentation_revision: 0,
-        }
-    }
-
-    fn take_or_rebuild(
-        &mut self,
-        package: &RuntimePackage,
-        world: &World,
-        frame_index: u64,
-        producer: &mut dyn ProjectUiStateSnapshotProducer,
-        presentation: Option<&ResolvedGameViewPresentation>,
-    ) -> Option<AuiRuntimePresentOutput> {
-        let document_id = package
-            .aui_manifest
-            .documents
-            .first()
-            .map(|entry| entry.document_id.as_str())?;
-        let document = package.aui_documents.get(document_id)?;
-        let snapshot_output = match self.snapshot_cache.resolve(
-            producer,
-            frame_index,
-            package,
-            world,
-            ProjectUiStateReportMode::Summary,
-        ) {
-            Ok(ProjectUiStateSnapshotCacheResult::Reuse) | Err(_) => {
-                if let Some(present) = self.last_present.take() {
-                    self.hit_count = self.hit_count.saturating_add(1);
-                    return Some(present);
-                }
-                return None;
-            }
-            Ok(ProjectUiStateSnapshotCacheResult::Replace(output)) => output,
-        };
-        self.rebuild_count = self.rebuild_count.saturating_add(1);
-        self.presentation_revision = self.presentation_revision.saturating_add(1);
-        Some(match presentation {
-            Some(presentation) => {
-                AuiRuntimePresenter::present_project_snapshot_with_fonts_for_presentation(
-                    document,
-                    snapshot_output,
-                    &package.font_atlases,
-                    &package.font_bundles,
-                    presentation,
-                )
-            }
-            None => AuiRuntimePresenter::present_project_snapshot_with_fonts(
-                document,
-                snapshot_output,
-                &package.font_atlases,
-                &package.font_bundles,
-            ),
-        })
-    }
-
-    fn store(&mut self, present: Option<AuiRuntimePresentOutput>) {
-        self.last_present = present;
-    }
-}
-
-fn active_aui_binding_paths(document: &engine_runtime::aui::AuiDocument) -> Vec<String> {
-    document
-        .nodes
-        .iter()
-        .flat_map(|node| node.binding_refs.iter().map(|binding| binding.path.clone()))
-        .collect::<BTreeSet<_>>()
-        .into_iter()
-        .collect()
+#[cfg(any(feature = "real-window", test))]
+fn native_window_viewport_input(
+    physical_width: u32,
+    physical_height: u32,
+    scale_factor: f64,
+) -> AuiViewportInput {
+    AuiViewportInput::new(physical_width, physical_height, scale_factor)
 }
 
 #[cfg(not(feature = "real-window"))]
@@ -2529,3325 +3552,21 @@ fn fit_player_window_inner_extent(
 }
 
 #[cfg(feature = "real-window")]
-mod real_window {
-    use super::*;
-    use engine_runtime::runtime_renderer::font_atlas_render_handle;
-    use engine_runtime::runtime_texture::{
-        RuntimeTextureBindingContext, RuntimeTextureUploadRegistry,
-    };
-    use engine_runtime::sprite2d_render_pipeline::Sprite2DTextureBindingContext;
-    use std::sync::Arc;
-    use winit::application::ApplicationHandler;
-    use winit::event::{ElementState, Ime, MouseButton, MouseScrollDelta, TouchPhase, WindowEvent};
-    use winit::event_loop::{ActiveEventLoop, ControlFlow, EventLoop};
-    use winit::keyboard::{Key, ModifiersState, NamedKey};
-    #[cfg(target_os = "android")]
-    use winit::platform::android::{activity::AndroidApp, EventLoopBuilderExtAndroid};
-    #[cfg(target_os = "windows")]
-    use winit::platform::windows::EventLoopBuilderExtWindows;
-    #[cfg(target_os = "windows")]
-    use winit::raw_window_handle::{HasWindowHandle, RawWindowHandle};
+mod gpu_memory;
+#[cfg(feature = "real-window")]
+mod native_present;
 
-    #[cfg(not(target_os = "android"))]
-    pub fn run_windowed(
-        request: NativePlayerWindowRunRequest,
-        linked_modules: Arc<LinkedProjectRuntimeSet>,
-    ) -> NativeWindowHostReport {
-        run_windowed_controlled(request, linked_modules, None)
-    }
-
-    pub(super) fn run_windowed_controlled(
-        request: NativePlayerWindowRunRequest,
-        linked_modules: Arc<LinkedProjectRuntimeSet>,
-        semantic: Option<(semantic_outcome::PlaytestScenario, PathBuf)>,
-    ) -> NativeWindowHostReport {
-        #[cfg(target_os = "windows")]
-        let event_loop_result = EventLoop::builder().with_any_thread(true).build();
-        #[cfg(not(target_os = "windows"))]
-        let event_loop_result = EventLoop::new();
-        run_event_loop(event_loop_result, request, linked_modules, semantic)
-    }
-
-    #[cfg(target_os = "android")]
-    pub fn run_android(
-        android_app: AndroidApp,
-        request: NativePlayerWindowRunRequest,
-        linked_modules: Arc<LinkedProjectRuntimeSet>,
-    ) -> NativeWindowHostReport {
-        let event_loop_result = EventLoop::builder().with_android_app(android_app).build();
-        run_event_loop(event_loop_result, request, linked_modules, None)
-    }
-
-    fn run_event_loop(
-        event_loop_result: Result<EventLoop<()>, winit::error::EventLoopError>,
-        request: NativePlayerWindowRunRequest,
-        linked_modules: Arc<LinkedProjectRuntimeSet>,
-        semantic: Option<(semantic_outcome::PlaytestScenario, PathBuf)>,
-    ) -> NativeWindowHostReport {
-        let event_loop = match event_loop_result {
-            Ok(event_loop) => event_loop,
-            Err(error) => return environment_blocked_report(request, error.to_string()),
-        };
-        let mut app = RealWindowApp::new(request, linked_modules, semantic);
-        match event_loop.run_app(&mut app) {
-            Ok(()) => app.report.unwrap_or_else(|| {
-                environment_blocked_report(app.request, "window report missing")
-            }),
-            Err(error) => environment_blocked_report(app.request, error.to_string()),
-        }
-    }
-
-    struct RealWindowApp {
-        semantic: Option<(semantic_outcome::PlaytestScenario, PathBuf)>,
-        request: NativePlayerWindowRunRequest,
-        host: Option<RealWindowHost>,
-        report: Option<NativeWindowHostReport>,
-        pending_raw_input: Vec<RawInputEvent>,
-        frame_id: u64,
-        next_redraw_at: Instant,
-        linked_modules: Arc<LinkedProjectRuntimeSet>,
-        lifecycle: NativePlayerLifecycleState,
-    }
-
-    impl RealWindowApp {
-        fn new(
-            request: NativePlayerWindowRunRequest,
-            linked_modules: Arc<LinkedProjectRuntimeSet>,
-            semantic: Option<(semantic_outcome::PlaytestScenario, PathBuf)>,
-        ) -> Self {
-            Self {
-                semantic,
-                request,
-                host: None,
-                report: None,
-                pending_raw_input: Vec::new(),
-                frame_id: 0,
-                next_redraw_at: Instant::now(),
-                linked_modules,
-                lifecycle: NativePlayerLifecycleState::default(),
-            }
-        }
-
-        fn request_immediate_redraw(&self) {
-            if let Some(host) = &self.host {
-                host.window.request_redraw();
-            }
-        }
-    }
-
-    impl ApplicationHandler for RealWindowApp {
-        fn resumed(&mut self, event_loop: &ActiveEventLoop) {
-            self.lifecycle.resume();
-            if self.host.is_some() {
-                self.request_immediate_redraw();
-                return;
-            }
-            match RealWindowHost::new(
-                event_loop,
-                self.request.clone(),
-                Arc::clone(&self.linked_modules),
-                self.semantic.clone(),
-            ) {
-                Ok(host) => {
-                    host.window.request_redraw();
-                    self.next_redraw_at = Instant::now() + REAL_WINDOW_FRAME_INTERVAL;
-                    self.host = Some(host);
-                }
-                Err(error) => {
-                    self.report = Some(environment_blocked_report(self.request.clone(), error));
-                    event_loop.exit();
-                }
-            }
-        }
-
-        fn suspended(&mut self, _event_loop: &ActiveEventLoop) {
-            self.lifecycle.suspend();
-            self.pending_raw_input.clear();
-        }
-
-        fn window_event(
-            &mut self,
-            event_loop: &ActiveEventLoop,
-            window_id: winit::window::WindowId,
-            event: WindowEvent,
-        ) {
-            match event {
-                WindowEvent::RedrawRequested => {
-                    if let Some(host) = &mut self.host {
-                        let frame_started = Instant::now();
-                        let raw_input = std::mem::take(&mut self.pending_raw_input);
-                        match host.present_next_frame(raw_input) {
-                            RealWindowFrameAdvance::Continue => {
-                                self.next_redraw_at = frame_deadline(frame_started, Instant::now());
-                            }
-                            RealWindowFrameAdvance::Complete => {
-                                self.report = Some(host.finish(false));
-                                event_loop.exit();
-                            }
-                        }
-                    }
-                }
-                WindowEvent::CloseRequested => {
-                    if let Some(host) = &mut self.host {
-                        self.report = Some(host.finish(true));
-                    }
-                    event_loop.exit();
-                }
-                WindowEvent::Resized(size) => {
-                    if let Some(host) = &mut self.host {
-                        host.resize_surface(size.width, size.height);
-                        host.window.request_redraw();
-                    }
-                }
-                WindowEvent::KeyboardInput { event, .. } => {
-                    self.frame_id += 1;
-                    if let Some(raw_event) = raw_keyboard_event(self.frame_id, window_id, &event) {
-                        self.pending_raw_input.push(raw_event);
-                    }
-                    if let Some(raw_event) = raw_text_input_event(self.frame_id, window_id, &event)
-                    {
-                        self.pending_raw_input.push(raw_event);
-                    }
-                    self.request_immediate_redraw();
-                }
-                WindowEvent::ModifiersChanged(modifiers) => {
-                    self.frame_id += 1;
-                    self.pending_raw_input
-                        .push(RawInputEvent::modifiers_changed(
-                            self.frame_id,
-                            format!("{window_id:?}"),
-                            active_modifier_names(modifiers.state()),
-                        ));
-                    self.request_immediate_redraw();
-                }
-                WindowEvent::Ime(ime) => {
-                    self.frame_id += 1;
-                    if let Some(raw_event) = raw_ime_event(self.frame_id, window_id, ime) {
-                        self.pending_raw_input.push(raw_event);
-                    }
-                    self.request_immediate_redraw();
-                }
-                WindowEvent::CursorMoved { position, .. } => {
-                    self.frame_id += 1;
-                    self.pending_raw_input.push(RawInputEvent::mouse_move(
-                        self.frame_id,
-                        format!("{window_id:?}"),
-                        position.x as f32,
-                        position.y as f32,
-                    ));
-                    self.request_immediate_redraw();
-                }
-                WindowEvent::MouseInput { state, button, .. } => {
-                    if let Some(button) = runtime_pointer_button(button) {
-                        self.frame_id += 1;
-                        let raw_event = match state {
-                            ElementState::Pressed => RawInputEvent::mouse_button_down(
-                                self.frame_id,
-                                format!("{window_id:?}"),
-                                button,
-                            ),
-                            ElementState::Released => RawInputEvent::mouse_button_up(
-                                self.frame_id,
-                                format!("{window_id:?}"),
-                                button,
-                            ),
-                        };
-                        self.pending_raw_input.push(raw_event);
-                        self.request_immediate_redraw();
-                    }
-                }
-                WindowEvent::MouseWheel { delta, .. } => {
-                    self.frame_id += 1;
-                    self.pending_raw_input.push(RawInputEvent::mouse_wheel(
-                        self.frame_id,
-                        format!("{window_id:?}"),
-                        mouse_wheel_delta(delta),
-                    ));
-                    self.request_immediate_redraw();
-                }
-                WindowEvent::Touch(touch) => {
-                    self.frame_id += 1;
-                    let phase = match touch.phase {
-                        TouchPhase::Started => NativePrimaryTouchPhase::Started,
-                        TouchPhase::Moved => NativePrimaryTouchPhase::Moved,
-                        TouchPhase::Ended => NativePrimaryTouchPhase::Ended,
-                        TouchPhase::Cancelled => NativePrimaryTouchPhase::Cancelled,
-                    };
-                    self.pending_raw_input.push(primary_touch_raw_event(
-                        self.frame_id,
-                        format!("{window_id:?}"),
-                        touch.id,
-                        phase,
-                        touch.location.x as f32,
-                        touch.location.y as f32,
-                    ));
-                    self.request_immediate_redraw();
-                }
-                WindowEvent::Focused(false) => {
-                    self.frame_id += 1;
-                    self.pending_raw_input.push(RawInputEvent::focus_lost(
-                        self.frame_id,
-                        format!("{window_id:?}"),
-                    ));
-                    self.request_immediate_redraw();
-                }
-                _ => {}
-            }
-        }
-
-        fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
-            if !self.lifecycle.should_present() {
-                event_loop.set_control_flow(ControlFlow::Wait);
-                return;
-            }
-            let now = Instant::now();
-            if now >= self.next_redraw_at {
-                if let Some(host) = &self.host {
-                    host.window.request_redraw();
-                }
-                self.next_redraw_at = now + REAL_WINDOW_FRAME_INTERVAL;
-            }
-            event_loop.set_control_flow(ControlFlow::WaitUntil(self.next_redraw_at));
-        }
-    }
-
-    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-    enum RealWindowFrameAdvance {
-        Continue,
-        Complete,
-    }
-
-    struct RealWindowSession {
-        package: RuntimePackage,
-        host: EngineHostLoop,
-        ui_state_producer: Box<dyn ProjectUiStateSnapshotProducer>,
-        world: World,
-        hydrator: RuntimeSceneHydrator,
-        sprite_texture_bindings: Sprite2DTextureBindingContext,
-        runtime_texture_bindings: RuntimeTextureBindingContext,
-        aui_present_cache: NativeAuiPresentCache,
-    }
-
-    pub(super) fn player_wgpu_backends(is_android: bool, is_x86_64: bool) -> wgpu::Backends {
-        if is_android && is_x86_64 {
-            wgpu::Backends::GL
-        } else {
-            wgpu::Backends::PRIMARY
-        }
-    }
-
-    struct RealWindowHost {
-        semantic: Option<(semantic_outcome::PlaytestScenario, PathBuf)>,
-        playtest: Option<semantic_playtest::SemanticPlaytest>,
-        request: NativePlayerWindowRunRequest,
-        window: Arc<winit::window::Window>,
-        surface: wgpu::Surface<'static>,
-        device: wgpu::Device,
-        surface_config: wgpu::SurfaceConfiguration,
-        backend: engine_runtime::wgpu_backend::real::RealWgpuBackend,
-        input_device_state: InputDeviceState,
-        input_mapping: Option<InputMappingAsset>,
-        aui_interaction_state: AuiInteractionState,
-        linked_modules: Arc<LinkedProjectRuntimeSet>,
-        session: Option<RealWindowSession>,
-        report: NativeWindowHostReport,
-        frame_cpu_ns: Vec<u64>,
-        frame_update_ns: Vec<u64>,
-        frame_render_submit_ns: Vec<u64>,
-        frame_present_wait_ns: Vec<u64>,
-    }
-
-    impl RealWindowHost {
-        fn new(
-            event_loop: &ActiveEventLoop,
-            request: NativePlayerWindowRunRequest,
-            linked_modules: Arc<LinkedProjectRuntimeSet>,
-            semantic: Option<(semantic_outcome::PlaytestScenario, PathBuf)>,
-        ) -> Result<Self, String> {
-            let attributes = winit::window::Window::default_attributes()
-                .with_title(request.config.title.clone())
-                .with_resizable(request.config.resizable)
-                .with_inner_size(winit::dpi::PhysicalSize::new(
-                    request.config.width,
-                    request.config.height,
-                ));
-            let window = Arc::new(
-                event_loop
-                    .create_window(attributes)
-                    .map_err(|error| format!("window.create_failed:{error}"))?,
-            );
-            fit_window_to_monitor_work_area(
-                window.as_ref(),
-                request.config.width,
-                request.config.height,
-            );
-            let size = window.inner_size();
-            if size.width == 0 || size.height == 0 {
-                return Err("window.zero_sized_surface".to_string());
-            }
-            let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
-                backends: player_wgpu_backends(
-                    cfg!(target_os = "android"),
-                    cfg!(target_arch = "x86_64"),
-                ),
-                flags: wgpu::InstanceFlags::default(),
-                memory_budget_thresholds: wgpu::MemoryBudgetThresholds::default(),
-                backend_options: wgpu::BackendOptions::default(),
-            });
-            let surface = instance
-                .create_surface(window.clone())
-                .map_err(|error| format!("surface.create_failed:{error}"))?;
-            let adapter =
-                pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
-                    power_preference: wgpu::PowerPreference::HighPerformance,
-                    compatible_surface: Some(&surface),
-                    force_fallback_adapter: false,
-                }))
-                .map_err(|error| format!("surface.request_adapter_failed:{error}"))?;
-            let backend_name = format!("{:?}", adapter.get_info().backend);
-            let (device, queue) =
-                pollster::block_on(adapter.request_device(&wgpu::DeviceDescriptor {
-                    label: Some("runtime-player-wgpu-device"),
-                    required_features: engine_runtime::gpu_frame_measurement::features(
-                        adapter.features(),
-                        request.performance_sample_frames > 0,
-                    ),
-                    required_limits: engine_runtime::particle_gpu::renderer_device_limits(
-                        adapter.limits(),
-                    ),
-                    memory_hints: wgpu::MemoryHints::Performance,
-                    trace: wgpu::Trace::Off,
-                }))
-                .map_err(|error| format!("surface.request_device_failed:{error}"))?;
-            let surface_config = surface
-                .get_default_config(&adapter, size.width, size.height)
-                .ok_or_else(|| "surface.default_config_unavailable".to_string())?;
-            surface.configure(&device, &surface_config);
-            let mut backend =
-                engine_runtime::wgpu_backend::real::RealWgpuBackend::from_device_queue(
-                    device.clone(),
-                    queue,
-                    surface_config.format,
-                    size.width,
-                    size.height,
-                    backend_name.clone(),
-                );
-            if request.performance_sample_frames > 0 {
-                backend.enable_frame_measurement(
-                    &adapter.get_info(),
-                    request.performance_warmup_frames,
-                    request.performance_sample_frames,
-                )?;
-            }
-            let mut report = NativeWindowHostReport::base(&request);
-            report.diagnostics.push(NativeWindowHostDiagnostic {
-                severity: NativeWindowHostDiagnosticSeverity::Info,
-                code: "graphics.backend_selected".to_string(),
-                layer: "surface".to_string(),
-                message: backend_name,
-                path: None,
-            });
-            Ok(Self {
-                semantic,
-                playtest: None,
-                request,
-                window,
-                surface,
-                device,
-                surface_config,
-                backend,
-                input_device_state: InputDeviceState::new(),
-                input_mapping: None,
-                aui_interaction_state: AuiInteractionState::default(),
-                linked_modules,
-                session: None,
-                report,
-                frame_cpu_ns: Vec::new(),
-                frame_update_ns: Vec::new(),
-                frame_render_submit_ns: Vec::new(),
-                frame_present_wait_ns: Vec::new(),
-            })
-        }
-
-        fn resize_surface(&mut self, width: u32, height: u32) {
-            if width == 0 || height == 0 {
-                return;
-            }
-            self.surface_config.width = width;
-            self.surface_config.height = height;
-            self.surface.configure(&self.device, &self.surface_config);
-            self.report.surface.configured = true;
-            self.report.surface.width = width;
-            self.report.surface.height = height;
-            self.report.surface.last_error = None;
-        }
-
-        fn ensure_session(&mut self) -> bool {
-            if self.session.is_some() {
-                return true;
-            }
-            self.report.window_status = "ok".to_string();
-            self.report.surface_status = "ok".to_string();
-            if !validate_run_evidence_request(&self.request, &mut self.report) {
-                return false;
-            }
-            let size = self.window.inner_size();
-            self.report.window = NativeWindowState {
-                created: true,
-                width: size.width,
-                height: size.height,
-                close_requested: false,
-            };
-            self.report.surface = NativeSurfaceState {
-                created: true,
-                configured: true,
-                width: size.width,
-                height: size.height,
-                format: self.request.config.surface_format.clone(),
-                present_mode: self.request.config.present_mode.clone(),
-                acquired_frame_count: 0,
-                presented_frame_count: 0,
-                last_error: None,
-            };
-
-            let load = load_runtime_package(&self.request.runtime_package_path);
-            self.report.diagnostics.extend(convert_runtime_diagnostics(
-                "package",
-                &load.diagnostics.issues,
-            ));
-            let Some(package) = load.value else {
-                self.report.package_status = "error".to_string();
-                self.report.present_status = NativeWindowPresentStatus::PackageFailed;
-                return false;
-            };
-            self.report.package_status = "ok".to_string();
-            self.report.aui.package_document_count = package.aui_manifest.documents.len();
-            self.report.aui.loaded_document_count = package.aui_documents.len();
-            if let Some((scenario, _)) = &self.semantic {
-                if let Err(error) =
-                    semantic_playtest::SemanticPlaytest::validate(scenario, &package)
-                {
-                    self.report.diagnostics.push(error);
-                    return false;
-                }
-            }
-            let (sprite_texture_bindings, runtime_texture_bindings) =
-                match prepare_real_gpu_resources(&mut self.backend, &package) {
-                    Ok(bindings) => bindings,
-                    Err(error) => {
-                        self.report.render_status = "error".to_string();
-                        self.report.rhi_status = "error".to_string();
-                        self.report.present_status = NativeWindowPresentStatus::RhiFailed;
-                        self.report
-                            .diagnostics
-                            .push(NativeWindowHostDiagnostic::error(
-                                "runtime_gpu_resource_prepare_failed",
-                                "render",
-                                error,
-                            ));
-                        return false;
-                    }
-                };
-            let bound_runtime = match ProjectRuntimeBootstrap::bind(&package, &self.linked_modules)
-            {
-                Ok(bound_runtime) => bound_runtime,
-                Err(error) => {
-                    self.report.logic_status = "error".to_string();
-                    push_project_runtime_error(&mut self.report, error);
-                    self.report.present_status = NativeWindowPresentStatus::PackageFailed;
-                    return false;
-                }
-            };
-            let NativePlayerRuntimeComposition {
-                mut host,
-                ui_state_producer,
-                input_mapping,
-                receipt,
-            } = NativePlayerRuntimeComposition::from_bound(
-                package.active_scene.id.clone(),
-                bound_runtime.into_parts(),
-            );
-            host.set_game_view_target(self.request.game_view_target);
-            configure_runtime_audio(&mut host, &self.request);
-            if let Some((scenario, _)) = &self.semantic {
-                match semantic_playtest::SemanticPlaytest::new(
-                    scenario.clone(),
-                    &package,
-                    &receipt.session_id,
-                    Instant::now(),
-                ) {
-                    Ok(playtest) => self.playtest = Some(playtest),
-                    Err(error) => {
-                        self.report.diagnostics.push(error);
-                        return false;
-                    }
-                }
-            }
-            self.input_mapping = Some(input_mapping);
-            self.report.project_runtime_bind_receipt = Some(receipt);
-            let Some((world, hydrator)) =
-                hydrate_active_scene_for_player(&package, &mut self.report)
-            else {
-                self.report.scene_status = "error".to_string();
-                self.report.world_status = "error".to_string();
-                self.report.present_status = NativeWindowPresentStatus::SceneFailed;
-                return false;
-            };
-            self.report.scene_status = "ok".to_string();
-            self.report.world_status = "ok".to_string();
-            self.session = Some(RealWindowSession {
-                aui_present_cache: NativeAuiPresentCache::for_package(&package),
-                package,
-                host,
-                ui_state_producer,
-                world,
-                hydrator,
-                sprite_texture_bindings,
-                runtime_texture_bindings,
-            });
-            true
-        }
-
-        fn present_next_frame(&mut self, raw_input: Vec<RawInputEvent>) -> RealWindowFrameAdvance {
-            if !self.ensure_session() {
-                return RealWindowFrameAdvance::Complete;
-            }
-            if self
-                .playtest
-                .as_mut()
-                .is_some_and(|p| p.should_stop(&mut self.report))
-            {
-                return RealWindowFrameAdvance::Complete;
-            }
-            let frame_index = self.report.frames_completed.saturating_add(1);
-            if frame_index > self.request.frame_limit {
-                return RealWindowFrameAdvance::Complete;
-            }
-            let frame_started = Instant::now();
-            let size = self.window.inner_size();
-            if size.width == 0 || size.height == 0 {
-                return RealWindowFrameAdvance::Continue;
-            }
-
-            let session = self
-                .session
-                .as_mut()
-                .expect("successful session initialization stores runtime state");
-            let mut input_events = if let Some(playtest) = &mut self.playtest {
-                playtest
-                    .next_input_tick()
-                    .map_or_else(Vec::new, |tick| scripted_input_events(&self.request, tick))
-            } else {
-                scripted_input_events(&self.request, frame_index)
-            };
-            let canvas_references = session
-                .package
-                .aui_manifest
-                .documents
-                .first()
-                .and_then(|entry| session.package.aui_documents.get(&entry.document_id))
-                .map(|document| {
-                    document
-                        .canvases
-                        .iter()
-                        .map(|canvas| {
-                            CanvasReferenceFact::new(
-                                canvas.canvas_id.clone(),
-                                canvas.reference_resolution.x.round().max(1.0) as u32,
-                                canvas.reference_resolution.y.round().max(1.0) as u32,
-                            )
-                        })
-                        .collect()
-                })
-                .unwrap_or_default();
-            let target_extent = self.request.game_view_target.extent;
-            let surface_extent = GameViewExtent::new(size.width, size.height);
-            let presentation = match GameViewPresentationModule::resolve(GameViewPresentationSpec {
-                session_id: "native-player-window".to_string(),
-                target_id: self.request.config.target_id.clone(),
-                target_extent,
-                display_rect: GameViewRect::from_extent(surface_extent),
-                scale_policy: self.request.game_view_target.scale_policy,
-                surface_generation: 1,
-                presentation_revision: frame_index,
-                canvas_references,
-            }) {
-                Ok(presentation) => Arc::new(presentation),
-                Err(error) => {
-                    self.report.render_status = "error".to_string();
-                    self.report.input_status = "error".to_string();
-                    self.report
-                        .diagnostics
-                        .push(NativeWindowHostDiagnostic::error(
-                            error.code,
-                            "presentation",
-                            "Windows Player GameView presentation could not be resolved.",
-                        ));
-                    return RealWindowFrameAdvance::Complete;
-                }
-            };
-            let aui_present = session.aui_present_cache.take_or_rebuild(
-                &session.package,
-                &session.world,
-                frame_index,
-                session.ui_state_producer.as_mut(),
-                Some(presentation.as_ref()),
-            );
-            let mut raw_input = raw_input;
-            map_display_pointer_events_to_target(&mut raw_input, presentation.as_ref());
-            if self.playtest.is_none() {
-                input_events.extend(raw_input);
-            }
-            let (action_snapshot, input_trace_summary, input_summary, aui_interaction) =
-                resolve_native_input_frame_with_aui(
-                    &mut self.input_device_state,
-                    self.input_mapping
-                        .as_ref()
-                        .expect("project runtime binding supplies input mapping"),
-                    "runtime-package",
-                    Some("input/input-manifest.json"),
-                    &input_events,
-                    frame_index,
-                    &self.request.config.window_id,
-                    "winit",
-                    "windows",
-                    aui_present.as_ref(),
-                    Some(presentation.as_ref()),
-                    &mut self.aui_interaction_state,
-                );
-            self.report.input = input_summary;
-            self.report.input_status = "ok".to_string();
-            let mut frame_input = EngineFrameInput::new(EngineHostMode::ExportedGame)
-                .with_action_snapshot(action_snapshot)
-                .with_input_trace_summary(input_trace_summary);
-            if self.playtest.is_some() {
-                frame_input = frame_input.with_fixed_step_count(1);
-            }
-            if let Some(aui_present) = aui_present.as_ref() {
-                self.report.aui = NativeAuiPresentSummary::from_present_output(
-                    &session.package,
-                    aui_present,
-                    self.request.config.target_id.as_str(),
-                );
-                if let Some(aui_interaction) = aui_interaction {
-                    self.report
-                        .aui
-                        .apply_interaction_report(&aui_interaction.report);
-                    self.report
-                        .aui
-                        .apply_navigation_screenflow_textentry_report(
-                            &aui_interaction.navigation_screenflow_textentry_report,
-                        );
-                    frame_input = frame_input.with_aui_interaction(aui_interaction.result);
-                }
-                frame_input = frame_input
-                    .with_aui_overlay(aui_present.overlay.clone())
-                    .with_aui_composition(aui_present.composition.clone());
-            } else if session.package.aui_manifest.documents.is_empty() {
-                self.report.aui = NativeAuiPresentSummary::no_documents(0);
-            } else {
-                self.report.aui.status = "load_failed".to_string();
-            }
-            let output = session.host.tick_with_runtime_context(
-                frame_input,
-                &mut session.world,
-                RuntimeFrameContext {
-                    package: &session.package,
-                    instance_loader: session.hydrator.instance_loader_mut(),
-                },
-            );
-            self.report.project_runtime_session_report =
-                output.project_runtime_session_report.clone();
-            record_runtime_audio(
-                &mut self.report,
-                &session.host,
-                self.request.runtime_report_level,
-            );
-            if let Some(playtest) = &mut self.playtest {
-                playtest.sample(&output, &mut self.report);
-            }
-            self.frame_update_ns
-                .push(frame_started.elapsed().as_nanos().min(u128::from(u64::MAX)) as u64);
-            let render_started = Instant::now();
-            record_runtime_trace(
-                &mut self.report,
-                &output.runtime_trace,
-                self.request.runtime_report_level,
-            );
-            if output.runtime_advanced {
-                self.report.mark_runtime_advanced();
-            }
-            if output.render_frame_report.is_some() {
-                self.report.render_status = "ok".to_string();
-            }
-            let render_target = RenderTarget::surface(
-                self.request.config.target_id.clone(),
-                size.width,
-                size.height,
-            )
-            .with_presentation_scale_policy(self.request.game_view_target.scale_policy);
-            let render_thread = session
-                .host
-                .render_thread_for_target_with_runtime_resources_and_presentation(
-                    render_target,
-                    aui_present.as_ref().map(|present| &present.overlay),
-                    aui_present.as_ref().map(|present| &present.composition),
-                    Some(&session.sprite_texture_bindings),
-                    Some(&session.runtime_texture_bindings),
-                    Some(Arc::clone(&presentation)),
-                );
-            self.report
-                .aui
-                .apply_render_frame_report(&render_thread.renderer_output.render_frame_report);
-            if should_capture_screenshot(&self.request, frame_index) {
-                capture_screenshot(
-                    &mut self.backend,
-                    &render_thread.renderer_output.rhi_command_plan,
-                    &self.request,
-                    &mut self.report,
-                    size.width,
-                    size.height,
-                );
-            }
-            session.aui_present_cache.store(aui_present);
-            let render_prepare_ns = render_started
-                .elapsed()
-                .as_nanos()
-                .min(u128::from(u64::MAX)) as u64;
-            let present_wait_started = Instant::now();
-            let surface_texture = match self.surface.get_current_texture() {
-                Ok(surface_texture) => {
-                    self.report.surface.last_error = None;
-                    surface_texture
-                }
-                Err(wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated) => {
-                    if let Some(playtest) = &mut self.playtest {
-                        playtest.presentation_failed(&mut self.report);
-                        return RealWindowFrameAdvance::Complete;
-                    }
-                    let size = self.window.inner_size();
-                    self.resize_surface(size.width, size.height);
-                    return RealWindowFrameAdvance::Continue;
-                }
-                Err(wgpu::SurfaceError::Timeout) => {
-                    if let Some(playtest) = &mut self.playtest {
-                        playtest.presentation_failed(&mut self.report);
-                        return RealWindowFrameAdvance::Complete;
-                    }
-                    self.report.surface.last_error = Some("surface.acquire_timeout".to_string());
-                    return RealWindowFrameAdvance::Continue;
-                }
-                Err(error @ (wgpu::SurfaceError::OutOfMemory | wgpu::SurfaceError::Other)) => {
-                    self.report.surface.last_error =
-                        Some(format!("surface.acquire_failed:{error}"));
-                    self.report.present_status = NativeWindowPresentStatus::SurfaceFailed;
-                    self.report
-                        .diagnostics
-                        .push(NativeWindowHostDiagnostic::error(
-                            "surface_acquire_failed",
-                            "surface",
-                            format!("surface acquire failed: {error}"),
-                        ));
-                    return RealWindowFrameAdvance::Complete;
-                }
-            };
-            let acquire_wait_ns = present_wait_started
-                .elapsed()
-                .as_nanos()
-                .min(u128::from(u64::MAX)) as u64;
-            self.report.surface.acquired_frame_count += 1;
-            let view = surface_texture
-                .texture
-                .create_view(&wgpu::TextureViewDescriptor::default());
-            let submit_started = Instant::now();
-            #[cfg(target_os = "android")]
-            let backend_report = self.backend.execute_plan_to_surface_view_in_rect(
-                &render_thread.renderer_output.rhi_command_plan,
-                &view,
-                presentation.display_content_rect,
-            );
-            #[cfg(not(target_os = "android"))]
-            let backend_report = self.backend.execute_plan_to_surface_view(
-                &render_thread.renderer_output.rhi_command_plan,
-                &view,
-            );
-            let submit_ns = submit_started
-                .elapsed()
-                .as_nanos()
-                .min(u128::from(u64::MAX)) as u64;
-            let present_started = Instant::now();
-            surface_texture.present();
-            let present_ns = present_started
-                .elapsed()
-                .as_nanos()
-                .min(u128::from(u64::MAX)) as u64;
-            self.report.surface.presented_frame_count += 1;
-            self.report.render_thread_report_schema = Some(render_thread.report.schema_version);
-            self.report.rhi_command_count = render_thread
-                .renderer_output
-                .rhi_command_plan
-                .commands
-                .len();
-            self.report.rhi_status = if backend_report.diagnostics.iter().any(|diagnostic| {
-                matches!(
-                    diagnostic.severity,
-                    engine_runtime::engine_rhi::RhiBackendDiagnosticSeverity::Error
-                )
-            }) {
-                "error".to_string()
-            } else {
-                "ok".to_string()
-            };
-            self.report.frames_completed += 1;
-            if let Some(playtest) = &mut self.playtest {
-                if self.report.rhi_status != "ok" {
-                    playtest.presentation_failed(&mut self.report);
-                }
-                if let Some(capture_id) = playtest.capture_at(frame_index) {
-                    let directory = &self.semantic.as_ref().unwrap().1;
-                    let path = directory.join(format!("capture-{frame_index}.png"));
-                    let capture_request = self.request.clone().with_screenshot(path);
-                    if u64::from(size.width) * u64::from(size.height) > 4 * 1024 * 1024 {
-                        self.report
-                            .screenshot
-                            .mark_failed(NativeWindowScreenshotStatus::ReadbackFailed);
-                    } else {
-                        self.report.screenshot = NativeWindowScreenshotReport::from_request(
-                            &capture_request.screenshot,
-                            &capture_request.config,
-                        );
-                        capture_screenshot(
-                            &mut self.backend,
-                            &render_thread.renderer_output.rhi_command_plan,
-                            &capture_request,
-                            &mut self.report,
-                            size.width,
-                            size.height,
-                        );
-                    }
-                    playtest.record_capture(capture_id, frame_index, &self.report);
-                }
-            }
-            self.frame_render_submit_ns
-                .push(render_prepare_ns.saturating_add(submit_ns));
-            self.frame_present_wait_ns
-                .push(acquire_wait_ns.saturating_add(present_ns));
-            self.frame_cpu_ns
-                .push(frame_started.elapsed().as_nanos().min(u128::from(u64::MAX)) as u64);
-
-            if windowed_session_has_more_frames(
-                self.report.frames_completed,
-                self.request.frame_limit,
-            ) {
-                RealWindowFrameAdvance::Continue
-            } else {
-                RealWindowFrameAdvance::Complete
-            }
-        }
-
-        fn finish(&mut self, close_requested: bool) -> NativeWindowHostReport {
-            self.report.window.close_requested = close_requested;
-            finalize_frame_performance(
-                &mut self.report,
-                &self.request,
-                &self.frame_cpu_ns,
-                &self.frame_update_ns,
-                &self.frame_render_submit_ns,
-                &self.frame_present_wait_ns,
-            );
-            let gpu = self.backend.finish_frame_measurement();
-            if let Some(summary) = &mut self.report.frame_performance_summary {
-                summary.gpu = gpu;
-            }
-            if self.report.present_status == NativeWindowPresentStatus::NotPresented {
-                self.report.present_status =
-                    if self.report.frames_completed > 0 && self.report.rhi_status == "ok" {
-                        NativeWindowPresentStatus::Presented
-                    } else {
-                        NativeWindowPresentStatus::RhiFailed
-                    };
-            }
-            self.report.exit_code = self.report.completion_exit_code();
-            if let Some(mut playtest) = self.playtest.take() {
-                if close_requested {
-                    playtest.presentation_failed(&mut self.report);
-                }
-                playtest.should_stop(&mut self.report);
-                playtest.finish(&mut self.report);
-            }
-            self.report.clone()
-        }
-
-        #[allow(dead_code)]
-        fn present_limited_frames(
-            &mut self,
-            raw_input: Vec<RawInputEvent>,
-        ) -> NativeWindowHostReport {
-            let mut report = NativeWindowHostReport::base(&self.request);
-            report.window_status = "ok".to_string();
-            report.surface_status = "ok".to_string();
-            if !validate_run_evidence_request(&self.request, &mut report) {
-                return report;
-            }
-            let size = self.window.inner_size();
-            report.window = NativeWindowState {
-                created: true,
-                width: size.width,
-                height: size.height,
-                close_requested: false,
-            };
-            report.surface = NativeSurfaceState {
-                created: true,
-                configured: true,
-                width: size.width,
-                height: size.height,
-                format: self.request.config.surface_format.clone(),
-                present_mode: self.request.config.present_mode.clone(),
-                acquired_frame_count: 0,
-                presented_frame_count: 0,
-                last_error: None,
-            };
-
-            let load = load_runtime_package(&self.request.runtime_package_path);
-            report.diagnostics.extend(convert_runtime_diagnostics(
-                "package",
-                &load.diagnostics.issues,
-            ));
-            let Some(package) = load.value else {
-                report.package_status = "error".to_string();
-                report.present_status = NativeWindowPresentStatus::PackageFailed;
-                return report;
-            };
-            report.package_status = "ok".to_string();
-            report.aui.package_document_count = package.aui_manifest.documents.len();
-            report.aui.loaded_document_count = package.aui_documents.len();
-            let (sprite_texture_bindings, runtime_texture_bindings) =
-                match prepare_real_gpu_resources(&mut self.backend, &package) {
-                    Ok(bindings) => bindings,
-                    Err(error) => {
-                        report.render_status = "error".to_string();
-                        report.rhi_status = "error".to_string();
-                        report.present_status = NativeWindowPresentStatus::RhiFailed;
-                        report.diagnostics.push(NativeWindowHostDiagnostic::error(
-                            "runtime_gpu_resource_prepare_failed",
-                            "render",
-                            error,
-                        ));
-                        return report;
-                    }
-                };
-            let bound_runtime = match ProjectRuntimeBootstrap::bind(&package, &self.linked_modules)
-            {
-                Ok(bound_runtime) => bound_runtime,
-                Err(error) => {
-                    report.logic_status = "error".to_string();
-                    push_project_runtime_error(&mut report, error);
-                    report.present_status = NativeWindowPresentStatus::PackageFailed;
-                    return report;
-                }
-            };
-            let NativePlayerRuntimeComposition {
-                mut host,
-                mut ui_state_producer,
-                input_mapping,
-                receipt,
-            } = NativePlayerRuntimeComposition::from_bound(
-                package.active_scene.id.clone(),
-                bound_runtime.into_parts(),
-            );
-            self.input_mapping = Some(input_mapping);
-            report.project_runtime_bind_receipt = Some(receipt);
-            configure_runtime_audio(&mut host, &self.request);
-            let Some((mut world, mut hydrator)) =
-                hydrate_active_scene_for_player(&package, &mut report)
-            else {
-                report.scene_status = "error".to_string();
-                report.world_status = "error".to_string();
-                report.present_status = NativeWindowPresentStatus::SceneFailed;
-                return report;
-            };
-            report.scene_status = "ok".to_string();
-            report.world_status = "ok".to_string();
-            let mut frame_cpu_ns = Vec::with_capacity(self.request.frame_limit as usize);
-            let mut frame_update_ns = Vec::with_capacity(self.request.frame_limit as usize);
-            let mut frame_render_submit_ns = Vec::with_capacity(self.request.frame_limit as usize);
-            let mut frame_present_wait_ns = Vec::with_capacity(self.request.frame_limit as usize);
-            let mut aui_present_cache = NativeAuiPresentCache::for_package(&package);
-            for frame_index in 0..self.request.frame_limit {
-                let frame_started = Instant::now();
-                let mut input_events = scripted_input_events(&self.request, frame_index + 1);
-                if frame_index == 0 {
-                    input_events.extend(raw_input.iter().cloned());
-                }
-                let aui_present = aui_present_cache.take_or_rebuild(
-                    &package,
-                    &world,
-                    frame_index + 1,
-                    ui_state_producer.as_mut(),
-                    None,
-                );
-                let (action_snapshot, input_trace_summary, input_summary, aui_interaction) =
-                    resolve_native_input_frame_with_aui(
-                        &mut self.input_device_state,
-                        self.input_mapping
-                            .as_ref()
-                            .expect("project runtime binding supplies input mapping"),
-                        "runtime-package",
-                        Some("input/input-manifest.json"),
-                        &input_events,
-                        frame_index + 1,
-                        &self.request.config.window_id,
-                        "winit",
-                        "windows",
-                        aui_present.as_ref(),
-                        None,
-                        &mut self.aui_interaction_state,
-                    );
-                report.input = input_summary;
-                report.input_status = "ok".to_string();
-                let mut frame_input = EngineFrameInput::new(EngineHostMode::ExportedGame)
-                    .with_action_snapshot(action_snapshot)
-                    .with_input_trace_summary(input_trace_summary);
-                if let Some(aui_present) = aui_present.as_ref() {
-                    report.aui = NativeAuiPresentSummary::from_present_output(
-                        &package,
-                        aui_present,
-                        self.request.config.target_id.as_str(),
-                    );
-                    if let Some(aui_interaction) = aui_interaction {
-                        report.aui.apply_interaction_report(&aui_interaction.report);
-                        report.aui.apply_navigation_screenflow_textentry_report(
-                            &aui_interaction.navigation_screenflow_textentry_report,
-                        );
-                        frame_input = frame_input.with_aui_interaction(aui_interaction.result);
-                    }
-                    frame_input = frame_input
-                        .with_aui_overlay(aui_present.overlay.clone())
-                        .with_aui_composition(aui_present.composition.clone());
-                } else if package.aui_manifest.documents.is_empty() {
-                    report.aui = NativeAuiPresentSummary::no_documents(0);
-                } else {
-                    report.aui.status = "load_failed".to_string();
-                }
-                let output = host.tick_with_runtime_context(
-                    frame_input,
-                    &mut world,
-                    RuntimeFrameContext {
-                        package: &package,
-                        instance_loader: hydrator.instance_loader_mut(),
-                    },
-                );
-                report.project_runtime_session_report =
-                    output.project_runtime_session_report.clone();
-                record_runtime_audio(&mut report, &host, self.request.runtime_report_level);
-                frame_update_ns
-                    .push(frame_started.elapsed().as_nanos().min(u128::from(u64::MAX)) as u64);
-                let render_started = Instant::now();
-                record_runtime_trace(
-                    &mut report,
-                    &output.runtime_trace,
-                    self.request.runtime_report_level,
-                );
-                if output.runtime_advanced {
-                    report.mark_runtime_advanced();
-                }
-                if output.render_frame_report.is_some() {
-                    report.render_status = "ok".to_string();
-                }
-                let render_thread = host.render_thread_for_target_with_runtime_resources(
-                    RenderTarget::surface(
-                        self.request.config.target_id.clone(),
-                        size.width,
-                        size.height,
-                    ),
-                    aui_present.as_ref().map(|present| &present.overlay),
-                    aui_present.as_ref().map(|present| &present.composition),
-                    Some(&sprite_texture_bindings),
-                    Some(&runtime_texture_bindings),
-                );
-                report
-                    .aui
-                    .apply_render_frame_report(&render_thread.renderer_output.render_frame_report);
-                if should_capture_screenshot(&self.request, frame_index + 1) {
-                    capture_screenshot(
-                        &mut self.backend,
-                        &render_thread.renderer_output.rhi_command_plan,
-                        &self.request,
-                        &mut report,
-                        size.width,
-                        size.height,
-                    );
-                }
-                aui_present_cache.store(aui_present);
-                let render_prepare_ns = render_started
-                    .elapsed()
-                    .as_nanos()
-                    .min(u128::from(u64::MAX)) as u64;
-                let present_wait_started = Instant::now();
-                let surface_texture = match self.surface.get_current_texture() {
-                    Ok(surface_texture) => surface_texture,
-                    Err(error) => {
-                        report.surface.last_error = Some(format!("surface.acquire_failed:{error}"));
-                        report.present_status = NativeWindowPresentStatus::SurfaceFailed;
-                        report.diagnostics.push(NativeWindowHostDiagnostic::error(
-                            "surface_acquire_failed",
-                            "surface",
-                            format!("surface acquire failed: {error}"),
-                        ));
-                        return report;
-                    }
-                };
-                let acquire_wait_ns = present_wait_started
-                    .elapsed()
-                    .as_nanos()
-                    .min(u128::from(u64::MAX)) as u64;
-                report.surface.acquired_frame_count += 1;
-                let view = surface_texture
-                    .texture
-                    .create_view(&wgpu::TextureViewDescriptor::default());
-                let submit_started = Instant::now();
-                let backend_report = self.backend.execute_plan_to_surface_view(
-                    &render_thread.renderer_output.rhi_command_plan,
-                    &view,
-                );
-                let submit_ns = submit_started
-                    .elapsed()
-                    .as_nanos()
-                    .min(u128::from(u64::MAX)) as u64;
-                let present_started = Instant::now();
-                surface_texture.present();
-                let present_ns = present_started
-                    .elapsed()
-                    .as_nanos()
-                    .min(u128::from(u64::MAX)) as u64;
-                report.surface.presented_frame_count += 1;
-                report.render_thread_report_schema = Some(render_thread.report.schema_version);
-                report.rhi_command_count = render_thread
-                    .renderer_output
-                    .rhi_command_plan
-                    .commands
-                    .len();
-                report.rhi_status = if backend_report.diagnostics.iter().any(|diagnostic| {
-                    matches!(
-                        diagnostic.severity,
-                        engine_runtime::engine_rhi::RhiBackendDiagnosticSeverity::Error
-                    )
-                }) {
-                    "error".to_string()
-                } else {
-                    "ok".to_string()
-                };
-                report.frames_completed += 1;
-                frame_render_submit_ns.push(render_prepare_ns.saturating_add(submit_ns));
-                frame_present_wait_ns.push(acquire_wait_ns.saturating_add(present_ns));
-                frame_cpu_ns
-                    .push(frame_started.elapsed().as_nanos().min(u128::from(u64::MAX)) as u64);
-            }
-            finalize_frame_performance(
-                &mut report,
-                &self.request,
-                &frame_cpu_ns,
-                &frame_update_ns,
-                &frame_render_submit_ns,
-                &frame_present_wait_ns,
-            );
-            report.present_status = if report.rhi_status == "ok" {
-                NativeWindowPresentStatus::Presented
-            } else {
-                NativeWindowPresentStatus::RhiFailed
-            };
-            report.exit_code = report.completion_exit_code();
-            report
-        }
-    }
-
-    #[cfg(target_os = "windows")]
-    fn fit_window_to_monitor_work_area(
-        window: &winit::window::Window,
-        requested_width: u32,
-        requested_height: u32,
-    ) {
-        use windows_sys::Win32::Foundation::RECT;
-        use windows_sys::Win32::Graphics::Gdi::{
-            GetMonitorInfoW, MonitorFromWindow, MONITORINFO, MONITOR_DEFAULTTONEAREST,
-        };
-
-        let Ok(window_handle) = window.window_handle() else {
-            return;
-        };
-        let RawWindowHandle::Win32(handle) = window_handle.as_raw() else {
-            return;
-        };
-        let hwnd = handle.hwnd.get() as windows_sys::Win32::Foundation::HWND;
-        let monitor = unsafe { MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST) };
-        if monitor.is_null() {
-            return;
-        }
-        let mut monitor_info = MONITORINFO {
-            cbSize: std::mem::size_of::<MONITORINFO>() as u32,
-            rcMonitor: RECT {
-                left: 0,
-                top: 0,
-                right: 0,
-                bottom: 0,
-            },
-            rcWork: RECT {
-                left: 0,
-                top: 0,
-                right: 0,
-                bottom: 0,
-            },
-            dwFlags: 0,
-        };
-        if unsafe { GetMonitorInfoW(monitor, &mut monitor_info) } == 0 {
-            return;
-        }
-
-        let work_width = monitor_info
-            .rcWork
-            .right
-            .saturating_sub(monitor_info.rcWork.left)
-            .max(1) as u32;
-        let work_height = monitor_info
-            .rcWork
-            .bottom
-            .saturating_sub(monitor_info.rcWork.top)
-            .max(1) as u32;
-        let initial_inner = window.inner_size();
-        let initial_outer = window.outer_size();
-        let non_client_width = initial_outer.width.saturating_sub(initial_inner.width);
-        let non_client_height = initial_outer.height.saturating_sub(initial_inner.height);
-        let (fitted_width, fitted_height) = fit_player_window_inner_extent(
-            requested_width,
-            requested_height,
-            work_width,
-            work_height,
-            non_client_width,
-            non_client_height,
-        );
-        if initial_inner.width != fitted_width || initial_inner.height != fitted_height {
-            let _ = window
-                .request_inner_size(winit::dpi::PhysicalSize::new(fitted_width, fitted_height));
-        }
-
-        let fitted_outer = window.outer_size();
-        let x =
-            monitor_info.rcWork.left + (work_width.saturating_sub(fitted_outer.width) / 2) as i32;
-        let y =
-            monitor_info.rcWork.top + (work_height.saturating_sub(fitted_outer.height) / 2) as i32;
-        window.set_outer_position(winit::dpi::PhysicalPosition::new(x, y));
-    }
-
-    #[cfg(not(target_os = "windows"))]
-    fn fit_window_to_monitor_work_area(
-        _window: &winit::window::Window,
-        _requested_width: u32,
-        _requested_height: u32,
-    ) {
-    }
-
-    fn map_display_pointer_events_to_target(
-        events: &mut Vec<RawInputEvent>,
-        presentation: &ResolvedGameViewPresentation,
-    ) {
-        events.retain_mut(|event| {
-            let (point, is_touch) = match &event.value {
-                RawInputValue::Pointer { x, y } => (GameViewPoint::new(*x, *y), false),
-                RawInputValue::Touch { x, y, .. } => (GameViewPoint::new(*x, *y), true),
-                _ => return true,
-            };
-            let target = match presentation.display_to_target(point) {
-                Ok(target) => target,
-                Err(_) => return !is_touch,
-            };
-            match &mut event.value {
-                RawInputValue::Pointer { x, y } | RawInputValue::Touch { x, y, .. } => {
-                    *x = target.x;
-                    *y = target.y;
-                }
-                _ => {}
-            }
-            true
-        });
-    }
-
-    #[cfg(test)]
-    #[test]
-    fn dpi_surface_pointer_is_mapped_back_to_portrait_target() {
-        let presentation = GameViewPresentationModule::resolve(GameViewPresentationSpec {
-            session_id: "player-dpi-input".to_string(),
-            target_id: "main-surface".to_string(),
-            target_extent: GameViewExtent::new(720, 1280),
-            display_rect: GameViewRect::new(0.0, 0.0, 900.0, 1600.0),
-            scale_policy: engine_runtime::game_view_presentation::GameViewScalePolicy::Contain,
-            surface_generation: 1,
-            presentation_revision: 1,
-            canvas_references: Vec::new(),
-        })
-        .unwrap();
-        let mut events = vec![RawInputEvent::mouse_move(1, "main-window", 225.0, 1500.0)];
-
-        map_display_pointer_events_to_target(&mut events, &presentation);
-
-        assert_eq!(
-            events[0].value,
-            RawInputValue::Pointer {
-                x: 180.0,
-                y: 1200.0
-            }
-        );
-    }
-
-    #[cfg(test)]
-    #[test]
-    fn portrait_contain_drops_gutter_touch_and_maps_content_touch() {
-        let presentation = GameViewPresentationModule::resolve(GameViewPresentationSpec {
-            session_id: "player-android-gutter-input".to_string(),
-            target_id: "main-surface".to_string(),
-            target_extent: GameViewExtent::new(720, 1280),
-            display_rect: GameViewRect::new(0.0, 0.0, 1080.0, 2400.0),
-            scale_policy: engine_runtime::game_view_presentation::GameViewScalePolicy::Contain,
-            surface_generation: 1,
-            presentation_revision: 1,
-            canvas_references: Vec::new(),
-        })
-        .unwrap();
-        assert_eq!(
-            presentation.display_content_rect,
-            GameViewRect::new(0.0, 240.0, 1080.0, 1920.0)
-        );
-        let mut events = vec![
-            RawInputEvent::touch_start(1, "main-window", 1, 540.0, 120.0),
-            RawInputEvent::touch_start(1, "main-window", 2, 540.0, 1200.0),
-            RawInputEvent::mouse_move(1, "main-window", 540.0, 120.0),
-        ];
-
-        map_display_pointer_events_to_target(&mut events, &presentation);
-
-        assert_eq!(events.len(), 2);
-        assert_eq!(
-            events[0].value,
-            RawInputValue::Touch {
-                touch_id: 2,
-                x: 360.0,
-                y: 640.0,
-            }
-        );
-        assert_eq!(
-            events[1].value,
-            RawInputValue::Pointer { x: 540.0, y: 120.0 }
-        );
-    }
-
-    fn prepare_real_gpu_resources(
-        backend: &mut engine_runtime::wgpu_backend::real::RealWgpuBackend,
-        package: &RuntimePackage,
-    ) -> Result<(Sprite2DTextureBindingContext, RuntimeTextureBindingContext), String> {
-        let sprite_refs = runtime_sprite_texture_asset_ids(package);
-        let aui_refs = package
-            .aui_documents
-            .documents_by_id
-            .values()
-            .flat_map(|document| document.nodes.iter())
-            .filter_map(|node| node.image.as_ref())
-            .map(|image| image.asset_id.clone());
-        let registry = RuntimeTextureUploadRegistry::load(
-            &package.package_dir,
-            &package.runtime_asset_index,
-            sprite_refs.iter().cloned().chain(aui_refs),
-        );
-        if let Some(error) = registry.diagnostics().first() {
-            return Err(format!(
-                "aui_image.texture_not_resolved:{}:{:?}:{}",
-                error.asset_ref_id, error.code, error.message
-            ));
-        }
-        for upload in registry.uploads() {
-            backend.register_cooked_texture(upload.handle, &upload.payload)?;
-        }
-        let runtime_bindings = registry.binding_context();
-        let mut bindings = Sprite2DTextureBindingContext::new();
-        for asset_id in sprite_refs {
-            let binding = runtime_bindings
-                .get(&asset_id)
-                .ok_or_else(|| format!("runtime_texture.binding_missing:{asset_id}"))?;
-            bindings.insert_texture_handle(asset_id, binding.handle, binding.sampler.clone());
-        }
-        if let Some(bundle) = package.font_bundles.default_bundle() {
-            backend.register_font_texture_arrays(bundle)?;
-        } else if let Some(atlas) = package.font_atlases.default_atlas() {
-            backend.register_alpha8_texture(
-                font_atlas_render_handle(&atlas.metadata.font_atlas_id),
-                atlas.metadata.atlas_width,
-                atlas.metadata.atlas_height,
-                &atlas.atlas_alpha,
-                "nearestClamp",
-            )?;
-        }
-        Ok((bindings, runtime_bindings))
-    }
-
-    fn should_capture_screenshot(request: &NativePlayerWindowRunRequest, frame_index: u64) -> bool {
-        if !request.screenshot.enabled {
-            return false;
-        }
-        let target_frame = request
-            .screenshot
-            .frame_index
-            .unwrap_or(request.frame_limit.max(1));
-        frame_index == target_frame
-    }
-
-    fn capture_screenshot(
-        backend: &mut engine_runtime::wgpu_backend::real::RealWgpuBackend,
-        plan: &engine_runtime::rhi_command_plan::RhiCommandPlan,
-        request: &NativePlayerWindowRunRequest,
-        report: &mut NativeWindowHostReport,
-        width: u32,
-        height: u32,
-    ) {
-        let path = request.screenshot.path.clone().unwrap_or_else(|| {
-            request
-                .runtime_package_path
-                .parent()
-                .unwrap_or(&request.runtime_package_path)
-                .join("reports")
-                .join("windowed-player-screenshot.png")
-        });
-        let rgba = match backend.render_plan_to_rgba_bytes(plan, width, height) {
-            Ok(rgba) => rgba,
-            Err(error) => {
-                report
-                    .screenshot
-                    .mark_failed(NativeWindowScreenshotStatus::ReadbackFailed);
-                report.diagnostics.push(NativeWindowHostDiagnostic::error(
-                    "screenshot_readback_failed",
-                    "screenshot",
-                    error,
-                ));
-                return;
-            }
-        };
-        match write_rgba_png(&path, width, height, &rgba) {
-            Ok(byte_size) => report
-                .screenshot
-                .mark_captured(&path, width, height, byte_size),
-            Err(error) => {
-                report
-                    .screenshot
-                    .mark_failed(NativeWindowScreenshotStatus::WriteFailed);
-                report.diagnostics.push(NativeWindowHostDiagnostic::error(
-                    "screenshot_write_failed",
-                    "screenshot",
-                    error,
-                ));
-            }
-        }
-    }
-
-    fn raw_keyboard_event(
-        frame_id: u64,
-        window_id: winit::window::WindowId,
-        event: &winit::event::KeyEvent,
-    ) -> Option<RawInputEvent> {
-        let key = key_name(&event.logical_key);
-        if key == "Unidentified" {
-            return None;
-        }
-        let mut raw_event = match event.state {
-            ElementState::Pressed => {
-                RawInputEvent::keyboard_down(frame_id, format!("{window_id:?}"), key)
-            }
-            ElementState::Released => {
-                RawInputEvent::keyboard_up(frame_id, format!("{window_id:?}"), key)
-            }
-        };
-        raw_event.is_repeat = event.repeat;
-        Some(raw_event)
-    }
-
-    fn raw_text_input_event(
-        frame_id: u64,
-        window_id: winit::window::WindowId,
-        event: &winit::event::KeyEvent,
-    ) -> Option<RawInputEvent> {
-        if event.state != ElementState::Pressed || event.repeat {
-            return None;
-        }
-        let text = event.text.as_ref()?.as_str();
-        if text.is_empty() || text.chars().any(char::is_control) {
-            return None;
-        }
-        Some(RawInputEvent::text_input(
-            frame_id,
-            format!("{window_id:?}"),
-            text,
-        ))
-    }
-
-    fn raw_ime_event(
-        frame_id: u64,
-        window_id: winit::window::WindowId,
-        ime: Ime,
-    ) -> Option<RawInputEvent> {
-        match ime {
-            Ime::Enabled => None,
-            Ime::Disabled => Some(RawInputEvent::ime_cancel(
-                frame_id,
-                format!("{window_id:?}"),
-            )),
-            Ime::Preedit(text, cursor) => {
-                let (cursor_start, cursor_end) = cursor.unwrap_or((0, 0));
-                Some(RawInputEvent::ime_preedit(
-                    frame_id,
-                    format!("{window_id:?}"),
-                    text,
-                    cursor_start,
-                    cursor_end,
-                ))
-            }
-            Ime::Commit(text) => Some(RawInputEvent::ime_commit(
-                frame_id,
-                format!("{window_id:?}"),
-                text,
-            )),
-        }
-    }
-
-    fn active_modifier_names(modifiers: ModifiersState) -> Vec<&'static str> {
-        let mut active = Vec::new();
-        if modifiers.shift_key() {
-            active.push("Shift");
-        }
-        if modifiers.control_key() {
-            active.push("Control");
-        }
-        if modifiers.alt_key() {
-            active.push("Alt");
-        }
-        if modifiers.super_key() {
-            active.push("Logo");
-        }
-        active
-    }
-
-    fn key_name(key: &Key) -> String {
-        match key {
-            Key::Named(NamedKey::Space) => "Space".to_string(),
-            Key::Named(named) => format!("{named:?}"),
-            Key::Character(text) => text.to_ascii_uppercase(),
-            Key::Unidentified(_) => "Unidentified".to_string(),
-            Key::Dead(dead) => format!("Dead({dead:?})"),
-        }
-    }
-
-    fn runtime_pointer_button(button: MouseButton) -> Option<engine_input::RuntimePointerButton> {
-        match button {
-            MouseButton::Left => Some(engine_input::RuntimePointerButton::Primary),
-            MouseButton::Right => Some(engine_input::RuntimePointerButton::Secondary),
-            MouseButton::Middle => Some(engine_input::RuntimePointerButton::Middle),
-            _ => None,
-        }
-    }
-
-    fn mouse_wheel_delta(delta: MouseScrollDelta) -> f32 {
-        match delta {
-            MouseScrollDelta::LineDelta(_, y) => y,
-            MouseScrollDelta::PixelDelta(position) => position.y as f32,
-        }
-    }
-
-    fn environment_blocked_report(
-        request: NativePlayerWindowRunRequest,
-        error: impl Into<String>,
-    ) -> NativeWindowHostReport {
-        let mut report = NativeWindowHostReport::base(&request);
-        report.window_status = "environment_blocked".to_string();
-        report.surface_status = "environment_blocked".to_string();
-        report.present_status = NativeWindowPresentStatus::EnvironmentBlocked;
-        report.diagnostics.push(NativeWindowHostDiagnostic::error(
-            "real_window_environment_blocked",
-            "window",
-            error.into(),
-        ));
-        report
-    }
-}
+#[cfg(feature = "real-window")]
+mod real_window;
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn frame_deadline_waits_only_for_unused_frame_budget() {
-        let started = Instant::now();
-        let finished = started + std::time::Duration::from_micros(10_000);
-        assert_eq!(
-            frame_deadline(started, finished).duration_since(finished),
-            std::time::Duration::from_micros(6_667)
-        );
-    }
-
-    #[test]
-    fn frame_deadline_overrun_is_ready_without_wait_or_catch_up_debt() {
-        let started = Instant::now();
-        for elapsed_us in [16_667, 35_000, 5_000_000] {
-            let finished = started + std::time::Duration::from_micros(elapsed_us);
-            assert_eq!(frame_deadline(started, finished), finished);
-            let next_finished = finished + std::time::Duration::from_micros(1_000);
-            assert_eq!(
-                frame_deadline(finished, next_finished).duration_since(next_finished),
-                std::time::Duration::from_micros(15_667)
-            );
-        }
-    }
-
-    #[cfg(feature = "real-window")]
-    #[test]
-    fn player_wgpu_backends_uses_gl_only_for_android_x86_64() {
-        assert_eq!(
-            real_window::player_wgpu_backends(true, true),
-            wgpu::Backends::GL
-        );
-        assert_eq!(
-            real_window::player_wgpu_backends(true, false),
-            wgpu::Backends::PRIMARY
-        );
-        assert_eq!(
-            real_window::player_wgpu_backends(false, true),
-            wgpu::Backends::PRIMARY
-        );
-    }
-
-    #[test]
-    fn primary_touch_mapping_preserves_physical_pixels_and_cancel_phase() {
-        let started = primary_touch_raw_event(
-            7,
-            "android-main",
-            42,
-            NativePrimaryTouchPhase::Started,
-            123.5,
-            456.25,
-        );
-        let cancelled = primary_touch_raw_event(
-            8,
-            "android-main",
-            42,
-            NativePrimaryTouchPhase::Cancelled,
-            124.0,
-            458.0,
-        );
-
-        assert_eq!(
-            started.event_kind,
-            engine_input::RawInputEventKind::TouchStart
-        );
-        assert_eq!(
-            cancelled.event_kind,
-            engine_input::RawInputEventKind::TouchCancel
-        );
-        assert_eq!(
-            started.value,
-            engine_input::RawInputValue::Touch {
-                touch_id: 42,
-                x: 123.5,
-                y: 456.25,
-            }
-        );
-    }
-
-    #[test]
-    fn suspend_resume_recreates_surface_without_recreating_gameplay_session() {
-        let mut lifecycle = NativePlayerLifecycleState::default();
-        lifecycle.resume();
-        let session_generation = lifecycle.gameplay_session_generation;
-        assert!(lifecycle.should_present());
-
-        lifecycle.suspend();
-        assert!(!lifecycle.should_present());
-        lifecycle.resume();
-
-        assert_eq!(lifecycle.surface_generation, 2);
-        assert_eq!(lifecycle.gameplay_session_generation, session_generation);
-    }
-    use engine_runtime::aui::{
-        AuiActionRef, AuiBindingRef, AuiBindingTarget, AuiBindingValue, AuiCanvas, AuiDocument,
-        AuiNode, AuiNodeKind, AuiRect, ProjectUiStateIdentity, ProjectUiStateProducerContext,
-        ProjectUiStateResolve, ProjectUiStateResolveError, ProjectUiStateSnapshot,
-        ProjectUiStateSnapshotOutput,
-    };
-    use engine_runtime::font_bundle::RuntimeFontBundleRegistry;
-    use engine_runtime::runtime_package::RuntimeAuiFontAtlasRegistry;
-    use std::fs;
-    use std::path::Path;
-    use std::time::{SystemTime, UNIX_EPOCH};
-
-    #[test]
-    fn native_window_host_report_serializes() {
-        let report = NativeWindowHostReport::base(
-            &NativePlayerWindowRunRequest::headless_surface_gate("runtime-package"),
-        );
-
-        let json = serde_json::to_string(&report).expect("report should serialize");
-
-        assert!(json.contains(NATIVE_WINDOW_HOST_REPORT_SCHEMA_VERSION));
-        assert!(json.contains("native-player-window-host"));
-    }
-
-    #[test]
-    fn player_ui_producer_receives_declared_binding_paths() {
-        let document = AuiDocument::new(
-            "player-bindings",
-            Vec::new(),
-            vec![
-                AuiNode::new(
-                    "grain",
-                    AuiNodeKind::Text,
-                    AuiRect::fixed_position(0.0, 0.0, 1.0, 1.0),
-                )
-                .with_binding(AuiBindingRef::new(
-                    "grain-binding",
-                    AuiBindingTarget::TextText,
-                    "tower.military_grain_text",
-                    None,
-                )),
-                AuiNode::new(
-                    "reserve",
-                    AuiNodeKind::Text,
-                    AuiRect::fixed_position(0.0, 0.0, 1.0, 1.0),
-                )
-                .with_binding(AuiBindingRef::new(
-                    "reserve-binding",
-                    AuiBindingTarget::TextText,
-                    "tower.reserve.0.text",
-                    None,
-                ))
-                .with_binding(AuiBindingRef::new(
-                    "grain-binding-duplicate",
-                    AuiBindingTarget::TextText,
-                    "tower.military_grain_text",
-                    None,
-                )),
-            ],
-        );
-
-        assert_eq!(
-            active_aui_binding_paths(&document),
-            vec![
-                "tower.military_grain_text".to_string(),
-                "tower.reserve.0.text".to_string(),
-            ]
-        );
-    }
-
-    struct SequencedUiProducer {
-        values: Vec<String>,
-        call_count: usize,
-    }
-
-    impl ProjectUiStateSnapshotProducer for SequencedUiProducer {
-        fn producer_id(&self) -> &str {
-            "sequenced-test-ui"
-        }
-
-        fn produce(
-            &mut self,
-            context: ProjectUiStateProducerContext<'_>,
-        ) -> ProjectUiStateSnapshotOutput {
-            let value_index = self.call_count.min(self.values.len().saturating_sub(1));
-            self.call_count = self.call_count.saturating_add(1);
-            ProjectUiStateSnapshotOutput::new(
-                self.producer_id(),
-                AuiSnapshotSource::TestSnapshot,
-                ProjectUiStateSnapshot::new(context.frame_index).with_value(
-                    "game.score_text",
-                    AuiBindingValue::String(self.values[value_index].clone()),
-                ),
-            )
-        }
-
-        fn resolve(
-            &mut self,
-            context: ProjectUiStateProducerContext<'_>,
-        ) -> Result<ProjectUiStateResolve, ProjectUiStateResolveError> {
-            let identity = ProjectUiStateIdentity {
-                producer_epoch: 1,
-                visible_revision: if context.frame_index < 3 { 1 } else { 2 },
-                binding_set: context.binding_set.identity().clone(),
-            };
-            if context.previous_identity.as_ref() == Some(&identity) {
-                return Ok(ProjectUiStateResolve::Reuse { identity });
-            }
-            let output = self.produce(context);
-            Ok(ProjectUiStateResolve::Replace { identity, output })
-        }
-    }
-
-    #[test]
-    fn aui_present_cache_reuses_clean_frame_and_rebuilds_changed_values() {
-        let root = temp_root("aui-present-cache");
-        let package_dir = write_minimal_runtime_package(&root, "runtime-package");
-        add_minimal_aui_document(&package_dir);
-        let load = load_runtime_package(package_dir);
-        assert!(!load.diagnostics.has_errors(), "{:#?}", load.diagnostics);
-        let package = load.value.expect("minimal AUI runtime package");
-        let world = World::new();
-        let mut producer = SequencedUiProducer {
-            values: vec!["FPS: 60".to_string(), "FPS: 59".to_string()],
-            call_count: 0,
-        };
-        let mut cache = NativeAuiPresentCache::for_package(&package);
-
-        let first = cache
-            .take_or_rebuild(&package, &world, 1, &mut producer, None)
-            .expect("first present");
-        let first_composition = first.composition.clone();
-        cache.store(Some(first));
-        let second = cache
-            .take_or_rebuild(&package, &world, 2, &mut producer, None)
-            .expect("cached present");
-        assert_eq!(first_composition, second.composition);
-        assert_eq!(cache.rebuild_count, 1);
-        assert_eq!(cache.hit_count, 1);
-        assert_eq!(cache.presentation_revision, 1);
-
-        let second_document = second.resolved_document.clone();
-        cache.store(Some(second));
-        let third = cache
-            .take_or_rebuild(&package, &world, 3, &mut producer, None)
-            .expect("changed present");
-        assert_ne!(second_document, third.resolved_document);
-        assert_eq!(producer.call_count, 2);
-        assert_eq!(cache.rebuild_count, 2);
-        assert_eq!(cache.hit_count, 1);
-        assert_eq!(cache.presentation_revision, 2);
-    }
-
-    #[test]
-    fn runtime_sprite_texture_collection_includes_scene_and_all_animator_frames() {
-        use engine_runtime::animator2d::{
-            Animator2DPlayback, CookedAnimator2DRegistry, CookedSpriteAnimationClip2D,
-            CookedSpriteAnimationFrame2D,
-        };
-        use engine_runtime::runtime_package::{RuntimeAssetRef, RuntimeSpriteRenderer2D};
-
-        let root = temp_root("sprite-texture-collection");
-        let package_dir = write_minimal_runtime_package(&root, "runtime-package");
-        let load = load_runtime_package(package_dir);
-        assert!(
-            !load.diagnostics.has_errors(),
-            "diagnostics={:#?}",
-            load.diagnostics
-        );
-        let mut package = load.value.expect("minimal runtime package");
-        package.active_scene.entities[0].sprite_renderer2d = Some(RuntimeSpriteRenderer2D {
-            sprite_ref: Some(RuntimeAssetRef {
-                id: "enemy-idle".to_string(),
-                asset_type: "texture".to_string(),
-                guid: None,
-                sub_asset: None,
-            }),
-            material_ref: None,
-            color: None,
-            flip_x: None,
-            flip_y: None,
-            sorting_layer: None,
-            order_in_layer: None,
-            sort_z: None,
-            visible: None,
-        });
-        package.animator2d_registry = CookedAnimator2DRegistry::from_parts(
-            vec![CookedSpriteAnimationClip2D {
-                id: "enemy-move".to_string(),
-                playback: Animator2DPlayback::Loop,
-                frames: vec![
-                    CookedSpriteAnimationFrame2D {
-                        sprite_asset_id: "enemy-move-0".to_string(),
-                        duration_ticks: 4,
-                    },
-                    CookedSpriteAnimationFrame2D {
-                        sprite_asset_id: "enemy-move-1".to_string(),
-                        duration_ticks: 4,
-                    },
-                ],
-            }],
-            Vec::new(),
-        )
-        .expect("Animator2D fixture registry");
-
-        let mut prefab_entity = package.active_scene.entities[0].clone();
-        prefab_entity
-            .sprite_renderer2d
-            .as_mut()
-            .unwrap()
-            .sprite_ref
-            .as_mut()
-            .unwrap()
-            .id = "prefab-only-texture".to_string();
-        package
-            .assets
-            .assets
-            .push(engine_runtime::runtime_package::RuntimeAsset {
-                id: "prefab-only".to_string(),
-                name: "Prefab".to_string(),
-                asset_type: "prefab".to_string(),
-                source: String::new(),
-                state: "available".to_string(),
-                bundle_id: "startup".to_string(),
-                data: Some(
-                    serde_json::to_value(engine_runtime::runtime_package::RuntimePrefabData {
-                        schema_version: "runtime-prefab.v1".to_string(),
-                        id: "prefab-only".to_string(),
-                        name: "Prefab".to_string(),
-                        root_entity_id: Some(prefab_entity.id.clone()),
-                        entities: vec![prefab_entity],
-                    })
-                    .unwrap(),
-                ),
-            });
-        let asset_ids = runtime_sprite_texture_asset_ids(&package);
-
-        assert!(
-            asset_ids.contains("prefab-only-texture"),
-            "runtime-spawned prefab textures must be resident before their first frame"
-        );
-        assert_eq!(asset_ids.len(), 4);
-        assert!(asset_ids.contains("enemy-idle"));
-        assert!(asset_ids.contains("enemy-move-0"));
-        assert!(asset_ids.contains("enemy-move-1"));
-    }
-
-    #[test]
-    fn frame_performance_reports_update_render_submit_and_present_wait() {
-        let mut request = NativePlayerWindowRunRequest::headless_surface_gate("runtime-package");
-        request.performance_warmup_frames = 1;
-        request.performance_sample_frames = 3;
-        let mut report = NativeWindowHostReport::base(&request);
-        finalize_frame_performance(
-            &mut report,
-            &request,
-            &[9_000_000, 10_000_000, 20_000_000, 30_000_000],
-            &[1_000_000, 2_000_000, 4_000_000, 6_000_000],
-            &[3_000_000, 4_000_000, 8_000_000, 12_000_000],
-            &[0, 1_000_000, 2_000_000, 3_000_000],
-        );
-
-        let performance = report.frame_performance_summary.unwrap();
-        assert_eq!(performance.observed_sample_frames, 3);
-        assert_eq!(performance.update.observed_sample_frames, 3);
-        assert_eq!(performance.render_submit.observed_sample_frames, 3);
-        assert_eq!(performance.present_wait.observed_sample_frames, 3);
-        assert!((performance.update.mean_ms - 4.0).abs() < f64::EPSILON);
-        assert!((performance.render_submit.mean_ms - 8.0).abs() < f64::EPSILON);
-        assert!((performance.present_wait.mean_ms - 2.0).abs() < f64::EPSILON);
-    }
-
-    #[test]
-    fn screenshot_request_is_reported_without_running_real_window() {
-        let request = NativePlayerWindowRunRequest::windowed("runtime-package")
-            .with_screenshot("reports/screenshot.png");
-        let report = NativeWindowHostReport::base(&request);
-
-        assert!(report.screenshot.requested);
-        assert_eq!(
-            report.screenshot.status,
-            NativeWindowScreenshotStatus::Unsupported
-        );
-        assert_eq!(
-            report.screenshot.path.as_deref(),
-            Some("reports/screenshot.png")
-        );
-    }
-
-    struct UnavailableAudioOutput {
-        prepare_calls: std::sync::Arc<std::sync::atomic::AtomicUsize>,
-    }
-
-    impl engine_runtime::runtime_audio::AudioOutput for UnavailableAudioOutput {
-        fn kind(&self) -> &'static str {
-            "test-unavailable-output"
-        }
-
-        fn prepare(&mut self) -> Result<(), String> {
-            self.prepare_calls
-                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            Err("test audio device is unavailable".into())
-        }
-
-        fn play(
-            &mut self,
-            _: engine_runtime::ids::RuntimeEntityId,
-            _: std::sync::Arc<engine_runtime::audio::DecodedAudioClip>,
-            _: f32,
-            _: bool,
-        ) -> Result<(), String> {
-            panic!("failed device preparation must prevent playback")
-        }
-
-        fn stop(&mut self, _: engine_runtime::ids::RuntimeEntityId) {}
-
-        fn set_paused(&mut self, _: engine_runtime::ids::RuntimeEntityId, _: bool) {}
-
-        fn finished(&self, _: engine_runtime::ids::RuntimeEntityId) -> bool {
-            false
-        }
-    }
-
-    #[test]
-    fn audio_device_failure_reaches_completion_diagnostics_even_when_reports_are_off() {
-        use engine_runtime::archetype::ComponentValue;
-        use engine_runtime::components::{ComponentTypeId, Hierarchy};
-        use std::sync::atomic::{AtomicUsize, Ordering};
-        use std::sync::Arc;
-
-        let mut world = World::new();
-        let source_id = engine_runtime::ids::EntityId::from("speaker");
-        world
-            .try_spawn_entity(
-                source_id.clone(),
-                "Speaker",
-                "audio",
-                true,
-                Hierarchy {
-                    parent_id: None,
-                    sibling_order: 0,
-                },
-            )
-            .unwrap();
-        world
-            .try_insert_component_value(
-                source_id,
-                ComponentTypeId::audio_source(),
-                ComponentValue::AudioSource(engine_runtime::audio::AudioSource {
-                    clip_ref: engine_runtime::runtime_package::RuntimeAssetRef {
-                        id: "audio-test".into(),
-                        asset_type: "audio".into(),
-                        guid: None,
-                        sub_asset: None,
-                    },
-                    volume: 0.5,
-                }),
-            )
-            .unwrap();
-        let prepare_calls = Arc::new(AtomicUsize::new(0));
-        let mut host = EngineHostLoop::new("audio-failure-report");
-        host.set_audio_output(
-            Box::new(UnavailableAudioOutput {
-                prepare_calls: prepare_calls.clone(),
-            }),
-            false,
-        );
-        host.tick(
-            EngineFrameInput::new(EngineHostMode::HeadlessServer).with_fixed_step_count(0),
-            &mut world,
-        );
-        assert_eq!(prepare_calls.load(Ordering::SeqCst), 1);
-
-        for level in [
-            WindowedPlayerRuntimeReportLevel::Off,
-            WindowedPlayerRuntimeReportLevel::Summary,
-        ] {
-            let request = NativePlayerWindowRunRequest::headless_surface_gate("package")
-                .with_runtime_report_level(level);
-            let mut report = NativeWindowHostReport::base(&request);
-            report.present_status = NativeWindowPresentStatus::Presented;
-            report.mark_runtime_advanced();
-            assert!(!report.has_errors());
-            record_runtime_audio(&mut report, &host, level);
-            record_runtime_audio(&mut report, &host, level);
-            assert!(report.has_errors());
-            assert_eq!(report.completion_exit_code(), 1);
-            assert_eq!(report.diagnostics.len(), 1);
-            assert_eq!(report.diagnostics[0].code, "audio.output_unavailable");
-            assert_eq!(report.diagnostics[0].layer, "runtime_audio");
-            assert_eq!(
-                report.diagnostics[0].message,
-                "test audio device is unavailable"
-            );
-            assert_eq!(
-                report.audio.is_some(),
-                level != WindowedPlayerRuntimeReportLevel::Off
-            );
-            report.mark_runtime_advanced();
-            assert_eq!(report.completion_exit_code(), 1);
-        }
-    }
-
-    #[test]
-    fn audio_absent_project_does_not_prepare_a_device_or_emit_an_audio_report() {
-        use std::sync::atomic::{AtomicUsize, Ordering};
-        use std::sync::Arc;
-        let prepare_calls = Arc::new(AtomicUsize::new(0));
-        let mut host = EngineHostLoop::new("no-audio-report");
-        host.set_audio_output(
-            Box::new(UnavailableAudioOutput {
-                prepare_calls: prepare_calls.clone(),
-            }),
-            false,
-        );
-        host.tick(
-            EngineFrameInput::new(EngineHostMode::HeadlessServer).with_fixed_step_count(0),
-            &mut World::new(),
-        );
-        assert_eq!(prepare_calls.load(Ordering::SeqCst), 0);
-        let request = NativePlayerWindowRunRequest::headless_surface_gate("package")
-            .with_runtime_report_level(WindowedPlayerRuntimeReportLevel::Summary);
-        let mut report = NativeWindowHostReport::base(&request);
-        record_runtime_audio(
-            &mut report,
-            &host,
-            WindowedPlayerRuntimeReportLevel::Summary,
-        );
-        report.present_status = NativeWindowPresentStatus::Presented;
-        assert!(!report.has_errors());
-        assert!(report.diagnostics.is_empty());
-        assert!(report.audio.is_none());
-        assert!(serde_json::to_value(&report)
-            .unwrap()
-            .get("audio")
-            .is_none());
-        assert_eq!(report.completion_exit_code(), 0);
-    }
-
-    #[test]
-    fn summary_reports_rule_failure_and_off_still_marks_logic_error() {
-        use engine_runtime::logic_executor::{ExecutorKind, LogicResult};
-        for level in [
-            WindowedPlayerRuntimeReportLevel::Off,
-            WindowedPlayerRuntimeReportLevel::Summary,
-        ] {
-            let request = NativePlayerWindowRunRequest::headless_surface_gate("runtime-package")
-                .with_runtime_report_level(level);
-            let mut report = NativeWindowHostReport::base(&request);
-            let mut trace = engine_runtime::runtime_trace::RuntimeTrace::new();
-            let mut failure = LogicResult::failed(
-                "rule.fade",
-                ExecutorKind::RustAot,
-                "world.component.unsupported_field",
-                "color is not writable",
-            );
-            failure.failure_location = Some(engine_runtime::logic_executor::LogicFailureLocation {
-                entity_id: "fx".into(),
-                component_type: "engine.sprite_renderer2d".into(),
-                field_path: Some("color".into()),
-            });
-            trace.record_logic_result(9, "Update", &failure);
-            record_runtime_trace(&mut report, &trace, level);
-            assert_eq!(report.logic_status, "error");
-            if level == WindowedPlayerRuntimeReportLevel::Summary {
-                assert_eq!(
-                    report
-                        .gameplay_trace_summary
-                        .as_ref()
-                        .unwrap()
-                        .failed_record_count,
-                    1
-                );
-                let summary = report.gameplay_trace_summary.as_ref().unwrap();
-                assert_eq!(
-                    summary.write_count, 0,
-                    "failed writes are not successful writes"
-                );
-                assert_eq!(summary.failure_details[0].entity_id.as_deref(), Some("fx"));
-                assert_eq!(
-                    summary.failure_details[0].field_path.as_deref(),
-                    Some("color")
-                );
-            } else {
-                assert!(report.gameplay_trace_summary.is_none());
-            }
-            assert!(report.gameplay_trace_records.is_empty());
-            report.mark_runtime_advanced();
-            record_runtime_trace(
-                &mut report,
-                &engine_runtime::runtime_trace::RuntimeTrace::new(),
-                level,
-            );
-            assert_eq!(
-                report.logic_status, "error",
-                "later successful frames cannot clear failures"
-            );
-            report.present_status = NativeWindowPresentStatus::Presented;
-            assert_eq!(
-                report.completion_exit_code(),
-                1,
-                "presenting does not mean gameplay succeeded"
-            );
-        }
-    }
-
-    #[test]
-    fn summary_keeps_bounded_failure_details_and_reads_old_reports() {
-        use engine_runtime::logic_executor::{ExecutorKind, LogicResult};
-        let request = NativePlayerWindowRunRequest::headless_surface_gate("package")
-            .with_runtime_report_level(WindowedPlayerRuntimeReportLevel::Summary);
-        let mut report = NativeWindowHostReport::base(&request);
-        let mut trace = engine_runtime::runtime_trace::RuntimeTrace::new();
-        for frame in 1..=20 {
-            trace.record_logic_result(
-                frame,
-                "Update",
-                &LogicResult::failed(
-                    "rule.fade",
-                    ExecutorKind::RustAot,
-                    "world.component.unsupported_field",
-                    "错误".repeat(2000),
-                ),
-            );
-        }
-        record_runtime_trace(
-            &mut report,
-            &trace,
-            WindowedPlayerRuntimeReportLevel::Summary,
-        );
-        let summary = report.gameplay_trace_summary.unwrap();
-        assert_eq!(summary.failed_record_count, 20);
-        assert_eq!(summary.failure_details.len(), 16);
-        assert_eq!(summary.omitted_failure_count, 4);
-        assert_eq!(summary.failure_details[0].frame_index, 1);
-        assert_eq!(summary.failure_details[15].frame_index, 16);
-        assert!(summary
-            .failure_details
-            .iter()
-            .all(|d| d.message.as_ref().unwrap().len() <= 1024));
-        let mut json = serde_json::to_value(&summary).unwrap();
-        json.as_object_mut().unwrap().remove("failureDetails");
-        json.as_object_mut().unwrap().remove("omittedFailureCount");
-        let old: WindowedPlayerGameplayTraceSummary = serde_json::from_value(json).unwrap();
-        assert!(old.failure_details.is_empty());
-        assert_eq!(old.omitted_failure_count, 0);
-        assert!(report.gameplay_trace_records.is_empty());
-    }
-
-    #[test]
-    fn summary_command_failure_preserves_entity_and_error_without_full_trace() {
-        let request = NativePlayerWindowRunRequest::headless_surface_gate("package")
-            .with_runtime_report_level(WindowedPlayerRuntimeReportLevel::Summary);
-        let mut report = NativeWindowHostReport::base(&request);
-        let mut trace = engine_runtime::runtime_trace::RuntimeTrace::new();
-        let mut record = engine_runtime::gameplay_trace::GameplayTraceRecord::write(
-            1260,
-            "PostPhysics",
-            "engine.command_buffer",
-            "enemy".into(),
-            "unused".into(),
-            "",
-            None,
-            None,
-        );
-        record.operation = "command_apply".into();
-        record.component_type = None;
-        record.field_path = None;
-        record.result = "failed".into();
-        record.error_code = Some("world.entity.missing".into());
-        trace.gameplay_records.push(record);
-        record_runtime_trace(
-            &mut report,
-            &trace,
-            WindowedPlayerRuntimeReportLevel::Summary,
-        );
-        let summary = report.gameplay_trace_summary.as_ref().unwrap();
-        assert_eq!(summary.failed_record_count, 1);
-        assert_eq!(
-            summary.failure_details[0].entity_id.as_deref(),
-            Some("enemy")
-        );
-        assert_eq!(
-            summary.failure_details[0].error_code.as_deref(),
-            Some("world.entity.missing")
-        );
-        assert_eq!(summary.failure_details[0].frame_index, 1260);
-        assert!(report.gameplay_trace_records.is_empty());
-    }
-
-    #[test]
-    fn windowed_session_advances_past_first_frame_until_limit() {
-        assert!(windowed_session_has_more_frames(1, 3));
-        assert!(windowed_session_has_more_frames(2, 3));
-        assert!(!windowed_session_has_more_frames(3, 3));
-        assert!(windowed_session_has_more_frames(1, u64::MAX));
-    }
-
-    #[test]
-    fn player_target_updates_initial_window_extent() {
-        let request = NativePlayerWindowRunRequest::windowed("runtime-package")
-            .with_game_view_target(GameViewTargetSpec::portrait_720x1280());
-
-        assert_eq!(request.config.width, 720);
-        assert_eq!(request.config.height, 1280);
-        assert_eq!(
-            request.game_view_target,
-            GameViewTargetSpec::portrait_720x1280()
-        );
-    }
-
-    #[test]
-    fn portrait_player_window_fits_inside_work_area_without_changing_aspect() {
-        let fitted = fit_player_window_inner_extent(720, 1280, 2048, 1104, 16, 39);
-
-        assert_eq!(fitted, (599, 1065));
-        assert!((u64::from(fitted.0) * 1280).abs_diff(u64::from(fitted.1) * 720) <= 720);
-    }
-
-    #[test]
-    fn player_window_keeps_requested_extent_when_work_area_can_contain_it() {
-        assert_eq!(
-            fit_player_window_inner_extent(1280, 720, 2048, 1104, 16, 39),
-            (1280, 720)
-        );
-    }
-
-    #[test]
-    fn rgba_png_writer_outputs_png_file() {
-        let root = temp_root("png-writer");
-        let path = root.join("reports").join("screenshot.png");
-        let rgba = [
-            255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 255, 255, 255, 255, 255,
-        ];
-
-        let size = write_rgba_png(&path, 2, 2, &rgba).unwrap();
-
-        let bytes = fs::read(&path).unwrap();
-        assert_eq!(bytes.len() as u64, size);
-        assert_eq!(&bytes[..8], &[137, 80, 78, 71, 13, 10, 26, 10]);
-    }
-
-    #[test]
-    fn headless_native_player_runs_package_one_frame() {
-        let root = temp_root("headless-one-frame");
-        let package = write_minimal_runtime_package(&root, "runtime-package");
-        let mut request = NativePlayerWindowRunRequest::headless_surface_gate(package);
-        request.frame_limit = 1;
-
-        let report = run_headless_native_player_from_package(request);
-
-        assert_eq!(report.exit_code, 0, "diagnostics={:#?}", report.diagnostics);
-        assert_eq!(report.package_status, "ok");
-        assert_eq!(report.scene_status, "ok");
-        assert_eq!(report.world_status, "ok");
-        assert_eq!(report.logic_status, "ok");
-        assert_eq!(report.render_status, "ok");
-        assert_eq!(report.rhi_status, "ok");
-        assert_eq!(report.present_status, NativeWindowPresentStatus::Presented);
-        assert_eq!(report.frames_completed, 1);
-        assert!(report.rhi_command_count > 0);
-    }
-
-    #[test]
-    fn runtime_player_project_runtime_session_headless_uses_shared_composition_and_reports_summary()
-    {
-        let root = temp_root("project-runtime-session");
-        let package = write_minimal_runtime_package(&root, "runtime-package");
-        let mut request = NativePlayerWindowRunRequest::headless_surface_gate(package);
-        request.frame_limit = 1;
-
-        let report = run_headless_native_player_from_package(request);
-
-        let receipt = report
-            .project_runtime_bind_receipt
-            .as_ref()
-            .expect("project runtime bind receipt");
-        let session = report
-            .project_runtime_session_report
-            .as_ref()
-            .expect("project runtime session summary");
-        assert_eq!(receipt.session_id, session.session_id);
-        assert_eq!(receipt.session_status, "ready");
-        assert_eq!(session.status, "advanced");
-        assert_eq!(session.stages.len(), 1);
-        assert_eq!(
-            session.stages[0].stage,
-            engine_runtime::project_runtime_session::ProjectRuntimeSessionStage::FixedUpdate
-        );
-        assert_eq!(session.stages[0].action_count, 0);
-        assert_eq!(session.stages[0].staged_mutation_count, 0);
-        assert_eq!(session.stages[0].committed_mutation_count, 0);
-        assert_eq!(receipt.producer_id, "engine_empty_project_ui_state");
-        assert_ne!(receipt.producer_id, receipt.session_id);
-    }
-
-    #[test]
-    fn headless_native_player_reports_missing_package() {
-        let root = temp_root("missing-package");
-        let report = run_headless_native_player_from_package(
-            NativePlayerWindowRunRequest::headless_surface_gate(root.join("missing-package")),
-        );
-
-        assert_eq!(report.exit_code, 1);
-        assert_eq!(report.package_status, "error");
-        assert_eq!(
-            report.present_status,
-            NativeWindowPresentStatus::PackageFailed
-        );
-        assert!(report
-            .diagnostics
-            .iter()
-            .any(|diagnostic| diagnostic.layer == "package"));
-    }
-
-    #[test]
-    #[cfg(not(feature = "real-window"))]
-    fn feature_disabled_windowed_reports_native_host_required() {
-        let root = temp_root("feature-disabled");
-        let package = write_minimal_runtime_package(&root, "runtime-package");
-
-        let report = run_windowed_native_player_from_package(
-            NativePlayerWindowRunRequest::windowed(package),
-        );
-
-        assert_eq!(report.exit_code, 1);
-        assert_eq!(
-            report.present_status,
-            NativeWindowPresentStatus::FeatureNotEnabled
-        );
-        assert!(report
-            .diagnostics
-            .iter()
-            .any(|diagnostic| diagnostic.code == "native_window_feature_not_enabled"));
-    }
-
-    #[test]
-    #[cfg(not(feature = "real-window"))]
-    fn feature_disabled_windowed_screenshot_reports_unsupported() {
-        let root = temp_root("feature-disabled-screenshot");
-        let package = write_minimal_runtime_package(&root, "runtime-package");
-
-        let report = run_windowed_native_player_from_package(
-            NativePlayerWindowRunRequest::windowed(package)
-                .with_screenshot(root.join("reports").join("window.png")),
-        );
-
-        assert_eq!(report.exit_code, 1);
-        assert!(report.screenshot.requested);
-        assert_eq!(
-            report.screenshot.status,
-            NativeWindowScreenshotStatus::Unsupported
-        );
-        assert!(report.screenshot.path.is_some());
-    }
-
-    #[test]
-    fn native_input_space_key_generates_fire_action() {
-        let mut device_state = InputDeviceState::new();
-        let mapping = InputMappingAsset::gameplay_default();
-        let raw_events = vec![RawInputEvent::keyboard_down(1, "main-window", "Space")];
-
-        let (snapshot, trace, summary) = resolve_native_input_frame(
-            &mut device_state,
-            &mapping,
-            "test-fixture",
-            None,
-            &raw_events,
-            1,
-            "main-window",
-            "headless-script",
-            "test",
-        );
-
-        assert!(snapshot.button_pressed("action.fire"));
-        assert_eq!(trace.action_count, snapshot.action_count());
-        assert_eq!(summary.raw_event_count, 1);
-        assert!(summary.last_action_ids.contains(&"action.fire".to_string()));
-    }
-
-    #[test]
-    fn native_input_held_key_drives_axis_across_frames() {
-        let mut device_state = InputDeviceState::new();
-        let mapping = InputMappingAsset::gameplay_default();
-        let raw_events = vec![RawInputEvent::keyboard_down(1, "main-window", "D")];
-
-        let (first_snapshot, _, _) = resolve_native_input_frame(
-            &mut device_state,
-            &mapping,
-            "test-fixture",
-            None,
-            &raw_events,
-            1,
-            "main-window",
-            "headless-script",
-            "test",
-        );
-        let (second_snapshot, _, summary) = resolve_native_input_frame(
-            &mut device_state,
-            &mapping,
-            "test-fixture",
-            None,
-            &[],
-            2,
-            "main-window",
-            "headless-script",
-            "test",
-        );
-
-        assert_eq!(
-            first_snapshot.axis2("action.move"),
-            Some(engine_input::Axis2 { x: 1.0, y: 0.0 })
-        );
-        assert_eq!(
-            second_snapshot.axis2("action.move"),
-            Some(engine_input::Axis2 { x: 1.0, y: 0.0 })
-        );
-        assert_eq!(summary.pressed_key_count, 1);
-    }
-
-    #[test]
-    fn native_input_mouse_pointer_button_and_wheel_are_resolved() {
-        let mut device_state = InputDeviceState::new();
-        let mapping = InputMappingAsset::new(
-            "input.mouse-test",
-            vec![
-                engine_input::InputActionDefinition::new(
-                    "action.fire",
-                    engine_input::InputActionValueType::Button,
-                ),
-                engine_input::InputActionDefinition::new(
-                    "action.pointer",
-                    engine_input::InputActionValueType::Pointer,
-                ),
-                engine_input::InputActionDefinition::new(
-                    "action.scroll",
-                    engine_input::InputActionValueType::Axis1,
-                ),
-            ],
-            vec![engine_input::InputContextDefinition::new("gameplay", 0)],
-            vec![
-                engine_input::InputBindingDefinition::new("gameplay", "action.fire", "mouse/Left"),
-                engine_input::InputBindingDefinition::pointer("action.pointer"),
-                engine_input::InputBindingDefinition::mouse_wheel("action.scroll"),
-            ],
-        );
-        let raw_events = vec![
-            RawInputEvent::mouse_move(1, "main-window", 32.0, 64.0),
-            RawInputEvent::mouse_button_down(
-                1,
-                "main-window",
-                engine_input::RuntimePointerButton::Primary,
-            ),
-            RawInputEvent::mouse_wheel(1, "main-window", -1.0),
-        ];
-
-        let (snapshot, _, summary) = resolve_native_input_frame(
-            &mut device_state,
-            &mapping,
-            "test-fixture",
-            None,
-            &raw_events,
-            1,
-            "main-window",
-            "headless-script",
-            "test",
-        );
-
-        assert_eq!(
-            snapshot.pointer("action.pointer"),
-            Some(engine_input::PointerPosition { x: 32.0, y: 64.0 })
-        );
-        assert!(snapshot.button_pressed("action.fire"));
-        assert_eq!(
-            snapshot.axis1("action.scroll"),
-            Some(engine_input::Axis1 { value: -1.0 })
-        );
-        assert_eq!(
-            summary.pointer_position,
-            Some(engine_input::PointerPosition { x: 32.0, y: 64.0 })
-        );
-        assert_eq!(summary.pressed_mouse_button_count, 1);
-    }
-
-    #[test]
-    fn pointer_replay_reaches_real_input_resolver_and_old_keyboard_scripts_still_parse() {
-        let script: NativePlayerInputScript = serde_json::from_str(r#"{"schemaVersion":"native-player-input-script.v1","scriptId":"pointer","frames":[{"frameIndex":1,"pointerPosition":[1000,600]}]}"#).unwrap();
-        script.validate().unwrap();
-        let request =
-            NativePlayerWindowRunRequest::headless_surface_gate("unused").with_input_script(script);
-        let mapping = InputMappingAsset::new(
-            "pointer",
-            vec![engine_input::InputActionDefinition::new(
-                "action.pointer",
-                engine_input::InputActionValueType::Pointer,
-            )],
-            vec![engine_input::InputContextDefinition::new("gameplay", 0)],
-            vec![engine_input::InputBindingDefinition::pointer(
-                "action.pointer",
-            )],
-        );
-        let mut state = InputDeviceState::new();
-        let (snapshot, _, summary) = resolve_native_input_frame(
-            &mut state,
-            &mapping,
-            "test",
-            None,
-            &scripted_input_events(&request, 1),
-            1,
-            "window",
-            "script",
-            "test",
-        );
-        assert_eq!(
-            snapshot.pointer("action.pointer"),
-            Some(engine_input::PointerPosition {
-                x: 1000.0,
-                y: 600.0
-            })
-        );
-        assert_eq!(summary.pointer_position, snapshot.pointer("action.pointer"));
-        assert!(scripted_input_events(&request, 2).is_empty());
-        let legacy: NativePlayerInputScript = serde_json::from_str(r#"{"schemaVersion":"native-player-input-script.v1","scriptId":"keyboard","frames":[{"frameIndex":1,"keyDown":["D"]}]}"#).unwrap();
-        assert_eq!(legacy.frames[0].pointer_position, None);
-        assert!(!serde_json::to_string(&legacy)
-            .unwrap()
-            .contains("pointerPosition"));
-    }
-
-    #[test]
-    fn aui_interaction_filters_mouse_fire_and_dispatches_click_action() {
-        let mut device_state = InputDeviceState::new();
-        let mapping = InputMappingAsset::new(
-            "input.mouse-fire",
-            vec![engine_input::InputActionDefinition::new(
-                "action.fire",
-                engine_input::InputActionValueType::Button,
-            )],
-            vec![engine_input::InputContextDefinition::new("gameplay", 0)],
-            vec![engine_input::InputBindingDefinition::new(
-                "gameplay",
-                "action.fire",
-                "mouse/Left",
-            )],
-        );
-        let aui_present = test_aui_present_output();
-        let mut aui_state = AuiInteractionState::default();
-        let raw_events = vec![
-            RawInputEvent::mouse_move(1, "main-window", 120.0, 120.0),
-            RawInputEvent::mouse_button_down(
-                1,
-                "main-window",
-                engine_input::RuntimePointerButton::Primary,
-            ),
-            RawInputEvent::mouse_button_up(
-                1,
-                "main-window",
-                engine_input::RuntimePointerButton::Primary,
-            ),
-        ];
-
-        let (snapshot, trace, summary, interaction) = resolve_native_input_frame_with_aui(
-            &mut device_state,
-            &mapping,
-            "test-fixture",
-            None,
-            &raw_events,
-            1,
-            "main-window",
-            "headless-script",
-            "test",
-            Some(&aui_present),
-            None,
-            &mut aui_state,
-        );
-
-        let interaction = interaction.expect("aui interaction should run");
-        assert!(!snapshot.button_pressed("action.fire"));
-        assert_eq!(summary.raw_event_count, 3);
-        assert_eq!(summary.runtime_event_count, 0);
-        assert_eq!(
-            trace.route_kind.as_deref(),
-            Some("RuntimeInputFrameFilteredByAui")
-        );
-        assert_eq!(interaction.report.consumed_pointer_event_count, 3);
-        assert!(
-            interaction.report.input_event_count > interaction.report.filtered_input_event_count
-        );
-        assert!(interaction
-            .result
-            .actions
-            .iter()
-            .any(|action| action.action_id == "ui.pause"));
-    }
-
-    #[test]
-    fn portrait_target_space_input_uses_shared_presentation_inverse() {
-        use engine_runtime::game_view_presentation::{
-            CanvasReferenceFact, GameViewExtent, GameViewPoint, GameViewPresentationModule,
-            GameViewPresentationSpec, GameViewRect, GameViewScalePolicy,
-        };
-
-        let mut device_state = InputDeviceState::new();
-        let mapping = InputMappingAsset::gameplay_default();
-        let aui_present = test_aui_present_output();
-        let presentation = GameViewPresentationModule::resolve(GameViewPresentationSpec {
-            session_id: "player-portrait-test".to_string(),
-            target_id: "main-surface".to_string(),
-            target_extent: GameViewExtent::new(720, 1280),
-            display_rect: GameViewRect::new(0.0, 0.0, 720.0, 1280.0),
-            scale_policy: GameViewScalePolicy::Contain,
-            surface_generation: 1,
-            presentation_revision: 1,
-            canvas_references: vec![CanvasReferenceFact::new("main", 1280, 720)],
-        })
-        .expect("portrait presentation");
-        let target = presentation
-            .reference_to_target("main", GameViewPoint::new(170.0, 120.0))
-            .expect("button center maps into target space");
-        let raw_events = vec![
-            RawInputEvent::mouse_move(1, "main-window", target.x, target.y),
-            RawInputEvent::mouse_button_down(
-                1,
-                "main-window",
-                engine_input::RuntimePointerButton::Primary,
-            ),
-            RawInputEvent::mouse_button_up(
-                1,
-                "main-window",
-                engine_input::RuntimePointerButton::Primary,
-            ),
-        ];
-        let mut aui_state = AuiInteractionState::default();
-
-        let (_, _, _, interaction) = resolve_native_input_frame_with_aui(
-            &mut device_state,
-            &mapping,
-            "test-fixture",
-            None,
-            &raw_events,
-            1,
-            "main-window",
-            "headless-script",
-            "test",
-            Some(&aui_present),
-            Some(&presentation),
-            &mut aui_state,
-        );
-
-        let interaction = interaction.expect("AUI interaction should run");
-        assert!(interaction
-            .result
-            .actions
-            .iter()
-            .any(|action| action.action_id == "ui.pause"));
-    }
-
-    #[test]
-    fn aui_feedback_player_pointer_down_updates_same_frame_overlay() {
-        let mut device_state = InputDeviceState::new();
-        let mapping = InputMappingAsset::gameplay_default();
-        let mut present = test_aui_present_output();
-        let original_button_rect = present
-            .overlay
-            .draw_items
-            .iter()
-            .find(|item| item.node_id == "pause_button")
-            .unwrap()
-            .rect;
-        let mut interaction_state = AuiInteractionState::default();
-        let raw_events = vec![
-            RawInputEvent::mouse_move(1, "main-window", 120.0, 120.0),
-            RawInputEvent::mouse_button_down(
-                1,
-                "main-window",
-                engine_input::RuntimePointerButton::Primary,
-            ),
-        ];
-        let (_, _, _, interaction) = resolve_native_input_frame_with_aui(
-            &mut device_state,
-            &mapping,
-            "test-fixture",
-            None,
-            &raw_events,
-            1,
-            "main-window",
-            "headless-script",
-            "test",
-            Some(&present),
-            None,
-            &mut interaction_state,
-        );
-        let mut feedback_state = AuiControlFeedbackState::default();
-        let feedback = AuiRuntimePresenter::apply_control_feedback_with_fonts(
-            &mut present,
-            &interaction.unwrap().result,
-            &mut feedback_state,
-            presentation_delta_us_from_seconds(
-                engine_runtime::runtime_time::DEFAULT_FIXED_DELTA_TIME,
-            ),
-            &RuntimeAuiFontAtlasRegistry::empty("test"),
-            &RuntimeFontBundleRegistry::default(),
-        );
-        let animated_button_rect = present
-            .overlay
-            .draw_items
-            .iter()
-            .find(|item| item.node_id == "pause_button")
-            .unwrap()
-            .rect;
-        assert_eq!(feedback.overrides.len(), 1);
-        assert!(animated_button_rect.width < original_button_rect.width);
-        assert!(feedback
-            .report
-            .resolved_profile_ids
-            .contains(engine_runtime::aui::AUI_BUILTIN_BUTTON_FEEDBACK_PROFILE_ID));
-    }
-
-    #[test]
-    fn aui_text_ime_events_are_consumed_and_reported_by_native_input_chain() {
-        let mut device_state = InputDeviceState::new();
-        let mapping = InputMappingAsset::gameplay_default();
-        let aui_present = test_aui_text_entry_present_output();
-        let mut aui_state = AuiInteractionState::default();
-        let raw_events = vec![
-            RawInputEvent::mouse_move(1, "main-window", 96.0, 96.0),
-            RawInputEvent::mouse_button_down(
-                1,
-                "main-window",
-                engine_input::RuntimePointerButton::Primary,
-            ),
-            RawInputEvent::text_input(1, "main-window", "B"),
-            RawInputEvent::ime_preedit(1, "main-window", "ni", 0, 2),
-            RawInputEvent::ime_cancel(1, "main-window"),
-            RawInputEvent::ime_commit(1, "main-window", "hao"),
-            RawInputEvent::keyboard_down(1, "main-window", "Enter"),
-            RawInputEvent::keyboard_up(1, "main-window", "Enter"),
-        ];
-
-        let (_snapshot, _trace, summary, interaction) = resolve_native_input_frame_with_aui(
-            &mut device_state,
-            &mapping,
-            "test-fixture",
-            None,
-            &raw_events,
-            1,
-            "main-window",
-            "headless-script",
-            "test",
-            Some(&aui_present),
-            None,
-            &mut aui_state,
-        );
-
-        let interaction = interaction.expect("aui interaction should run");
-        let mut present_summary = NativeAuiPresentSummary::empty();
-        present_summary.apply_interaction_report(&interaction.report);
-        present_summary.apply_navigation_screenflow_textentry_report(
-            &interaction.navigation_screenflow_textentry_report,
-        );
-
-        assert!(summary.runtime_event_count < raw_events.len());
-        assert_eq!(
-            interaction
-                .navigation_screenflow_textentry_report
-                .ime_platform_coverage,
-            "schema_headless_and_winit_cmin"
-        );
-        assert_eq!(present_summary.aui_text_edit_session_count, 1);
-        assert_eq!(present_summary.aui_text_changed_count, 2);
-        assert_eq!(present_summary.aui_text_submitted_count, 1);
-        assert_eq!(present_summary.aui_ime_preedit_count, 1);
-        assert_eq!(present_summary.aui_ime_cancel_count, 1);
-        assert_eq!(present_summary.aui_ime_commit_count, 1);
-        assert!(present_summary.aui_action_prompt_reported);
-        assert!(present_summary.gameplay_input_filtered);
-    }
-
-    #[test]
-    fn native_input_focus_lost_releases_pressed_inputs() {
-        let mut device_state = InputDeviceState::new();
-        let mapping = InputMappingAsset::gameplay_default();
-        let raw_events = vec![
-            RawInputEvent::keyboard_down(1, "main-window", "Space"),
-            RawInputEvent::mouse_button_down(
-                1,
-                "main-window",
-                engine_input::RuntimePointerButton::Primary,
-            ),
-        ];
-        let _ = resolve_native_input_frame(
-            &mut device_state,
-            &mapping,
-            "test-fixture",
-            None,
-            &raw_events,
-            1,
-            "main-window",
-            "headless-script",
-            "test",
-        );
-
-        let (_snapshot, _trace, summary) = resolve_native_input_frame(
-            &mut device_state,
-            &mapping,
-            "test-fixture",
-            None,
-            &[RawInputEvent::focus_lost(2, "main-window")],
-            2,
-            "main-window",
-            "headless-script",
-            "test",
-        );
-
-        assert!(!summary.focused);
-        assert_eq!(summary.pressed_key_count, 0);
-        assert_eq!(summary.pressed_mouse_button_count, 0);
-    }
-
-    #[test]
-    fn headless_player_reports_runtime_package_input_mapping() {
-        let root = temp_root("runtime-package-input");
-        let package = write_minimal_runtime_package(&root, "runtime-package");
-        let custom_mapping = InputMappingAsset::new(
-            "input.project",
-            vec![engine_input::InputActionDefinition::new(
-                "action.launch",
-                engine_input::InputActionValueType::Button,
-            )],
-            vec![engine_input::InputContextDefinition::new("gameplay", 0)],
-            vec![engine_input::InputBindingDefinition::button(
-                "action.launch",
-                "KeyL",
-            )],
-        );
-        fs::write(
-            package.join("input").join("input-manifest.json"),
-            r#"{
-  "schemaVersion": "runtime-input-manifest.v1",
-  "defaultMappingId": "input.project",
-  "mappings": [{ "id": "input.project", "path": "input/input.project.json", "enabled": true }]
-}"#,
-        )
-        .unwrap();
-        fs::write(
-            package.join("input").join("input.project.json"),
-            serde_json::to_string_pretty(&custom_mapping).unwrap(),
-        )
-        .unwrap();
-        let manifest_path = package.join("manifest.json");
-        let manifest_text = fs::read_to_string(&manifest_path).unwrap().replace(
-            r#""input": { "path": "input/input-manifest.json", "defaultMappingId": "input.default", "mappingCount": 1 }"#,
-            r#""input": { "path": "input/input-manifest.json", "defaultMappingId": "input.project", "mappingCount": 1 }"#,
-        );
-        fs::write(manifest_path, manifest_text).unwrap();
-
-        let report = run_headless_native_player_from_package(
-            NativePlayerWindowRunRequest::headless_surface_gate(package),
-        );
-
-        assert_eq!(report.package_status, "ok");
-        assert_eq!(report.input.mapping_source, "runtime-package");
-        assert_eq!(report.input.mapping_id.as_deref(), Some("input.project"));
-        assert_eq!(report.input.mapping_status, "ok");
-    }
-
-    #[cfg(feature = "real-window")]
-    #[test]
-    #[ignore = "real OS window / GPU smoke gate is local-only"]
-    fn real_windowed_player_smoke() {
-        let root = temp_root("real-windowed-smoke");
-        let package = write_minimal_runtime_package(&root, "runtime-package");
-        let report = run_windowed_native_player_from_package(
-            NativePlayerWindowRunRequest::windowed(package),
-        );
-
-        assert_eq!(
-            report.schema_version,
-            NATIVE_WINDOW_HOST_REPORT_SCHEMA_VERSION
-        );
-        assert_eq!(report.present_status, NativeWindowPresentStatus::Presented);
-    }
-
-    #[cfg(feature = "real-window")]
-    #[test]
-    #[ignore = "real OS window / GPU screenshot smoke gate is local-only"]
-    fn real_windowed_player_screenshot_smoke() {
-        let root = temp_root("real-windowed-screenshot-smoke");
-        let package = write_minimal_runtime_package(&root, "runtime-package");
-        let screenshot = root.join("reports").join("windowed-player-screenshot.png");
-        let request = NativePlayerWindowRunRequest::windowed(package).with_screenshot(&screenshot);
-
-        let report = run_windowed_native_player_from_package(request);
-
-        assert_eq!(
-            report.schema_version,
-            NATIVE_WINDOW_HOST_REPORT_SCHEMA_VERSION
-        );
-        assert_eq!(report.present_status, NativeWindowPresentStatus::Presented);
-        assert_eq!(
-            report.screenshot.status,
-            NativeWindowScreenshotStatus::Captured
-        );
-        assert!(screenshot.exists());
-    }
-
-    pub(crate) fn temp_root(name: &str) -> PathBuf {
-        let stamp = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_nanos();
-        std::env::temp_dir().join(format!("runtime-player-winit-{name}-{stamp}"))
-    }
-
-    fn test_aui_present_output() -> AuiRuntimePresentOutput {
-        let root = AuiNode::new("root", AuiNodeKind::Panel, AuiRect::stretch_full())
-            .with_children(["pause_button"]);
-        let pause_button = AuiNode::new(
-            "pause_button",
-            AuiNodeKind::Button,
-            AuiRect::fixed_position(80.0, 80.0, 180.0, 80.0),
-        )
-        .with_parent("root")
-        .with_interactable(true)
-        .with_action(AuiActionRef::click("ui.pause"));
-        let document = AuiDocument::new(
-            "runtime-interaction-test",
-            vec![AuiCanvas::screen_overlay("main", 1280.0, 720.0, "root")],
-            vec![root, pause_button],
-        );
-        AuiRuntimePresenter::present_package_smoke(&document, 1)
-    }
-
-    fn test_aui_text_entry_present_output() -> AuiRuntimePresentOutput {
-        let root = AuiNode::new("root", AuiNodeKind::Panel, AuiRect::stretch_full())
-            .with_children(["name_input"]);
-        let input = AuiNode::new(
-            "name_input",
-            AuiNodeKind::InputField,
-            AuiRect::fixed_position(80.0, 80.0, 220.0, 44.0),
-        )
-        .with_parent("root")
-        .with_interactable(true)
-        .with_text("A")
-        .with_action(AuiActionRef::text_changed("ui.name_changed"))
-        .with_action(AuiActionRef::text_submitted("ui.name_submitted"))
-        .with_action(AuiActionRef::text_cancelled("ui.name_cancelled"));
-        let mut canvas = AuiCanvas::screen_overlay("main", 1280.0, 720.0, "root");
-        canvas.default_focus_node_id = Some("name_input".to_string());
-        let document = AuiDocument::new("runtime-text-entry-test", vec![canvas], vec![root, input]);
-        AuiRuntimePresenter::present_package_smoke(&document, 1)
-    }
-
-    pub(crate) fn write_minimal_runtime_package(root: &Path, name: &str) -> PathBuf {
-        let package_dir = root.join(name);
-        fs::create_dir_all(package_dir.join("scenes")).unwrap();
-        fs::create_dir_all(package_dir.join("assets")).unwrap();
-        fs::create_dir_all(package_dir.join("input")).unwrap();
-        fs::create_dir_all(package_dir.join("rules")).unwrap();
-        fs::write(
-            package_dir.join("manifest.json"),
-            r#"{
-  "schemaVersion": "runtime-package.v2",
-  "packageMode": "debug-readable",
-  "project": {
-    "projectId": "project-runtime-player-test",
-    "name": "Runtime Player Test",
-    "version": "0.1.0",
-    "runtimeModule": {
-      "moduleId": "engine.empty.runtime",
-      "interfaceVersion": "project-runtime-module.v2",
-      "aotContentDigest": "sha256:engine-empty-runtime-v2"
-    }
-  },
-  "activeSceneId": "scene-main",
-  "scenes": [{ "id": "scene-main", "name": "Main", "path": "scenes/scene-main.json", "entityCount": 1 }],
-  "assets": { "path": "assets/asset-manifest.json", "assetCount": 1 },
-  "rules": { "path": "rules/rule-manifest.json", "mode": "none" },
-  "input": { "path": "input/input-manifest.json", "defaultMappingId": "input.default", "mappingCount": 1 },
-  "contentHash": "testhash"
-}"#,
-        )
-        .unwrap();
-        fs::write(
-            package_dir.join("scenes").join("scene-main.json"),
-            r##"{
-  "schemaVersion": "runtime-scene.v1",
-  "id": "scene-main",
-  "name": "Main",
-  "gravity": 0,
-  "background": "#000000",
-  "skyColor": "#101010",
-  "entities": [{
-    "schemaVersion": "runtime-entity.v1",
-    "id": "entity-main",
-    "name": "Main Entity",
-    "kind": "actor",
-    "enabled": true,
-    "parentId": null,
-    "siblingOrder": 0,
-    "transform": {
-      "localPosition": { "x": 0, "y": 0, "z": 0 },
-      "localRotation": { "x": 0, "y": 0, "z": 0 },
-      "localScale": { "x": 1, "y": 1, "z": 1 }
-    }
-  }]
-}"##,
-        )
-        .unwrap();
-        fs::write(
-            package_dir.join("assets").join("asset-manifest.json"),
-            r#"{
-  "schemaVersion": "runtime-asset-manifest.v1",
-  "assets": [{
-    "id": "scene-main",
-    "name": "Main",
-    "type": "scene",
-    "source": "scenes/scene-main.json",
-    "state": "available",
-    "bundleId": "startup"
-  }],
-  "runtimeAssetIndex": [{
-    "assetGuid": "scene-main",
-    "assetId": "scene-main",
-    "assetType": "scene",
-    "subAssetId": null,
-    "version": "1",
-    "cookedAssetId": "cooked-scene-main",
-    "bundleId": "startup",
-    "loaderKind": "scene",
-    "dependencies": [],
-    "hash": null,
-    "size": null,
-    "flags": ["test"]
-  }],
-  "bundleTable": [{
-    "bundleId": "startup",
-    "mountId": null,
-    "uri": "bundles/startup",
-    "hash": null,
-    "version": null,
-    "mounted": false
-  }],
-  "cookedAssetTable": [{
-    "cookedAssetId": "cooked-scene-main",
-    "bundleId": "startup",
-    "path": "scenes/scene-main.json",
-    "offset": null,
-    "size": null,
-    "compression": "none",
-    "hash": null
-  }],
-  "dependencyTable": []
-}"#,
-        )
-        .unwrap();
-        fs::write(
-            package_dir.join("rules").join("rule-manifest.json"),
-            r#"{
-  "schemaVersion": "runtime-rule-manifest.v1",
-  "mode": "none",
-  "rules": [],
-  "modules": []
-}"#,
-        )
-        .unwrap();
-        fs::write(
-            package_dir.join("input").join("input-manifest.json"),
-            r#"{
-  "schemaVersion": "runtime-input-manifest.v1",
-  "defaultMappingId": "input.default",
-  "mappings": [{ "id": "input.default", "path": "input/input.default.json", "enabled": true }]
-}"#,
-        )
-        .unwrap();
-        fs::write(
-            package_dir.join("input").join("input.default.json"),
-            serde_json::to_string_pretty(&InputMappingAsset::gameplay_default()).unwrap(),
-        )
-        .unwrap();
-        package_dir
-    }
-
-    fn add_minimal_aui_document(package_dir: &Path) {
-        fs::create_dir_all(package_dir.join("aui").join("documents")).unwrap();
-        let manifest_path = package_dir.join("manifest.json");
-        let manifest_text = fs::read_to_string(&manifest_path).unwrap().replace(
-            "\"input\": { \"path\": \"input/input-manifest.json\", \"defaultMappingId\": \"input.default\", \"mappingCount\": 1 },",
-            "\"input\": { \"path\": \"input/input-manifest.json\", \"defaultMappingId\": \"input.default\", \"mappingCount\": 1 },\n  \"aui\": { \"path\": \"aui/aui-manifest.json\", \"documentCount\": 1 },",
-        );
-        fs::write(manifest_path, manifest_text).unwrap();
-        fs::write(
-            package_dir.join("aui").join("aui-manifest.json"),
-            r#"{
-  "schemaVersion": "runtime-aui-manifest.v1",
-  "documents": [{
-    "documentId": "hud",
-    "path": "aui/documents/hud.aui.json",
-    "canvasCount": 1,
-    "nodeCount": 2,
-    "bindingCount": 1,
-    "actionCount": 0,
-    "assetRefs": []
-  }]
-}"#,
-        )
-        .unwrap();
-        fs::write(
-            package_dir
-                .join("aui")
-                .join("documents")
-                .join("hud.aui.json"),
-            r##"{
-  "schema_version": "aui-document.v2",
-  "document_id": "hud",
-  "canvases": [{
-    "canvas_id": "main",
-    "mode": "ScreenOverlay",
-    "layer": 0,
-    "sorting_order": 0,
-    "reference_resolution": { "x": 1280.0, "y": 720.0 },
-    "scale_mode": "ConstantPixelSize",
-    "root_node": "root"
-  }],
-  "nodes": [{
-    "node_id": "root",
-    "name": "root",
-    "kind": "Panel",
-    "parent": null,
-    "children": ["score"],
-    "rect": {
-      "anchor_min": { "x": 0.0, "y": 0.0 },
-      "anchor_max": { "x": 1.0, "y": 1.0 },
-      "offset_min": { "x": 0.0, "y": 0.0 },
-      "offset_max": { "x": 0.0, "y": 0.0 },
-      "pivot": { "x": 0.5, "y": 0.5 },
-      "size": { "x": 0.0, "y": 0.0 }
-    },
-    "visible": true,
-    "interactable": false,
-    "consume_input": true,
-    "style": { "color": "#101820", "text_color": null, "font_size": null },
-    "text": null,
-    "image": null,
-    "progress_value": null,
-    "binding_refs": [],
-    "action_refs": []
-  }, {
-    "node_id": "score",
-    "name": "score",
-    "kind": "Text",
-    "parent": "root",
-    "children": [],
-    "rect": {
-      "anchor_min": { "x": 0.0, "y": 0.0 },
-      "anchor_max": { "x": 0.0, "y": 0.0 },
-      "offset_min": { "x": 24.0, "y": 24.0 },
-      "offset_max": { "x": 0.0, "y": 0.0 },
-      "pivot": { "x": 0.0, "y": 0.0 },
-      "size": { "x": 260.0, "y": 36.0 }
-    },
-    "visible": true,
-    "interactable": false,
-    "consume_input": true,
-    "style": { "color": null, "text_color": "#ffffff", "font_size": 24.0 },
-    "text": "SCORE",
-    "image": null,
-    "progress_value": null,
-    "binding_refs": [{
-      "binding_id": "score.text",
-      "target_field": "TextText",
-      "path": "game.score_text",
-      "fallback": "SCORE 000000"
-    }],
-    "action_refs": []
-  }]
-}"##,
-        )
-        .unwrap();
-    }
-}
+#[path = "tests/mod.rs"]
+mod tests;
+
+#[cfg(test)]
+#[path = "tests/session_exit.rs"]
+mod session_exit_tests;
+
+#[cfg(test)]
+#[path = "tests/foundation_cpu_probe.rs"]
+mod foundation_cpu_probe_tests;

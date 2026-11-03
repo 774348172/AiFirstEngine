@@ -1,0 +1,32 @@
+{
+  "skeleton": {"hash":"374-project-authored-probe", "spine":"4.2.00", "width":2, "height":12},
+  "bones": [{"name":"root"}, {"name":"lower", "parent":"root"}, {"name":"upper", "parent":"root", "y":10}],
+  "slots": [{"name":"cloth", "bone":"upper", "attachment":"triangle"}],
+  "skins": [{"name":"default", "attachments":{"cloth":{"triangle":{
+    "type":"mesh", "path":"triangle", "uvs":[0,0,1,0,0,1], "triangles":[0,1,2],
+    "vertices":[0,0,2,0,0,2], "hull":3, "width":2, "height":2
+  }}}}],
+  "events": {"zero":{}, "beat":{}, "end":{}},
+  "animations": {
+    "motion": {
+      "bones": {
+        "lower":{"translate":[{"x":0,"y":0},{"time":1,"x":10,"y":0}]},
+        "upper":{"rotate":[{"value":0},{"time":1,"value":0}], "translate":[{"x":0,"y":0},{"time":1,"x":4,"y":0}]}
+      },
+      "attachments":{"default":{"cloth":{"triangle":{"deform":[{}, {"time":1,"vertices":[2,0,0,0,0,0]}]}}}},
+      "events":[{"name":"zero"}, {"time":0.25,"name":"beat"}, {"time":1,"name":"end"}]
+    },
+    "attack": {
+      "bones": {
+        "lower":{"translate":[{"x":100},{"time":1,"x":100}]},
+        "upper":{"rotate":[{"value":0},{"time":1,"value":0}], "translate":[{"x":8},{"time":1,"x":8}]}
+      },
+      "attachments":{"default":{"cloth":{"triangle":{"deform":[{}, {"time":1,"vertices":[4,0,0,0,0,0]}]}}}}
+    },
+    "base": {"bones":{"lower":{"translate":[{"x":0},{"time":1,"x":10}]}}},
+    "rest": {"bones":{
+      "lower":{"translate":[{}, {"time":1}]},
+      "upper":{"rotate":[{}, {"time":1}], "translate":[{}, {"time":1}]}
+    }}
+  }
+}

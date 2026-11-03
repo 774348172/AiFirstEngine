@@ -1,0 +1,12 @@
+[package]
+name = "switch_puzzle_project_runtime"
+version = "0.1.0"
+edition = "2021"
+license = "UNLICENSED"
+publish = false
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+project_game_sdk = { path = "../../../rust/crates/project_game_sdk" }

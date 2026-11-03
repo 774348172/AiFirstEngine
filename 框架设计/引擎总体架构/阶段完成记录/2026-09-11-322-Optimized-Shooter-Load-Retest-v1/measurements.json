@@ -1,0 +1,738 @@
+{
+  "date": "2026-09-11",
+  "status": "measurement_completed",
+  "evidenceRoot": "G:/a322-0955",
+  "runs": [
+    {
+      "tier": "12-32",
+      "repeat": "a",
+      "root": "G:/a322-0955/load-12-32-a",
+      "playerSha256": "CD8B848D835BFFBBBA109E12470AAAE0F0521B513F3084296FDD64CF8F8C62A5",
+      "elapsedMs": 14182,
+      "exitCode": 0,
+      "status": {
+        "request": "ok",
+        "package": "ok",
+        "asset": "ok",
+        "scene": "ok",
+        "world": "ok",
+        "logic": "ok",
+        "input": "ok",
+        "physics": "ok",
+        "projection": "ok",
+        "render": "ok",
+        "rdg": "ok",
+        "rhi": "ok",
+        "surface": "ok",
+        "present": "presented"
+      },
+      "counters": {
+        "framesRequested": 720,
+        "framesCompleted": 720,
+        "entityCount": 51,
+        "archetypeCount": 8,
+        "hydratedEntityCount": 51,
+        "hydrationLoadedAssetCount": 48,
+        "hydrationDirtyRecordCount": 270,
+        "renderProxyCount": 47,
+        "runtimeTraceEventCount": 7200
+      },
+      "performance": {
+        "warmupFrames": 120,
+        "requestedSampleFrames": 600,
+        "observedSampleFrames": 600,
+        "meanCpuFrameMs": 5.144962666666667,
+        "p95CpuFrameMs": 6.1634,
+        "p99CpuFrameMs": 6.6424,
+        "update": {
+          "observedSampleFrames": 600,
+          "meanMs": 4.2568595,
+          "p95Ms": 5.0984,
+          "p99Ms": 5.539
+        },
+        "renderSubmit": {
+          "observedSampleFrames": 600,
+          "meanMs": 0.8102951666666667,
+          "p95Ms": 1.0214,
+          "p99Ms": 1.2494
+        },
+        "presentWait": {
+          "observedSampleFrames": 600,
+          "meanMs": 0.07333133333333333,
+          "p95Ms": 0.0926,
+          "p99Ms": 0.1128
+        }
+      },
+      "binding": {
+        "schemaVersion": "project-runtime-bind-receipt.v2",
+        "projectId": "project-complex-shooter-sample",
+        "moduleId": "sample.complex-shooter.runtime",
+        "interfaceVersion": "project-runtime-module.v2",
+        "aotContentDigest": "sha256:6b5e92df93ddf21bd4e9151abfb618d9168fde0f098e8bdbc047ab71c5becb8e",
+        "registeredRuleCount": 5,
+        "requiredRuleCount": 5,
+        "producerId": "sample.complex-shooter.runtime.ui_state",
+        "sessionId": "complex-shooter.runtime-session",
+        "sessionStatus": "ready",
+        "defaultInputMappingId": "input.default",
+        "status": "passed"
+      },
+      "reportSha256": "CC153BBE7C1246FF177625E9CF5ABA73E21D32FB265CBD2CAC69FE4B13BE2D46",
+      "measurementSha256": "01FC759C1EC4E9E9415117E2E63EB6CDF89D2A0A92885E488882DA3712A7AB4B"
+    },
+    {
+      "tier": "12-32",
+      "repeat": "b",
+      "root": "G:/a322-0955/load-12-32-b",
+      "playerSha256": "CD8B848D835BFFBBBA109E12470AAAE0F0521B513F3084296FDD64CF8F8C62A5",
+      "elapsedMs": 13493,
+      "exitCode": 0,
+      "status": {
+        "request": "ok",
+        "package": "ok",
+        "asset": "ok",
+        "scene": "ok",
+        "world": "ok",
+        "logic": "ok",
+        "input": "ok",
+        "physics": "ok",
+        "projection": "ok",
+        "render": "ok",
+        "rdg": "ok",
+        "rhi": "ok",
+        "surface": "ok",
+        "present": "presented"
+      },
+      "counters": {
+        "framesRequested": 720,
+        "framesCompleted": 720,
+        "entityCount": 51,
+        "archetypeCount": 8,
+        "hydratedEntityCount": 51,
+        "hydrationLoadedAssetCount": 48,
+        "hydrationDirtyRecordCount": 270,
+        "renderProxyCount": 47,
+        "runtimeTraceEventCount": 7200
+      },
+      "performance": {
+        "warmupFrames": 120,
+        "requestedSampleFrames": 600,
+        "observedSampleFrames": 600,
+        "meanCpuFrameMs": 5.292960833333333,
+        "p95CpuFrameMs": 7.5942,
+        "p99CpuFrameMs": 16.098,
+        "update": {
+          "observedSampleFrames": 600,
+          "meanMs": 3.9655096666666667,
+          "p95Ms": 4.7828,
+          "p99Ms": 5.3321
+        },
+        "renderSubmit": {
+          "observedSampleFrames": 600,
+          "meanMs": 0.8237161666666666,
+          "p95Ms": 1.0543,
+          "p99Ms": 1.2263
+        },
+        "presentWait": {
+          "observedSampleFrames": 600,
+          "meanMs": 0.499609,
+          "p95Ms": 2.5419,
+          "p99Ms": 10.9511
+        }
+      },
+      "binding": {
+        "schemaVersion": "project-runtime-bind-receipt.v2",
+        "projectId": "project-complex-shooter-sample",
+        "moduleId": "sample.complex-shooter.runtime",
+        "interfaceVersion": "project-runtime-module.v2",
+        "aotContentDigest": "sha256:6b5e92df93ddf21bd4e9151abfb618d9168fde0f098e8bdbc047ab71c5becb8e",
+        "registeredRuleCount": 5,
+        "requiredRuleCount": 5,
+        "producerId": "sample.complex-shooter.runtime.ui_state",
+        "sessionId": "complex-shooter.runtime-session",
+        "sessionStatus": "ready",
+        "defaultInputMappingId": "input.default",
+        "status": "passed"
+      },
+      "reportSha256": "E7A26447E2C2BAA19839F9826D4BA97350E7861182BFD8BA0644D49A33D156CD",
+      "measurementSha256": "DD7911F067FC7B1C6E57891CA8043B249E8A917A3B7022F67E5FB9D6BB049A27"
+    },
+    {
+      "tier": "24-64",
+      "repeat": "a",
+      "root": "G:/a322-0955/load-24-64-a",
+      "playerSha256": "CD8B848D835BFFBBBA109E12470AAAE0F0521B513F3084296FDD64CF8F8C62A5",
+      "elapsedMs": 14503,
+      "exitCode": 0,
+      "status": {
+        "request": "ok",
+        "package": "ok",
+        "asset": "ok",
+        "scene": "ok",
+        "world": "ok",
+        "logic": "ok",
+        "input": "ok",
+        "physics": "ok",
+        "projection": "ok",
+        "render": "ok",
+        "rdg": "ok",
+        "rhi": "ok",
+        "surface": "ok",
+        "present": "presented"
+      },
+      "counters": {
+        "framesRequested": 720,
+        "framesCompleted": 720,
+        "entityCount": 95,
+        "archetypeCount": 8,
+        "hydratedEntityCount": 95,
+        "hydrationLoadedAssetCount": 92,
+        "hydrationDirtyRecordCount": 522,
+        "renderProxyCount": 91,
+        "runtimeTraceEventCount": 7200
+      },
+      "performance": {
+        "warmupFrames": 120,
+        "requestedSampleFrames": 600,
+        "observedSampleFrames": 600,
+        "meanCpuFrameMs": 7.426512833333333,
+        "p95CpuFrameMs": 8.8674,
+        "p99CpuFrameMs": 9.8384,
+        "update": {
+          "observedSampleFrames": 600,
+          "meanMs": 6.171409,
+          "p95Ms": 7.4111,
+          "p99Ms": 8.3153
+        },
+        "renderSubmit": {
+          "observedSampleFrames": 600,
+          "meanMs": 1.1738308333333332,
+          "p95Ms": 1.5317,
+          "p99Ms": 1.7214
+        },
+        "presentWait": {
+          "observedSampleFrames": 600,
+          "meanMs": 0.07715616666666668,
+          "p95Ms": 0.1064,
+          "p99Ms": 0.1275
+        }
+      },
+      "binding": {
+        "schemaVersion": "project-runtime-bind-receipt.v2",
+        "projectId": "project-complex-shooter-sample",
+        "moduleId": "sample.complex-shooter.runtime",
+        "interfaceVersion": "project-runtime-module.v2",
+        "aotContentDigest": "sha256:6b5e92df93ddf21bd4e9151abfb618d9168fde0f098e8bdbc047ab71c5becb8e",
+        "registeredRuleCount": 5,
+        "requiredRuleCount": 5,
+        "producerId": "sample.complex-shooter.runtime.ui_state",
+        "sessionId": "complex-shooter.runtime-session",
+        "sessionStatus": "ready",
+        "defaultInputMappingId": "input.default",
+        "status": "passed"
+      },
+      "reportSha256": "B5EA03263FB51F0561C96EF37E9FBDD41B76DCC627B942655EC594B7C6EFECE7",
+      "measurementSha256": "65E2EFDEDF25D66B3B97D4EEC8CFD101568DF9BAB646661FF80992A3093A15DD"
+    },
+    {
+      "tier": "24-64",
+      "repeat": "b",
+      "root": "G:/a322-0955/load-24-64-b",
+      "playerSha256": "CD8B848D835BFFBBBA109E12470AAAE0F0521B513F3084296FDD64CF8F8C62A5",
+      "elapsedMs": 13824,
+      "exitCode": 0,
+      "status": {
+        "request": "ok",
+        "package": "ok",
+        "asset": "ok",
+        "scene": "ok",
+        "world": "ok",
+        "logic": "ok",
+        "input": "ok",
+        "physics": "ok",
+        "projection": "ok",
+        "render": "ok",
+        "rdg": "ok",
+        "rhi": "ok",
+        "surface": "ok",
+        "present": "presented"
+      },
+      "counters": {
+        "framesRequested": 720,
+        "framesCompleted": 720,
+        "entityCount": 95,
+        "archetypeCount": 8,
+        "hydratedEntityCount": 95,
+        "hydrationLoadedAssetCount": 92,
+        "hydrationDirtyRecordCount": 522,
+        "renderProxyCount": 91,
+        "runtimeTraceEventCount": 7200
+      },
+      "performance": {
+        "warmupFrames": 120,
+        "requestedSampleFrames": 600,
+        "observedSampleFrames": 600,
+        "meanCpuFrameMs": 7.329189166666667,
+        "p95CpuFrameMs": 8.6885,
+        "p99CpuFrameMs": 9.8345,
+        "update": {
+          "observedSampleFrames": 600,
+          "meanMs": 6.1100865,
+          "p95Ms": 7.3824,
+          "p99Ms": 8.279
+        },
+        "renderSubmit": {
+          "observedSampleFrames": 600,
+          "meanMs": 1.1397286666666668,
+          "p95Ms": 1.3652,
+          "p99Ms": 1.6795
+        },
+        "presentWait": {
+          "observedSampleFrames": 600,
+          "meanMs": 0.0753475,
+          "p95Ms": 0.104,
+          "p99Ms": 0.1436
+        }
+      },
+      "binding": {
+        "schemaVersion": "project-runtime-bind-receipt.v2",
+        "projectId": "project-complex-shooter-sample",
+        "moduleId": "sample.complex-shooter.runtime",
+        "interfaceVersion": "project-runtime-module.v2",
+        "aotContentDigest": "sha256:6b5e92df93ddf21bd4e9151abfb618d9168fde0f098e8bdbc047ab71c5becb8e",
+        "registeredRuleCount": 5,
+        "requiredRuleCount": 5,
+        "producerId": "sample.complex-shooter.runtime.ui_state",
+        "sessionId": "complex-shooter.runtime-session",
+        "sessionStatus": "ready",
+        "defaultInputMappingId": "input.default",
+        "status": "passed"
+      },
+      "reportSha256": "9D7FDC8DBECFE53C704EE10B49B6BA74F51EC9830AEC7DB0A928B2AC03DAEF6C",
+      "measurementSha256": "F33160B251489781B9A196CD97F2C42C100FBC703FD2D814234E91459A16480A"
+    },
+    {
+      "tier": "48-128",
+      "repeat": "a",
+      "root": "G:/a322-0955/load-48-128-a",
+      "playerSha256": "CD8B848D835BFFBBBA109E12470AAAE0F0521B513F3084296FDD64CF8F8C62A5",
+      "elapsedMs": 15413,
+      "exitCode": 0,
+      "status": {
+        "request": "ok",
+        "package": "ok",
+        "asset": "ok",
+        "scene": "ok",
+        "world": "ok",
+        "logic": "ok",
+        "input": "ok",
+        "physics": "ok",
+        "projection": "ok",
+        "render": "ok",
+        "rdg": "ok",
+        "rhi": "ok",
+        "surface": "ok",
+        "present": "presented"
+      },
+      "counters": {
+        "framesRequested": 720,
+        "framesCompleted": 720,
+        "entityCount": 183,
+        "archetypeCount": 8,
+        "hydratedEntityCount": 183,
+        "hydrationLoadedAssetCount": 180,
+        "hydrationDirtyRecordCount": 1026,
+        "renderProxyCount": 179,
+        "runtimeTraceEventCount": 7200
+      },
+      "performance": {
+        "warmupFrames": 120,
+        "requestedSampleFrames": 600,
+        "observedSampleFrames": 600,
+        "meanCpuFrameMs": 12.877182,
+        "p95CpuFrameMs": 14.3826,
+        "p99CpuFrameMs": 16.3151,
+        "update": {
+          "observedSampleFrames": 600,
+          "meanMs": 10.922421,
+          "p95Ms": 12.2457,
+          "p99Ms": 13.6547
+        },
+        "renderSubmit": {
+          "observedSampleFrames": 600,
+          "meanMs": 1.8716405,
+          "p95Ms": 2.1797,
+          "p99Ms": 2.6995
+        },
+        "presentWait": {
+          "observedSampleFrames": 600,
+          "meanMs": 0.0788935,
+          "p95Ms": 0.1027,
+          "p99Ms": 0.1301
+        }
+      },
+      "binding": {
+        "schemaVersion": "project-runtime-bind-receipt.v2",
+        "projectId": "project-complex-shooter-sample",
+        "moduleId": "sample.complex-shooter.runtime",
+        "interfaceVersion": "project-runtime-module.v2",
+        "aotContentDigest": "sha256:6b5e92df93ddf21bd4e9151abfb618d9168fde0f098e8bdbc047ab71c5becb8e",
+        "registeredRuleCount": 5,
+        "requiredRuleCount": 5,
+        "producerId": "sample.complex-shooter.runtime.ui_state",
+        "sessionId": "complex-shooter.runtime-session",
+        "sessionStatus": "ready",
+        "defaultInputMappingId": "input.default",
+        "status": "passed"
+      },
+      "reportSha256": "91DB4FDF7C6A7FCB3571DE3D41032865547C42EB5B886305ABCE04F792623790",
+      "measurementSha256": "C8BBC7E6D1EF822529293E96ADFBCADD363A5423B68CF3C24CE5F8324CA2A2D2"
+    },
+    {
+      "tier": "48-128",
+      "repeat": "b",
+      "root": "G:/a322-0955/load-48-128-b",
+      "playerSha256": "CD8B848D835BFFBBBA109E12470AAAE0F0521B513F3084296FDD64CF8F8C62A5",
+      "elapsedMs": 14599,
+      "exitCode": 0,
+      "status": {
+        "request": "ok",
+        "package": "ok",
+        "asset": "ok",
+        "scene": "ok",
+        "world": "ok",
+        "logic": "ok",
+        "input": "ok",
+        "physics": "ok",
+        "projection": "ok",
+        "render": "ok",
+        "rdg": "ok",
+        "rhi": "ok",
+        "surface": "ok",
+        "present": "presented"
+      },
+      "counters": {
+        "framesRequested": 720,
+        "framesCompleted": 720,
+        "entityCount": 183,
+        "archetypeCount": 8,
+        "hydratedEntityCount": 183,
+        "hydrationLoadedAssetCount": 180,
+        "hydrationDirtyRecordCount": 1026,
+        "renderProxyCount": 179,
+        "runtimeTraceEventCount": 7200
+      },
+      "performance": {
+        "warmupFrames": 120,
+        "requestedSampleFrames": 600,
+        "observedSampleFrames": 600,
+        "meanCpuFrameMs": 12.850377333333334,
+        "p95CpuFrameMs": 13.9936,
+        "p99CpuFrameMs": 15.2741,
+        "update": {
+          "observedSampleFrames": 600,
+          "meanMs": 10.943145833333334,
+          "p95Ms": 11.9914,
+          "p99Ms": 13.2409
+        },
+        "renderSubmit": {
+          "observedSampleFrames": 600,
+          "meanMs": 1.8256525,
+          "p95Ms": 2.0797,
+          "p99Ms": 2.3103
+        },
+        "presentWait": {
+          "observedSampleFrames": 600,
+          "meanMs": 0.07743066666666668,
+          "p95Ms": 0.0975,
+          "p99Ms": 0.143
+        }
+      },
+      "binding": {
+        "schemaVersion": "project-runtime-bind-receipt.v2",
+        "projectId": "project-complex-shooter-sample",
+        "moduleId": "sample.complex-shooter.runtime",
+        "interfaceVersion": "project-runtime-module.v2",
+        "aotContentDigest": "sha256:6b5e92df93ddf21bd4e9151abfb618d9168fde0f098e8bdbc047ab71c5becb8e",
+        "registeredRuleCount": 5,
+        "requiredRuleCount": 5,
+        "producerId": "sample.complex-shooter.runtime.ui_state",
+        "sessionId": "complex-shooter.runtime-session",
+        "sessionStatus": "ready",
+        "defaultInputMappingId": "input.default",
+        "status": "passed"
+      },
+      "reportSha256": "86C26D3310779D1E7ADBAA12DE9F4B2EBE7D08564FC8A95E7D8CE96F177814E9",
+      "measurementSha256": "E3686BAA10AA28D79C24F758D388875FAF381589667D7F193F2CBC348AFD069F"
+    }
+  ],
+  "baselineRuns": [
+    {
+      "case": "load-12-32-measure-ok1",
+      "player": "C:\\a320-0038\\load-12-32\\Library\\EngineTools\\Deliveries\\engine-op-load-12-32-1\\Build\\Windows\\dev\\Game.exe",
+      "playerSha256": "BE51CA0E1091A4550F26AFD22AC195A4D0F12B0C3F9B307F44BAC56F0871D2CB",
+      "elapsedMs": 31622,
+      "exitCode": 0,
+      "status": {
+        "request": "ok",
+        "package": "ok",
+        "asset": "ok",
+        "scene": "ok",
+        "world": "ok",
+        "logic": "ok",
+        "input": "ok",
+        "physics": "ok",
+        "projection": "ok",
+        "render": "ok",
+        "rdg": "ok",
+        "rhi": "ok",
+        "surface": "ok",
+        "present": "presented"
+      },
+      "initialCounters": {
+        "framesRequested": 720,
+        "framesCompleted": 720,
+        "entityCount": 51,
+        "archetypeCount": 8,
+        "hydratedEntityCount": 51,
+        "hydrationLoadedAssetCount": 48,
+        "hydrationDirtyRecordCount": 270,
+        "renderProxyCount": 47,
+        "runtimeTraceEventCount": 7200
+      },
+      "performance": {
+        "warmupFrames": 120,
+        "requestedSampleFrames": 600,
+        "observedSampleFrames": 600,
+        "meanCpuFrameMs": 21.621828166666667,
+        "p95CpuFrameMs": 23.4548,
+        "p99CpuFrameMs": 24.9591,
+        "update": {
+          "observedSampleFrames": 600,
+          "meanMs": 18.793965,
+          "p95Ms": 20.3957,
+          "p99Ms": 21.461
+        },
+        "renderSubmit": {
+          "observedSampleFrames": 600,
+          "meanMs": 2.6612981666666666,
+          "p95Ms": 3.1188,
+          "p99Ms": 3.3614
+        },
+        "presentWait": {
+          "observedSampleFrames": 600,
+          "meanMs": 0.14618533333333333,
+          "p95Ms": 0.1744,
+          "p99Ms": 0.1967
+        }
+      },
+      "reportSha256": "91E3C09AAEA8A2E078941DD38893E43531B0B243830D3C76303512E60CC790A3",
+      "measurementSha256": "94F9722516039FBDB36656225AECB2A04E4303C2018C46E293E4E93BDC956507"
+    },
+    {
+      "case": "load-24-64-measure",
+      "player": "C:\\a320-0038\\load-24-64\\Library\\EngineTools\\Deliveries\\engine-op-load-24-64-1\\Build\\Windows\\dev\\Game.exe",
+      "playerSha256": "DE0DC800A4FF6F216D32EFB6450B20148C71EC512146196470DFCC837652A833",
+      "elapsedMs": 42009,
+      "exitCode": 0,
+      "status": {
+        "request": "ok",
+        "package": "ok",
+        "asset": "ok",
+        "scene": "ok",
+        "world": "ok",
+        "logic": "ok",
+        "input": "ok",
+        "physics": "ok",
+        "projection": "ok",
+        "render": "ok",
+        "rdg": "ok",
+        "rhi": "ok",
+        "surface": "ok",
+        "present": "presented"
+      },
+      "initialCounters": {
+        "framesRequested": 720,
+        "framesCompleted": 720,
+        "entityCount": 95,
+        "archetypeCount": 8,
+        "hydratedEntityCount": 95,
+        "hydrationLoadedAssetCount": 92,
+        "hydrationDirtyRecordCount": 522,
+        "renderProxyCount": 91,
+        "runtimeTraceEventCount": 7200
+      },
+      "performance": {
+        "warmupFrames": 120,
+        "requestedSampleFrames": 600,
+        "observedSampleFrames": 600,
+        "meanCpuFrameMs": 35.372383166666665,
+        "p95CpuFrameMs": 37.9314,
+        "p99CpuFrameMs": 40.4695,
+        "update": {
+          "observedSampleFrames": 600,
+          "meanMs": 31.4105005,
+          "p95Ms": 33.9511,
+          "p99Ms": 35.9141
+        },
+        "renderSubmit": {
+          "observedSampleFrames": 600,
+          "meanMs": 3.7867633333333335,
+          "p95Ms": 4.2221,
+          "p99Ms": 4.7538
+        },
+        "presentWait": {
+          "observedSampleFrames": 600,
+          "meanMs": 0.15345516666666667,
+          "p95Ms": 0.1894,
+          "p99Ms": 0.218
+        }
+      },
+      "reportSha256": "4687F94FB03A31771A67E144799F530E3CAB9B5F0FCF8ECA1918AD24935968D8",
+      "measurementSha256": "FE18417BFB37E6681BA09A21EC93CA5996A33EF341E32D4FD5016AB3A0A928FF"
+    },
+    {
+      "case": "load-48-128-measure",
+      "player": "C:\\a320-0038\\load-48-128\\Library\\EngineTools\\Deliveries\\engine-op-load-48-128-1\\Build\\Windows\\dev\\Game.exe",
+      "playerSha256": "7E609B61BAB86ECB8FD87DB9A48ECC91DE704FB9513B70D790B8E983CC259F0B",
+      "elapsedMs": 64567,
+      "exitCode": 0,
+      "status": {
+        "request": "ok",
+        "package": "ok",
+        "asset": "ok",
+        "scene": "ok",
+        "world": "ok",
+        "logic": "ok",
+        "input": "ok",
+        "physics": "ok",
+        "projection": "ok",
+        "render": "ok",
+        "rdg": "ok",
+        "rhi": "ok",
+        "surface": "ok",
+        "present": "presented"
+      },
+      "initialCounters": {
+        "framesRequested": 720,
+        "framesCompleted": 720,
+        "entityCount": 183,
+        "archetypeCount": 8,
+        "hydratedEntityCount": 183,
+        "hydrationLoadedAssetCount": 180,
+        "hydrationDirtyRecordCount": 1026,
+        "renderProxyCount": 179,
+        "runtimeTraceEventCount": 7200
+      },
+      "performance": {
+        "warmupFrames": 120,
+        "requestedSampleFrames": 600,
+        "observedSampleFrames": 600,
+        "meanCpuFrameMs": 64.0911075,
+        "p95CpuFrameMs": 67.8518,
+        "p99CpuFrameMs": 72.1726,
+        "update": {
+          "observedSampleFrames": 600,
+          "meanMs": 57.90093666666667,
+          "p95Ms": 60.9663,
+          "p99Ms": 65.5385
+        },
+        "renderSubmit": {
+          "observedSampleFrames": 600,
+          "meanMs": 6.013088666666667,
+          "p95Ms": 6.6893,
+          "p99Ms": 7.2418
+        },
+        "presentWait": {
+          "observedSampleFrames": 600,
+          "meanMs": 0.15505033333333335,
+          "p95Ms": 0.1853,
+          "p99Ms": 0.214
+        }
+      },
+      "reportSha256": "6344BA42128923C71EF423BD52E1DB3E82245C254A73CE9647418D4B90E81E2C",
+      "measurementSha256": "5C02FCF84EE14E32F726AB4CFAD15C874C9C829067ECCB279982648D6EB1F751"
+    }
+  ],
+  "os": {
+    "Caption": "Microsoft Windows 11 专业版中文版",
+    "Version": "10.0.26200",
+    "BuildNumber": "26200"
+  },
+  "sourceSha256": "19A2DF690D6D8C1D50D426F523D0868B0513CEB50318AD693F7E8ECAC5A2A208",
+  "runnerSha256": "844E418ABDF7CB8E9D7C7D0B6E21DFC7ED52309F8FCE860A0DEA2E7035EA48BE",
+  "packages": [
+    {
+      "tier": "12-32",
+      "sourcePackage": "C:/a320-0038/load-12-32/Library/EngineTools/Deliveries/engine-op-load-12-32-1/Build/Windows/dev/data/runtime_package",
+      "copiedPackage": "G:/a322-0955/player-12-32/data/runtime_package",
+      "files": 49,
+      "allFileHashesMatch": true,
+      "pathHashListSha256": "A1920FD7450E98B7928C9B1F12C4407D3C5F26EEF9D09C789C205518DD00F67B",
+      "manifestSha256": "20D23583B2C948B52356F8A2B02D74FE275F91240F4BC79FEB8E37C47B54FBCA",
+      "fixture": {
+        "kind": "stationary-synthetic-load",
+        "capture": false,
+        "sceneSha256": "D8C96598ECAE215DB1FA3169CC50D919F760F70252072D58788C9C8D89E6647C",
+        "totalSceneEntities": 51,
+        "enemies": 12,
+        "enemyBullets": 32,
+        "automaticFire": "disabled",
+        "sourceProject": "G:\\gameEngin\\samples\\complex_shooter_project",
+        "damage": 0,
+        "movement": "disabled"
+      }
+    },
+    {
+      "tier": "24-64",
+      "sourcePackage": "C:/a320-0038/load-24-64/Library/EngineTools/Deliveries/engine-op-load-24-64-1/Build/Windows/dev/data/runtime_package",
+      "copiedPackage": "G:/a322-0955/player-24-64/data/runtime_package",
+      "files": 49,
+      "allFileHashesMatch": true,
+      "pathHashListSha256": "79DE24EDDEDF04BD0D1252F617FCF37268C4AC6EFE92580A276A60E0FECA2A56",
+      "manifestSha256": "522753A8EE3D01BB6A5373316A3661BEFD0DC3ADFB38B6CEFCD6EF0328BEC735",
+      "fixture": {
+        "enemies": 24,
+        "capture": false,
+        "automaticFire": "disabled",
+        "movement": "disabled",
+        "kind": "stationary-synthetic-load",
+        "damage": 0,
+        "sceneSha256": "6BFA8FE3E68391418E2C4A9851C77081348EE91B6C5EAA23736187B6A3317072",
+        "totalSceneEntities": 95,
+        "enemyBullets": 64,
+        "sourceProject": "G:\\gameEngin\\samples\\complex_shooter_project"
+      }
+    },
+    {
+      "tier": "48-128",
+      "sourcePackage": "C:/a320-0038/load-48-128/Library/EngineTools/Deliveries/engine-op-load-48-128-1/Build/Windows/dev/data/runtime_package",
+      "copiedPackage": "G:/a322-0955/player-48-128/data/runtime_package",
+      "files": 49,
+      "allFileHashesMatch": true,
+      "pathHashListSha256": "D965BC4A57AE5566F95E0EF5D3F79EB2A2B4429EC2F77E564048A4B9A4692A44",
+      "manifestSha256": "086D9A504B0F66776EE01CEE5FCA70EA00740733A6BD086E54F314761F0A9B41",
+      "fixture": {
+        "automaticFire": "disabled",
+        "movement": "disabled",
+        "damage": 0,
+        "sourceProject": "G:\\gameEngin\\samples\\complex_shooter_project",
+        "totalSceneEntities": 183,
+        "sceneSha256": "53CEAF6EA91BBFE12D730F9927741398B0E2DCB3D7CBEE17F97E26BA427E23F4",
+        "enemies": 48,
+        "kind": "stationary-synthetic-load",
+        "capture": false,
+        "enemyBullets": 128
+      }
+    }
+  ],
+  "profile": {
+    "inheritedFrom": 321,
+    "cargo": "1.96.0",
+    "target": "x86_64-pc-windows-msvc",
+    "profile": "release",
+    "optLevel": 3,
+    "recompiled": false,
+    "formalRelease": false
+  }
+}

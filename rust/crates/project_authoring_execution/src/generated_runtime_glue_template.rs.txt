@@ -9,8 +9,7 @@ use project_runtime_abi::{
     PROJECT_RUNTIME_CALL_CONTEXT_STRUCT_SIZE, PROJECT_RUNTIME_CAP_AUI_ACTIONS,
     PROJECT_RUNTIME_CAP_DEFERRED_MUTATIONS, PROJECT_RUNTIME_CAP_FIXED_UPDATE,
     PROJECT_RUNTIME_CAP_OBSERVATIONS, PROJECT_RUNTIME_CAP_RULES, PROJECT_RUNTIME_CAP_SESSIONS,
-    PROJECT_RUNTIME_CAP_UI_STATE, PROJECT_RUNTIME_CAP_WORLD_READ,
-    PROJECT_RUNTIME_HOST_API_STRUCT_SIZE,
+    PROJECT_RUNTIME_CAP_UI_EXTENSIONS, PROJECT_RUNTIME_CAP_UI_STATE, PROJECT_RUNTIME_CAP_WORLD_READ,
 };
 use project_runtime_sdk::{
     call_host_json, ffi_boundary, ffi_boundary_with_capacity_floor,
@@ -34,6 +33,7 @@ const AOT_CONTENT_DIGEST: &str = __AIFE_AOT_CONTENT_DIGEST__;
 struct StoredSession {
     generation: u64,
     session: Box<dyn ErasedProjectSession>,
+    faulted: bool,
 }
 
 static DEFINITION: OnceLock<ErasedProjectGameDefinition> = OnceLock::new();
@@ -43,6 +43,7 @@ static API: OnceLock<ProjectRuntimeApi> = OnceLock::new();
 
 fn definition() -> &'static ErasedProjectGameDefinition {
     DEFINITION.get_or_init(|| {
+        __AIFE_INSTALL_RULE_SLOTS__
         let definition = project_game::project_game().erase();
         definition
             .validate()
@@ -50,6 +51,8 @@ fn definition() -> &'static ErasedProjectGameDefinition {
         definition
     })
 }
+
+__AIFE_COMPILED_RULE_SLOTS__
 
 fn rule_artifact_id(rule_id: &str) -> String {
     match rule_id {
@@ -85,7 +88,16 @@ fn with_session<T>(
         .get_mut(&handle.value)
         .filter(|stored| stored.generation == handle.generation)
         .ok_or(ProjectRuntimeAbiStatus::INVALID_HANDLE)?;
-    callback(stored.session.as_mut())
+    if stored.faulted { return Err(ProjectRuntimeAbiStatus::TERMINAL_FAULT); }
+    // Catch while the registry guard is still alive, so one project panic cannot poison
+    // every session's registry or prevent destruction of the failing session.
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| callback(stored.session.as_mut()))) {
+        Ok(result) => result,
+        Err(_) => {
+            stored.faulted = true;
+            Err(ProjectRuntimeAbiStatus::PANICKED)
+        }
+    }
 }
 
 unsafe extern "C" fn descriptor(
@@ -139,6 +151,7 @@ unsafe extern "C" fn create_session(
                 StoredSession {
                     generation,
                     session,
+                    faulted: false,
                 },
             );
         Ok(ProjectRuntimeSessionCreateResponse {
@@ -190,37 +203,41 @@ unsafe extern "C" fn invoke_rule(
     request: ProjectRuntimeByteSlice,
     output: *mut ProjectRuntimeByteBuffer,
 ) -> ProjectRuntimeAbiStatus {
-    ffi_boundary_with_capacity_floor(
-        output,
-        PROJECT_RUNTIME_DEFAULT_STATEFUL_OUTPUT_CAPACITY_BYTES,
-        || {
-            // SAFETY: the host owns the request and call context for this callback.
-            let request: ProjectRuntimeRuleRequest = unsafe { read_input(request) }?;
-            if !definition()
-                .rule_ids()
-                .iter()
-                .any(|rule_id| *rule_id == request.rule_id)
-            {
-                return Ok(ProjectRuntimeRuleOutput {
-                    status: ProjectRuntimeStatus::Unhandled,
-                    mutations: Vec::new(),
-                    diagnostics: Vec::new(),
-                });
-            }
-            // SAFETY: the host owns the call-scoped context.
-            let world = unsafe { AbiWorldRead::from_raw(context) }?;
-            let mut call_context = GameCallContext::new(&world);
-            let mut result = with_session(session, |session| {
-                definition()
-                    .invoke_rule(session, &mut call_context, &request)
-                    .map_err(map_game_error)
-            })?;
-            let (mutations, diagnostics) = call_context.into_outputs();
-            result.mutations.extend(mutations);
-            result.diagnostics.extend(diagnostics);
-            Ok(result)
-        },
-    )
+    let callback = || {
+        // SAFETY: the host owns the request and call context for this callback.
+        let request: ProjectRuntimeRuleRequest = unsafe { read_input(request) }?;
+        if !definition()
+            .rule_ids()
+            .iter()
+            .any(|rule_id| *rule_id == request.rule_id)
+        {
+            return Ok(ProjectRuntimeRuleOutput {
+                status: ProjectRuntimeStatus::Unhandled,
+                mutations: Vec::new(),
+                diagnostics: Vec::new(),
+            });
+        }
+        // SAFETY: the host owns the call-scoped context.
+        let world = unsafe { AbiWorldRead::from_raw(context) }?;
+        let mut call_context = GameCallContext::new(&world);
+        let mut result = with_session(session, |session| {
+            definition()
+                .invoke_rule(session, &mut call_context, &request)
+                .map_err(map_game_error)
+        })?;
+        let (mutations, diagnostics) = call_context.into_outputs();
+        result.mutations.extend(mutations);
+        result.diagnostics.extend(diagnostics);
+        Ok(result)
+    };
+    // SAFETY: the ABI caller lends an exclusive live output descriptor and its backing storage.
+    unsafe {
+        ffi_boundary_with_capacity_floor(
+            output,
+            PROJECT_RUNTIME_DEFAULT_STATEFUL_OUTPUT_CAPACITY_BYTES,
+            callback,
+        )
+    }
 }
 
 unsafe extern "C" fn handle_aui_actions(
@@ -230,26 +247,43 @@ unsafe extern "C" fn handle_aui_actions(
     request: ProjectRuntimeByteSlice,
     output: *mut ProjectRuntimeByteBuffer,
 ) -> ProjectRuntimeAbiStatus {
-    ffi_boundary_with_capacity_floor(
-        output,
-        PROJECT_RUNTIME_DEFAULT_STATEFUL_OUTPUT_CAPACITY_BYTES,
-        || {
-            // SAFETY: the host owns the request and call context for this callback.
-            let request: ProjectRuntimeAuiActionRequest = unsafe { read_input(request) }?;
-            // SAFETY: the host owns the call-scoped context.
-            let world = unsafe { AbiWorldRead::from_raw(context) }?;
-            let mut call_context = GameCallContext::new(&world);
-            let mut result = with_session(session, |session| {
-                definition()
-                    .handle_aui_actions(session, &mut call_context, &request)
-                    .map_err(map_game_error)
-            })?;
-            let (mutations, diagnostics) = call_context.into_outputs();
-            result.mutations.extend(mutations);
-            result.diagnostics.extend(diagnostics);
-            Ok(result)
-        },
-    )
+    let callback = || {
+        // SAFETY: the host owns the request and call context for this callback.
+        let request: ProjectRuntimeAuiActionRequest = unsafe { read_input(request) }?;
+        // SAFETY: the host owns the call-scoped context.
+        let world = unsafe { AbiWorldRead::from_raw(context) }?;
+        let ui = project_runtime_sdk::aui_host::HostUiAccess::new_with_invalidate(
+            world.host_api().ui_query, world.host_api().ui_stage,
+            world.host_api().ui_subscribe, world.host_api().ui_cancel,
+            world.host_api().ui_structure,
+            world.host_api().ui_invalidate,
+            world.context.host_context,
+        );
+        let mut call_context = GameCallContext::with_ui(&world, &ui);
+        let mut result = with_session(session, |session| {
+            definition()
+                .handle_aui_actions(session, &mut call_context, &request)
+                .map_err(map_game_error)
+        })?;
+        if result.status == ProjectRuntimeStatus::Applied && result.rejected_action_count == 0 {
+            if let Some(batch) = call_context.finish_ui().map_err(|_| ProjectRuntimeAbiStatus::FAILED)? {
+                ui.stage(batch).map_err(|_| ProjectRuntimeAbiStatus::FAILED)?;
+            }
+        }
+        let host_control = call_context.take_host_control();
+        let (mutations, diagnostics) = call_context.into_outputs();
+        result.mutations.extend(mutations);
+        result.diagnostics.extend(diagnostics);
+        Ok(result.into_runtime_output(host_control))
+    };
+    // SAFETY: the ABI caller lends an exclusive live output descriptor and its backing storage.
+    unsafe {
+        project_runtime_sdk::spatial_bulk::session_boundary(
+            output,
+            project_runtime_sdk::spatial_bulk::MAX_SESSION_BYTES,
+            callback,
+        )
+    }
 }
 
 unsafe extern "C" fn fixed_update(
@@ -259,26 +293,163 @@ unsafe extern "C" fn fixed_update(
     request: ProjectRuntimeByteSlice,
     output: *mut ProjectRuntimeByteBuffer,
 ) -> ProjectRuntimeAbiStatus {
-    ffi_boundary_with_capacity_floor(
-        output,
-        PROJECT_RUNTIME_DEFAULT_STATEFUL_OUTPUT_CAPACITY_BYTES,
-        || {
-            // SAFETY: the host owns the request and call context for this callback.
-            let request: ProjectRuntimeFrameRequest = unsafe { read_input(request) }?;
-            // SAFETY: the host owns the call-scoped context.
-            let world = unsafe { AbiWorldRead::from_raw(context) }?;
-            let mut call_context = GameCallContext::new(&world);
-            let mut result = with_session(session, |session| {
-                definition()
-                    .fixed_update(session, &mut call_context, &request)
-                    .map_err(map_game_error)
-            })?;
-            let (mutations, diagnostics) = call_context.into_outputs();
-            result.mutations.extend(mutations);
-            result.diagnostics.extend(diagnostics);
-            Ok(result)
-        },
-    )
+    let callback = || {
+        // SAFETY: the host owns the request and call context for this callback.
+        let request: ProjectRuntimeFrameRequest = unsafe { read_input(request) }?;
+        // SAFETY: the host owns the call-scoped context.
+        let world = unsafe { AbiWorldRead::from_raw(context) }?;
+        let ui = project_runtime_sdk::aui_host::HostUiAccess::new_with_invalidate(
+            world.host_api().ui_query, world.host_api().ui_stage,
+            world.host_api().ui_subscribe, world.host_api().ui_cancel,
+            world.host_api().ui_structure,
+            world.host_api().ui_invalidate,
+            world.context.host_context,
+        );
+        let mut call_context = GameCallContext::with_ui(&world, &ui);
+        let mut result = with_session(session, |session| {
+            definition()
+                .fixed_update(session, &mut call_context, &request)
+                .map_err(map_game_error)
+        })?;
+        if result.status == ProjectRuntimeStatus::Applied && result.rejected_action_count == 0 {
+            if let Some(batch) = call_context.finish_ui().map_err(|_| ProjectRuntimeAbiStatus::FAILED)? {
+                ui.stage(batch).map_err(|_| ProjectRuntimeAbiStatus::FAILED)?;
+            }
+        }
+        let host_control = call_context.take_host_control();
+        let (mutations, diagnostics) = call_context.into_outputs();
+        result.mutations.extend(mutations);
+        result.diagnostics.extend(diagnostics);
+        Ok(result.into_runtime_output(host_control))
+    };
+    // SAFETY: the ABI caller lends an exclusive live output descriptor and its backing storage.
+    unsafe {
+        project_runtime_sdk::spatial_bulk::session_boundary(
+            output,
+            project_runtime_sdk::spatial_bulk::MAX_SESSION_BYTES,
+            callback,
+        )
+    }
+}
+
+unsafe extern "C" fn lifecycle(
+    _module: ProjectRuntimeOpaqueHandle,
+    session: ProjectRuntimeOpaqueHandle,
+    context: *const ProjectRuntimeCallContext,
+    request: ProjectRuntimeByteSlice,
+    output: *mut ProjectRuntimeByteBuffer,
+) -> ProjectRuntimeAbiStatus {
+    let callback = || {
+        // SAFETY: the host owns the request and call context for this callback.
+        let request: project_runtime_sdk::ProjectRuntimeLifecycleRequest = unsafe { read_input(request) }?;
+        // SAFETY: the host owns the call-scoped context.
+        let world = unsafe { AbiWorldRead::from_raw(context) }?;
+        let ui = project_runtime_sdk::aui_host::HostUiAccess::new_with_invalidate(
+            world.host_api().ui_query, world.host_api().ui_stage,
+            world.host_api().ui_subscribe, world.host_api().ui_cancel,
+            world.host_api().ui_structure,
+            world.host_api().ui_invalidate,
+            world.context.host_context,
+        );
+        let mut call_context = GameCallContext::with_ui(&world, &ui);
+        let mut result = with_session(session, |session| {
+            definition()
+                .lifecycle(session, &mut call_context, &request)
+                .map_err(map_game_error)
+        })?;
+        if result.status == ProjectRuntimeStatus::Applied && result.rejected_action_count == 0 {
+            if let Some(batch) = call_context.finish_ui().map_err(|_| ProjectRuntimeAbiStatus::FAILED)? {
+                ui.stage(batch).map_err(|_| ProjectRuntimeAbiStatus::FAILED)?;
+            }
+        }
+        let host_control = call_context.take_host_control();
+        let (mutations, diagnostics) = call_context.into_outputs();
+        result.mutations.extend(mutations);
+        result.diagnostics.extend(diagnostics);
+        Ok(result.into_runtime_output(host_control))
+    };
+    // SAFETY: the ABI caller lends an exclusive live output descriptor and its backing storage.
+    unsafe {
+        project_runtime_sdk::spatial_bulk::session_boundary(
+            output,
+            project_runtime_sdk::spatial_bulk::MAX_SESSION_BYTES,
+            callback,
+        )
+    }
+}
+
+unsafe extern "C" fn ui_event(
+    _module: ProjectRuntimeOpaqueHandle,
+    session: ProjectRuntimeOpaqueHandle,
+    context: *const ProjectRuntimeCallContext,
+    request: ProjectRuntimeByteSlice,
+    output: *mut ProjectRuntimeByteBuffer,
+) -> ProjectRuntimeAbiStatus {
+    let callback = || {
+        // SAFETY: the host owns the request and call context for this callback.
+        let request: project_runtime_sdk::aui::UiEventRequest = unsafe { read_input(request) }?;
+        // SAFETY: the host owns the call-scoped context.
+        let world = unsafe { AbiWorldRead::from_raw(context) }?;
+        let ui = project_runtime_sdk::aui_host::HostUiAccess::new_with_invalidate(
+            world.host_api().ui_query, world.host_api().ui_stage,
+            world.host_api().ui_subscribe, world.host_api().ui_cancel,
+            world.host_api().ui_structure,
+            world.host_api().ui_invalidate,
+            world.context.host_context,
+        );
+        let mut call_context = GameCallContext::with_ui(&world, &ui);
+        let mut result = with_session(session, |session| {
+            definition()
+                .ui_event(session, &mut call_context, &request)
+                .map_err(map_game_error)
+        })?;
+        if result.status == ProjectRuntimeStatus::Applied && result.rejected_action_count == 0 {
+            if let Some(batch) = call_context.finish_ui().map_err(|_| ProjectRuntimeAbiStatus::FAILED)? {
+                ui.stage(batch).map_err(|_| ProjectRuntimeAbiStatus::FAILED)?;
+            }
+        }
+        let host_control = call_context.take_host_control();
+        let (mutations, diagnostics) = call_context.into_outputs();
+        result.mutations.extend(mutations);
+        result.diagnostics.extend(diagnostics);
+        Ok(result.into_runtime_output(host_control))
+    };
+    // SAFETY: the ABI caller lends an exclusive live output descriptor and its backing storage.
+    unsafe {
+        project_runtime_sdk::spatial_bulk::session_boundary(
+            output,
+            project_runtime_sdk::spatial_bulk::MAX_SESSION_BYTES,
+            callback,
+        )
+    }
+}
+
+unsafe extern "C" fn ui_extension(
+    _module: ProjectRuntimeOpaqueHandle,
+    session: ProjectRuntimeOpaqueHandle,
+    _context: *const ProjectRuntimeCallContext,
+    request: ProjectRuntimeByteSlice,
+    output: *mut ProjectRuntimeByteBuffer,
+) -> ProjectRuntimeAbiStatus {
+    let callback = || {
+        // Extension phases are deliberately read-only: no GameCallContext or HostUiAccess exists.
+        let request: project_runtime_sdk::aui_extension::UiExtensionRequestBatch =
+            unsafe { read_input(request) }?;
+        project_runtime_sdk::aui_extension::validate_request_batch(&request)
+            .map_err(|_| ProjectRuntimeAbiStatus::INVALID_ARGUMENT)?;
+        with_session(session, |session| {
+            definition()
+                .ui_extension(session, &request)
+                .map_err(map_game_error)
+        })
+    };
+    unsafe {
+        ffi_boundary_with_capacity_floor(
+            output,
+            project_runtime_sdk::aui_extension::MAX_UI_EXTENSION_WIRE_BYTES,
+            callback,
+        )
+    }
 }
 
 unsafe extern "C" fn resolve_ui_state(
@@ -332,10 +503,15 @@ fn capabilities() -> u64 {
                 ProjectGameCapability::Sessions => PROJECT_RUNTIME_CAP_SESSIONS,
                 ProjectGameCapability::Rules => PROJECT_RUNTIME_CAP_RULES,
                 ProjectGameCapability::AuiActions => PROJECT_RUNTIME_CAP_AUI_ACTIONS,
+                ProjectGameCapability::UiEvents => project_runtime_abi::PROJECT_RUNTIME_CAP_UI_EVENTS,
+                ProjectGameCapability::UiExtensions => PROJECT_RUNTIME_CAP_UI_EXTENSIONS,
                 ProjectGameCapability::FixedUpdate => PROJECT_RUNTIME_CAP_FIXED_UPDATE,
+                ProjectGameCapability::Lifecycle => project_runtime_abi::PROJECT_RUNTIME_CAP_LIFECYCLE,
                 ProjectGameCapability::UiState => PROJECT_RUNTIME_CAP_UI_STATE,
                 ProjectGameCapability::Observations => PROJECT_RUNTIME_CAP_OBSERVATIONS,
                 ProjectGameCapability::WorldRead => PROJECT_RUNTIME_CAP_WORLD_READ,
+                ProjectGameCapability::GeneratedContent => project_runtime_abi::PROJECT_RUNTIME_CAP_GENERATED_CONTENT,
+                ProjectGameCapability::ProjectStorage => project_runtime_abi::PROJECT_RUNTIME_CAP_PROJECT_STORAGE,
                 ProjectGameCapability::DeferredMutations => {
                     PROJECT_RUNTIME_CAP_DEFERRED_MUTATIONS
                 }
@@ -369,6 +545,9 @@ pub unsafe extern "C" fn aife_project_runtime_entry_v1() -> *const ProjectRuntim
                 .then_some(fixed_update),
             resolve_ui_state: (capabilities & PROJECT_RUNTIME_CAP_UI_STATE != 0)
                 .then_some(resolve_ui_state),
+            lifecycle: (capabilities & project_runtime_abi::PROJECT_RUNTIME_CAP_LIFECYCLE != 0).then_some(lifecycle),
+            ui_event: (capabilities & project_runtime_abi::PROJECT_RUNTIME_CAP_UI_EVENTS != 0).then_some(ui_event),
+            ui_extension: (capabilities & PROJECT_RUNTIME_CAP_UI_EXTENSIONS != 0).then_some(ui_extension),
             observe: (capabilities & PROJECT_RUNTIME_CAP_OBSERVATIONS != 0).then_some(observe),
         }
     })
@@ -376,6 +555,7 @@ pub unsafe extern "C" fn aife_project_runtime_entry_v1() -> *const ProjectRuntim
 
 struct AbiWorldRead<'a> {
     context: &'a ProjectRuntimeCallContext,
+    host: project_runtime_abi::ProjectRuntimeHostApi,
 }
 
 impl<'a> AbiWorldRead<'a> {
@@ -393,19 +573,98 @@ impl<'a> AbiWorldRead<'a> {
             return Err(ProjectRuntimeAbiStatus::INVALID_ARGUMENT);
         }
         // SAFETY: the validated call context owns this host table pointer.
-        if unsafe { (*context.host_api).struct_size } < PROJECT_RUNTIME_HOST_API_STRUCT_SIZE {
-            return Err(ProjectRuntimeAbiStatus::INVALID_ARGUMENT);
-        }
-        Ok(Self { context })
+        let host = unsafe { project_runtime_abi::copy_validated_host_api(context.host_api) }
+            .ok_or(ProjectRuntimeAbiStatus::INVALID_ARGUMENT)?;
+        Ok(Self { context, host })
     }
 
     fn host_api(&self) -> &project_runtime_abi::ProjectRuntimeHostApi {
-        // SAFETY: `from_raw` validated this call-scoped pointer.
-        unsafe { &*self.context.host_api }
+        &self.host
     }
 }
 
 impl WorldRead for AbiWorldRead<'_> {
+    fn query_project_storage(&self, query: project_game_sdk::generated_content::StorageQuery) -> Result<project_game_sdk::generated_content::StorageQueryReply, GameError> {
+        query.validate().map_err(|error| GameError::new(GameErrorCode::InvalidArgument, error.to_string()))?;
+        let call = self.host_api().world_query.ok_or_else(|| GameError::new(GameErrorCode::Unsupported, "Project storage query unavailable"))?;
+        call_host_json(call, self.context.host_context, &project_runtime_sdk::project_storage::StorageQueryRequest { project_storage: query })
+            .map_err(|error| GameError::new(if error.status == ProjectRuntimeAbiStatus::UNSUPPORTED { GameErrorCode::Unsupported } else { GameErrorCode::Failed }, error.message))
+    }
+    fn take_project_bytes(&self, ticket: project_game_sdk::generated_content::ContentTicket) -> Result<project_game_sdk::generated_content::StorageReadReply, GameError> {
+        let call = self.host_api().world_query.ok_or_else(|| GameError::new(GameErrorCode::Unsupported, "Project byte results unavailable"))?;
+        project_runtime_sdk::project_storage::call_take_project_bytes(call, self.context.host_context, ticket)
+            .map_err(|error| GameError::new(if error.status == ProjectRuntimeAbiStatus::UNSUPPORTED { GameErrorCode::Unsupported } else { GameErrorCode::Failed }, error.message))
+    }
+    fn query_generated_content(&self, query: project_game_sdk::generated_content::ContentQuery) -> Result<project_game_sdk::generated_content::ContentQueryReply, GameError> {
+        query.validate().map_err(|error| GameError::new(GameErrorCode::InvalidArgument, error.to_string()))?;
+        let call = self.host_api().world_query.ok_or_else(|| GameError::new(GameErrorCode::Unsupported, "Generated content query unavailable"))?;
+        call_host_json(call, self.context.host_context, &project_runtime_sdk::generated_content::ContentQueryRequest { generated_content: query })
+            .map_err(|error| GameError::new(if error.status == ProjectRuntimeAbiStatus::UNSUPPORTED { GameErrorCode::Unsupported } else { GameErrorCode::Failed }, error.message))
+    }
+    fn physics_query3d(&self, queries: &[project_game_sdk::physics_query3d::PhysicsQuery3D]) -> Result<project_game_sdk::physics_query3d::PhysicsQueryResult3D, GameError> {
+        let batch = project_runtime_sdk::physics_query3d::PhysicsQueryBatch3D {queries:queries.to_vec()};
+        if !batch.is_valid() {return Err(GameError::new(GameErrorCode::InvalidArgument,"Invalid physics query batch"));}
+        let call=self.host_api().world_query.ok_or_else(||GameError::new(GameErrorCode::Unsupported,"Physics queries unavailable"))?;
+        let response:ProjectRuntimeWorldQueryResponse=project_runtime_sdk::call_host_json_with_capacity(call,self.context.host_context,
+            &ProjectRuntimeWorldQueryRequest {generated_content: None, project_storage: None, project_storage_take: None,physics:Some(batch),entity_id:None,cell:None,spawn_request_id:None,all:Vec::new(),none:Vec::new()}, queries.len() * 1024)
+            .map_err(|error|GameError::new(if error.status==ProjectRuntimeAbiStatus::UNSUPPORTED {GameErrorCode::Unsupported} else {GameErrorCode::Failed},error.message))?;
+        let result=response.physics.ok_or_else(||GameError::new(GameErrorCode::Failed,"Host omitted physics query result"))?;
+        if (result.tick.is_some() && result.hits.len()!=queries.len()) || (result.tick.is_none() && !result.hits.is_empty()) {
+            return Err(GameError::new(GameErrorCode::Failed,"Invalid physics query result length"));
+        }
+        Ok(result)
+    }
+    fn resolve_spatial_entities(&self, identities: &[String]) -> Result<Vec<project_game_sdk::SpatialEntityHandle>, GameError> {
+        if identities.len() > project_runtime_sdk::spatial_bulk::MAX_SPATIAL_ITEMS {
+            return Err(GameError::new(GameErrorCode::InvalidArgument,"Too many spatial identities"));
+        }
+        let call = self.host_api().spatial_resolve.ok_or_else(|| GameError::new(GameErrorCode::Unsupported,"Typed spatial resolution unavailable"))?;
+        let keys: Vec<project_runtime_sdk::spatial_bulk::SpatialEntityKey> = call_host_json(call,self.context.host_context,&identities)
+            .map_err(|e|GameError::new(GameErrorCode::Failed,e.message))?;
+        if keys.len()!=identities.len() {return Err(GameError::new(GameErrorCode::Failed,"Invalid spatial resolution length"));}
+        keys.into_iter().map(project_game_sdk::SpatialEntityHandle::from_runtime_key).collect()
+    }
+
+    fn resolve_entity(&self, identity: &str) -> Result<EntityHandle, GameError> {
+        let call = self.host_api().world_query.ok_or_else(|| GameError::new(GameErrorCode::Unsupported,"world query unavailable"))?;
+        let response: ProjectRuntimeWorldQueryResponse = call_host_json(call, self.context.host_context,
+            &ProjectRuntimeWorldQueryRequest {generated_content: None, project_storage: None, project_storage_take: None,physics: None,entity_id:Some(identity.into()),cell:None,spawn_request_id:None,all:Vec::new(),none:Vec::new()})
+            .map_err(|error| GameError::new(GameErrorCode::Failed,error.message))?;
+        if response.cell.is_some() || response.entity_ids.as_slice() != [identity] || response.entity_generations.len() != 1 {
+            return Err(GameError::new(GameErrorCode::InvalidArgument,"Entity is not alive or host returned a non-exact query"));
+        }
+        let generation = response.entity_generations.get(identity).copied().filter(|g| *g != 0)
+            .ok_or_else(|| GameError::new(GameErrorCode::Failed,"Host omitted live entity generation"))?;
+        EntityHandle::new(identity, generation)
+    }
+    fn cell_status(&self, ticket: project_game_sdk::CellTicket) -> Result<Option<project_game_sdk::CellReceipt>, GameError> {
+        let call=self.host_api().world_query.ok_or_else(||GameError::new(GameErrorCode::Unsupported,"world query unavailable"))?;
+        let response:ProjectRuntimeWorldQueryResponse=call_host_json(call,self.context.host_context,
+            &ProjectRuntimeWorldQueryRequest {generated_content: None, project_storage: None, project_storage_take: None,physics: None,entity_id: None,cell:Some(ticket.query()),spawn_request_id:None,all:Vec::new(),none:Vec::new()})
+            .map_err(|e|GameError::new(GameErrorCode::Failed,e.message))?;
+        Ok(response.cell)
+    }
+    fn resolve_cell_entity(&self, placement_id: &str, source_entity_id: &str) -> Result<Option<EntityHandle>, GameError> {
+        let call=self.host_api().world_query.ok_or_else(||GameError::new(GameErrorCode::Unsupported,"world query unavailable"))?;
+        let response:ProjectRuntimeWorldQueryResponse=call_host_json(call,self.context.host_context,
+            &ProjectRuntimeWorldQueryRequest {generated_content: None, project_storage: None, project_storage_take: None,physics: None,entity_id: None,cell:Some(project_runtime_sdk::ProjectRuntimeCellQuery {request_id:None,placement_id:Some(placement_id.into()),source_entity_id:Some(source_entity_id.into())}),spawn_request_id:None,all:Vec::new(),none:Vec::new()})
+            .map_err(|e|GameError::new(GameErrorCode::Failed,e.message))?;
+        let Some(id)=response.entity_ids.into_iter().next() else {return Ok(None)};
+        let generation=response.entity_generations.get(&id).copied().ok_or_else(||GameError::new(GameErrorCode::Failed,"Missing cell entity generation"))?;
+        EntityHandle::new(id,generation).map(Some)
+    }
+
+    fn resolve_spawn(&self, ticket: project_game_sdk::SpawnTicket) -> Result<Option<EntityHandle>, GameError> {
+        let call=self.host_api().world_query.ok_or_else(||GameError::new(GameErrorCode::Unsupported,"world query unavailable"))?;
+        let response:ProjectRuntimeWorldQueryResponse=call_host_json(call,self.context.host_context,
+            &ProjectRuntimeWorldQueryRequest {generated_content: None, project_storage: None, project_storage_take: None,physics: None,entity_id: None,cell: None,spawn_request_id:Some(ticket.request_id()),all:Vec::new(),none:Vec::new()})
+            .map_err(|error|GameError::new(GameErrorCode::Failed,error.message))?;
+        let Some(id)=response.entity_ids.into_iter().next() else { return Ok(None); };
+        let generation=response.entity_generations.get(&id).copied().filter(|v|*v!=0)
+            .ok_or_else(||GameError::new(GameErrorCode::Failed,"Host omitted prefab incarnation"))?;
+        EntityHandle::new(id,generation).map(Some)
+    }
+
     fn query(
         &self,
         all: &[String],
@@ -417,7 +676,8 @@ impl WorldRead for AbiWorldRead<'_> {
         let response: ProjectRuntimeWorldQueryResponse = call_host_json(
             call,
             self.context.host_context,
-            &ProjectRuntimeWorldQueryRequest {
+            &ProjectRuntimeWorldQueryRequest {generated_content: None, project_storage: None, project_storage_take: None,physics: None,entity_id: None,cell: None,
+                spawn_request_id: None,
                 all: all.to_vec(),
                 none: none.to_vec(),
             },
@@ -426,7 +686,10 @@ impl WorldRead for AbiWorldRead<'_> {
         response
             .entity_ids
             .into_iter()
-            .map(EntityHandle::from_stable_identity)
+            .map(|id| {
+                let generation = response.entity_generations.get(&id).copied().ok_or_else(|| GameError::new(GameErrorCode::Failed, "Host omitted live entity generation"))?;
+                EntityHandle::new(id, generation)
+            })
             .collect()
     }
 
@@ -446,6 +709,7 @@ impl WorldRead for AbiWorldRead<'_> {
             self.context.host_context,
             &ProjectRuntimeWorldReadRequest {
                 entity_id: entity.identity().to_string(),
+                generation: entity.generation(),
                 component_type: component_type.to_string(),
             },
         )

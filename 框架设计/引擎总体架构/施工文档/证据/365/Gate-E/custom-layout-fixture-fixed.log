@@ -1,0 +1,22 @@
+   Compiling engine_runtime v0.1.0 (G:\gameEngin\rust\crates\engine_runtime)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 59.86s
+     Running unittests src\lib.rs (target\debug\deps\engine_runtime-f2e49a160a17050d.exe)
+
+running 1 test
+test aui_present_cache::tests::custom_measure_and_layout_products_still_invalidate_layout ... FAILED
+
+failures:
+
+---- aui_present_cache::tests::custom_measure_and_layout_products_still_invalidate_layout stdout ----
+
+thread 'aui_present_cache::tests::custom_measure_and_layout_products_still_invalidate_layout' (9384) panicked at crates\engine_runtime\src\aui_present_cache.rs:3490:13:
+assertion failed: cache.c2_runtime().update_work().since(before).layout_nodes_visited > 0
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    aui_present_cache::tests::custom_measure_and_layout_products_still_invalidate_layout
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 776 filtered out; finished in 0.01s
+
+error: test failed, to rerun pass `-p engine_runtime --lib`

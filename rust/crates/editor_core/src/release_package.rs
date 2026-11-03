@@ -435,10 +435,11 @@ impl ReleasePackageBuilder {
                 ),
             );
         };
-        let player_executable = match resolve_release_player_executable(
+        let player = match resolve_release_player_executable(
             request,
             &project,
             &build_input.project.runtime_module,
+            assembly.prepared_runtime_glue.as_ref(),
         ) {
             Ok(player_executable) => player_executable,
             Err(diagnostics) => {
@@ -449,7 +450,7 @@ impl ReleasePackageBuilder {
             }
         };
         if let Err(error) = crate::ProjectPlayerArtifact::inspect(
-            &player_executable,
+            &player.executable,
             &build_input.project.runtime_module,
         ) {
             return failed_report(
@@ -459,7 +460,7 @@ impl ReleasePackageBuilder {
                     error.code,
                     "verify_project_player_artifact",
                     error.message,
-                    Some(player_executable.clone()),
+                    Some(player.executable.clone()),
                     error.next_action,
                 ),
             );
@@ -489,7 +490,7 @@ impl ReleasePackageBuilder {
                     staging_dir,
                     &request.project_root,
                     &plan,
-                    &player_executable,
+                    &player,
                     &icon,
                     &active_scene_id,
                     &build_input,
@@ -823,30 +824,39 @@ pub fn verify_release_package_directory(
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct ResolvedReleasePlayer {
+    executable: PathBuf,
+    artifact_root: Option<PathBuf>,
+}
+
 fn resolve_release_player_executable(
     request: &ReleasePackageBuildRequest,
     project: &ProjectManifest,
     expected_module: &engine_runtime::runtime_package::RuntimeProjectModuleRef,
-) -> Result<PathBuf, Vec<ReleasePackageDiagnostic>> {
+    prepared_runtime_glue: Option<&project_authoring_execution::PreparedRuntimeGlue>,
+) -> Result<ResolvedReleasePlayer, Vec<ReleasePackageDiagnostic>> {
     if project.runtime_module.source_kind == Some(crate::ProjectRuntimeSourceKind::ProjectRust) {
         if let Some(player_executable) = request
             .player_executable
             .as_ref()
             .filter(|path| path.is_file())
         {
-            return Ok(player_executable.clone());
+            return Ok(ResolvedReleasePlayer {
+                artifact_root: sealed_project_player_artifact_root(player_executable),
+                executable: player_executable.clone(),
+            });
         }
 
-        let build = crate::ProjectPlayerArtifact::build_project_rust(
-            crate::ProjectRuntimePlayerArtifactBuildRequest::new(
-                &request.project_root,
-                crate::default_engine_sdk_root(),
-                expected_module.clone(),
-            ),
-        );
+        let build_request =
+            release_project_player_build_request(request, expected_module, prepared_runtime_glue);
+        let build = crate::ProjectPlayerArtifact::build_project_rust(build_request);
         if build.status == crate::ProjectRuntimePlayerArtifactBuildStatus::Success {
             if let Some(artifact) = build.artifact {
-                return Ok(artifact.executable_path);
+                return Ok(ResolvedReleasePlayer {
+                    artifact_root: sealed_project_player_artifact_root(&artifact.executable_path),
+                    executable: artifact.executable_path,
+                });
             }
         }
         let mut diagnostics = build
@@ -904,26 +914,77 @@ fn resolve_release_player_executable(
             "Build the configured built-in Player before building a release package.",
         )]);
     }
-    Ok(player_executable.clone())
+    Ok(ResolvedReleasePlayer {
+        artifact_root: None,
+        executable: player_executable.clone(),
+    })
+}
+
+fn sealed_project_player_artifact_root(executable: &Path) -> Option<PathBuf> {
+    let root = executable.parent()?.parent()?.parent()?;
+    (root.join("player-files.json").is_file()
+        && root.join("engine_runtime.dll").is_file()
+        && root.join("project_runtime_module.dll").is_file())
+    .then(|| root.to_path_buf())
+}
+
+fn release_project_player_build_request(
+    request: &ReleasePackageBuildRequest,
+    expected_module: &engine_runtime::runtime_package::RuntimeProjectModuleRef,
+    prepared_runtime_glue: Option<&project_authoring_execution::PreparedRuntimeGlue>,
+) -> crate::ProjectRuntimePlayerArtifactBuildRequest {
+    let mut build_request = crate::ProjectRuntimePlayerArtifactBuildRequest::new(
+        &request.project_root,
+        crate::default_engine_sdk_root(),
+        expected_module.clone(),
+    )
+    .with_build_profile(crate::ProjectRuntimePlayerArtifactBuildProfile::Release)
+    .with_compile_tests(false);
+    if let Some(glue) = prepared_runtime_glue {
+        build_request = build_request.with_prepared_runtime_glue(glue.clone());
+    }
+    build_request
 }
 
 fn write_release_staging(
     staging_dir: &Path,
     project_root: &Path,
     plan: &ReleasePackagePlan,
-    player_executable: &Path,
+    player: &ResolvedReleasePlayer,
     icon: &crate::ResolvedReleaseIcon,
     active_scene_id: &str,
     build_input: &engine_runtime::runtime_package_builder::RuntimePackageBuildInput,
 ) -> Result<(), String> {
     let entrypoint_path = staging_dir.join(&plan.entrypoint_relative_path);
-    fs::copy(player_executable, &entrypoint_path).map_err(|error| {
+    fs::copy(&player.executable, &entrypoint_path).map_err(|error| {
         format!(
             "failed to copy Runtime executable template {} to {}: {error}",
-            player_executable.display(),
+            player.executable.display(),
             entrypoint_path.display()
         )
     })?;
+    if let Some(artifact_root) = &player.artifact_root {
+        fs::copy(
+            artifact_root.join("engine_runtime.dll"),
+            staging_dir.join("engine_runtime.dll"),
+        )
+        .map_err(|error| format!("failed to copy release engine_runtime.dll: {error}"))?;
+        let project_module_path =
+            staging_dir.join(runtime_cli::project_runtime_module_relative_path(
+                &build_input.project.runtime_module.module_id,
+            ));
+        fs::create_dir_all(
+            project_module_path
+                .parent()
+                .expect("project module release path has a parent"),
+        )
+        .map_err(|error| format!("failed to create release project DLL directory: {error}"))?;
+        fs::copy(
+            artifact_root.join("project_runtime_module.dll"),
+            &project_module_path,
+        )
+        .map_err(|error| format!("failed to copy release project RuntimeModule DLL: {error}"))?;
+    }
     stamp_windows_executable_resources(&entrypoint_path, &plan.application, icon)
         .map_err(|error| error.to_string())?;
     let runtime_package_dir = staging_dir.join(&plan.runtime_package_relative_path);
@@ -1368,6 +1429,49 @@ mod tests {
     }
 
     #[test]
+    fn project_rust_release_build_request_requires_release_profile() {
+        let request = ReleasePackageBuildRequest::windows_release(sample_project_root());
+        let build_request = release_project_player_build_request(
+            &request,
+            &RuntimeProjectModuleRef::explicit_empty(),
+            None,
+        );
+        assert_eq!(
+            build_request.build_profile,
+            crate::ProjectRuntimePlayerArtifactBuildProfile::Release
+        );
+        assert!(!build_request.compile_tests);
+    }
+
+    #[test]
+    fn release_assembly_preserves_generated_glue_for_the_project_dll() {
+        let root = sample_project_root();
+        let assembly = ProjectRuntimePackageAssembler::assemble(
+            ProjectRuntimePackageAssemblyRequest::new(&root)
+                .with_build_profile_path(root.join("BuildProfiles/windows.release.json")),
+        );
+        assert_eq!(
+            assembly.status,
+            ProjectRuntimePackageAssemblyStatus::Success
+        );
+        let glue = assembly
+            .prepared_runtime_glue
+            .as_ref()
+            .expect("ProjectRust release assembly must retain its generated Glue");
+        assert_eq!(glue.report().target_profile, "windows-release");
+        assert_eq!(
+            assembly
+                .build_input
+                .as_ref()
+                .unwrap()
+                .project
+                .runtime_module
+                .aot_content_digest,
+            glue.report().runtime_module_source_identity
+        );
+    }
+
+    #[test]
     fn project_rust_release_reuses_existing_verified_player_candidate() {
         let project_root = sample_project_root();
         let mut project: ProjectManifest = serde_json::from_str(
@@ -1386,10 +1490,35 @@ mod tests {
             &request,
             &project,
             &RuntimeProjectModuleRef::explicit_empty(),
+            None,
         )
         .unwrap();
 
-        assert_eq!(resolved, player);
+        assert_eq!(resolved.executable, player);
+        assert!(resolved.artifact_root.is_none());
+    }
+
+    #[test]
+    fn sealed_project_player_artifact_root_requires_all_runtime_sidecars() {
+        let root = unique_temp_dir("release-project-rust-sidecars");
+        let executable = root.join("target/debug/ai_project_runtime_player.exe");
+        fs::create_dir_all(executable.parent().unwrap()).unwrap();
+        for path in [
+            executable.clone(),
+            root.join("player-files.json"),
+            root.join("engine_runtime.dll"),
+            root.join("project_runtime_module.dll"),
+        ] {
+            fs::write(path, b"fixture").unwrap();
+        }
+
+        assert_eq!(
+            sealed_project_player_artifact_root(&executable),
+            Some(root.clone())
+        );
+        fs::remove_file(root.join("project_runtime_module.dll")).unwrap();
+        assert!(sealed_project_player_artifact_root(&executable).is_none());
+        fs::remove_dir_all(root).unwrap();
     }
 
     #[test]

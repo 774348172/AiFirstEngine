@@ -94,6 +94,7 @@ mod windows_fixture {
             RuntimeProjectModuleRef::new(MODULE_ID, INTERFACE_VERSION, AOT_DIGEST),
         ));
         input.scenes.push(RuntimeScene {
+            main_camera: None,
             schema_version: RUNTIME_SCENE_SCHEMA_VERSION.to_string(),
             id: "scene-main".to_string(),
             name: "Main".to_string(),

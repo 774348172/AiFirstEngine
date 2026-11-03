@@ -1,0 +1,16 @@
+361 B17 red-state evidence
+Date: 2026-09-27
+HEAD: acaffa8cb95bbb54d093bbf45835a59315c82da5
+
+Command:
+cargo test -p engine_runtime --lib --locked --message-format short -- runtime_renderer::tests::b17_
+
+Result: exit 1, compile failed with 18 errors.
+
+Key failures:
+- no method named install_projection_hint_from_previous_for_test on AuiCompositionFrame
+- no UiProjectionStats fields hint_slots_consumed or fallback_stage_scans
+- no UiProjectionStats fields fragments_merged or vertices_copied
+- no UiProjectionStats field glyph_groups_updated
+
+This red state proved that trusted stage/glyph change-slot consumption and the separate final-merge cost counters did not exist before B17.

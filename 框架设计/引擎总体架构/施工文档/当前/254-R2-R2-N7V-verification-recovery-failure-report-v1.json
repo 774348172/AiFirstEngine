@@ -1,0 +1,97 @@
+{
+  "schemaVersion": "254-r2-n7v-verification-recovery-failure-report.v1",
+  "status": "r2_n7v_failed_runner_exit_code_unavailable",
+  "recordedAt": "2026-07-21T19:55:55.7171971+08:00",
+  "authorization": {
+    "gate": "R2-N7V",
+    "scope": "verification-only runner recovery and missing regression",
+    "consumed": true,
+    "retryCount": 0,
+    "retryAuthorized": false,
+    "r2N8Authorized": false
+  },
+  "freshEnvironment": {
+    "root": "I:\\R2N7V\\20260721-195152",
+    "targetRoot": "I:\\R2N7V\\20260721-195152\\target",
+    "evidenceRoot": "I:\\R2N7V\\20260721-195152\\evidence",
+    "targetExistedBeforeRun": false,
+    "evidenceExistedBeforeRun": false,
+    "historicalRootReused": false
+  },
+  "freeze": {
+    "manifestPath": "I:\\R2N7V\\20260721-195152\\freeze-manifest.json",
+    "manifestSha256": "sha256:e4f6d4c22245234f9e271a6fc29dcd38a5eb4048cd0333ff64b36f957c39d4f5",
+    "fileCount": 474,
+    "sourceSnapshotSha256": "sha256:1e1392a478fd04be2b26badf77fd12435c01fd2955840a28fd84b787d5672051",
+    "verifiedBeforeStage": true,
+    "verifiedAfterStage": true,
+    "productSourceOrDependencyDrift": false
+  },
+  "runner": {
+    "path": "tools/r2_n7v_validation_runner.ps1",
+    "sha256": "sha256:c3cbdb7474ce4b14594009791b74eb1092374edc81c9b378972f8d5675b84428",
+    "publicEngineInterface": false,
+    "arbitraryCargoRecipeAccepted": false,
+    "stageInvocationCount": 1
+  },
+  "stage": {
+    "stageId": "gateway-all-features-compile",
+    "command": "cargo test -p ai_tool_gateway --all-features --no-run",
+    "internalTimeoutSeconds": 1800,
+    "outerTimeoutSeconds": 2100,
+    "runnerElapsedMs": 107652,
+    "runnerTerminalKind": "failed",
+    "runnerDiagnosticCode": "r2_n7v.cargo_nonzero",
+    "runnerExitCode": null,
+    "resultPath": "I:\\R2N7V\\20260721-195152\\evidence\\gateway-all-features-compile\\result.json",
+    "resultSha256": "sha256:907d903332c49e9143c23fd6309574cd2d7d6c7d0b24575a5ebda19df2bf93ce",
+    "eventsPath": "I:\\R2N7V\\20260721-195152\\evidence\\gateway-all-features-compile\\events.ndjson",
+    "eventsSha256": "sha256:2503d5db5f730ddf9d995ce1eee3482032afafca366aeef59d93c7eb6976ce8",
+    "stderrPath": "I:\\R2N7V\\20260721-195152\\evidence\\gateway-all-features-compile\\stderr.log",
+    "stderrSha256": "sha256:50b2944830e19ab77ac8a8246f93e59f515c6b640ed17f9d15d1da82597c76c5"
+  },
+  "cargoEvidence": {
+    "compileFinishedMarkerPresent": true,
+    "compileFinishedLine": "Finished `test` profile [unoptimized + debuginfo] target(s) in 1m 37s",
+    "executableCount": 9,
+    "errorLineCount": 0,
+    "cargoCompileSucceededByLog": true,
+    "cargoExitCodeProven": false
+  },
+  "rootCause": {
+    "domain": "construction validation runner implementation",
+    "diagnosticCode": "r2_n7v.runner_exit_code_unavailable",
+    "summary": "The fixed Runner did not retain or recover the completed Start-Process exit code. It serialized exitCode=null and misclassified a log-complete Cargo compile as cargo_nonzero.",
+    "productGitlinkImplementationFailureProven": false,
+    "formal254R2DesignFailureProven": false
+  },
+  "cleanup": {
+    "runnerResidualProcessIds": [],
+    "postRunCargoProcessCount": 0,
+    "postRunRustcProcessCount": 0,
+    "clean": true
+  },
+  "notExecuted": [
+    "gateway-all-features-test",
+    "workspace-default-test",
+    "workspace-all-features-test",
+    "workspace-default-check",
+    "workspace-all-features-check",
+    "workspace-fmt-check",
+    "R2-N8",
+    "historical R2-N6 harness",
+    "R2-G",
+    "production candidate",
+    "activation",
+    "real Codex evaluation",
+    "F-A/F-B/G",
+    "three-engine B channel"
+  ],
+  "identityEvidence": {
+    "candidateCreated": false,
+    "activationCreated": false,
+    "attemptCreated": false,
+    "ignoredHarnessExecuted": false
+  },
+  "disposition": "Stop after the first R2-N7V stage because its terminal receipt is invalid. Preserve Cargo success evidence without promoting the stage to passed. Do not repair or retry without a new explicit decision and authorization."
+}

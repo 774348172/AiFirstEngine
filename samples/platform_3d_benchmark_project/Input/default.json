@@ -1,0 +1,20 @@
+{
+  "schema_version": "input-mapping.v2",
+  "asset_id": "benchmark.input",
+  "actions": [
+    {
+      "id": "action.inspect",
+      "value_type": "Button"
+    }
+  ],
+  "contexts": [
+    {
+      "id": "benchmark",
+      "priority": 0,
+      "consume_input": false,
+      "enabled_by_default": true
+    }
+  ],
+  "bindings": [],
+  "platform_overrides": []
+}

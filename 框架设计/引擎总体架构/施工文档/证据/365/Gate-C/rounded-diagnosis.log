@@ -1,0 +1,59 @@
+warning: variant `IrInterpreter` is never constructed
+  --> crates\engine_runtime\src\project_logic.rs:19:5
+   |
+17 | pub(crate) enum RuleExecutorHint {
+   |                 ---------------- variant in this enum
+18 |     RustAot,
+19 |     IrInterpreter,
+   |     ^^^^^^^^^^^^^
+   |
+   = note: `RuleExecutorHint` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: associated function `validation_only_ir_interpreter` is never used
+  --> crates\engine_runtime\src\project_logic.rs:38:19
+   |
+29 | impl RuleCall {
+   | ------------- associated function in this implementation
+...
+38 |     pub(crate) fn validation_only_ir_interpreter(rule_id: impl Into<String>) -> Self {
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: method `remove_sprite_renderer2d` is never used
+   --> crates\engine_runtime\src\world.rs:529:19
+    |
+160 | impl World {
+    | ---------- method in this implementation
+...
+529 |     pub(crate) fn remove_sprite_renderer2d(&mut self, id: &EntityId) -> Option<SpriteRenderer2D> {
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: `engine_runtime` (lib) generated 3 warnings
+   Compiling engine_runtime v0.1.0 (G:\gameEngin\rust\crates\engine_runtime)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.93s
+     Running tests\aui_presentation_gpu.rs (target\debug\deps\aui_presentation_gpu-9ea992ca30b73814.exe)
+
+running 1 test
+rounded node root: rect=AuiComputedRect { x: 0.0, y: 0.0, width: 300.0, height: 180.0 }, visible=true, geometry=Some(AuiPresentationGeometry { local_to_canvas: [1.0, 0.0, 0.0, 1.0, 0.0, 0.0], vertex_transform: [1.0, 0.0, 0.0, 1.0, 0.0, 0.0], bounds: AuiComputedRect { x: 0.0, y: 0.0, width: 300.0, height: 180.0 }, modulation: [1.0, 1.0, 1.0, 1.0] }), clips=[]
+rounded node clip: rect=AuiComputedRect { x: 110.0, y: 70.0, width: 80.0, height: 80.0 }, visible=true, geometry=Some(AuiPresentationGeometry { local_to_canvas: [1.1554698, 0.79049945, -0.39524972, 0.5777349, 136.59235, 90.91709], vertex_transform: [1.1554698, 0.79049945, -0.39524972, 0.5777349, 37.15815, -36.47929], bounds: AuiComputedRect { x: 104.97237, y: 90.91709, width: 124.057556, height: 109.45875 }, modulation: [1.0, 1.0, 1.0, 1.0] }), clips=[]
+rounded node fill: rect=AuiComputedRect { x: 10.0, y: -30.0, width: 280.0, height: 280.0 }, visible=true, geometry=Some(AuiPresentationGeometry { local_to_canvas: [1.1554698, 0.79049945, -0.39524972, 0.5777349, 60.570343, -45.90634], vertex_transform: [1.1554698, 0.79049945, -0.39524972, 0.5777349, 37.158154, -36.47929], bounds: AuiComputedRect { x: -50.09958, y: -45.90634, width: 434.20145, height: 383.10562 }, modulation: [1.0, 1.0, 1.0, 1.0] }), clips=[AuiResolvedClip { transform: Some([1.1554698, 0.79049945, -0.39524972, 0.5777349, 37.15815, -36.47929]), node_id: "clip", rect: AuiComputedRect { x: 110.0, y: 70.0, width: 80.0, height: 80.0 }, radius: 25.0 }]
+rounded item root: rect=AuiComputedRect { x: 0.0, y: 0.0, width: 300.0, height: 180.0 }, geometry=Some(AuiPresentationGeometry { local_to_canvas: [1.0, 0.0, 0.0, 1.0, 0.0, 0.0], vertex_transform: [1.0, 0.0, 0.0, 1.0, 0.0, 0.0], bounds: AuiComputedRect { x: 0.0, y: 0.0, width: 300.0, height: 180.0 }, modulation: [1.0, 1.0, 1.0, 1.0] }), paint=Some(AuiResolvedPaint { background: Solid { color: "#000000ff" }, foreground: Some("#eef2f7ff"), border: AuiResolvedBorder { color: Some("#627080ff"), width: 1.0 }, radius: 4.0, shadow: AuiResolvedShadow { color: None, offset_x: 0.0, offset_y: 0.0, blur: 0.0, spread: 0.0 }, opacity: 1.0 })
+rounded item clip: rect=AuiComputedRect { x: 110.0, y: 70.0, width: 80.0, height: 80.0 }, geometry=Some(AuiPresentationGeometry { local_to_canvas: [1.1554698, 0.79049945, -0.39524972, 0.5777349, 136.59235, 90.91709], vertex_transform: [1.1554698, 0.79049945, -0.39524972, 0.5777349, 37.15815, -36.47929], bounds: AuiComputedRect { x: 104.97237, y: 90.91709, width: 124.057556, height: 109.45875 }, modulation: [1.0, 1.0, 1.0, 1.0] }), paint=Some(AuiResolvedPaint { background: Solid { color: "#00000000" }, foreground: Some("#eef2f7ff"), border: AuiResolvedBorder { color: Some("#627080ff"), width: 1.0 }, radius: 4.0, shadow: AuiResolvedShadow { color: None, offset_x: 0.0, offset_y: 0.0, blur: 0.0, spread: 0.0 }, opacity: 1.0 })
+rounded item fill: rect=AuiComputedRect { x: 10.0, y: -30.0, width: 280.0, height: 280.0 }, geometry=Some(AuiPresentationGeometry { local_to_canvas: [1.1554698, 0.79049945, -0.39524972, 0.5777349, 60.570343, -45.90634], vertex_transform: [1.1554698, 0.79049945, -0.39524972, 0.5777349, 37.158154, -36.47929], bounds: AuiComputedRect { x: -50.09958, y: -45.90634, width: 434.20145, height: 383.10562 }, modulation: [1.0, 1.0, 1.0, 1.0] }), paint=Some(AuiResolvedPaint { background: Solid { color: "#ffffffff" }, foreground: Some("#eef2f7ff"), border: AuiResolvedBorder { color: Some("#627080ff"), width: 1.0 }, radius: 4.0, shadow: AuiResolvedShadow { color: None, offset_x: 0.0, offset_y: 0.0, blur: 0.0, spread: 0.0 }, opacity: 1.0 })
+rounded pixels 216000, white 0 bounds None None
+
+thread 'noncentral_pivot_nonuniform_rounded_clip_matches_inverse_hit_at_all_dpis' (22152) panicked at crates\engine_runtime\tests\aui_presentation_gpu.rs:382:13:
+assertion `left == right` failed: scale 1, local [40.0, 40.0], canvas [167.00114, 145.64647]
+  left: [0, 0, 0, 255]
+ right: [255, 255, 255, 255]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test noncentral_pivot_nonuniform_rounded_clip_matches_inverse_hit_at_all_dpis ... FAILED
+
+failures:
+
+failures:
+    noncentral_pivot_nonuniform_rounded_clip_matches_inverse_hit_at_all_dpis
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.43s
+
+error: test failed, to rerun pass `-p engine_runtime --test aui_presentation_gpu`

@@ -510,11 +510,23 @@ impl NativeEditorApplication {
             self.redraw_requested = true;
         }
         if matches!(event, EditorInputEvent::FocusLost) {
+            let _ = self.viewport_host.focus_game(false);
+            self.session.set_active_game_view_focus(false);
             self.focus_input.observe_event(
                 &event,
                 &self.latest_draw_list,
                 self.retained_ui_renderer.tree(),
             );
+        }
+        if let EditorInputEvent::PointerDown { x, y, .. } = &event {
+            if self
+                .viewport_host
+                .game_viewport()
+                .is_some_and(|view| !view.rect.contains(UiPoint { x: *x, y: *y }))
+            {
+                let _ = self.viewport_host.focus_game(false);
+                self.session.set_active_game_view_focus(false);
+            }
         }
         let interaction_update = self
             .retained_ui_renderer
@@ -717,7 +729,7 @@ impl NativeEditorApplication {
     fn try_route_production_game_view_input(&mut self, event: &EditorInputEvent) -> bool {
         if matches!(event, EditorInputEvent::FocusLost) {
             let _ = self.viewport_host.focus_game(false);
-            self.session.cancel_active_game_view_input();
+            self.session.set_active_game_view_focus(false);
             return false;
         }
         let pointer = match event {
@@ -731,6 +743,10 @@ impl NativeEditorApplication {
                 return false;
             };
             if !viewport.rect.contains(pointer) {
+                if matches!(event, EditorInputEvent::PointerDown { .. }) {
+                    let _ = self.viewport_host.focus_game(false);
+                    self.session.set_active_game_view_focus(false);
+                }
                 return false;
             }
         } else if !self
@@ -751,6 +767,11 @@ impl NativeEditorApplication {
         );
         let consumed = matches!(route.route_kind, ViewportInputRouteKind::RuntimeInputFrame);
         if let Some(runtime_input) = route.runtime_input_frame.clone() {
+            let focused = self
+                .viewport_host
+                .game_viewport()
+                .is_some_and(|viewport| viewport.focused);
+            self.session.set_active_game_view_focus(focused);
             self.session.route_active_game_view_aui_input(runtime_input);
             self.redraw_requested = true;
         }
@@ -2661,6 +2682,11 @@ impl NativeEditorApplication {
     pub fn tick_active_game_view_runtime_descriptor_frame(
         &mut self,
     ) -> Option<GameViewPresentReport> {
+        let focused = self
+            .viewport_host
+            .game_viewport()
+            .is_some_and(|view| view.focused);
+        self.session.set_active_game_view_focus(focused);
         self.session
             .tick_active_game_view_runtime_descriptor_frame()
     }
@@ -2669,6 +2695,11 @@ impl NativeEditorApplication {
         &mut self,
         fixed_step_count: usize,
     ) -> Option<GameViewPresentReport> {
+        let focused = self
+            .viewport_host
+            .game_viewport()
+            .is_some_and(|view| view.focused);
+        self.session.set_active_game_view_focus(focused);
         self.session
             .tick_active_game_view_runtime_descriptor_frame_with_fixed_steps(fixed_step_count)
     }

@@ -165,7 +165,7 @@ impl EngineToolProvider {
                 scenario: Some(report.scenario().clone()),
             },
         );
-        let output = playtest_output(&reference, &report);
+        let output = playtest_output(&reference, &report)?;
         let result = InvocationSuccess {
             revision: Some(report.delivery().lineage().revision_id().to_string()),
             output,
@@ -228,16 +228,22 @@ impl EngineToolProvider {
                     .revision_id()
                     .to_string(),
             ),
-            output: playtest_output(&input.run_ref, &retained.report),
+            output: playtest_output(&input.run_ref, &retained.report)?,
             receipt_ref: None,
             evidence_refs: vec![input.run_ref],
         })
     }
 }
 
-fn playtest_output(reference: &str, report: &ProjectPlaytestReport) -> Value {
+fn playtest_output(
+    reference: &str,
+    report: &ProjectPlaytestReport,
+) -> Result<Value, ToolDiagnostic> {
     let process = report.process();
-    json!({
+    let foundation = process.player.as_ref().map(project_authoring_execution::foundation_player_observation).transpose().map_err(|e| diagnostic(
+        "engine_provider.foundation_evidence_invalid", e,
+        "Inspect this retained run's source/frame/capture identity; do not substitute a latest World or another run."))?;
+    Ok(json!({
         "runRef": reference, "runId": process.run_id,
         "projectIdentity": report.delivery().lineage().project_identity(),
         "deliveryRef": opaque_delivery_ref(report.delivery()),
@@ -255,7 +261,8 @@ fn playtest_output(reference: &str, report: &ProjectPlaytestReport) -> Value {
         "semantic": process.player.as_ref().and_then(|player| player.semantic_playtest.as_ref()),
         "diagnostics": process.diagnostics,
         "reportDigest": report.evidence().report_digest,
-    })
+        "foundationObservation": foundation,
+    }))
 }
 
 #[cfg(test)]

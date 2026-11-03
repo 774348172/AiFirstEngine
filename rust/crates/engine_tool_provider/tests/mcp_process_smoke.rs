@@ -524,3 +524,318 @@ impl Drop for TestDirectoryGuard {
         let _ = fs::remove_dir_all(&self.0);
     }
 }
+
+#[cfg(windows)]
+#[test]
+#[ignore = "A4.2 real stdio Provider, independent Windows delivery and installed-reader negative"]
+fn three_d_a4_stdio_roundtrip() {
+    let evidence =
+        PathBuf::from(std::env::var_os("AIFE_A42_EVIDENCE_ROOT").expect("evidence root"));
+    let delivery =
+        PathBuf::from(std::env::var_os("AIFE_A42_DELIVERY_ROOT").expect("fresh external delivery"));
+    assert!(!delivery.exists(), "delivery must be fresh");
+    fs::create_dir_all(&evidence).unwrap();
+    let root = unique_temp_dir("three-d-a42");
+    let _guard = TestDirectoryGuard(root.clone());
+    let project = root.join("project");
+    copy_source_tree(
+        &workspace_root().join("samples/three_d_lab_project"),
+        &project,
+    );
+    let project = fs::canonicalize(project).unwrap();
+    let save = |name: &str, value: &Value| {
+        fs::write(
+            evidence.join(format!("{name}.json")),
+            serde_json::to_vec_pretty(value).unwrap(),
+        )
+        .unwrap()
+    };
+    save(
+        "ownership",
+        &json!({"temporaryRoot":root,"project":project,"delivery":delivery}),
+    );
+    let mut provider = McpProcess::spawn(&project);
+    let initialize =
+        provider.request(json!({"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}));
+    save("initialize", &initialize);
+    assert_eq!(
+        initialize["result"]["serverInfo"]["name"],
+        "ai-first-game-engine"
+    );
+    let listed =
+        provider.request(json!({"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}));
+    save("tools", &listed);
+    assert_eq!(listed["result"]["tools"].as_array().unwrap().len(), 9);
+    let inspect = provider.tool_call(3, "engine_project_inspect", json!({}));
+    save("inspect", &inspect);
+    assert_completed("3D inspect", &inspect);
+    assert_eq!(
+        canonical(&inspect)["output"]["spatialInspection"]["scenes"][0]["mainCamera"],
+        "camera"
+    );
+    let check = provider.tool_call(4, "engine_project_check", json!({}));
+    save("check", &check);
+    assert_completed("3D check", &check);
+    let built = provider.tool_call(
+        5,
+        "engine_project_build",
+        json!({"targetProfile":"windows-dev","frameLimit":120}),
+    );
+    save("build", &built);
+    assert_completed("3D build", &built);
+    let output = &canonical(&built)["output"];
+    let package = PathBuf::from(output["packageDir"].as_str().unwrap());
+    let played = provider.tool_call(
+        6,
+        "engine_runtime_playtest",
+        json!({"deliveryRef":output["deliveryRef"]}),
+    );
+    save("playtest", &played);
+    assert_completed("3D playtest", &played);
+    let semantic = &canonical(&played)["output"]["semantic"];
+    assert_eq!(semantic["overall"], "passed");
+    assert_eq!(semantic["assertions"].as_array().unwrap().len(), 13);
+    assert_eq!(semantic["captureEvidence"].as_array().unwrap().len(), 7);
+    let worker = PathBuf::from(semantic["captureEvidence"][0]["path"].as_str().unwrap())
+        .parent()
+        .unwrap()
+        .to_owned();
+    a42_copy(&worker, &evidence.join("original-worker"));
+    let observed = provider.tool_call(
+        7,
+        "engine_runtime_observe",
+        json!({"runRef":canonical(&played)["output"]["runRef"]}),
+    );
+    save("observe", &observed);
+    assert_completed("3D observe", &observed);
+    assert_eq!(canonical(&observed)["output"], canonical(&played)["output"]);
+    let verified=provider.tool_call(8,"engine_delivery_verify",json!({"deliveryRef":output["deliveryRef"],"mode":"windowed","frameLimit":120,"timeoutMs":30000,"screenshot":true}));
+    save("original-verify", &verified);
+    assert_completed("3D verify", &verified);
+    assert_eq!(canonical(&verified)["output"]["status"], "passed");
+    for key in ["deliveryIdentity", "artifactIdentity"] {
+        assert_eq!(output[key], canonical(&played)["output"][key]);
+        assert_eq!(output[key], canonical(&verified)["output"][key]);
+    }
+    save(
+        "provider",
+        &json!({"path":env!("CARGO_BIN_EXE_ai_engine_tool_provider_mcp"),"sha256":a42_hash(Path::new(env!("CARGO_BIN_EXE_ai_engine_tool_provider_mcp"))),"pid":provider.child.as_ref().unwrap().id()}),
+    );
+    save("transcript", &json!(provider.transcript));
+    provider.shutdown();
+    a42_copy(&package, &delivery);
+    let inventory = a42_inventory(&package);
+    assert_eq!(inventory, a42_inventory(&delivery));
+    save("copied-inventory", &json!(inventory));
+    let manifest: Value =
+        serde_json::from_slice(&fs::read(delivery.join("package-manifest.json")).unwrap()).unwrap();
+    for (file, key) in [
+        ("Game.exe", "playerArtifactHash"),
+        ("engine_runtime.dll", "engineRuntimeHash"),
+        (
+            "data/bin/sample_three_d_lab_runtime.dll",
+            "projectRuntimeModuleHash",
+        ),
+    ] {
+        assert_eq!(
+            a42_hash(&delivery.join(file)),
+            manifest[key].as_str().unwrap()
+        );
+    }
+    save("package-manifest", &manifest);
+    // The older installed consumer only sees this owned source copy, never the live host session.
+    let old = PathBuf::from(std::env::var_os("AIFE_A42_OLD_PROVIDER").expect("357 provider"));
+    let old_hash = a42_hash(&old);
+    let mut old_command = Command::new(&old);
+    old_command
+        .args(["--workspace-root"])
+        .arg(&project)
+        .arg("--project-root")
+        .arg(&project)
+        .arg("--session-id")
+        .arg("a42-old-reader");
+    let old_input=b"{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{}}\n{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/call\",\"params\":{\"name\":\"engine_project_check\",\"arguments\":{}}}\n{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"shutdown\",\"params\":{}}\n";
+    let old_status = a42_run(&mut old_command, &evidence, "old-provider", Some(old_input));
+    let old_text = fs::read_to_string(evidence.join("old-provider.stdout")).unwrap()
+        + &fs::read_to_string(evidence.join("old-provider.stderr")).unwrap();
+    save(
+        "old-reader",
+        &json!({"path":old,"sha256Before":old_hash,"sha256After":a42_hash(&old),"exitCode":old_status.code(),"output":old_text}),
+    );
+    assert_eq!(old_hash, a42_hash(&old));
+    assert!(
+        old_text.contains("aife-project.v3")
+            && (old_text.contains("unsupported") || old_text.contains("Unsupported")),
+        "{old_text}"
+    );
+    // Make the complete source+Library+build-cache tree inaccessible at its original path.
+    fs::rename(&project, root.join("source-isolated")).unwrap();
+    assert!(!project.exists() && !package.exists());
+    let reports = delivery.join("reports/a42-independent");
+    fs::create_dir_all(&reports).unwrap();
+    let report_path = reports.join("verify.json");
+    let mut command = Command::new(delivery.join("Game.exe"));
+    command
+        .current_dir(&delivery)
+        .arg("verify-exported-player")
+        .arg("--package")
+        .arg(&delivery)
+        .args(["--mode", "windowed", "--frames", "120", "--report"])
+        .arg(&report_path)
+        .arg("--screenshot")
+        .arg("--screenshot-path")
+        .arg(reports.join("window.png"));
+    let status = a42_run(&mut command, &evidence, "independent-verify", None);
+    let verification: Value = serde_json::from_slice(&fs::read(&report_path).unwrap()).unwrap();
+    save("independent-verify", &verification);
+    assert!(status.success());
+    assert_eq!(verification["status"], "passed");
+    assert_eq!(verification["childFramesCompleted"], 120);
+    assert_eq!(verification["childPresentStatus"], "presented");
+    let mut request: Value =
+        serde_json::from_slice(&fs::read(evidence.join("original-worker/request.json")).unwrap())
+            .unwrap();
+    request["runtimePackage"] = json!(delivery.join("data/runtime_package"));
+    request["runId"] = json!("a42-independent-semantic");
+    let request_path = reports.join("request.json");
+    fs::write(&request_path, serde_json::to_vec_pretty(&request).unwrap()).unwrap();
+    let player_path = reports.join("player.json");
+    let mut command = Command::new(delivery.join("Game.exe"));
+    command
+        .current_dir(&delivery)
+        .arg("--semantic-playtest-worker")
+        .arg(&request_path)
+        .arg(&player_path);
+    let status = a42_run(&mut command, &evidence, "independent-semantic", None);
+    let player: Value = serde_json::from_slice(&fs::read(&player_path).unwrap()).unwrap();
+    save("independent-player", &player);
+    assert!(status.success());
+    assert_eq!(player["presentStatus"], "presented");
+    let isolated = &player["semanticPlaytest"];
+    assert_eq!(isolated["overall"], "passed");
+    assert_eq!(isolated["injectedTransitionCount"], 17);
+    assert_eq!(isolated["assertions"].as_array().unwrap().len(), 13);
+    assert!(isolated["assertions"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .all(|a| a["status"] == "passed"));
+    assert_eq!(isolated["captureEvidence"].as_array().unwrap().len(), 7);
+    for capture in isolated["captureEvidence"].as_array().unwrap() {
+        let path = PathBuf::from(capture["path"].as_str().unwrap());
+        assert!(path.is_file());
+        assert_eq!(a42_hash(&path), capture["sha256"].as_str().unwrap());
+    }
+    assert!(player["diagnostics"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(
+            |d| d["code"] == "engine_runtime.execution_owner" && d["layer"] == "engine_runtime.dll"
+        ));
+    assert!(player["diagnostics"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|d| d["code"] == "graphics.backend_selected" && d["message"] == "Vulkan"));
+    // Runtime reports are mutable; all originally copied runtime inputs stay byte-identical.
+    for (relative, digest) in &inventory {
+        if relative.starts_with("reports/") {
+            continue;
+        }
+        assert_eq!(
+            &a42_hash(&delivery.join(relative)),
+            digest,
+            "changed {relative}"
+        );
+    }
+    save(
+        "qualification",
+        &json!({"status":"passed","sourcePathUnavailable":!project.exists(),"originalPackageUnavailable":!package.exists(),"delivery":delivery,"fileCount":inventory.len(),"build":output,"verify":verification,"assertions":13,"captures":7,"inputTransitions":17,"installedUnchanged":old_hash==a42_hash(&old)}),
+    );
+}
+
+#[cfg(windows)]
+fn a42_hash(path: &Path) -> String {
+    use sha2::{Digest, Sha256};
+    format!("sha256:{:x}", Sha256::digest(fs::read(path).unwrap()))
+}
+#[cfg(windows)]
+fn a42_copy(source: &Path, destination: &Path) {
+    fs::create_dir_all(destination).unwrap();
+    for entry in fs::read_dir(source).unwrap() {
+        let entry = entry.unwrap();
+        let target = destination.join(entry.file_name());
+        let kind = entry.file_type().unwrap();
+        assert!(!kind.is_symlink());
+        if kind.is_dir() {
+            a42_copy(&entry.path(), &target)
+        } else {
+            fs::copy(entry.path(), target).unwrap();
+        }
+    }
+}
+#[cfg(windows)]
+fn a42_inventory(root: &Path) -> std::collections::BTreeMap<String, String> {
+    fn walk(root: &Path, current: &Path, out: &mut std::collections::BTreeMap<String, String>) {
+        for entry in fs::read_dir(current).unwrap() {
+            let entry = entry.unwrap();
+            if entry.file_type().unwrap().is_dir() {
+                walk(root, &entry.path(), out)
+            } else {
+                out.insert(
+                    entry
+                        .path()
+                        .strip_prefix(root)
+                        .unwrap()
+                        .to_string_lossy()
+                        .replace('\\', "/"),
+                    a42_hash(&entry.path()),
+                );
+            }
+        }
+    }
+    let mut out = std::collections::BTreeMap::new();
+    walk(root, root, &mut out);
+    out
+}
+#[cfg(windows)]
+fn a42_run(
+    command: &mut Command,
+    evidence: &Path,
+    label: &str,
+    input: Option<&[u8]>,
+) -> std::process::ExitStatus {
+    command
+        .stdout(Stdio::from(
+            fs::File::create(evidence.join(format!("{label}.stdout"))).unwrap(),
+        ))
+        .stderr(Stdio::from(
+            fs::File::create(evidence.join(format!("{label}.stderr"))).unwrap(),
+        ));
+    command.stdin(if input.is_some() {
+        Stdio::piped()
+    } else {
+        Stdio::null()
+    });
+    let mut child = command.spawn().unwrap();
+    if let Some(input) = input {
+        let mut stdin = child.stdin.take().unwrap();
+        let _ = stdin.write_all(input);
+    }
+    let start = std::time::Instant::now();
+    loop {
+        if let Some(status) = child.try_wait().unwrap() {
+            return status;
+        }
+        if start.elapsed() > std::time::Duration::from_secs(90) {
+            let _ = Command::new("taskkill")
+                .args(["/PID", &child.id().to_string(), "/T", "/F"])
+                .output();
+            let _ = child.kill();
+            let _ = child.wait();
+            panic!("{label} exceeded 90s; owned process tree terminated");
+        }
+        std::thread::sleep(std::time::Duration::from_millis(20));
+    }
+}

@@ -1,0 +1,34 @@
+{
+  "id": 1,
+  "jsonrpc": "2.0",
+  "result": {
+    "content": [
+      {
+        "text": "{\"callId\":\"mcp-call-1\",\"diagnostics\":[{\"code\":\"game_project_compiler.desktop_export_failed\",\"message\":\"project_runtime.player_artifact_build_step_failed: Artifact build stage 'build_project_runtime_dev_host' failed: exit=Some(101), reason=Failed, stdoutTruncated=false, stderrTruncated=false\\nCompiling proc-macro2 v1.0.107\\n   Compiling quote v1.0.47\\n   Compiling cfg_aliases v0.2.2\\n   Compiling windows_x86_64_msvc v0.52.6\\n   Compiling libm v0.2.16\\n   Compiling autocfg v1.5.1\\n   Compiling khronos_api v3.1.0\\n   Compiling windows-link v0.2.1\\n   Compiling thiserror v2.0.20\\n   Compiling xml-rs v0.8.29\\n   Compiling bitflags v2.13.1\\n   Compiling zerocopy v0.8.56\\n   Compiling log v0.4.34\\n   Compiling libc v0.2.189\\nerror: could not compile `windows_x86_64_msvc` (build script) due to 1 previous error\\nwarning: build failed, waiting for other jobs to finish...\\nerror: linking with `link.exe` failed: exit code: 1181\\n  |\\n  = note: \\\"F:\\\\\\\\VS\\\\\\\\VC\\\\\\\\Tools\\\\\\\\MSVC\\\\\\\\14.44.35207\\\\\\\\bin\\\\\\\\HostX64\\\\\\\\x64\\\\\\\\link.exe\\\" \\\"/NOLOGO\\\" \\\"\\\\\\\\\\\\\\\\?\\\\\\\\C:\\\\\\\\Users\\\\\\\\zenghaoran\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\AI First Engine\\\\\\\\BuildCache\\\\\\\\project-runtime-player-artifacts\\\\\\\\c-96733238d57779bd\\\\\\\\target\\\\\\\\debug\\\\\\\\build\\\\\\\\windows_x86_64_msvc-fcb345633209abaa\\\\\\\\rustc3Lmbmg\\\\\\\\symbols.o\\\" \\\"<2 object files omitted>\\\" \\\"<sysroot>\\\\\\\\lib\\\\\\\\rustlib\\\\\\\\x86_64-pc-windows-msvc\\\\\\\\lib/{libstd-*,libpanic_unwind-*,libcfg_if-*,libwindows_link-*,librustc_demangle-*,libstd_detect-*,libhashbrown-*,librustc_std_workspace_alloc-*,libunwind-*,librustc_std_workspace_core-*,liballoc-*,libcore-*,libcompiler_builtins-*}.rlib\\\" \\\"kernel32.lib\\\" \\\"kernel32.lib\\\" \\\"kernel32.lib\\\" \\\"ntdll.lib\\\" \\\"userenv.lib\\\" \\\"ws2_32.lib\\\" \\\"dbghelp.lib\\\" \\\"/defaultlib:msvcrt\\\" \\\"/NXCOMPAT\\\" \\\"/OUT:\\\\\\\\\\\\\\\\?\\\\\\\\C:\\\\\\\\Users\\\\\\\\zenghaoran\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\AI First Engine\\\\\\\\BuildCache\\\\\\\\project-runtime-player-artifacts\\\\\\\\c-96733238d57779bd\\\\\\\\target\\\\\\\\debug\\\\\\\\build\\\\\\\\windows_x86_64_msvc-fcb345633209abaa\\\\\\\\build_script_build-fcb345633209abaa.exe\\\" \\\"/OPT:REF,NOICF\\\" \\\"/DEBUG\\\" \\\"/PDBALTPATH:%_PDB%\\\" \\\"/NATVIS:<sysroot>\\\\\\\\lib\\\\\\\\rustlib\\\\\\\\etc\\\\\\\\intrinsic.natvis\\\" \\\"/NATVIS:<sysroot>\\\\\\\\lib\\\\\\\\rustlib\\\\\\\\etc\\\\\\\\liballoc.natvis\\\" \\\"/NATVIS:<sysroot>\\\\\\\\lib\\\\\\\\rustlib\\\\\\\\etc\\\\\\\\libcore.natvis\\\" \\\"/NATVIS:<sysroot>\\\\\\\\lib\\\\\\\\rustlib\\\\\\\\etc\\\\\\\\libstd.natvis\\\"\\n  = note: some arguments are omitted. use `--verbose` to show all linker arguments\\n  = note: LINK : fatal error LNK1181: 无法打开输入文件“.obj”\\r\\n          \\n\\n\",\"nextAction\":\"Read the project-contained desktop export reports and repair the first failing stage.\"}],\"evidenceRefs\":[],\"operationId\":\"engine-op-323-feedback-1\",\"output\":null,\"projectRevision\":\"sha256:8cf940fb13b1325b9271d05507707ad1f365bb7db8a9ac273a564919c9f201ad\",\"receiptRef\":null,\"recommendedLocalTransitions\":[],\"replayed\":false,\"retryability\":\"not_retryable\",\"schemaVersion\":\"engine-tool-result.v2\",\"status\":\"rejected_by_engine\",\"toolName\":\"engine_project_build\"}",
+        "type": "text"
+      }
+    ],
+    "isError": true,
+    "structuredContent": {
+      "callId": "mcp-call-1",
+      "diagnostics": [
+        {
+          "code": "game_project_compiler.desktop_export_failed",
+          "message": "project_runtime.player_artifact_build_step_failed: Artifact build stage 'build_project_runtime_dev_host' failed: exit=Some(101), reason=Failed, stdoutTruncated=false, stderrTruncated=false\nCompiling proc-macro2 v1.0.107\n   Compiling quote v1.0.47\n   Compiling cfg_aliases v0.2.2\n   Compiling windows_x86_64_msvc v0.52.6\n   Compiling libm v0.2.16\n   Compiling autocfg v1.5.1\n   Compiling khronos_api v3.1.0\n   Compiling windows-link v0.2.1\n   Compiling thiserror v2.0.20\n   Compiling xml-rs v0.8.29\n   Compiling bitflags v2.13.1\n   Compiling zerocopy v0.8.56\n   Compiling log v0.4.34\n   Compiling libc v0.2.189\nerror: could not compile `windows_x86_64_msvc` (build script) due to 1 previous error\nwarning: build failed, waiting for other jobs to finish...\nerror: linking with `link.exe` failed: exit code: 1181\n  |\n  = note: \"F:\\\\VS\\\\VC\\\\Tools\\\\MSVC\\\\14.44.35207\\\\bin\\\\HostX64\\\\x64\\\\link.exe\" \"/NOLOGO\" \"\\\\\\\\?\\\\C:\\\\Users\\\\zenghaoran\\\\AppData\\\\Local\\\\Temp\\\\AI First Engine\\\\BuildCache\\\\project-runtime-player-artifacts\\\\c-96733238d57779bd\\\\target\\\\debug\\\\build\\\\windows_x86_64_msvc-fcb345633209abaa\\\\rustc3Lmbmg\\\\symbols.o\" \"<2 object files omitted>\" \"<sysroot>\\\\lib\\\\rustlib\\\\x86_64-pc-windows-msvc\\\\lib/{libstd-*,libpanic_unwind-*,libcfg_if-*,libwindows_link-*,librustc_demangle-*,libstd_detect-*,libhashbrown-*,librustc_std_workspace_alloc-*,libunwind-*,librustc_std_workspace_core-*,liballoc-*,libcore-*,libcompiler_builtins-*}.rlib\" \"kernel32.lib\" \"kernel32.lib\" \"kernel32.lib\" \"ntdll.lib\" \"userenv.lib\" \"ws2_32.lib\" \"dbghelp.lib\" \"/defaultlib:msvcrt\" \"/NXCOMPAT\" \"/OUT:\\\\\\\\?\\\\C:\\\\Users\\\\zenghaoran\\\\AppData\\\\Local\\\\Temp\\\\AI First Engine\\\\BuildCache\\\\project-runtime-player-artifacts\\\\c-96733238d57779bd\\\\target\\\\debug\\\\build\\\\windows_x86_64_msvc-fcb345633209abaa\\\\build_script_build-fcb345633209abaa.exe\" \"/OPT:REF,NOICF\" \"/DEBUG\" \"/PDBALTPATH:%_PDB%\" \"/NATVIS:<sysroot>\\\\lib\\\\rustlib\\\\etc\\\\intrinsic.natvis\" \"/NATVIS:<sysroot>\\\\lib\\\\rustlib\\\\etc\\\\liballoc.natvis\" \"/NATVIS:<sysroot>\\\\lib\\\\rustlib\\\\etc\\\\libcore.natvis\" \"/NATVIS:<sysroot>\\\\lib\\\\rustlib\\\\etc\\\\libstd.natvis\"\n  = note: some arguments are omitted. use `--verbose` to show all linker arguments\n  = note: LINK : fatal error LNK1181: 无法打开输入文件“.obj”\r\n          \n\n",
+          "nextAction": "Read the project-contained desktop export reports and repair the first failing stage."
+        }
+      ],
+      "evidenceRefs": [],
+      "operationId": "engine-op-323-feedback-1",
+      "output": null,
+      "projectRevision": "sha256:8cf940fb13b1325b9271d05507707ad1f365bb7db8a9ac273a564919c9f201ad",
+      "receiptRef": null,
+      "recommendedLocalTransitions": [],
+      "replayed": false,
+      "retryability": "not_retryable",
+      "schemaVersion": "engine-tool-result.v2",
+      "status": "rejected_by_engine",
+      "toolName": "engine_project_build"
+    }
+  }
+}

@@ -10,6 +10,7 @@ name = "engine_runtime"
 crate-type = ["cdylib"]
 
 [features]
+spine = ["engine_runtime/spine", "runtime_player_winit/spine"]
 default = ["real-window"]
 real-window = ["runtime_player_winit/real-window"]
 

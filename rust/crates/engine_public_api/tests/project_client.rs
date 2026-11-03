@@ -1,4 +1,6 @@
-use engine_public_api::{aife_engine_api_info_v1, aife_engine_runtime_start_v1, compatible_with, ENGINE_OK};
+use engine_public_api::{
+    aife_engine_api_info_v1, aife_engine_runtime_start_v1, compatible_with, ENGINE_OK,
+};
 
 #[test]
 fn project_client_uses_only_public_engine_contract() {

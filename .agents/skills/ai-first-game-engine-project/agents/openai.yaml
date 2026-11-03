@@ -1,0 +1,4 @@
+interface:
+  display_name: "AI First Game Engine Project"
+  short_description: "Project rules for this AI-first game engine"
+  default_prompt: "Use $ai-first-game-engine-project before discussing architecture, plans, or code changes in this repository."

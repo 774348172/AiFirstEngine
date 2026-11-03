@@ -1,0 +1,64 @@
+   Compiling engine_runtime v0.1.0 (G:\gameEngin\rust\crates\engine_runtime)
+warning: variant `IrInterpreter` is never constructed
+  --> crates\engine_runtime\src\project_logic.rs:19:5
+   |
+17 | pub(crate) enum RuleExecutorHint {
+   |                 ---------------- variant in this enum
+18 |     RustAot,
+19 |     IrInterpreter,
+   |     ^^^^^^^^^^^^^
+   |
+   = note: `RuleExecutorHint` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: associated function `validation_only_ir_interpreter` is never used
+  --> crates\engine_runtime\src\project_logic.rs:38:19
+   |
+29 | impl RuleCall {
+   | ------------- associated function in this implementation
+...
+38 |     pub(crate) fn validation_only_ir_interpreter(rule_id: impl Into<String>) -> Self {
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: method `remove_sprite_renderer2d` is never used
+   --> crates\engine_runtime\src\world.rs:529:19
+    |
+160 | impl World {
+    | ---------- method in this implementation
+...
+529 |     pub(crate) fn remove_sprite_renderer2d(&mut self, id: &EntityId) -> Option<SpriteRenderer2D> {
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: `engine_runtime` (lib) generated 3 warnings
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2m 03s
+     Running tests\aui_draw2d_gpu.rs (target\debug\deps\aui_draw2d_gpu-ad845af142555fd4.exe)
+
+running 2 tests
+Gate B adapter: WgpuDeviceContext { backend_name: "Vulkan", device_label: "runtime-wgpu-device", queue_label: "runtime-wgpu-queue", real_wgpu_enabled: true }
+test clipping_preserves_vertex_coverage_and_invalid_assets_remain_errors ... ok
+Gate B geometry cache: (21, 7, 70698); GPU uploads: UiVertexUploadStats { cpu_draw_buffer_prepare_ns: 15498000, full_upload_cold_or_evicted: 4, full_upload_untrusted_lineage: 0, uploads: 4, full_uploads: 4, partial_uploads: 0, uploaded_bytes: 222240, partial_uploaded_bytes: 0, hits: 6, resident_buffers: 4, resident_bytes: 222240 }
+test production_paths_holes_curves_alpha_cache_dpi_and_gpu_recreation ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.79s
+
+     Running tests\aui_extension_c4.rs (target\debug\deps\aui_extension_c4-9e81d61376856918.exe)
+
+running 5 tests
+test custom_node_without_a_stable_spec_is_rejected_at_mount ... ok
+test custom_rect_image_and_text_use_the_existing_draw_paths ... ok
+test circular_progress_mesh_reaches_the_real_ui_projection_vertices ... ok
+test radial_custom_layout_overrides_only_direct_child_rects ... ok
+test custom_measure_changes_the_existing_taffy_solver_result ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\aui_presentation_gpu.rs (target\debug\deps\aui_presentation_gpu-9ea992ca30b73814.exe)
+
+running 3 tests
+Gate C adapter: WgpuDeviceContext { backend_name: "Vulkan", device_label: "runtime-wgpu-device", queue_label: "runtime-wgpu-queue", real_wgpu_enabled: true }
+test singular_and_clip_overflow_are_explicit_and_safe ... ok
+test noncentral_pivot_nonuniform_rounded_clip_matches_inverse_hit_at_all_dpis ... ok
+test production_affine_mirror_pivot_eight_clips_modulation_dpi_and_cache ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.50s
+

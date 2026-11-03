@@ -1,0 +1,94 @@
+{
+  "parentHead": "acaffa8cb95bbb54d093bbf45835a59315c82da5",
+  "qualification": "dirty_workspace_source_and_real_gpu_owner",
+  "files": [
+    {
+      "path": "rust/crates/engine_runtime/src/aui.rs",
+      "sha256": "8BC2D7262F3CAE16169D89784A74BCF84C57563848196F4DE8E7FE88D232BD87"
+    },
+    {
+      "path": "rust/crates/engine_runtime/src/aui_drawing_cache.rs",
+      "sha256": "AECEF9B7B68EB680B113784E7449F9BD56D33422D56A5874F4872DEB0FA4F3F1"
+    },
+    {
+      "path": "rust/crates/engine_runtime/src/aui_control_feedback.rs",
+      "sha256": "DB06E5106DA93B2379CB9FA8C37E77A3FB529B70147DCF576B870043879B7963"
+    },
+    {
+      "path": "rust/crates/engine_runtime/src/aui_present_cache.rs",
+      "sha256": "F8758738753400F153B4AA7EE4F20E84C1DB9A8E034B9868FBF1F6928FF8D9C9"
+    },
+    {
+      "path": "rust/crates/engine_runtime/src/aui_theme.rs",
+      "sha256": "F885C053F08717D2B70E923CBF4C9C2AEB08F5D09BAEB224FFF267A8F92284F5"
+    },
+    {
+      "path": "rust/crates/engine_runtime/src/runtime_renderer.rs",
+      "sha256": "981C207691BD70E0161B36575193F205BDBAD288BC1B714D12320BE2697CDA60"
+    },
+    {
+      "path": "rust/crates/engine_runtime/src/wgpu_backend.rs",
+      "sha256": "0AF8E3A877FE026F3CC5DCE9D12E0396382BFF148571385249CB623A8D4D95E5"
+    },
+    {
+      "path": "rust/crates/engine_runtime/src/windowed_player.rs",
+      "sha256": "77C57739A06C2D990826468A6E27F9AB55251199006C50140504D112AEAE702E"
+    },
+    {
+      "path": "rust/crates/engine_runtime/src/render_thread.rs",
+      "sha256": "33D2058045BE6C501592EE93204F6D7A1594A2F27A902A41DB6C27304C8C86FC"
+    },
+    {
+      "path": "rust/crates/engine_runtime/src/render_thread_worker.rs",
+      "sha256": "09A7A4A3BDAB337D2737939DA0835FF4CC96983CB375DA71D9E2C1D69EA8FAC4"
+    },
+    {
+      "path": "rust/crates/engine_runtime/src/engine_host_loop.rs",
+      "sha256": "F2594AAB2BFC309F46D87C74B1225E16D1AB1C4B3C33878D4A01FDD65A0296FC"
+    },
+    {
+      "path": "rust/crates/runtime_player_winit/src/lib.rs",
+      "sha256": "BE3B9A96C0827BC7472D3334E8812EFC13DAA9931FEFCAC94D67C77BC5C96313"
+    },
+    {
+      "path": "rust/crates/engine_runtime/tests/aui_layout_c2_paragraph.rs",
+      "sha256": "400ECA11CFEFA0EC3ADDA44E65104B2DC8AE1F4F0114C4B1580F27F1CCA742EB"
+    },
+    {
+      "path": "rust/crates/engine_runtime/tests/aui_visual_c2.rs",
+      "sha256": "F76FC113BF7241225EE933C1C4E032AD974F8C45FA696C0A6697E13BDB724C24"
+    },
+    {
+      "path": "rust/crates/engine_runtime/src/aui_layout_runtime.rs",
+      "sha256": "E8FC619732A46E2AF2E350815CA0EE91F11F0A28267A1C5080CC9370F3532164"
+    },
+    {
+      "path": "rust/crates/engine_runtime/src/aui_geometry_cache.rs",
+      "sha256": "E05466E06B79F4F05422E69286545A26D0F3AB4645A23114881985E22D7AD182"
+    },
+    {
+      "path": "rust/crates/engine_runtime/src/aui_instance.rs",
+      "sha256": "FC36F622259B31196EE69B5870F3A04F29D8C348CDFF9C2A95C531171B654915"
+    },
+    {
+      "path": "rust/crates/engine_runtime/src/aui_feedback_cache.rs",
+      "sha256": "58B236F0E3AF0161A3E181AD2C39E4CAE1E1793149A869DB4BCF943D433AC984"
+    },
+    {
+      "path": "rust/Cargo.lock",
+      "sha256": "3F6F58EC449144F26C705D06DFCC6D13B128DBE2A8680CF6F472397925FAD0A7"
+    },
+    {
+      "path": "rust/crates/engine_runtime/Cargo.toml",
+      "sha256": "4D0B4C1F8B69EF9D6CDBC1CBFDC03A5E9F509EFC5596274EB3139D121B35794B"
+    },
+    {
+      "path": "rust/crates/runtime_player_winit/Cargo.toml",
+      "sha256": "A7B893CB9ED9E6C015555DB75A1407B3F59DC3BD7CA051494E1C1C5481238ADE"
+    },
+    {
+      "path": "rust/resources/editor/fonts/NotoSansSC-VF.ttf",
+      "sha256": "763146584CF0710223441356B4395E279021B0806C196614377A7A0174AE074A"
+    }
+  ]
+}

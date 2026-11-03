@@ -1,0 +1,59 @@
+   Compiling engine_runtime v0.1.0 (G:\gameEngin\rust\crates\engine_runtime)
+warning: variant `IrInterpreter` is never constructed
+  --> crates\engine_runtime\src\project_logic.rs:19:5
+   |
+17 | pub(crate) enum RuleExecutorHint {
+   |                 ---------------- variant in this enum
+18 |     RustAot,
+19 |     IrInterpreter,
+   |     ^^^^^^^^^^^^^
+   |
+   = note: `RuleExecutorHint` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: associated function `validation_only_ir_interpreter` is never used
+  --> crates\engine_runtime\src\project_logic.rs:38:19
+   |
+29 | impl RuleCall {
+   | ------------- associated function in this implementation
+...
+38 |     pub(crate) fn validation_only_ir_interpreter(rule_id: impl Into<String>) -> Self {
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: method `remove_sprite_renderer2d` is never used
+   --> crates\engine_runtime\src\world.rs:529:19
+    |
+160 | impl World {
+    | ---------- method in this implementation
+...
+529 |     pub(crate) fn remove_sprite_renderer2d(&mut self, id: &EntityId) -> Option<SpriteRenderer2D> {
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^
+
+   Compiling runtime_player_winit v0.1.0 (G:\gameEngin\rust\crates\runtime_player_winit)
+   Compiling runtime_cli v0.1.0 (G:\gameEngin\rust\crates\runtime_cli)
+warning: `engine_runtime` (lib) generated 3 warnings
+   Compiling project_authoring_execution v0.1.0 (G:\gameEngin\rust\crates\project_authoring_execution)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2m 21s
+     Running unittests src\lib.rs (target\debug\deps\project_authoring_execution-357013b511a21337.exe)
+
+running 13 tests
+test generated_runtime_glue::tests::cargo_manifest_path_removes_windows_extended_path_prefix ... ok
+test generated_runtime_glue::tests::project_rust_without_sdk_requirement_fails_closed ... ok
+test generated_runtime_glue::tests::source_map_covers_every_generated_callback ... ok
+test generated_runtime_glue::tests::generated_runtime_glue_is_deterministic_and_path_neutral ... ok
+test generated_runtime_glue::tests::rule_artifact_identity_is_generated_from_the_leased_manifest ... ok
+test generated_runtime_glue::tests::runtime_source_or_target_changes_invalidate_generation ... ok
+test generated_runtime_glue::ui_views::tests::named_views_consume_the_same_legacy_conversion_as_packages ... ok
+test generated_runtime_glue::ui_views::tests::named_views_reject_missing_renamed_or_retyped_nodes_at_source ... ok
+test generated_runtime_glue::ui_views::tests::named_views_reject_ambiguous_assets_and_unknown_fields ... ok
+test generated_runtime_glue::ui_views::tests::named_views_are_deterministic_typed_and_mapped ... ok
+test generated_runtime_glue::ui_views::tests::named_views_reject_invalid_names_and_duplicate_symbols ... ok
+test generated_runtime_glue::ui_views::tests::named_views_materialization_removes_stale_generated_fields ... ok
+
+thread '<unnamed>' (23524) panicked at RuntimeModule\src\lib.rs:98:20:
+project UI panic
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test generated_runtime_glue::tests::generated_runtime_glue_compiles_and_exposes_the_runtime_entry ... ok
+
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 120 filtered out; finished in 14.61s
+

@@ -1,11 +1,7 @@
-# V0.0.4 source preview
+# V0.0.7 / 20261031-r1
 
-Date: 2026-09-16
+纳入376 G0–G5及V01–V12最终源码，包括生成内容/项目存储显式SDK opt-in、实际native接纳、静态碰撞替换和可信Windows存储根。逐SHA匹配376最终1232项源码清单。
 
-Current working-tree Rust source snapshot, including independent Engine tools, Project Game SDK/compiler, runtime host, AUI/font, animator, audio and particle modules. No source code or design content was edited for packaging.
+371与374 Windows功能施工已完成；371完整K2路线历史失败和深层内存/显示/压力/精确75%可选降级限制保留，374原single首轮P95=0.6881ms大于0.5ms失败保留，完整性能独立待验。Android真机及其它平台不授新资格。376只授已验证Windows/本地NTFS功能，不承诺掉电耐久、多key原子性或完整长期规模性能。
 
-This is a source preview, not a newly tested binary release. No compilation or runtime qualification was performed during packaging. Samples and external project dependencies are not bundled; project-specific tests may require the development repository.
-
-The final snapshot is identified by tag v0.0.4-source. The earlier v0.0.4 tag is an intermediate packaging snapshot and must not be used as the final archive.
-
-32 obsolete files inherited from v0.0.3 remain on local disk but are excluded from Git and the archive. Original design documents are copied without editing into docs/design/engine-architecture. Historical documents retain their original status.
+本次构建和安装证据在冻结目录外独立记录。引擎提供通用底座，体素框架、生成算法、存档格式和玩法在项目侧。现有游戏固定V0.0.5。

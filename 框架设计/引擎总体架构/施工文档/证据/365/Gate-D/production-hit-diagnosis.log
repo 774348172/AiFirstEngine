@@ -1,0 +1,21 @@
+   Compiling engine_runtime v0.1.0 (G:\gameEngin\rust\crates\engine_runtime)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 17.75s
+     Running unittests src\lib.rs (target\debug\deps\engine_runtime-f2e49a160a17050d.exe)
+
+running 1 test
+
+thread 'aui_present_cache::tests::aui_animation_production_phase_shares_geometry_feedback_and_sparse_cache' (18520) panicked at crates\engine_runtime\src\aui_present_cache.rs:1440:9:
+assertion `left == right` failed: point [55.0, 15.0], unit AuiComputedNode { presentation: Some(AuiPresentationGeometry { local_to_canvas: [1.0, 0.0, 0.0, 1.0, 40.0, 0.0], vertex_transform: [1.0, 0.0, 0.0, 1.0, 0.0, 0.0], bounds: AuiComputedRect { x: 40.0, y: 0.0, width: 0.0, height: 120.0 }, modulation: [1.0, 1.0, 1.0, 1.0] }), canvas_id: "main", composition_stage: ScreenOverlay, node_id: "unit", kind: Button, rect: AuiComputedRect { x: 40.0, y: 0.0, width: 0.0, height: 120.0 }, effective_clip_rect: None, effective_clips: [], clipped_by_node: None, tree_order: 1, local_visible: true, effective_visible: true }, source AuiNode { presentation: None, custom: None, custom_runtime: None, layout: None, slot: None, text_layout: None, text_spans: [], layout_visibility: None, overflow: None, theme: None, style_ref: None, variant: None, style_overrides: None, clip_radius: None, resolved_style: Some(AuiResolvedStyle { theme_id: "builtin.default.v1", style_id: "button", metrics: AuiResolvedMetrics { font: None, font_size: None, line_height: None, padding: None, min_width: None, min_height: Some(32.0), border_inset: None }, paint: AuiResolvedPaint { background: Solid { color: "#2463aaff" }, foreground: Some("#eef2f7ff"), border: AuiResolvedBorder { color: Some("#627080ff"), width: 1.0 }, radius: 4.0, shadow: AuiResolvedShadow { color: None, offset_x: 0.0, offset_y: 0.0, blur: 0.0, spread: 0.0 }, opacity: 1.0 }, sources: ["builtin.default.v1:button"] }), viewport_condition: None, resolved_viewport_original_visibility: None, virtual_list_item: None, node_id: "unit", name: "unit", kind: Button, parent: Some("root"), children: [], rect: AuiRect { anchor_min: AuiVec2 { x: 0.0, y: 0.0 }, anchor_max: AuiVec2 { x: 0.0, y: 0.0 }, offset_min: AuiVec2 { x: 10.0, y: 10.0 }, offset_max: AuiVec2 { x: 0.0, y: 0.0 }, pivot: AuiVec2 { x: 0.0, y: 0.0 }, size: AuiVec2 { x: 30.0, y: 30.0 } }, visible: true, interactable: true, consume_input: true, draggable: false, drop_target: false, focusable: None, clip_policy: None, scrollbar_policy: Auto, navigation: AuiNavigationRef { mode: Auto, up: None, down: None, left: None, right: None, next: None, previous: None }, feedback: AuiFeedbackSelection("auto"), style: Some(AuiStyle { color: None, text_color: None, font_size: None, font: None }), text: None, placeholder: None, max_length: None, read_only: false, submit_behavior: Submit, image: None, progress_value: None, toggle_checked: None, slider_value: None, slider_min: None, slider_max: None, slider_step: None, binding_refs: [], action_refs: [] }
+  left: Some("root")
+ right: Some("unit")
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test aui_present_cache::tests::aui_animation_production_phase_shares_geometry_feedback_and_sparse_cache ... FAILED
+
+failures:
+
+failures:
+    aui_present_cache::tests::aui_animation_production_phase_shares_geometry_feedback_and_sparse_cache
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 769 filtered out; finished in 0.07s
+
+error: test failed, to rerun pass `-p engine_runtime --lib`

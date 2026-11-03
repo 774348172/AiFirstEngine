@@ -673,6 +673,8 @@ impl EditorSession {
             insertion_index,
             instance_id,
             node_id_prefix,
+            parameters: Vec::new(),
+            slot_fills: Vec::new(),
         };
         let report =
             AuiTemplateWorkflow::instantiate_into_document(&asset, &request, &mut document);
@@ -982,14 +984,34 @@ fn decode_binding_target(value: &str) -> Result<AuiBindingTarget, String> {
         "progress.value" | "progressValue" | "ProgressBarValue" => {
             Ok(AuiBindingTarget::ProgressBarValue)
         }
+        "toggle.checked" | "toggleChecked" | "ToggleChecked" => Ok(AuiBindingTarget::ToggleChecked),
+        "slider.value" | "sliderValue" | "SliderValue" => Ok(AuiBindingTarget::SliderValue),
         "panel.visible" | "PanelVisible" => Ok(AuiBindingTarget::PanelVisible),
         "image.visible" | "ImageVisible" => Ok(AuiBindingTarget::ImageVisible),
         "image.assetRef" | "image.assetId" | "ImageAssetRef" => Ok(AuiBindingTarget::ImageAssetRef),
+        "interactable" | "Interactable" => Ok(AuiBindingTarget::Interactable),
+        "presentation.translation" | "Translation" => Ok(AuiBindingTarget::Translation),
+        "presentation.rotation" | "Rotation" => Ok(AuiBindingTarget::Rotation),
+        "presentation.scale" | "Scale" => Ok(AuiBindingTarget::Scale),
+        "presentation.pivot" | "Pivot" => Ok(AuiBindingTarget::Pivot),
+        "presentation.opacity" | "Opacity" => Ok(AuiBindingTarget::Opacity),
+        "presentation.tint" | "Tint" => Ok(AuiBindingTarget::Tint),
+        "resource" | "Resource" => Ok(AuiBindingTarget::Resource),
+        "localStyle" | "LocalStyle" => Ok(AuiBindingTarget::LocalStyle),
         other => Err(format!("Unsupported AUI binding target '{other}'.")),
     }
 }
 
 fn decode_binding_value(value: serde_json::Value) -> Result<AuiBindingValue, String> {
+    if value.is_array()
+        || value.get("guid").is_some()
+        || value.get("background").is_some()
+        || value.get("foreground").is_some()
+        || value.get("radius").is_some()
+        || value.get("border").is_some()
+    {
+        return serde_json::from_value(value).map_err(|error| error.to_string());
+    }
     match value {
         serde_json::Value::Bool(value) => Ok(AuiBindingValue::Bool(value)),
         serde_json::Value::Number(value) => value
@@ -1017,8 +1039,26 @@ fn decode_binding_value(value: serde_json::Value) -> Result<AuiBindingValue, Str
     }
 }
 
+#[cfg(test)]
+mod m4e_tests {
+    use super::*;
+
+    #[test]
+    fn authoring_service_decodes_m4e_control_binding_targets() {
+        assert_eq!(
+            decode_binding_target("toggle.checked").unwrap(),
+            AuiBindingTarget::ToggleChecked
+        );
+        assert_eq!(
+            decode_binding_target("slider.value").unwrap(),
+            AuiBindingTarget::SliderValue
+        );
+    }
+}
+
 fn decode_action_event(value: &str) -> Result<AuiActionEvent, String> {
     match value.trim().to_ascii_lowercase().as_str() {
+        "activate" => Ok(AuiActionEvent::Activate),
         "click" => Ok(AuiActionEvent::Click),
         "drag_start" | "dragstart" | "drag-start" => Ok(AuiActionEvent::DragStart),
         "drag_move" | "dragmove" | "drag-move" => Ok(AuiActionEvent::DragMove),

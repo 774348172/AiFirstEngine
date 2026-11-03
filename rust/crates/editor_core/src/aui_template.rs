@@ -1,12 +1,15 @@
-use engine_runtime::aui::{AuiActionEvent, AuiBindingTarget, AuiDocument, AuiNode, AuiNodeKind};
+use engine_runtime::aui::{
+    AuiActionEvent, AuiAssetRef, AuiBindingTarget, AuiDocument, AuiNode, AuiNodeKind,
+};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::Path;
 
-pub const AUI_TEMPLATE_ASSET_SCHEMA_VERSION: &str = "aui-template-asset.v1";
+pub const AUI_TEMPLATE_ASSET_SCHEMA_VERSION: &str = "aui-template-asset.v2";
+const AUI_TEMPLATE_ASSET_LEGACY_SCHEMA_VERSION: &str = "aui-template-asset.v1";
 pub const AUI_TEMPLATE_INSTANTIATE_REPORT_SCHEMA_VERSION: &str =
-    "aui-template-instantiate-report.v1";
+    "aui-template-instantiate-report.v2";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
@@ -95,6 +98,96 @@ pub struct AuiTemplateMetadata {
     pub notes: Vec<String>,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum AuiTemplateParameterType {
+    String,
+    Number,
+    Boolean,
+    AssetRef,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "type", content = "value", rename_all = "kebab-case")]
+pub enum AuiTemplateParameterValue {
+    String(String),
+    Number(f32),
+    Boolean(bool),
+    AssetRef(String),
+}
+
+impl AuiTemplateParameterValue {
+    fn parameter_type(&self) -> AuiTemplateParameterType {
+        match self {
+            Self::String(_) => AuiTemplateParameterType::String,
+            Self::Number(_) => AuiTemplateParameterType::Number,
+            Self::Boolean(_) => AuiTemplateParameterType::Boolean,
+            Self::AssetRef(_) => AuiTemplateParameterType::AssetRef,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AuiTemplateParameterDefinition {
+    pub parameter_id: String,
+    pub parameter_type: AuiTemplateParameterType,
+    pub required: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub default_value: Option<AuiTemplateParameterValue>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "target", rename_all = "kebab-case")]
+pub enum AuiTemplateParameterTarget {
+    Text,
+    InputFieldText,
+    ProgressValue,
+    Visible,
+    ImageAssetId,
+    BindingPath { binding_id: String },
+    ActionId { event: AuiActionEvent },
+}
+
+impl AuiTemplateParameterTarget {
+    fn expected_type(&self) -> AuiTemplateParameterType {
+        match self {
+            Self::Text
+            | Self::InputFieldText
+            | Self::BindingPath { .. }
+            | Self::ActionId { .. } => AuiTemplateParameterType::String,
+            Self::ProgressValue => AuiTemplateParameterType::Number,
+            Self::Visible => AuiTemplateParameterType::Boolean,
+            Self::ImageAssetId => AuiTemplateParameterType::AssetRef,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AuiTemplateParameterBinding {
+    pub parameter_id: String,
+    pub node_id: String,
+    pub target: AuiTemplateParameterTarget,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AuiTemplateSlotDefinition {
+    pub slot_id: String,
+    pub host_node_id: String,
+    pub required: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub max_children: Option<usize>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub allowed_kinds: Vec<AuiNodeKind>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AuiTemplateNamedPartDefinition {
+    pub part_name: String,
+    pub node_id: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub required_kind: Option<AuiNodeKind>,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct AuiTemplateAsset {
     pub schema_version: String,
@@ -108,6 +201,14 @@ pub struct AuiTemplateAsset {
     pub asset_refs: Vec<AuiTemplateDependencyRef>,
     pub binding_refs: Vec<AuiTemplateDependencyRef>,
     pub action_refs: Vec<AuiTemplateDependencyRef>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub parameters: Vec<AuiTemplateParameterDefinition>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub parameter_bindings: Vec<AuiTemplateParameterBinding>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub slots: Vec<AuiTemplateSlotDefinition>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub named_parts: Vec<AuiTemplateNamedPartDefinition>,
     pub metadata: AuiTemplateMetadata,
     pub guid_source: String,
     pub asset_db_integrated: bool,
@@ -174,7 +275,7 @@ impl AuiTemplateAsset {
                 created_at_unix_ms,
                 source_node_count: normalized_nodes.len(),
                 notes: vec![
-                    "C-min template asset; instantiate-by-expansion only.".to_string(),
+                    "C2 template asset; typed instantiate-by-expansion only.".to_string(),
                     "guid_source=deterministic_path_hash; asset_db_integrated=false.".to_string(),
                 ],
             },
@@ -182,6 +283,10 @@ impl AuiTemplateAsset {
             asset_refs,
             binding_refs,
             action_refs,
+            parameters: Vec::new(),
+            parameter_bindings: Vec::new(),
+            slots: Vec::new(),
+            named_parts: Vec::new(),
             guid_source: "deterministic_path_hash".to_string(),
             asset_db_integrated: false,
         })
@@ -220,7 +325,9 @@ impl AuiTemplateAsset {
 
     pub fn validate(&self) -> Vec<AuiTemplateDiagnostic> {
         let mut diagnostics = Vec::new();
-        if self.schema_version != AUI_TEMPLATE_ASSET_SCHEMA_VERSION {
+        if self.schema_version != AUI_TEMPLATE_ASSET_SCHEMA_VERSION
+            && self.schema_version != AUI_TEMPLATE_ASSET_LEGACY_SCHEMA_VERSION
+        {
             diagnostics.push(AuiTemplateDiagnostic::error(
                 "aui_template.unsupported_schema_version",
                 None,
@@ -259,6 +366,213 @@ impl AuiTemplateAsset {
                 "Regenerate the template from a valid AUI subtree.",
             ));
         }
+        if self.schema_version == AUI_TEMPLATE_ASSET_LEGACY_SCHEMA_VERSION
+            && (!self.parameters.is_empty()
+                || !self.parameter_bindings.is_empty()
+                || !self.slots.is_empty()
+                || !self.named_parts.is_empty())
+        {
+            diagnostics.push(AuiTemplateDiagnostic::error(
+                "aui_template.legacy_schema_has_v2_fields",
+                None,
+                "A legacy v1 AUI template cannot declare v2 composition fields.",
+                "Upgrade schema_version to aui-template-asset.v2.",
+            ));
+        }
+
+        let mut node_ids = HashSet::new();
+        for node in &self.nodes {
+            if !node_ids.insert(node.node_id.as_str()) {
+                diagnostics.push(AuiTemplateDiagnostic::error(
+                    "aui_template.duplicate_node_id",
+                    Some(node.node_id.clone()),
+                    format!("AUI template node id '{}' is duplicated.", node.node_id),
+                    "Give every template-local node a unique id.",
+                ));
+            }
+        }
+
+        let mut parameters = HashMap::new();
+        for parameter in &self.parameters {
+            if parameter.parameter_id.trim().is_empty() {
+                diagnostics.push(AuiTemplateDiagnostic::error(
+                    "aui_template.parameter_id_required",
+                    None,
+                    "AUI template parameter_id is required.",
+                    "Give every parameter a stable non-empty id.",
+                ));
+                continue;
+            }
+            if parameters
+                .insert(parameter.parameter_id.as_str(), parameter)
+                .is_some()
+            {
+                diagnostics.push(AuiTemplateDiagnostic::error(
+                    "aui_template.duplicate_parameter",
+                    None,
+                    format!(
+                        "AUI template parameter '{}' is declared more than once.",
+                        parameter.parameter_id
+                    ),
+                    "Keep one definition for each parameter id.",
+                ));
+            }
+            if let Some(default) = &parameter.default_value {
+                if default.parameter_type() != parameter.parameter_type {
+                    diagnostics.push(AuiTemplateDiagnostic::error(
+                        "aui_template.default_parameter_type_mismatch",
+                        None,
+                        format!(
+                            "Default value for parameter '{}' does not match its declared type.",
+                            parameter.parameter_id
+                        ),
+                        "Use a default value with the declared parameter type.",
+                    ));
+                }
+                validate_parameter_value(
+                    &parameter.parameter_id,
+                    default,
+                    &mut diagnostics,
+                    "default",
+                );
+            }
+        }
+
+        for binding in &self.parameter_bindings {
+            let Some(parameter) = parameters.get(binding.parameter_id.as_str()) else {
+                diagnostics.push(AuiTemplateDiagnostic::error(
+                    "aui_template.parameter_binding_unknown_parameter",
+                    Some(binding.node_id.clone()),
+                    format!(
+                        "Parameter binding references unknown parameter '{}'.",
+                        binding.parameter_id
+                    ),
+                    "Declare the parameter before binding it.",
+                ));
+                continue;
+            };
+            if parameter.parameter_type != binding.target.expected_type() {
+                diagnostics.push(AuiTemplateDiagnostic::error(
+                    "aui_template.parameter_target_type_mismatch",
+                    Some(binding.node_id.clone()),
+                    format!(
+                        "Parameter '{}' type does not match its target field.",
+                        binding.parameter_id
+                    ),
+                    "Use a target compatible with the declared parameter type.",
+                ));
+            }
+            let Some(node) = self
+                .nodes
+                .iter()
+                .find(|node| node.node_id == binding.node_id)
+            else {
+                diagnostics.push(AuiTemplateDiagnostic::error(
+                    "aui_template.parameter_target_node_missing",
+                    Some(binding.node_id.clone()),
+                    format!(
+                        "Parameter '{}' targets missing node '{}'.",
+                        binding.parameter_id, binding.node_id
+                    ),
+                    "Bind the parameter to an existing template-local node.",
+                ));
+                continue;
+            };
+            validate_parameter_target(node, &binding.target, &mut diagnostics);
+        }
+
+        let mut slot_ids = HashSet::new();
+        for slot in &self.slots {
+            if slot.slot_id.trim().is_empty() {
+                diagnostics.push(AuiTemplateDiagnostic::error(
+                    "aui_template.slot_id_required",
+                    Some(slot.host_node_id.clone()),
+                    "AUI template slot_id is required.",
+                    "Give every content slot a stable non-empty id.",
+                ));
+            } else if !slot_ids.insert(slot.slot_id.as_str()) {
+                diagnostics.push(AuiTemplateDiagnostic::error(
+                    "aui_template.duplicate_slot",
+                    Some(slot.host_node_id.clone()),
+                    format!(
+                        "AUI template slot '{}' is declared more than once.",
+                        slot.slot_id
+                    ),
+                    "Keep one definition for each content slot id.",
+                ));
+            }
+            if !self
+                .nodes
+                .iter()
+                .any(|node| node.node_id == slot.host_node_id)
+            {
+                diagnostics.push(AuiTemplateDiagnostic::error(
+                    "aui_template.slot_host_missing",
+                    Some(slot.host_node_id.clone()),
+                    format!(
+                        "Content slot '{}' references missing host node '{}'.",
+                        slot.slot_id, slot.host_node_id
+                    ),
+                    "Use an existing template-local node as the slot host.",
+                ));
+            }
+            if slot.max_children == Some(0) {
+                diagnostics.push(AuiTemplateDiagnostic::error(
+                    "aui_template.slot_max_children_zero",
+                    Some(slot.host_node_id.clone()),
+                    format!(
+                        "Content slot '{}' cannot accept any children.",
+                        slot.slot_id
+                    ),
+                    "Remove the slot or set max_children to at least one.",
+                ));
+            }
+        }
+
+        let mut part_names = HashSet::new();
+        for part in &self.named_parts {
+            if part.part_name.trim().is_empty() {
+                diagnostics.push(AuiTemplateDiagnostic::error(
+                    "aui_template.named_part_name_required",
+                    Some(part.node_id.clone()),
+                    "AUI template named part requires part_name.",
+                    "Give every named part a stable non-empty name.",
+                ));
+            } else if !part_names.insert(part.part_name.as_str()) {
+                diagnostics.push(AuiTemplateDiagnostic::error(
+                    "aui_template.duplicate_named_part",
+                    Some(part.node_id.clone()),
+                    format!(
+                        "AUI template named part '{}' is declared more than once.",
+                        part.part_name
+                    ),
+                    "Keep one declaration for each named part.",
+                ));
+            }
+            let Some(node) = self.nodes.iter().find(|node| node.node_id == part.node_id) else {
+                diagnostics.push(AuiTemplateDiagnostic::error(
+                    "aui_template.named_part_node_missing",
+                    Some(part.node_id.clone()),
+                    format!(
+                        "Named part '{}' references missing node '{}'.",
+                        part.part_name, part.node_id
+                    ),
+                    "Map the named part to an existing template-local node.",
+                ));
+                continue;
+            };
+            if part.required_kind.is_some_and(|kind| node.kind != kind) {
+                diagnostics.push(AuiTemplateDiagnostic::error(
+                    "aui_template.named_part_kind_mismatch",
+                    Some(part.node_id.clone()),
+                    format!(
+                        "Named part '{}' has kind {:?}, expected {:?}.",
+                        part.part_name, node.kind, part.required_kind
+                    ),
+                    "Use a node with the required kind or correct the part contract.",
+                ));
+            }
+        }
         diagnostics
     }
 }
@@ -270,7 +584,7 @@ pub struct AuiTemplateRef {
     pub asset_path: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct AuiTemplateInstantiateRequest {
     pub template_ref: AuiTemplateRef,
     pub target_document_path: String,
@@ -278,10 +592,51 @@ pub struct AuiTemplateInstantiateRequest {
     pub insertion_index: Option<usize>,
     pub instance_id: String,
     pub node_id_prefix: String,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub parameters: Vec<AuiTemplateParameterAssignment>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub slot_fills: Vec<AuiTemplateSlotFill>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AuiTemplateParameterAssignment {
+    pub parameter_id: String,
+    pub value: AuiTemplateParameterValue,
+}
+
+impl AuiTemplateParameterAssignment {
+    pub fn new(parameter_id: impl Into<String>, value: AuiTemplateParameterValue) -> Self {
+        Self {
+            parameter_id: parameter_id.into(),
+            value,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AuiTemplateSlotFill {
+    pub slot_id: String,
+    pub node_ids: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AuiTemplateNodeIdRemap {
+    pub source_node_id: String,
+    pub inserted_node_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AuiTemplateSourceMapEntry {
+    pub template_id: String,
+    pub instance_id: String,
+    pub source_document_path: String,
+    pub source_node_id: String,
+    pub inserted_node_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AuiTemplateNamedPartMap {
+    pub part_name: String,
     pub source_node_id: String,
     pub inserted_node_id: String,
 }
@@ -296,6 +651,8 @@ pub struct AuiTemplateInstantiateReport {
     pub parent_node_id: String,
     pub inserted_node_count: usize,
     pub node_id_remap: Vec<AuiTemplateNodeIdRemap>,
+    pub source_map: Vec<AuiTemplateSourceMapEntry>,
+    pub named_parts: Vec<AuiTemplateNamedPartMap>,
     pub asset_ref_count: usize,
     pub binding_ref_count: usize,
     pub action_ref_count: usize,
@@ -321,6 +678,8 @@ impl AuiTemplateInstantiateReport {
             parent_node_id: request.parent_node_id.clone(),
             inserted_node_count: 0,
             node_id_remap: Vec::new(),
+            source_map: Vec::new(),
+            named_parts: Vec::new(),
             asset_ref_count: asset.asset_refs.len(),
             binding_ref_count: asset.binding_refs.len(),
             action_ref_count: asset.action_refs.len(),
@@ -411,6 +770,228 @@ impl AuiTemplateWorkflow {
                 "Provide a stable instance_id for reports.",
             ));
         }
+
+        let parameter_definitions = asset
+            .parameters
+            .iter()
+            .map(|definition| (definition.parameter_id.as_str(), definition))
+            .collect::<HashMap<_, _>>();
+        let mut resolved_parameters = asset
+            .parameters
+            .iter()
+            .filter_map(|definition| {
+                definition
+                    .default_value
+                    .clone()
+                    .map(|value| (definition.parameter_id.clone(), value))
+            })
+            .collect::<HashMap<_, _>>();
+        let mut assigned_parameters = HashSet::new();
+        for assignment in &request.parameters {
+            let Some(definition) = parameter_definitions.get(assignment.parameter_id.as_str())
+            else {
+                report.diagnostics.push(AuiTemplateDiagnostic::error(
+                    "aui_template.unknown_parameter",
+                    None,
+                    format!(
+                        "Instantiate request provides unknown parameter '{}'.",
+                        assignment.parameter_id
+                    ),
+                    "Remove the assignment or declare the parameter in the template.",
+                ));
+                continue;
+            };
+            if !assigned_parameters.insert(assignment.parameter_id.as_str()) {
+                report.diagnostics.push(AuiTemplateDiagnostic::error(
+                    "aui_template.duplicate_parameter_assignment",
+                    None,
+                    format!(
+                        "Instantiate request assigns parameter '{}' more than once.",
+                        assignment.parameter_id
+                    ),
+                    "Provide one value for each parameter.",
+                ));
+                continue;
+            }
+            if assignment.value.parameter_type() != definition.parameter_type {
+                report.diagnostics.push(AuiTemplateDiagnostic::error(
+                    "aui_template.parameter_type_mismatch",
+                    None,
+                    format!(
+                        "Value for parameter '{}' does not match its declared type.",
+                        assignment.parameter_id
+                    ),
+                    "Provide a value with the declared parameter type.",
+                ));
+                continue;
+            }
+            validate_parameter_value(
+                &assignment.parameter_id,
+                &assignment.value,
+                &mut report.diagnostics,
+                "assignment",
+            );
+            resolved_parameters.insert(assignment.parameter_id.clone(), assignment.value.clone());
+        }
+        for definition in &asset.parameters {
+            if definition.required && !resolved_parameters.contains_key(&definition.parameter_id) {
+                report.diagnostics.push(AuiTemplateDiagnostic::error(
+                    "aui_template.required_parameter_missing",
+                    None,
+                    format!(
+                        "Required AUI template parameter '{}' was not provided.",
+                        definition.parameter_id
+                    ),
+                    "Provide the required parameter value.",
+                ));
+            }
+        }
+
+        let slot_definitions = asset
+            .slots
+            .iter()
+            .map(|slot| (slot.slot_id.as_str(), slot))
+            .collect::<HashMap<_, _>>();
+        let mut filled_slots = HashSet::new();
+        let mut filled_node_ids = HashSet::new();
+        for fill in &request.slot_fills {
+            let Some(slot) = slot_definitions.get(fill.slot_id.as_str()) else {
+                report.diagnostics.push(AuiTemplateDiagnostic::error(
+                    "aui_template.unknown_slot",
+                    None,
+                    format!("Instantiate request fills unknown slot '{}'.", fill.slot_id),
+                    "Remove the fill or declare the content slot in the template.",
+                ));
+                continue;
+            };
+            if !filled_slots.insert(fill.slot_id.as_str()) {
+                report.diagnostics.push(AuiTemplateDiagnostic::error(
+                    "aui_template.duplicate_slot_fill",
+                    Some(slot.host_node_id.clone()),
+                    format!("Content slot '{}' is filled more than once.", fill.slot_id),
+                    "Provide one fill entry for each content slot.",
+                ));
+                continue;
+            }
+            if slot.required && fill.node_ids.is_empty() {
+                report.diagnostics.push(AuiTemplateDiagnostic::error(
+                    "aui_template.required_slot_empty",
+                    Some(slot.host_node_id.clone()),
+                    format!(
+                        "Required content slot '{}' has an empty fill.",
+                        fill.slot_id
+                    ),
+                    "Provide at least one target-document subtree root.",
+                ));
+            }
+            if slot
+                .max_children
+                .is_some_and(|maximum| fill.node_ids.len() > maximum)
+            {
+                report.diagnostics.push(AuiTemplateDiagnostic::error(
+                    "aui_template.slot_max_children_exceeded",
+                    Some(slot.host_node_id.clone()),
+                    format!(
+                        "Content slot '{}' received {} children, exceeding its limit {:?}.",
+                        fill.slot_id,
+                        fill.node_ids.len(),
+                        slot.max_children
+                    ),
+                    "Reduce the slot fill child count.",
+                ));
+            }
+            for node_id in &fill.node_ids {
+                let Some(node) = document.nodes.iter().find(|node| node.node_id == *node_id) else {
+                    report.diagnostics.push(AuiTemplateDiagnostic::error(
+                        "aui_template.slot_fill_node_missing",
+                        Some(node_id.clone()),
+                        format!(
+                            "Content slot '{}' fill node '{}' is missing.",
+                            fill.slot_id, node_id
+                        ),
+                        "Fill the slot with an existing target-document subtree root.",
+                    ));
+                    continue;
+                };
+                if !filled_node_ids.insert(node_id.as_str()) {
+                    report.diagnostics.push(AuiTemplateDiagnostic::error(
+                        "aui_template.slot_fill_node_reused",
+                        Some(node_id.clone()),
+                        format!(
+                            "Target node '{}' is used by more than one slot fill.",
+                            node_id
+                        ),
+                        "Use each target subtree root in at most one slot fill.",
+                    ));
+                }
+                if node.parent.is_none() {
+                    report.diagnostics.push(AuiTemplateDiagnostic::error(
+                        "aui_template.slot_fill_root_forbidden",
+                        Some(node_id.clone()),
+                        format!(
+                            "Root node '{}' cannot be moved into a content slot.",
+                            node_id
+                        ),
+                        "Use a non-root target-document subtree.",
+                    ));
+                }
+                if node_id == &request.parent_node_id
+                    || document_node_is_ancestor(document, node_id, &request.parent_node_id)
+                {
+                    report.diagnostics.push(AuiTemplateDiagnostic::error(
+                        "aui_template.slot_fill_cycle",
+                        Some(node_id.clone()),
+                        format!(
+                            "Moving node '{}' into slot '{}' would create a parent cycle.",
+                            node_id, fill.slot_id
+                        ),
+                        "Choose content outside the template insertion parent chain.",
+                    ));
+                }
+                if !slot.allowed_kinds.is_empty() && !slot.allowed_kinds.contains(&node.kind) {
+                    report.diagnostics.push(AuiTemplateDiagnostic::error(
+                        "aui_template.slot_fill_kind_mismatch",
+                        Some(node_id.clone()),
+                        format!(
+                            "Node '{}' kind {:?} is not allowed in content slot '{}'.",
+                            node_id, node.kind, fill.slot_id
+                        ),
+                        "Use a node kind allowed by the content slot contract.",
+                    ));
+                }
+            }
+        }
+        for slot in &asset.slots {
+            if slot.required && !filled_slots.contains(slot.slot_id.as_str()) {
+                report.diagnostics.push(AuiTemplateDiagnostic::error(
+                    "aui_template.required_slot_missing",
+                    Some(slot.host_node_id.clone()),
+                    format!("Required content slot '{}' was not filled.", slot.slot_id),
+                    "Provide content for the required slot.",
+                ));
+            }
+        }
+        for left in &request.slot_fills {
+            for left_node in &left.node_ids {
+                for right in &request.slot_fills {
+                    for right_node in &right.node_ids {
+                        if left_node != right_node
+                            && document_node_is_ancestor(document, left_node, right_node)
+                        {
+                            report.diagnostics.push(AuiTemplateDiagnostic::error(
+                                "aui_template.overlapping_slot_fill_subtrees",
+                                Some(right_node.clone()),
+                                format!(
+                                    "Slot fill node '{}' is inside another filled subtree '{}'.",
+                                    right_node, left_node
+                                ),
+                                "Fill slots with disjoint target-document subtree roots.",
+                            ));
+                        }
+                    }
+                }
+            }
+        }
         if report
             .diagnostics
             .iter()
@@ -432,11 +1013,24 @@ impl AuiTemplateWorkflow {
         };
         let mut used_ids = existing_ids.clone();
         let mut remap = HashMap::new();
-        for node in &asset.nodes {
-            let inserted = make_unique_node_id(prefix, &node.node_id, &mut used_ids);
-            remap.insert(node.node_id.clone(), inserted.clone());
+        let mut source_node_ids = asset
+            .nodes
+            .iter()
+            .map(|node| node.node_id.as_str())
+            .collect::<Vec<_>>();
+        source_node_ids.sort_unstable();
+        for source_node_id in source_node_ids {
+            let inserted = make_unique_node_id(prefix, source_node_id, &mut used_ids);
+            remap.insert(source_node_id.to_string(), inserted.clone());
             report.node_id_remap.push(AuiTemplateNodeIdRemap {
-                source_node_id: node.node_id.clone(),
+                source_node_id: source_node_id.to_string(),
+                inserted_node_id: inserted.clone(),
+            });
+            report.source_map.push(AuiTemplateSourceMapEntry {
+                template_id: asset.template_id.clone(),
+                instance_id: request.instance_id.clone(),
+                source_document_path: asset.source_document_path.clone(),
+                source_node_id: source_node_id.to_string(),
                 inserted_node_id: inserted,
             });
         }
@@ -463,6 +1057,43 @@ impl AuiTemplateWorkflow {
             inserted_nodes.push(node);
         }
 
+        for binding in &asset.parameter_bindings {
+            let Some(value) = resolved_parameters.get(&binding.parameter_id) else {
+                continue;
+            };
+            let Some(inserted_node_id) = remap.get(&binding.node_id) else {
+                continue;
+            };
+            let Some(node) = inserted_nodes
+                .iter_mut()
+                .find(|node| node.node_id == *inserted_node_id)
+            else {
+                continue;
+            };
+            if let Err(diagnostic) = apply_parameter_value(node, &binding.target, value) {
+                report.diagnostics.push(diagnostic);
+            }
+        }
+
+        for part in &asset.named_parts {
+            if let Some(inserted_node_id) = remap.get(&part.node_id) {
+                report.named_parts.push(AuiTemplateNamedPartMap {
+                    part_name: part.part_name.clone(),
+                    source_node_id: part.node_id.clone(),
+                    inserted_node_id: inserted_node_id.clone(),
+                });
+            }
+        }
+
+        if report
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.severity == AuiTemplateDiagnosticSeverity::Error)
+        {
+            report.recompute_status();
+            return report;
+        }
+
         let Some(root_inserted_id) = remap.get(&asset.root_node_id).cloned() else {
             report.diagnostics.push(AuiTemplateDiagnostic::error(
                 "aui_template.root_remap_missing",
@@ -473,7 +1104,12 @@ impl AuiTemplateWorkflow {
             report.recompute_status();
             return report;
         };
-        if let Some(parent) = document
+        let copied_asset_refs = collect_asset_refs(&inserted_nodes);
+        let copied_binding_refs = collect_binding_refs(&inserted_nodes);
+        let copied_action_refs = collect_action_refs(&inserted_nodes);
+
+        let mut next_document = document.clone();
+        if let Some(parent) = next_document
             .nodes
             .iter_mut()
             .find(|node| node.node_id == request.parent_node_id)
@@ -484,13 +1120,55 @@ impl AuiTemplateWorkflow {
                 .min(parent.children.len());
             parent.children.insert(index, root_inserted_id);
         }
-        document.nodes.extend(inserted_nodes);
+        next_document.nodes.extend(inserted_nodes);
+
+        for fill in &request.slot_fills {
+            let Some(slot) = slot_definitions.get(fill.slot_id.as_str()) else {
+                continue;
+            };
+            let Some(host_node_id) = remap.get(&slot.host_node_id).cloned() else {
+                continue;
+            };
+            for fill_node_id in &fill.node_ids {
+                let old_parent_id = next_document
+                    .nodes
+                    .iter()
+                    .find(|node| node.node_id == *fill_node_id)
+                    .and_then(|node| node.parent.clone());
+                if let Some(old_parent_id) = old_parent_id {
+                    if let Some(old_parent) = next_document
+                        .nodes
+                        .iter_mut()
+                        .find(|node| node.node_id == old_parent_id)
+                    {
+                        old_parent.children.retain(|child| child != fill_node_id);
+                    }
+                }
+                if let Some(fill_node) = next_document
+                    .nodes
+                    .iter_mut()
+                    .find(|node| node.node_id == *fill_node_id)
+                {
+                    fill_node.parent = Some(host_node_id.clone());
+                }
+                if let Some(host) = next_document
+                    .nodes
+                    .iter_mut()
+                    .find(|node| node.node_id == host_node_id)
+                {
+                    host.children.push(fill_node_id.clone());
+                }
+            }
+        }
 
         report.inserted_node_count = asset.nodes.len();
-        report.copied_asset_refs = remap_dependencies(&asset.asset_refs, &remap);
-        report.copied_binding_refs = remap_dependencies(&asset.binding_refs, &remap);
-        report.copied_action_refs = remap_dependencies(&asset.action_refs, &remap);
-        if !report.copied_binding_refs.is_empty() {
+        report.copied_asset_refs = copied_asset_refs;
+        report.copied_binding_refs = copied_binding_refs;
+        report.copied_action_refs = copied_action_refs;
+        report.asset_ref_count = report.copied_asset_refs.len();
+        report.binding_ref_count = report.copied_binding_refs.len();
+        report.action_ref_count = report.copied_action_refs.len();
+        if template_has_unparameterized_binding(asset) {
             report.diagnostics.push(AuiTemplateDiagnostic::warning(
                 "aui_template.binding_refs_unparameterized",
                 None,
@@ -498,7 +1176,7 @@ impl AuiTemplateWorkflow {
                 "Inspect copied_binding_refs and rewrite paths for each instance if needed.",
             ));
         }
-        if !report.copied_action_refs.is_empty() {
+        if template_has_unparameterized_action(asset) {
             report.diagnostics.push(AuiTemplateDiagnostic::warning(
                 "aui_template.action_refs_unparameterized",
                 None,
@@ -506,9 +1184,195 @@ impl AuiTemplateWorkflow {
                 "Inspect copied_action_refs and rewrite action ids for each instance if needed.",
             ));
         }
+        *document = next_document;
         report.recompute_status();
         report
     }
+}
+
+fn validate_parameter_value(
+    parameter_id: &str,
+    value: &AuiTemplateParameterValue,
+    diagnostics: &mut Vec<AuiTemplateDiagnostic>,
+    source: &str,
+) {
+    match value {
+        AuiTemplateParameterValue::Number(value) if !value.is_finite() => {
+            diagnostics.push(AuiTemplateDiagnostic::error(
+                "aui_template.parameter_number_not_finite",
+                None,
+                format!("Parameter '{parameter_id}' {source} value must be finite."),
+                "Use a finite numeric value.",
+            ));
+        }
+        AuiTemplateParameterValue::AssetRef(value) if value.trim().is_empty() => {
+            diagnostics.push(AuiTemplateDiagnostic::error(
+                "aui_template.parameter_asset_ref_empty",
+                None,
+                format!("Parameter '{parameter_id}' {source} asset ref is empty."),
+                "Use a non-empty asset id.",
+            ));
+        }
+        _ => {}
+    }
+}
+
+fn validate_parameter_target(
+    node: &AuiNode,
+    target: &AuiTemplateParameterTarget,
+    diagnostics: &mut Vec<AuiTemplateDiagnostic>,
+) {
+    let compatible = match target {
+        AuiTemplateParameterTarget::Text => {
+            matches!(node.kind, AuiNodeKind::Text | AuiNodeKind::Button)
+        }
+        AuiTemplateParameterTarget::InputFieldText => node.kind == AuiNodeKind::InputField,
+        AuiTemplateParameterTarget::ProgressValue => node.kind == AuiNodeKind::ProgressBar,
+        AuiTemplateParameterTarget::Visible => true,
+        AuiTemplateParameterTarget::ImageAssetId => node.kind == AuiNodeKind::Image,
+        AuiTemplateParameterTarget::BindingPath { binding_id } => {
+            node.binding_refs
+                .iter()
+                .filter(|binding| binding.binding_id == *binding_id)
+                .count()
+                == 1
+        }
+        AuiTemplateParameterTarget::ActionId { event } => {
+            node.action_refs
+                .iter()
+                .filter(|action| action.event == *event)
+                .count()
+                == 1
+        }
+    };
+    if !compatible {
+        diagnostics.push(AuiTemplateDiagnostic::error(
+            "aui_template.parameter_target_field_missing",
+            Some(node.node_id.clone()),
+            format!(
+                "Node '{}' does not expose the requested template parameter target {:?}.",
+                node.node_id, target
+            ),
+            "Choose a compatible node field, binding id, or action event.",
+        ));
+    }
+}
+
+fn apply_parameter_value(
+    node: &mut AuiNode,
+    target: &AuiTemplateParameterTarget,
+    value: &AuiTemplateParameterValue,
+) -> Result<(), AuiTemplateDiagnostic> {
+    match (target, value) {
+        (AuiTemplateParameterTarget::Text, AuiTemplateParameterValue::String(value))
+        | (AuiTemplateParameterTarget::InputFieldText, AuiTemplateParameterValue::String(value)) => {
+            node.text = Some(value.clone())
+        }
+        (AuiTemplateParameterTarget::ProgressValue, AuiTemplateParameterValue::Number(value)) => {
+            node.progress_value = Some(value.clamp(0.0, 1.0))
+        }
+        (AuiTemplateParameterTarget::Visible, AuiTemplateParameterValue::Boolean(value)) => {
+            node.visible = *value
+        }
+        (AuiTemplateParameterTarget::ImageAssetId, AuiTemplateParameterValue::AssetRef(value)) => {
+            node.image = Some(AuiAssetRef::new(value))
+        }
+        (
+            AuiTemplateParameterTarget::BindingPath { binding_id },
+            AuiTemplateParameterValue::String(value),
+        ) => {
+            let Some(binding) = node
+                .binding_refs
+                .iter_mut()
+                .find(|binding| binding.binding_id == *binding_id)
+            else {
+                return Err(parameter_apply_diagnostic(node, target));
+            };
+            binding.path = value.clone();
+        }
+        (
+            AuiTemplateParameterTarget::ActionId { event },
+            AuiTemplateParameterValue::String(value),
+        ) => {
+            let Some(action) = node
+                .action_refs
+                .iter_mut()
+                .find(|action| action.event == *event)
+            else {
+                return Err(parameter_apply_diagnostic(node, target));
+            };
+            action.action_id = value.clone();
+        }
+        _ => return Err(parameter_apply_diagnostic(node, target)),
+    }
+    Ok(())
+}
+
+fn parameter_apply_diagnostic(
+    node: &AuiNode,
+    target: &AuiTemplateParameterTarget,
+) -> AuiTemplateDiagnostic {
+    AuiTemplateDiagnostic::error(
+        "aui_template.parameter_apply_failed",
+        Some(node.node_id.clone()),
+        format!(
+            "Template parameter target {:?} could not be applied to node '{}'.",
+            target, node.node_id
+        ),
+        "Validate the template parameter type and target field.",
+    )
+}
+
+fn document_node_is_ancestor(document: &AuiDocument, ancestor: &str, descendant: &str) -> bool {
+    let nodes = document
+        .nodes
+        .iter()
+        .map(|node| (node.node_id.as_str(), node))
+        .collect::<HashMap<_, _>>();
+    let mut current = nodes
+        .get(descendant)
+        .and_then(|node| node.parent.as_deref());
+    let mut visited = HashSet::new();
+    while let Some(node_id) = current {
+        if node_id == ancestor {
+            return true;
+        }
+        if !visited.insert(node_id) {
+            return false;
+        }
+        current = nodes.get(node_id).and_then(|node| node.parent.as_deref());
+    }
+    false
+}
+
+fn template_has_unparameterized_binding(asset: &AuiTemplateAsset) -> bool {
+    asset.nodes.iter().any(|node| {
+        node.binding_refs.iter().any(|binding| {
+            !asset.parameter_bindings.iter().any(|parameter_binding| {
+                parameter_binding.node_id == node.node_id
+                    && matches!(
+                        &parameter_binding.target,
+                        AuiTemplateParameterTarget::BindingPath { binding_id }
+                            if binding_id == &binding.binding_id
+                    )
+            })
+        })
+    })
+}
+
+fn template_has_unparameterized_action(asset: &AuiTemplateAsset) -> bool {
+    asset.nodes.iter().any(|node| {
+        node.action_refs.iter().any(|action| {
+            !asset.parameter_bindings.iter().any(|parameter_binding| {
+                parameter_binding.node_id == node.node_id
+                    && matches!(
+                        parameter_binding.target,
+                        AuiTemplateParameterTarget::ActionId { event }
+                            if event == action.event
+                    )
+            })
+        })
+    })
 }
 
 fn collect_subtree_nodes(
@@ -623,22 +1487,6 @@ fn collect_action_refs(nodes: &[AuiNode]) -> Vec<AuiTemplateDependencyRef> {
         .collect()
 }
 
-fn remap_dependencies(
-    refs: &[AuiTemplateDependencyRef],
-    remap: &HashMap<String, String>,
-) -> Vec<AuiTemplateDependencyRef> {
-    refs.iter()
-        .map(|dependency| AuiTemplateDependencyRef {
-            node_id: remap
-                .get(&dependency.node_id)
-                .cloned()
-                .unwrap_or_else(|| dependency.node_id.clone()),
-            field_path: dependency.field_path.clone(),
-            value: dependency.value.clone(),
-        })
-        .collect()
-}
-
 fn binding_target_name(target: AuiBindingTarget) -> &'static str {
     match target {
         AuiBindingTarget::RectOffsetX => "rect.offsetX",
@@ -647,14 +1495,26 @@ fn binding_target_name(target: AuiBindingTarget) -> &'static str {
         AuiBindingTarget::TextText => "text.text",
         AuiBindingTarget::InputFieldText => "inputField.text",
         AuiBindingTarget::ProgressBarValue => "progress.value",
+        AuiBindingTarget::ToggleChecked => "toggle.checked",
+        AuiBindingTarget::SliderValue => "slider.value",
         AuiBindingTarget::PanelVisible => "panel.visible",
         AuiBindingTarget::ImageVisible => "image.visible",
         AuiBindingTarget::ImageAssetRef => "image.assetRef",
+        AuiBindingTarget::Interactable => "interactable",
+        AuiBindingTarget::Translation => "presentation.translation",
+        AuiBindingTarget::Rotation => "presentation.rotation",
+        AuiBindingTarget::Scale => "presentation.scale",
+        AuiBindingTarget::Pivot => "presentation.pivot",
+        AuiBindingTarget::Opacity => "presentation.opacity",
+        AuiBindingTarget::Tint => "presentation.tint",
+        AuiBindingTarget::Resource => "resource",
+        AuiBindingTarget::LocalStyle => "localStyle",
     }
 }
 
 fn action_event_name(event: AuiActionEvent) -> &'static str {
     match event {
+        AuiActionEvent::Activate => "activate",
         AuiActionEvent::Click => "click",
         AuiActionEvent::DragStart => "drag_start",
         AuiActionEvent::DragMove => "drag_move",
@@ -667,6 +1527,7 @@ fn action_event_name(event: AuiActionEvent) -> &'static str {
         AuiActionEvent::TextChanged => "text_changed",
         AuiActionEvent::TextSubmitted => "text_submitted",
         AuiActionEvent::TextCancelled => "text_cancelled",
+        AuiActionEvent::ValueChanged => "value_changed",
     }
 }
 
@@ -709,6 +1570,27 @@ fn fnv1a64(bytes: &[u8]) -> u64 {
 
 fn normalize_path(path: &Path) -> String {
     path.to_string_lossy().replace('\\', "/")
+}
+
+#[cfg(test)]
+mod m4e_tests {
+    use super::*;
+
+    #[test]
+    fn template_dependency_names_cover_m4e_control_bindings_and_actions() {
+        assert_eq!(
+            binding_target_name(AuiBindingTarget::ToggleChecked),
+            "toggle.checked"
+        );
+        assert_eq!(
+            binding_target_name(AuiBindingTarget::SliderValue),
+            "slider.value"
+        );
+        assert_eq!(
+            action_event_name(AuiActionEvent::ValueChanged),
+            "value_changed"
+        );
+    }
 }
 
 #[allow(dead_code)]

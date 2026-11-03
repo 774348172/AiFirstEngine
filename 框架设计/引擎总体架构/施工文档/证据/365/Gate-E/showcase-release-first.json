@@ -1,0 +1,75 @@
+{
+  "schemaVersion": "release-package-report.v1",
+  "status": "failed",
+  "reportLevel": "trace",
+  "projectId": "aui-presentation-showcase-365",
+  "profile": "release",
+  "target": "windows",
+  "architecture": "x86_64",
+  "displayName": "玉衡 · 绘制与表现",
+  "displayVersion": "1.0.0",
+  "entrypoint": "AuiPresentation365.exe",
+  "runtimePackage": "data/runtime_package",
+  "reportPath": "G:/gameEngin/samples/aui_presentation_showcase_project\\.aife/reports/release-package/latest.json",
+  "outputDir": "G:/gameEngin/samples/aui_presentation_showcase_project\\Build\\Windows\\x86_64\\release\\AuiPresentation365",
+  "manifestPath": "G:/gameEngin/samples/aui_presentation_showcase_project\\Build\\Windows\\x86_64\\release\\AuiPresentation365\\package-manifest.json",
+  "runtimeContentHash": "",
+  "releasePayloadHash": "",
+  "payloadFileCount": 0,
+  "resourceReadback": null,
+  "application": {
+    "displayName": "玉衡 · 绘制与表现",
+    "executableName": "AuiPresentation365",
+    "companyName": "AI First Engine Studio",
+    "displayVersion": "1.0.0"
+  },
+  "runtime": {
+    "relativePath": "data/runtime_package",
+    "contentHash": "",
+    "formalLoadPassed": false
+  },
+  "entrypointEvidence": {
+    "relativePath": "AuiPresentation365.exe",
+    "exists": false,
+    "roleVerified": false
+  },
+  "resource": {
+    "stampReadbackVerified": false,
+    "iconSizes": []
+  },
+  "layout": {
+    "kind": "portable-directory-v1",
+    "portable": true,
+    "includeReports": false,
+    "payloadFileCount": 0
+  },
+  "payloadHash": {
+    "algorithm": "sha256",
+    "value": "",
+    "verified": false
+  },
+  "verification": {
+    "manifestValid": false,
+    "inventoryValid": false,
+    "runtimeLoadPassed": false,
+    "resourceReadbackPassed": false,
+    "publishValidated": false,
+    "explicitProcessStatus": "",
+    "explicitProcessPassed": false,
+    "processExitCode": null,
+    "childPlayerExitCode": null,
+    "childFramesCompleted": null,
+    "processReportPath": null
+  },
+  "diagnostics": [
+    {
+release package failed: Cargo manifest field/table 'workspace' is forbidden in production staging v1.
+      "code": "project_runtime.player_artifact_staging_manifest_policy_rejected",
+      "stage": "build_project_player_artifact",
+      "message": "Cargo manifest field/table 'workspace' is forbidden in production staging v1.",
+      "path": null,
+      "nextAction": "Build the project-specific Player and RuntimePackage from the same runtime module inputs."
+    }
+  ],
+  "nextAction": "Build the project-specific Player and RuntimePackage from the same runtime module inputs."
+}

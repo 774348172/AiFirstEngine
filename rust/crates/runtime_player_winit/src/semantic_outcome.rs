@@ -1,10 +1,17 @@
+use crate::replay_input::{ReplayInputEvent, ReplayInputState};
 use engine_runtime::project_observation::{ProjectObservationContract, ProjectObservationValue};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 
 pub const PLAYTEST_SCENARIO_SCHEMA_VERSION: &str = "playtest-scenario.v1";
-pub const MAX_PLAYTEST_FRAMES: u64 = 36_000;
-pub const MAX_PLAYTEST_TIMEOUT_MS: u64 = 120_000;
+pub const PLAYTEST_SCENARIO_V2_SCHEMA_VERSION: &str = "playtest-scenario.v2";
+// The 36,000-phase-tick streaming recipe needs 48,000 simulation ticks including
+// bounded admission callbacks and up to 50,000 presentation frames. This is a tool
+// execution bound; it does not change benchmark timing or memory qualification.
+pub const MAX_PLAYTEST_FRAMES: u64 = 50_000;
+// Full combined trajectories can take longer than their simulated duration.
+// Callers still select and enforce a finite per-run deadline; defaults stay unchanged.
+pub const MAX_PLAYTEST_TIMEOUT_MS: u64 = 14_400_000;
 pub const MAX_PLAYTEST_INPUTS: usize = 4096;
 pub const MAX_PLAYTEST_ASSERTIONS: usize = 64;
 pub const MAX_PLAYTEST_CAPTURES: usize = 16;
@@ -29,22 +36,32 @@ pub struct PlaytestScenario {
     pub timeout_ms: u64,
     #[serde(default)]
     pub seed: Option<u64>,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "deserialize_inputs")]
     pub inputs: Vec<PlaytestInput>,
     #[serde(default)]
     pub assertions: Vec<PlaytestAssertion>,
     #[serde(default)]
     pub captures: Vec<PlaytestCapture>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub spatial_observation: Option<engine_runtime::render_geometry::SpatialObservationRequest>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct PlaytestInput {
     pub simulation_tick: u64,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub key_down: Vec<String>,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub key_up: Vec<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub events: Option<Vec<ReplayInputEvent>>,
+}
+
+fn deserialize_inputs<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> Result<Vec<PlaytestInput>, D::Error> {
+    crate::replay_input::deserialize_points(deserializer, "inputs")
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -124,12 +141,37 @@ impl PlaytestScenario {
         &self,
         contract: Option<&ProjectObservationContract>,
     ) -> Result<(), ScenarioDiagnostic> {
-        if self.schema_version != PLAYTEST_SCENARIO_SCHEMA_VERSION {
+        if self.schema_version != PLAYTEST_SCENARIO_SCHEMA_VERSION
+            && self.schema_version != PLAYTEST_SCENARIO_V2_SCHEMA_VERSION
+        {
             return Err(diagnostic(
                 "schema_unsupported",
                 "/schemaVersion",
                 "Unsupported scenario schema.",
             ));
+        }
+        if let Some(request) = &self.spatial_observation {
+            let selected = request
+                .entities
+                .iter()
+                .map(String::as_str)
+                .chain(self.assertions.iter().filter_map(|a| {
+                    engine_runtime::render_geometry::spatial_observation_path(&a.path)
+                        .map(|(id, _, _)| id)
+                }))
+                .collect::<BTreeSet<_>>();
+            let limit = match request.level {
+                engine_runtime::render_contract::DiagnosticLevel::Off => 0,
+                engine_runtime::render_contract::DiagnosticLevel::Summary => 64,
+                engine_runtime::render_contract::DiagnosticLevel::Trace => 4096,
+            };
+            if !request.validate() || selected.len() > limit {
+                return Err(diagnostic(
+                    "spatial_request_invalid",
+                    "/spatialObservation",
+                    "Use spatial-observation-request.v1 with unique bounded entities; Off cannot satisfy engine assertions.",
+                ));
+            }
         }
         for (path, id) in [
             ("/scenarioId", &self.scenario_id),
@@ -183,6 +225,7 @@ impl PlaytestScenario {
         }
         let mut last_tick = 0;
         let mut held = BTreeSet::new();
+        let mut ordered_state = ReplayInputState::default();
         for (index, input) in self.inputs.iter().enumerate() {
             let path = format!("/inputs/{index}");
             if input.simulation_tick <= last_tick
@@ -195,6 +238,39 @@ impl PlaytestScenario {
                 ));
             }
             last_tick = input.simulation_tick;
+            if self.schema_version == PLAYTEST_SCENARIO_V2_SCHEMA_VERSION {
+                let events = input.events.as_ref().ok_or_else(|| {
+                    diagnostic(
+                        "events_missing",
+                        format!("{path}/events"),
+                        "playtest-scenario.v2 requires events instead of keyDown/keyUp.",
+                    )
+                })?;
+                if !input.key_down.is_empty() || !input.key_up.is_empty() {
+                    return Err(diagnostic(
+                        "input_version_mixed",
+                        &path,
+                        "playtest-scenario.v2 cannot contain legacy key fields.",
+                    ));
+                }
+                ordered_state
+                    .validate(events, &format!("{path}/events"))
+                    .map_err(|(path, message)| {
+                        diagnostic(
+                            "events_invalid",
+                            path,
+                            format!("playtest-scenario.v2: {message}"),
+                        )
+                    })?;
+                continue;
+            }
+            if input.events.is_some() {
+                return Err(diagnostic(
+                    "input_version_mixed",
+                    format!("{path}/events"),
+                    "playtest-scenario.v1 does not accept events; use playtest-scenario.v2.",
+                ));
+            }
             if input.key_down.len() + input.key_up.len() > 32
                 || input.key_down.is_empty() && input.key_up.is_empty()
             {
@@ -215,7 +291,11 @@ impl PlaytestScenario {
                             !held.remove(key)
                         }
                     {
-                        return Err(diagnostic("keys_invalid", &path, "Unsupported key, duplicate transition, repeated press or release without press."));
+                        return Err(diagnostic(
+                            "keys_invalid",
+                            &path,
+                            "Unsupported key, duplicate transition, repeated press or release without press.",
+                        ));
                     }
                 }
             }
@@ -225,6 +305,13 @@ impl PlaytestScenario {
                 "keys_not_released",
                 "/inputs",
                 "Release all scripted keys before the scenario ends.",
+            ));
+        }
+        if !ordered_state.released() {
+            return Err(diagnostic(
+                "events_not_released",
+                "/inputs",
+                "playtest-scenario.v2: release all scripted keys and mouse buttons before the timeline ends.",
             ));
         }
         if let Some(contract) = contract {
@@ -252,9 +339,32 @@ impl PlaytestScenario {
                 || assertion.from_simulation_tick > assertion.through_simulation_tick
                 || assertion.through_simulation_tick > self.max_simulation_ticks
             {
-                return Err(diagnostic("assertion_window_invalid", &path, "Expected inclusive simulation intervals ordered by start, inside the simulation limit."));
+                return Err(diagnostic(
+                    "assertion_window_invalid",
+                    &path,
+                    "Expected inclusive simulation intervals ordered by start, inside the simulation limit.",
+                ));
             }
             last_start = assertion.from_simulation_tick;
+            if assertion.path.starts_with("engine.") {
+                let (_, _, ty) =
+                    engine_runtime::render_geometry::spatial_observation_path(&assertion.path)
+                        .ok_or_else(|| {
+                            diagnostic(
+                                "engine_observation_path_unknown",
+                                format!("{path}/path"),
+                                "Unknown reserved engine observation path.",
+                            )
+                        })?;
+                if !assertion.equals.is_valid_scalar() || assertion.equals.value_type() != ty {
+                    return Err(diagnostic(
+                        "observation_type_mismatch",
+                        format!("{path}/equals"),
+                        "Engine observation requires its declared scalar type.",
+                    ));
+                }
+                continue;
+            }
             let entry = contract
                 .and_then(|contract| {
                     contract
@@ -299,7 +409,11 @@ impl PlaytestScenario {
                 || capture.presentation_frame <= last_frame
                 || capture.presentation_frame > self.max_presentation_frames
             {
-                return Err(diagnostic("capture_invalid", path, "Capture ids must be unique; presentation frames must strictly increase within the presentation limit."));
+                return Err(diagnostic(
+                    "capture_invalid",
+                    path,
+                    "Capture ids must be unique; presentation frames must strictly increase within the presentation limit.",
+                ));
             }
             last_frame = capture.presentation_frame;
         }
@@ -315,7 +429,7 @@ fn valid_id(value: &str) -> bool {
             .all(|b| b.is_ascii_alphanumeric() || b"._-".contains(&b))
 }
 
-fn supported_key(key: &str) -> bool {
+pub(crate) fn supported_key(key: &str) -> bool {
     matches!(
         key,
         "Space" | "Enter" | "Escape" | "ArrowUp" | "ArrowDown" | "ArrowLeft" | "ArrowRight"
@@ -446,6 +560,161 @@ mod tests {
             "inputs": [{"simulationTick": 1, "keyDown": ["Space"]}, {"simulationTick": 2, "keyUp": ["Space"]}],
             "assertions": [{"assertionId": "ready", "fromSimulationTick": 2, "throughSimulationTick": 3, "path": "game.ready", "equals": true}]
         })).unwrap()
+    }
+
+    #[test]
+    fn original_world_k2_admits_complete_route_callbacks_and_final_capture() {
+        let input: PlaytestScenario = serde_json::from_slice(include_bytes!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../samples/platform_3d_bm13_k2_project/Tests/bm13-k2.scenario.json"
+        )))
+        .unwrap();
+        let observations: ProjectObservationContract = serde_json::from_slice(include_bytes!(
+            concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../../../samples/platform_3d_bm13_k2_project/Observations/project.observations.json"
+            )
+        ))
+        .unwrap();
+        assert_eq!(input.max_simulation_ticks, 48_000);
+        assert_eq!(input.max_presentation_frames, 50_000);
+        assert_eq!(input.timeout_ms, 14_400_000);
+        assert_eq!(input.assertions.len(), 8);
+        assert!(input.assertions.iter().all(|assertion| {
+            assertion.from_simulation_tick == 48_000 && assertion.through_simulation_tick == 48_000
+        }));
+        assert_eq!(input.captures.len(), 7);
+        assert_eq!(input.captures.last().unwrap().presentation_frame, 48_000);
+        input.validate(Some(&observations)).unwrap();
+    }
+
+    #[test]
+    fn semantic_full_world_k2_admits_explicit_four_hour_execution_budget() {
+        let mut input = scenario();
+        input.max_simulation_ticks = 48_000;
+        input.max_presentation_frames = 50_000;
+        input.timeout_ms = 14_400_000;
+        input
+            .validate(Some(&contract()))
+            .expect("original full K2 needs bounded admission callbacks and wall time");
+    }
+
+    #[test]
+    fn full_combined_cycle_allows_a_bounded_hour_without_changing_other_limits() {
+        let mut input = scenario();
+        input.max_simulation_ticks = 7201;
+        input.max_presentation_frames = 9000;
+        input.timeout_ms = 3_600_000;
+        input
+            .validate(Some(&contract()))
+            .expect("full combined trajectory must admit its explicit bounded execution time");
+        input.timeout_ms = MAX_PLAYTEST_TIMEOUT_MS + 1;
+        assert_eq!(
+            input.validate(Some(&contract())).unwrap_err().code,
+            "playtest.limit_invalid"
+        );
+        input.timeout_ms = 3_600_000;
+        input.max_simulation_ticks = MAX_PLAYTEST_FRAMES + 1;
+        assert_eq!(
+            input.validate(Some(&contract())).unwrap_err().code,
+            "playtest.limit_invalid"
+        );
+    }
+
+    #[test]
+    fn semantic_world_route_has_bounded_room_for_sdk_callbacks() {
+        let mut input = scenario();
+        input.max_simulation_ticks = 40_000;
+        input.max_presentation_frames = 40_000;
+        input.timeout_ms = MAX_PLAYTEST_TIMEOUT_MS;
+        input.validate(Some(&contract())).unwrap();
+        for field in ["maxSimulationTicks", "maxPresentationFrames", "timeoutMs"] {
+            let mut value = serde_json::to_value(&input).unwrap();
+            value[field] = serde_json::json!(if field == "timeoutMs" {
+                MAX_PLAYTEST_TIMEOUT_MS + 1
+            } else {
+                MAX_PLAYTEST_FRAMES + 1
+            });
+            let rejected: PlaytestScenario = serde_json::from_value(value).unwrap();
+            assert_eq!(
+                rejected.validate(Some(&contract())).unwrap_err().code,
+                "playtest.limit_invalid"
+            );
+        }
+    }
+
+    #[test]
+    fn ordered_input_v2_accepts_same_tick_mouse_and_key_edges() {
+        let mut value = serde_json::to_value(scenario()).unwrap();
+        value["schemaVersion"] = "playtest-scenario.v2".into();
+        value["inputs"] = serde_json::json!([{"simulationTick":1,"events":[
+            {"type":"pointerMove","position":[10,20]},
+            {"type":"mouseDown","button":"Left"},
+            {"type":"pointerMove","position":[40,50]},
+            {"type":"mouseUp","button":"Left"},
+            {"type":"keyDown","key":"ShiftLeft"},
+            {"type":"keyUp","key":"ShiftLeft"}
+        ]}]);
+        let decoded: PlaytestScenario = serde_json::from_value(value.clone()).unwrap();
+        decoded.validate(Some(&contract())).unwrap();
+        assert_eq!(
+            serde_json::to_value(decoded).unwrap()["inputs"],
+            value["inputs"]
+        );
+    }
+
+    #[test]
+    fn semantic_outcome_ordinary_3d_fixture_uses_current_schema() {
+        let scenario: PlaytestScenario = serde_json::from_str(include_str!(
+            "../../../../samples/three_d_lab_project/Tests/spatial-controls.scenario.json"
+        ))
+        .unwrap();
+        scenario.validate(None).unwrap();
+        assert_eq!(scenario.assertions.len(), 13);
+        assert_eq!(scenario.captures.len(), 7);
+    }
+
+    #[test]
+    fn semantic_outcome_spatial_requests_are_versioned_bounded_and_off_is_explicit() {
+        use engine_runtime::render_contract::DiagnosticLevel;
+        use engine_runtime::render_geometry::SpatialObservationRequest;
+        let mut input = scenario();
+        input.assertions.clear();
+        input.spatial_observation = Some(SpatialObservationRequest {
+            schema_version: "spatial-observation-request.v1".into(),
+            level: DiagnosticLevel::Off,
+            entities: vec![],
+        });
+        input.validate(None).unwrap();
+        input
+            .spatial_observation
+            .as_mut()
+            .unwrap()
+            .entities
+            .push("camera".into());
+        assert!(input.validate(None).is_err());
+        let request = input.spatial_observation.as_mut().unwrap();
+        request.level = DiagnosticLevel::Summary;
+        request.entities = (0..65).map(|i| format!("e-{i}")).collect();
+        assert!(input.validate(None).is_err());
+        input.spatial_observation.as_mut().unwrap().level = DiagnosticLevel::Trace;
+        input.validate(None).unwrap();
+        input.spatial_observation.as_mut().unwrap().schema_version = "future".into();
+        assert!(input.validate(None).is_err());
+    }
+
+    #[test]
+    fn semantic_outcome_engine_paths_are_typed_and_cannot_be_project_spoofed() {
+        let mut input = scenario();
+        input.assertions[0].path = "engine.spatial/cube-front/visible".into();
+        input.validate(None).unwrap();
+        input.assertions[0].equals = ProjectObservationValue::String("true".into());
+        assert!(input.validate(None).is_err());
+        input.assertions[0].path = "engine.spatial/cube-front/invented".into();
+        assert!(input.validate(None).is_err());
+        let mut project = contract();
+        project.observations[0].path = "engine.spatial.visible".into();
+        assert!(project.validate().is_err());
     }
 
     #[test]

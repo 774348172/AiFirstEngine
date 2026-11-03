@@ -1,0 +1,22 @@
+Status: retained_test_evidence
+Producer: cargo test -p engine_runtime --lib project_runtime --locked
+Window: 2026-09-24 17:28:40 UTC; existing package fixture helpers retain outputs.
+C:\Users\zenghaoran\AppData\Local\Temp\project-runtime-module-1790270920730355600
+C:\Users\zenghaoran\AppData\Local\Temp\project-runtime-module-1790270920730367100
+C:\Users\zenghaoran\AppData\Local\Temp\project-runtime-module-1790270920730383200
+C:\Users\zenghaoran\AppData\Local\Temp\project-runtime-module-1790270920730430100
+C:\Users\zenghaoran\AppData\Local\Temp\project-runtime-module-1790270920731001800
+C:\Users\zenghaoran\AppData\Local\Temp\project-runtime-module-1790270920731048300
+C:\Users\zenghaoran\AppData\Local\Temp\project-runtime-module-1790270920731079500
+C:\Users\zenghaoran\AppData\Local\Temp\project-runtime-module-1790270920731309800
+C:\Users\zenghaoran\AppData\Local\Temp\project-runtime-module-1790270920731366900
+C:\Users\zenghaoran\AppData\Local\Temp\project-runtime-module-1790270920822430400
+C:\Users\zenghaoran\AppData\Local\Temp\project-runtime-module-1790270920824434100
+C:\Users\zenghaoran\AppData\Local\Temp\project-runtime-module-1790270920824768300
+C:\Users\zenghaoran\AppData\Local\Temp\project-runtime-module-1790270920856885200
+C:\Users\zenghaoran\AppData\Local\Temp\project-runtime-native-adapter-1790270920827359800
+C:\Users\zenghaoran\AppData\Local\Temp\project-runtime-native-adapter-1790270920863698600
+C:\Users\zenghaoran\AppData\Local\Temp\project-runtime-native-adapter-1790270920891821600
+C:\Users\zenghaoran\AppData\Local\Temp\project-runtime-observation-1790270920730197400
+C:\Users\zenghaoran\AppData\Local\Temp\project-runtime-observation-1790270920730269600
+C:\Users\zenghaoran\AppData\Local\Temp\project-runtime-observation-1790270920730475100

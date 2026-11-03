@@ -1,15 +1,17 @@
 use crate::semantic_outcome::{OutcomeStatus, PlaytestScenario, PlaytestTarget, SemanticOutcome};
 use crate::{
-    NativePlayerInputScript, NativePlayerInputScriptFrame, NativeWindowHostDiagnostic,
-    NativeWindowHostReport,
+    NativeAuiPresentSummary, NativePlayerInputScript, NativePlayerInputScriptFrame,
+    NativeWindowHostDiagnostic, NativeWindowHostReport,
 };
+use engine_runtime::aui::{AuiComputedRect, AuiInteractionState, AuiRuntimePresentOutput};
 use engine_runtime::engine_host_loop::EngineFrameOutput;
 use engine_runtime::project_observation::{
     ProjectObservationContract, ProjectObservationValue, ProjectRuntimeObservationState,
 };
+use engine_runtime::render_geometry::SpatialObservation;
 use engine_runtime::runtime_package::RuntimePackage;
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use std::time::{Duration, Instant};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -32,14 +34,170 @@ pub struct SemanticPlaytestReport {
     pub session_id: String,
     pub contract_digest: Option<String>,
     pub simulation_ticks: u64,
+    #[serde(default)]
+    pub presented_frame: Option<u64>,
+    #[serde(default)]
+    pub submitted_frame: Option<u64>,
     pub fixed_delta_seconds: f32,
     pub injected_transition_count: usize,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub aui: Option<AuiSemanticSnapshot>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub spatial: Option<SpatialObservation>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub aui_events: Vec<AuiSemanticEvent>,
     pub assertions: Vec<PlaytestAssertionResult>,
     pub captures: BTreeMap<String, OutcomeStatus>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub capture_evidence: Vec<PlaytestCaptureEvidence>,
     pub outcome: SemanticOutcome,
     pub overall: OutcomeStatus,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AuiSemanticNode {
+    pub node_id: String,
+    pub rect: AuiComputedRect,
+    pub visible: bool,
+    pub text: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub font_size: Option<f32>,
+    pub layout_mode: Option<engine_runtime::aui_layout_schema::LayoutMode>,
+    pub text_direction: Option<engine_runtime::aui_layout_schema::TextDirection>,
+    pub style_sources: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AuiSemanticEvent {
+    pub simulation_tick: u64,
+    pub presentation_frame: u64,
+    pub action_count: usize,
+    pub input_consumed: bool,
+    pub active_screen_id: Option<String>,
+    pub focused_node_id: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AuiSemanticVirtualList {
+    pub list_node_id: String,
+    pub total_item_count: usize,
+    pub live_instance_count: usize,
+    pub first_materialized_index: Option<usize>,
+    pub last_materialized_index: Option<usize>,
+    pub anchor_key: Option<String>,
+    pub anchor_local_offset: Option<f32>,
+    pub focused_key: Option<String>,
+    pub selected_key: Option<String>,
+    pub capacity_limited: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AuiSemanticSnapshot {
+    pub simulation_tick: u64,
+    pub presentation_frame: u64,
+    pub document_id: String,
+    pub visible_node_count: usize,
+    pub draw_item_count: usize,
+    pub action_count: usize,
+    pub input_consumed: bool,
+    pub active_screen_id: Option<String>,
+    pub focused_node_id: Option<String>,
+    pub scroll_offsets: BTreeMap<String, f32>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub virtual_lists: Vec<AuiSemanticVirtualList>,
+    pub nodes_truncated: bool,
+    pub nodes: Vec<AuiSemanticNode>,
+}
+
+impl AuiSemanticSnapshot {
+    fn from_committed_frame(
+        simulation_tick: u64,
+        presentation_frame: u64,
+        present: &AuiRuntimePresentOutput,
+        summary: &NativeAuiPresentSummary,
+        interaction: Option<&AuiInteractionState>,
+    ) -> Self {
+        const MAX_REPORTED_NODES: usize = 256;
+        let authored = present
+            .resolved_document
+            .nodes
+            .iter()
+            .map(|node| (node.node_id.as_str(), node))
+            .collect::<HashMap<_, _>>();
+        let nodes = present
+            .layout
+            .computed_nodes
+            .iter()
+            .take(MAX_REPORTED_NODES)
+            .map(|computed| {
+                let source = authored.get(computed.node_id.as_str());
+                AuiSemanticNode {
+                    node_id: computed.node_id.clone(),
+                    rect: computed.rect,
+                    visible: computed.effective_visible,
+                    text: source.and_then(|node| node.text.clone()),
+                    font_size: source
+                        .and_then(|node| node.resolved_style.as_ref())
+                        .and_then(|style| style.metrics.font_size)
+                        .or_else(|| {
+                            source
+                                .and_then(|node| node.style.as_ref())
+                                .and_then(|style| style.font_size)
+                        }),
+                    layout_mode: source
+                        .and_then(|node| node.layout.as_ref().map(|layout| layout.mode)),
+                    text_direction: source
+                        .and_then(|node| node.text_layout.as_ref().map(|layout| layout.direction)),
+                    style_sources: source
+                        .and_then(|node| node.resolved_style.as_ref())
+                        .map(|style| style.sources.clone())
+                        .unwrap_or_default(),
+                }
+            })
+            .collect();
+        Self {
+            simulation_tick,
+            presentation_frame,
+            document_id: present.resolved_document.document_id.clone(),
+            visible_node_count: present.layout.report.visible_node_count,
+            draw_item_count: summary.draw_item_count,
+            action_count: summary.aui_action_count,
+            input_consumed: summary.aui_input_consumed,
+            active_screen_id: summary.aui_active_screen_id.clone(),
+            focused_node_id: interaction.and_then(|state| state.focus.focused_node.clone()),
+            scroll_offsets: interaction
+                .map(|state| {
+                    state
+                        .scroll_offsets
+                        .iter()
+                        .map(|(id, scroll)| (id.clone(), scroll.offset_y))
+                        .collect()
+                })
+                .unwrap_or_default(),
+            virtual_lists: present
+                .virtual_lists
+                .iter()
+                .map(|window| AuiSemanticVirtualList {
+                    list_node_id: window.list_node_id.clone(),
+                    total_item_count: window.total_item_count,
+                    live_instance_count: window.instances.len(),
+                    first_materialized_index: window.first_materialized_index,
+                    last_materialized_index: window.last_materialized_index,
+                    anchor_key: window.anchor.as_ref().map(|anchor| anchor.item_key.clone()),
+                    anchor_local_offset: window.anchor.as_ref().map(|anchor| anchor.local_offset),
+                    focused_key: window.focused_key.clone(),
+                    selected_key: window.selected_key.clone(),
+                    capacity_limited: window.capacity_limited,
+                })
+                .collect(),
+            nodes_truncated: present.layout.computed_nodes.len() > MAX_REPORTED_NODES,
+            nodes,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -54,6 +212,8 @@ pub struct PlaytestCaptureEvidence {
     pub width: u32,
     pub height: u32,
     pub byte_size: u64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub spatial: Option<SpatialObservation>,
 }
 
 pub(crate) struct SemanticPlaytest {
@@ -62,6 +222,9 @@ pub(crate) struct SemanticPlaytest {
     started: Instant,
     input_tick: u64,
     terminal: bool,
+    spatial_ids: Vec<String>,
+    spatial_sample: Option<SpatialObservation>,
+    presented_frame: Option<u64>,
 }
 
 impl SemanticPlaytest {
@@ -83,7 +246,11 @@ impl SemanticPlaytest {
                 .with_path(error.field_path)
         })?;
         if scenario.initial_scene_id != package.active_scene.id {
-            return Err(NativeWindowHostDiagnostic::error("playtest.initial_scene_mismatch", "playtest", "The package active scene must match initialSceneId; do not silently select another scene."));
+            return Err(NativeWindowHostDiagnostic::error(
+                "playtest.initial_scene_mismatch",
+                "playtest",
+                "The package active scene must match initialSceneId; do not silently select another scene.",
+            ));
         }
         Ok(())
     }
@@ -133,8 +300,13 @@ impl SemanticPlaytest {
                     .as_ref()
                     .map(|contract| contract.contract_digest.clone()),
                 simulation_ticks: 0,
+                presented_frame: None,
+                submitted_frame: None,
                 fixed_delta_seconds: engine_runtime::runtime_time::DEFAULT_FIXED_DELTA_TIME,
                 injected_transition_count: 0,
+                aui: None,
+                spatial: None,
+                aui_events: Vec::new(),
                 assertions,
                 captures,
                 capture_evidence: Vec::new(),
@@ -146,6 +318,24 @@ impl SemanticPlaytest {
                 },
                 overall: OutcomeStatus::NotProducedYet,
             },
+            spatial_ids: scenario
+                .assertions
+                .iter()
+                .filter_map(|a| {
+                    engine_runtime::render_geometry::spatial_observation_path(&a.path)
+                        .map(|(id, _, _)| id.to_owned())
+                })
+                .chain(
+                    scenario
+                        .spatial_observation
+                        .iter()
+                        .flat_map(|r| r.entities.iter().cloned()),
+                )
+                .collect::<std::collections::BTreeSet<_>>()
+                .into_iter()
+                .collect(),
+            spatial_sample: None,
+            presented_frame: None,
             scenario,
             started,
             input_tick: 0,
@@ -154,20 +344,26 @@ impl SemanticPlaytest {
     }
 
     pub(crate) fn input_script(scenario: &PlaytestScenario) -> NativePlayerInputScript {
-        NativePlayerInputScript::new(
+        let mut script = NativePlayerInputScript::new(
             &scenario.scenario_id,
             scenario
                 .inputs
                 .iter()
                 .map(|input| {
-                    NativePlayerInputScriptFrame::keys(
+                    let mut frame = NativePlayerInputScriptFrame::keys(
                         input.simulation_tick,
                         input.key_down.clone(),
                         input.key_up.clone(),
-                    )
+                    );
+                    frame.events = input.events.clone();
+                    frame
                 })
                 .collect(),
-        )
+        );
+        if scenario.schema_version == crate::semantic_outcome::PLAYTEST_SCENARIO_V2_SCHEMA_VERSION {
+            script.schema_version = crate::NATIVE_PLAYER_INPUT_SCRIPT_V2_SCHEMA_VERSION.into();
+        }
+        script
     }
 
     #[cfg(feature = "real-window")]
@@ -186,6 +382,19 @@ impl SemanticPlaytest {
         frame: u64,
         report: &NativeWindowHostReport,
     ) {
+        if !self.spatial_ids.is_empty()
+            && (self.presented_frame != Some(frame)
+                || self
+                    .report
+                    .spatial
+                    .as_ref()
+                    .is_none_or(|s| s.committed_frame != frame))
+        {
+            self.report
+                .captures
+                .insert(capture_id, OutcomeStatus::Failed);
+            return;
+        }
         let screenshot = &report.screenshot;
         let evidence = screenshot.path.as_ref().and_then(|path| {
             use std::io::Read;
@@ -210,6 +419,10 @@ impl SemanticPlaytest {
                 width: screenshot.width,
                 height: screenshot.height,
                 byte_size: bytes.len() as u64,
+                spatial: self.report.spatial.clone().map(|mut s| {
+                    s.frame_stage = engine_runtime::render_geometry::SpatialFrameStage::Captured;
+                    s
+                }),
             })
         });
         self.report.captures.insert(
@@ -236,13 +449,12 @@ impl SemanticPlaytest {
             return None;
         }
         self.input_tick = tick;
-        self.report.injected_transition_count += self
-            .scenario
-            .inputs
-            .iter()
-            .find(|input| input.simulation_tick == tick)
-            .map_or(0, |input| input.key_down.len() + input.key_up.len());
         Some(tick)
+    }
+
+    pub(crate) fn record_injected_events(&mut self, count: usize) {
+        // Called only after the resolved event batch entered the common input chain.
+        self.report.injected_transition_count += count;
     }
 
     pub(crate) fn should_stop(&mut self, host_report: &mut NativeWindowHostReport) -> bool {
@@ -273,10 +485,51 @@ impl SemanticPlaytest {
             .push(NativeWindowHostDiagnostic::error(code, "playtest", message));
     }
 
+    pub(crate) fn spatial_level(&self) -> engine_runtime::render_contract::DiagnosticLevel {
+        self.scenario.spatial_observation.as_ref().map_or(
+            engine_runtime::render_contract::DiagnosticLevel::Summary,
+            |r| r.level,
+        )
+    }
+
+    pub(crate) fn spatial_ids(&self) -> &[String] {
+        &self.spatial_ids
+    }
+
+    pub(crate) fn set_spatial_sample(&mut self, sample: Option<SpatialObservation>) {
+        self.spatial_sample = sample;
+        self.presented_frame = None;
+    }
+
+    #[cfg(feature = "real-window")]
+    pub(crate) fn presented(
+        &mut self,
+        frame: u64,
+        plan: &engine_runtime::rhi_command_plan::RhiCommandPlan,
+    ) {
+        use engine_runtime::rhi_command_plan::RhiCommand;
+        // Compare actual submitted view identity and matrices, never infer presentation from World alone.
+        let matches = plan.frame_index == frame && self.report.spatial.as_ref().is_none_or(|s| {
+            s.matches_projection && s.committed_frame == frame && s.view.as_ref().is_some_and(|expected| plan.commands.iter().any(|command| matches!(command,
+                RhiCommand::BeginView { view, .. } if view.view_id == expected.view_id && view.version == expected.version && view.view_matrix == expected.view_matrix && view.projection_matrix == expected.projection_matrix && view.viewport == expected.viewport
+            )))
+        });
+        self.presented_frame = matches.then_some(frame);
+        self.report.presented_frame = self.presented_frame;
+        self.report.submitted_frame = self.presented_frame;
+        if matches {
+            if let Some(spatial) = &mut self.report.spatial {
+                spatial.frame_stage = engine_runtime::render_geometry::SpatialFrameStage::Presented;
+            }
+        }
+    }
+
     pub(crate) fn sample(
         &mut self,
         output: &EngineFrameOutput,
         host_report: &mut NativeWindowHostReport,
+        aui_present: Option<&AuiRuntimePresentOutput>,
+        aui_interaction: Option<&AuiInteractionState>,
     ) {
         if self.terminal {
             return;
@@ -320,8 +573,33 @@ impl SemanticPlaytest {
             }
             Ok(true) => {}
         }
+        self.report.spatial = self
+            .spatial_sample
+            .take()
+            .filter(|s| s.committed_frame == output.frame_index);
         self.report.simulation_ticks = time.fixed_frame_count;
         let tick = self.report.simulation_ticks;
+        self.report.aui = aui_present.map(|present| {
+            AuiSemanticSnapshot::from_committed_frame(
+                tick,
+                output.frame_index,
+                present,
+                &host_report.aui,
+                aui_interaction,
+            )
+        });
+        if aui_present.is_some()
+            && (host_report.aui.aui_input_consumed || host_report.aui.aui_action_count > 0)
+        {
+            self.report.aui_events.push(AuiSemanticEvent {
+                simulation_tick: tick,
+                presentation_frame: output.frame_index,
+                action_count: host_report.aui.aui_action_count,
+                input_consumed: host_report.aui.aui_input_consumed,
+                active_screen_id: host_report.aui.aui_active_screen_id.clone(),
+                focused_node_id: aui_interaction.and_then(|state| state.focus.focused_node.clone()),
+            });
+        }
         let state = output.project_observation_state.as_ref();
         if let Some(state) = state {
             if state.session_id() != self.report.session_id
@@ -363,7 +641,16 @@ impl SemanticPlaytest {
             {
                 continue;
             }
-            let actual = current_state.and_then(|state| state.actual_value(&assertion.path));
+            let engine_actual = self
+                .report
+                .spatial
+                .as_ref()
+                .and_then(|s| s.actual_value(&assertion.path));
+            let actual = if assertion.path.starts_with("engine.") {
+                engine_actual.as_ref()
+            } else {
+                current_state.and_then(|state| state.actual_value(&assertion.path))
+            };
             result.actual = actual.cloned();
             result.simulation_tick = Some(tick);
             result.presentation_frame = Some(output.frame_index);
@@ -420,7 +707,9 @@ fn next_committed_tick(previous: u64, actual: u64) -> Result<bool, &'static str>
     } else if actual == previous + 1 {
         Ok(true)
     } else {
-        Err("Controlled playtest requires one fixed tick per advance; skipped or reversed ticks cannot prove intermediate assertions.")
+        Err(
+            "Controlled playtest requires one fixed tick per advance; skipped or reversed ticks cannot prove intermediate assertions.",
+        )
     }
 }
 
@@ -674,6 +963,95 @@ mod tests {
     }
 
     #[test]
+    fn aui_snapshot_reports_resolved_nodes_and_bounded_output() {
+        let root = AuiNode::new(
+            "root",
+            AuiNodeKind::Panel,
+            AuiRect::fixed_position(0.0, 0.0, 400.0, 200.0),
+        )
+        .with_children(vec!["title".to_string()]);
+        let mut title = AuiNode::new(
+            "title",
+            AuiNodeKind::Text,
+            AuiRect::fixed_position(20.0, 10.0, 300.0, 40.0),
+        )
+        .with_parent("root");
+        title.text = Some("Neon Lab / 实验室".into());
+        title.style = Some(AuiStyle {
+            color: None,
+            text_color: None,
+            font_size: Some(20.0),
+            font: None,
+        });
+        let document = AuiDocument::new(
+            "sample.menu",
+            vec![AuiCanvas::screen_overlay("canvas", 400.0, 200.0, "root")],
+            vec![root, title],
+        );
+        let mut present = AuiRuntimePresenter::present_package_smoke(&document, 3);
+        let spec =
+            engine_runtime::aui_virtual_list::AuiVirtualListSpec::fixed("inventory", 240.0, 24.0)
+                .with_overscan(48.0)
+                .with_max_live_instances(24);
+        let items = engine_runtime::aui_virtual_list::AuiVirtualListSnapshot::new(
+            (0..10_000)
+                .map(|index| {
+                    engine_runtime::aui_virtual_list::AuiVirtualListItem::new(
+                        format!("item-{index:05}"),
+                        None,
+                    )
+                })
+                .collect(),
+        );
+        let mut list_state = engine_runtime::aui_virtual_list::AuiVirtualListState::default();
+        list_state.scroll_offset = 48.0;
+        let mut interaction = AuiInteractionState::default();
+        present.virtual_lists.push(
+            engine_runtime::aui_virtual_list::AuiVirtualListEngine::select_item(
+                &spec,
+                &items,
+                &mut list_state,
+                &mut interaction,
+                "item-00002",
+            )
+            .unwrap(),
+        );
+        let mut summary = NativeAuiPresentSummary::empty();
+        summary.draw_item_count = present.report.draw_item_count;
+        summary.aui_action_count = 1;
+        summary.aui_input_consumed = true;
+        let sample = AuiSemanticSnapshot::from_committed_frame(3, 3, &present, &summary, None);
+        assert_eq!(sample.document_id, "sample.menu");
+        assert_eq!(sample.simulation_tick, 3);
+        assert_eq!(sample.action_count, 1);
+        assert!(sample.input_consumed);
+        assert!(!sample.nodes_truncated);
+        let title = sample
+            .nodes
+            .iter()
+            .find(|node| node.node_id == "title")
+            .unwrap();
+        assert_eq!(title.text.as_deref(), Some("Neon Lab / 实验室"));
+        assert_eq!(title.font_size, Some(20.0));
+        assert!(title.rect.width > 0.0);
+        assert_eq!(sample.virtual_lists.len(), 1);
+        let list = &sample.virtual_lists[0];
+        assert_eq!(list.total_item_count, 10_000);
+        assert!(list.live_instance_count <= 24);
+        assert_eq!(list.anchor_key.as_deref(), Some("item-00002"));
+        assert_eq!(list.selected_key.as_deref(), Some("item-00002"));
+
+        let mut legacy = serde_json::to_value(&sample).unwrap();
+        legacy.as_object_mut().unwrap().remove("virtualLists");
+        for node in legacy["nodes"].as_array_mut().unwrap() {
+            node.as_object_mut().unwrap().remove("fontSize");
+        }
+        let decoded: AuiSemanticSnapshot = serde_json::from_value(legacy).unwrap();
+        assert!(decoded.virtual_lists.is_empty());
+        assert!(decoded.nodes.iter().all(|node| node.font_size.is_none()));
+    }
+
+    #[test]
     fn semantic_playtest_actual_input_post_commit_repeatability_and_negative_expectation() {
         let fixture = fixture();
         let first = run(&fixture, scenario(), false);
@@ -723,6 +1101,48 @@ mod tests {
                 .simulation_tick,
             Some(3)
         );
+    }
+
+    #[test]
+    fn ordered_input_semantic_host_mouse_hold_release_repeat_and_failure_count() {
+        let fixture = fixture();
+        let input_path = fixture.package.join("input/input.default.json");
+        let input = fs::read_to_string(&input_path)
+            .unwrap()
+            .replace("keyboard/Space", "mouse/Left");
+        fs::write(input_path, input).unwrap();
+        let mut value = serde_json::to_value(scenario()).unwrap();
+        value["schemaVersion"] = "playtest-scenario.v2".into();
+        value["inputs"] = serde_json::json!([
+            {"simulationTick":1,"events":[{"type":"pointerMove","position":[10,20]},{"type":"mouseDown","button":"Left"}]},
+            {"simulationTick":2,"events":[{"type":"pointerMove","position":[30,40]}]},
+            {"simulationTick":3,"events":[{"type":"mouseUp","button":"Left"}]}
+        ]);
+        let scenario: PlaytestScenario = serde_json::from_value(value).unwrap();
+        let first = run(&fixture, scenario.clone(), false);
+        assert_eq!(first.exit_code, 0, "{first:#?}");
+        assert_eq!(
+            first
+                .semantic_playtest
+                .as_ref()
+                .unwrap()
+                .injected_transition_count,
+            4
+        );
+        assert_eq!(first.input.pressed_mouse_button_count, 0);
+        assert_eq!(
+            run(&fixture, scenario.clone(), false).semantic_playtest,
+            first.semantic_playtest
+        );
+        let failed = run_with_fault(&fixture, scenario.clone(), 2);
+        assert_ne!(failed.exit_code, 0);
+        assert_eq!(
+            failed.semantic_playtest.unwrap().injected_transition_count,
+            2
+        );
+        let mut wrong = scenario;
+        wrong.assertions[1].equals = ProjectObservationValue::Integer(99);
+        assert_ne!(run(&fixture, wrong, false).exit_code, 0);
     }
 
     #[test]
@@ -823,6 +1243,152 @@ mod tests {
     }
 
     #[test]
+    fn semantic_playtest_spatial_snapshot_never_relabels_an_old_world_frame() {
+        use engine_runtime::render_geometry::{SpatialEntityObservation, SpatialObservation};
+        let fixture = fixture();
+        let package = load_runtime_package(&fixture.package).value.unwrap();
+        let linked = LinkedProjectRuntimeSet::singleton(Arc::new(TestModule(
+            ProjectRuntimeModuleDescriptor::new("test.playtest", "sha256:test-playtest"),
+            0,
+        )))
+        .unwrap();
+        let parts = ProjectRuntimeBootstrap::bind(&package, &linked)
+            .unwrap()
+            .into_parts();
+        let mut host = NativePlayerRuntimeComposition::from_bound("scene-main", parts).host;
+        let request = NativePlayerWindowRunRequest::headless_surface_gate(&fixture.package);
+        let mut report = NativeWindowHostReport::base(&request);
+        let (mut world, mut hydrator) =
+            hydrate_active_scene_for_player(&package, &mut report).unwrap();
+        let mut input = scenario();
+        input.assertions.truncate(1);
+        input.assertions[0].path = "engine.spatial/camera/x".into();
+        input.assertions[0].equals = ProjectObservationValue::Number(0.0);
+        input.assertions[0].from_simulation_tick = 1;
+        input.assertions[0].through_simulation_tick = 2;
+        let mut evaluator =
+            SemanticPlaytest::new(input, &package, "test.playtest.session", Instant::now())
+                .unwrap();
+        for tick in 1..=2 {
+            let output = host.tick_with_runtime_context(
+                EngineFrameInput::new(EngineHostMode::ExportedGame).with_fixed_step_count(1),
+                &mut world,
+                RuntimeFrameContext::new(&package, hydrator.instance_loader_mut()),
+            );
+            evaluator.set_spatial_sample(Some(SpatialObservation {
+                schema_version: "spatial-observation.v1".into(),
+                frame_stage: engine_runtime::render_geometry::SpatialFrameStage::Committed,
+                matches_projection: true,
+                projection: None,
+                pose: None,
+                suspended: false,
+                committed_frame: if tick == 1 {
+                    output.frame_index - 1
+                } else {
+                    output.frame_index
+                },
+                view: None,
+                entities: vec![SpatialEntityObservation {
+                    entity_id: "camera".into(),
+                    runtime_index: 0,
+                    generation: 1,
+                    local: engine_runtime::spatial_contract::Transform3D::identity()
+                        .canonicalize()
+                        .unwrap(),
+                    authored_visible: true,
+                    inherited_visible: true,
+                    mesh: None,
+                    culling: Vec::new(),
+                    culling_summary: Vec::new(),
+                    resources: Vec::new(),
+                    world_matrix: engine_runtime::render_contract::IDENTITY_MATRIX,
+                    world_version: 1,
+                    visible: true,
+                    main_camera: true,
+                    materials: BTreeMap::new(),
+                    bounds: None,
+                    in_view: None,
+                    resource_ready: None,
+                    resource_state: None,
+                }],
+                diagnostics: vec![],
+                truncated: false,
+            }));
+            evaluator.sample(&output, &mut report, None, None);
+            assert_eq!(
+                evaluator.report.assertions[0].status,
+                if tick == 1 {
+                    OutcomeStatus::NotProducedYet
+                } else {
+                    OutcomeStatus::Passed
+                }
+            );
+        }
+    }
+
+    #[cfg(feature = "real-window")]
+    #[test]
+    fn semantic_playtest_capture_rejects_stale_rhi_frame_view_and_unpresented_snapshot() {
+        use engine_runtime::render_contract::{CameraPose, RenderView};
+        use engine_runtime::render_geometry::{SpatialFrameStage, SpatialObservation};
+        use engine_runtime::rhi_command_plan::{RhiCommand, RhiCommandPlan};
+        let fixture = fixture();
+        let package = load_runtime_package(&fixture.package).value.unwrap();
+        let mut input = scenario();
+        input.assertions[0].path = "engine.spatial/camera/mainCamera".into();
+        input.assertions[0].equals = ProjectObservationValue::Bool(true);
+        let mut evaluator =
+            SemanticPlaytest::new(input, &package, "test.playtest.session", Instant::now())
+                .unwrap();
+        let view = RenderView::perspective(1, 640, 480, 60., 0.1, 100.)
+            .evaluate(CameraPose::default())
+            .unwrap();
+        evaluator.report.spatial = Some(SpatialObservation {
+            schema_version: "spatial-observation.v1".into(),
+            frame_stage: SpatialFrameStage::Committed,
+            matches_projection: true,
+            committed_frame: 4,
+            projection: None,
+            pose: None,
+            suspended: false,
+            view: Some(view.clone()),
+            entities: vec![],
+            diagnostics: vec![],
+            truncated: false,
+        });
+        let mut plan = RhiCommandPlan {
+            graph_schedule: None,
+            frame_identity: None,
+            packet_content_version: None,
+            frame_index: 3,
+            graph_id: "test".into(),
+            target_kind: "surface".into(),
+            commands: vec![RhiCommand::BeginView {
+                target: "surface".into(),
+                view: view.into(),
+                depth_target: None,
+            }]
+            .into(),
+            diagnostics: vec![],
+        };
+        evaluator.presented(4, &plan);
+        assert_eq!(evaluator.presented_frame, None);
+        plan.frame_index = 4;
+        evaluator.presented(4, &plan);
+        assert_eq!(evaluator.presented_frame, Some(4));
+        if let RhiCommand::BeginView { view, .. } = &mut plan.commands[0] {
+            std::sync::Arc::make_mut(view).version += 1;
+        }
+        evaluator.presented(4, &plan);
+        assert_eq!(evaluator.presented_frame, None);
+        let request = NativePlayerWindowRunRequest::headless_surface_gate(&fixture.package);
+        let report = NativeWindowHostReport::base(&request);
+        evaluator.record_capture("stale".into(), 4, &report);
+        assert_eq!(evaluator.report.captures["stale"], OutcomeStatus::Failed);
+        assert!(evaluator.report.capture_evidence.is_empty());
+    }
+
+    #[test]
     fn semantic_playtest_zero_multi_step_input_dedup_and_deadline() {
         let fixture = fixture();
         let package = load_runtime_package(&fixture.package).value.unwrap();
@@ -848,15 +1414,13 @@ mod tests {
         .unwrap();
         assert_eq!(playtest.next_input_tick(), Some(1));
         assert_eq!(playtest.next_input_tick(), None);
+        assert_eq!(playtest.report.injected_transition_count, 0);
         let zero = host.tick_with_runtime_context(
             EngineFrameInput::new(EngineHostMode::ExportedGame).with_fixed_step_count(0),
             &mut world,
-            RuntimeFrameContext {
-                package: &package,
-                instance_loader: hydrator.instance_loader_mut(),
-            },
+            RuntimeFrameContext::new(&package, hydrator.instance_loader_mut()),
         );
-        playtest.sample(&zero, &mut report);
+        playtest.sample(&zero, &mut report, None, None);
         assert_eq!(playtest.report.simulation_ticks, 0);
         assert!(playtest
             .report
@@ -866,10 +1430,7 @@ mod tests {
         let committed = host.tick_with_runtime_context(
             EngineFrameInput::new(EngineHostMode::ExportedGame),
             &mut world,
-            RuntimeFrameContext {
-                package: &package,
-                instance_loader: hydrator.instance_loader_mut(),
-            },
+            RuntimeFrameContext::new(&package, hydrator.instance_loader_mut()),
         );
         let mut checkpoint = scenario();
         checkpoint.assertions = vec![crate::semantic_outcome::PlaytestAssertion {
@@ -901,7 +1462,7 @@ mod tests {
                 Instant::now(),
             )
             .unwrap();
-            evaluator.sample(&output, &mut report);
+            evaluator.sample(&output, &mut report, None, None);
             assert_eq!(
                 evaluator.report.assertions[0].status == OutcomeStatus::Passed,
                 variant == 0
@@ -919,12 +1480,9 @@ mod tests {
         let multiple = host.tick_with_runtime_context(
             EngineFrameInput::new(EngineHostMode::ExportedGame).with_fixed_step_count(2),
             &mut world,
-            RuntimeFrameContext {
-                package: &package,
-                instance_loader: hydrator.instance_loader_mut(),
-            },
+            RuntimeFrameContext::new(&package, hydrator.instance_loader_mut()),
         );
-        playtest.sample(&multiple, &mut report);
+        playtest.sample(&multiple, &mut report, None, None);
         assert_eq!(
             playtest.report.outcome.technical,
             OutcomeStatus::Unsupported

@@ -1,0 +1,102 @@
+{
+  "schemaVersion": "release-package-report.v1",
+  "status": "success",
+  "reportLevel": "trace",
+  "projectId": "project-hezi-shoucheng-north-gate",
+  "profile": "release",
+  "target": "windows",
+  "architecture": "x86_64",
+  "displayName": "Hezi Shoucheng",
+  "displayVersion": "1.0.0",
+  "entrypoint": "HeziShoucheng365.exe",
+  "runtimePackage": "data/runtime_package",
+  "reportPath": "G:/gameEngin/samples/tower_defense_project/Projects/hezi_shoucheng\\.aife/reports/release-package/latest.json",
+  "outputDir": "G:/gameEngin/samples/tower_defense_project/Projects/hezi_shoucheng\\Build\\Windows\\x86_64\\release\\HeziShoucheng365",
+  "manifestPath": "G:/gameEngin/samples/tower_defense_project/Projects/hezi_shoucheng\\Build\\Windows\\x86_64\\release\\HeziShoucheng365\\package-manifest.json",
+  "runtimeContentHash": "sha256:e922adbbfd608b1d20741537f39e3f0cddbcd1a6bc7db8b7804324afa33c336d",
+  "releasePayloadHash": "sha256:9e478c4f2f5c07bd5e09f2ac5ad246bb09dd65deef1bf983e23c3ba03bfdf78f",
+  "payloadFileCount": 29,
+  "resourceReadback": {
+    "productName": "Hezi Shoucheng",
+    "companyName": "AI First Engine Studio",
+    "fileDescription": "Hezi Shoucheng tower defense",
+    "productVersion": "1.0.0",
+    "fileVersion": "1.0.0.0",
+    "copyright": "Copyright AI First Engine Studio",
+    "originalFilename": "HeziShoucheng365.exe",
+    "fixedFileVersion": [
+      1,
+      0,
+      0,
+      0
+    ],
+    "fixedProductVersion": [
+      1,
+      0,
+      0,
+      0
+    ],
+    "iconSizes": [
+      16,
+      32,
+      48,
+      64,
+      128,
+      256
+    ],
+    "manifestPresent": true
+  },
+  "application": {
+    "displayName": "Hezi Shoucheng",
+    "executableName": "HeziShoucheng365",
+    "companyName": "AI First Engine Studio",
+    "displayVersion": "1.0.0"
+  },
+  "runtime": {
+    "relativePath": "data/runtime_package",
+    "contentHash": "sha256:e922adbbfd608b1d20741537f39e3f0cddbcd1a6bc7db8b7804324afa33c336d",
+    "formalLoadPassed": true
+  },
+  "entrypointEvidence": {
+    "relativePath": "HeziShoucheng365.exe",
+    "exists": true,
+    "roleVerified": true
+  },
+  "resource": {
+    "stampReadbackVerified": true,
+    "iconSizes": [
+      16,
+      32,
+      48,
+      64,
+      128,
+      256
+    ]
+  },
+  "layout": {
+    "kind": "portable-directory-v1",
+    "portable": true,
+    "includeReports": false,
+    "payloadFileCount": 29
+  },
+  "payloadHash": {
+    "algorithm": "sha256",
+    "value": "sha256:9e478c4f2f5c07bd5e09f2ac5ad246bb09dd65deef1bf983e23c3ba03bfdf78f",
+    "verified": true
+  },
+  "verification": {
+    "manifestValid": true,
+    "inventoryValid": true,
+    "runtimeLoadPassed": true,
+    "resourceReadbackPassed": true,
+    "publishValidated": true,
+    "explicitProcessStatus": "passed",
+    "explicitProcessPassed": true,
+    "processExitCode": 0,
+    "childPlayerExitCode": 0,
+    "childFramesCompleted": 3,
+    "processReportPath": "G:/gameEngin/samples/tower_defense_project/Projects/hezi_shoucheng\\.aife/reports/release-package\\process-verification.json"
+  },
+  "diagnostics": [],
+  "nextAction": "Release package is ready at the published output directory."
+}

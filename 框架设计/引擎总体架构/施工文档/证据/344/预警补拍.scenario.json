@@ -1,0 +1,258 @@
+{
+  "schemaVersion": "playtest-scenario.v1",
+  "scenarioId": "laser-house.warning-phase-344",
+  "initialSceneId": "scene-main",
+  "target": "windows-windowed",
+  "maxSimulationTicks": 952,
+  "maxPresentationFrames": 952,
+  "timeoutMs": 90000,
+  "inputs": [
+    {
+      "simulationTick": 1,
+      "keyDown": [
+        "D"
+      ],
+      "keyUp": []
+    },
+    {
+      "simulationTick": 44,
+      "keyDown": [
+        "Space"
+      ],
+      "keyUp": []
+    },
+    {
+      "simulationTick": 60,
+      "keyDown": [],
+      "keyUp": [
+        "Space"
+      ]
+    },
+    {
+      "simulationTick": 278,
+      "keyDown": [
+        "Space"
+      ],
+      "keyUp": []
+    },
+    {
+      "simulationTick": 319,
+      "keyDown": [],
+      "keyUp": [
+        "D",
+        "Space"
+      ]
+    },
+    {
+      "simulationTick": 400,
+      "keyDown": [
+        "Escape"
+      ],
+      "keyUp": []
+    },
+    {
+      "simulationTick": 401,
+      "keyDown": [],
+      "keyUp": [
+        "Escape"
+      ]
+    },
+    {
+      "simulationTick": 430,
+      "keyDown": [
+        "Escape"
+      ],
+      "keyUp": []
+    },
+    {
+      "simulationTick": 431,
+      "keyDown": [],
+      "keyUp": [
+        "Escape"
+      ]
+    },
+    {
+      "simulationTick": 555,
+      "keyDown": [
+        "D",
+        "Space"
+      ],
+      "keyUp": []
+    },
+    {
+      "simulationTick": 556,
+      "keyDown": [],
+      "keyUp": [
+        "Space"
+      ]
+    },
+    {
+      "simulationTick": 606,
+      "keyDown": [
+        "Space"
+      ],
+      "keyUp": []
+    },
+    {
+      "simulationTick": 607,
+      "keyDown": [],
+      "keyUp": [
+        "Space"
+      ]
+    },
+    {
+      "simulationTick": 652,
+      "keyDown": [
+        "Space"
+      ],
+      "keyUp": []
+    },
+    {
+      "simulationTick": 653,
+      "keyDown": [],
+      "keyUp": [
+        "Space"
+      ]
+    },
+    {
+      "simulationTick": 747,
+      "keyDown": [],
+      "keyUp": [
+        "D"
+      ]
+    },
+    {
+      "simulationTick": 810,
+      "keyDown": [
+        "D"
+      ],
+      "keyUp": []
+    },
+    {
+      "simulationTick": 951,
+      "keyDown": [
+        "Space"
+      ],
+      "keyUp": []
+    },
+    {
+      "simulationTick": 952,
+      "keyUp": [
+        "D",
+        "Space"
+      ]
+    }
+  ],
+  "assertions": [
+    {
+      "assertionId": "anim-walk-a",
+      "path": "house.animation_frame",
+      "equals": 2,
+      "fromSimulationTick": 5,
+      "throughSimulationTick": 30
+    },
+    {
+      "assertionId": "anim-walk-b",
+      "path": "house.animation_frame",
+      "equals": 3,
+      "fromSimulationTick": 5,
+      "throughSimulationTick": 30
+    },
+    {
+      "assertionId": "anim-jump-up",
+      "path": "house.animation_frame",
+      "equals": 4,
+      "fromSimulationTick": 46,
+      "throughSimulationTick": 65
+    },
+    {
+      "assertionId": "anim-jump-down",
+      "path": "house.animation_frame",
+      "equals": 5,
+      "fromSimulationTick": 70,
+      "throughSimulationTick": 90
+    },
+    {
+      "assertionId": "switch",
+      "path": "house.switch",
+      "equals": true,
+      "fromSimulationTick": 145,
+      "throughSimulationTick": 180
+    },
+    {
+      "assertionId": "room-two",
+      "path": "house.room",
+      "equals": 2,
+      "fromSimulationTick": 240,
+      "throughSimulationTick": 270
+    },
+    {
+      "assertionId": "riding",
+      "path": "house.riding",
+      "equals": true,
+      "fromSimulationTick": 350,
+      "throughSimulationTick": 390
+    },
+    {
+      "assertionId": "paused",
+      "path": "house.paused",
+      "equals": true,
+      "fromSimulationTick": 410,
+      "throughSimulationTick": 420
+    },
+    {
+      "assertionId": "resumed",
+      "path": "house.paused",
+      "equals": false,
+      "fromSimulationTick": 435,
+      "throughSimulationTick": 445
+    },
+    {
+      "assertionId": "camera-follow",
+      "path": "house.max_camera",
+      "equals": 18.0,
+      "fromSimulationTick": 620,
+      "throughSimulationTick": 640
+    },
+    {
+      "assertionId": "room-three",
+      "path": "house.room",
+      "equals": 3,
+      "fromSimulationTick": 690,
+      "throughSimulationTick": 720
+    },
+    {
+      "assertionId": "laser-safe",
+      "path": "house.laser_on",
+      "equals": false,
+      "fromSimulationTick": 820,
+      "throughSimulationTick": 850
+    }
+  ],
+  "captures": [
+    {
+      "captureId": "warning-938",
+      "presentationFrame": 938,
+      "required": true,
+      "subjectiveReview": false
+    },
+    {
+      "captureId": "warning-940",
+      "presentationFrame": 940,
+      "required": true,
+      "subjectiveReview": false
+    },
+    {
+      "captureId": "warning-943",
+      "presentationFrame": 943,
+      "required": true,
+      "subjectiveReview": false
+    },
+    {
+      "captureId": "warning-946",
+      "presentationFrame": 946,
+      "required": true,
+      "subjectiveReview": false
+    }
+  ]
+}

@@ -1,0 +1,90 @@
+[
+  {
+    "path": "rust/crates/engine_runtime/src/project_runtime_native_adapter.rs",
+    "sha256": "3C23A144AFB2EF447094A09474E2AEB3DD719437C32D9D05D02DDD2E454E93FC"
+  },
+  {
+    "path": "rust/crates/engine_runtime/src/aui.rs",
+    "sha256": "B840194502735AAEBA417DC490E9AACB72E072B067D62AE31CEA6CE6CF416B30"
+  },
+  {
+    "path": "rust/crates/project_runtime_sdk/src/lib.rs",
+    "sha256": "852D5CD7F4758CB8D733921E749E791CF23E97677CF27CC396C2752E33298B5C"
+  },
+  {
+    "path": "rust/crates/editor_core/src/aui_template.rs",
+    "sha256": "62459FDA1E31C635876BAB952CA929FF6D79C8C1F3F2CACA7165610A21B553B1"
+  },
+  {
+    "path": "rust/crates/editor_core/src/services/aui_service.rs",
+    "sha256": "947F084095D78BE671E339B0EF7440505CDF28EF4ABC48D81A2E0B4884B220EF"
+  },
+  {
+    "path": "samples/complex_shooter_project/RuntimeModule/src/lib.rs",
+    "sha256": "C81DC676AC39DEEC1CA667802AA3DCA2981A82CCA1CDD2EEE3DDAF458AA829AC"
+  },
+  {
+    "path": "samples/complex_shooter_project/RuntimeModule/src/feedback.rs",
+    "sha256": "A8521917C1E99F8EB6AB5A3E919A5D323EF75B967E856CE83327B7D953924EB6"
+  },
+  {
+    "path": "samples/complex_shooter_project/Scenes/Main.scene.json",
+    "sha256": "63645D0D9E1AB1BA054A98FDD5009E9FCD6CCB40E7F2CD5CDBDF1C8CBFD77E8D"
+  },
+  {
+    "path": "samples/complex_shooter_project/AUI/hud.aui.json",
+    "sha256": "68C4D9A03D5B0904005772852A43F7104F35F3BB5A770116175EDB4673674B06"
+  },
+  {
+    "path": "samples/complex_shooter_project/Prefabs/player_bullet.prefab.json",
+    "sha256": "749D720954E97F36C8FA48143DC38AAC112C66211B548F6DD129CEA15EAC1603"
+  },
+  {
+    "path": "samples/complex_shooter_project/Assets/tex-explosion.asset",
+    "sha256": "4D96551DEABCEF7D7ABCB7412893B29AC45D6DEF31FA4F5FBE66D603ADFA63C4"
+  },
+  {
+    "path": "samples/complex_shooter_project/Assets/tex-feedback-glow.asset",
+    "sha256": "E9F46963B845A7B8BF149D52E16B3F222A7961192F01A5E2C2544427FF45C0C4"
+  },
+  {
+    "path": "samples/complex_shooter_project/Assets/tex-feedback-stars.asset",
+    "sha256": "25C044D16BC52543295570A4251D739BE2865B6CDF2D2527BF573056B1598EFD"
+  },
+  {
+    "path": "samples/complex_shooter_project/Assets/Images/feedback-glow.png",
+    "sha256": "6BA402307180B8C8F76FE1300604E4524D3D59708DA1306361A2AFD19B1F4AE5"
+  },
+  {
+    "path": "samples/complex_shooter_project/Assets/Images/feedback-stars.png",
+    "sha256": "B081BDEFB3C7F882ED1F9DB8506D6B6BD8B87A1FDDEBFF7490995CAB767E597B"
+  },
+  {
+    "path": "samples/complex_shooter_project/Assets/Images/generate-feedback.ps1",
+    "sha256": "1D0C739BA43227BEBBC0A7B20310D33A6C7D11D3EBFE5673EF0E27AD60687ED6"
+  },
+  {
+    "path": "samples/complex_shooter_project/Observations/project.observations.json",
+    "sha256": "F5994A0D1C29298B0F7E7B517E83192561FA57424FE65A970051354F53F91F50"
+  },
+  {
+    "path": "samples/complex_shooter_project/Tests/game-loop.scenario.json",
+    "sha256": "0B90D06BE124ADF66E594390FF2BE0801AC00F304267644F14338F5FC6CF8E8A"
+  },
+  {
+    "path": "rust/crates/runtime_player_winit/src/lib.rs",
+    "sha256": "4531C2AAF80001ED0C15BD3B48BB506C4B7D30CF1E9E444F959A6834AE616C46"
+  },
+  {
+    "path": "samples/complex_shooter_project/Tests/pointer-left.input.json",
+    "sha256": "1BC3964FB0EF00E4AC164641F1D20B6858BC10EC50A048C71F939C9EFEFE803C"
+  },
+  {
+    "path": "samples/complex_shooter_project/Tests/pointer-right.input.json",
+    "sha256": "672E58BED6CB4D2F170C07DC8E18463FF750DC316E2BC7BC335FA7636FE82713"
+  },
+  {
+    "path": "samples/complex_shooter_project/README.md",
+    "sha256": "12681519130E354C8411FE684EF9FC6B8172F50C5E0DA81DFB5A3AE8028EAA5C"
+  }
+]

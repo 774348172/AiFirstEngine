@@ -1,0 +1,340 @@
+{
+  "callId": "mcp-call-15",
+  "diagnostics": [],
+  "evidenceRefs": [
+    "engine-run:sha256:7a92d7222011019baa741020dd0e7970bfa19fa58d5449aeaa0038b6a3a17831"
+  ],
+  "operationId": "engine-op-mcp-process-12864-14",
+  "output": {
+    "artifactIdentity": "sha256:8521afe630d7d3b8701c825229d3ae6ecd79468840cca6c99f35ec52a6b5b6d4",
+    "deliveryIdentity": "sha256:433f10d21d1792ca7f70e9a57a439c3d44ef0f6aaadca92638bc906133ba6c3c",
+    "deliveryRef": "engine-delivery:sha256:433f10d21d1792ca7f70e9a57a439c3d44ef0f6aaadca92638bc906133ba6c3c",
+    "diagnostics": [],
+    "outcome": {
+      "delivery": "passed",
+      "gameplay": "passed",
+      "technical": "passed",
+      "visual": "passed"
+    },
+    "overall": "passed",
+    "ownership": {
+      "outputReadersJoined": true,
+      "ownershipKind": "windows_job_object",
+      "processGroupCreated": true,
+      "processGroupReleaseCompleted": true,
+      "rootProcessBound": true,
+      "rootProcessWaitCompleted": true,
+      "terminationRequested": false
+    },
+    "preparationIdentity": "sha256:7936c932058748538b58ec86a3450c98f4bdfa81bb0c08f3fe04bd76d9d01947",
+    "processExitCode": 0,
+    "processExitReason": "completed",
+    "processId": 28844,
+    "projectIdentity": "project-complex-shooter-sample",
+    "reportDigest": "sha256:fe95d234ad61241a340efa5bdaf3de0c88eaf50e6dd4f9d431c7057e720f8e90",
+    "runId": "semantic-playtest:\\\\?\\G:\\gameEngin\\samples\\complex_shooter_project\\Library\\EngineTools\\Deliveries\\engine-op-mcp-process-12864-13\\SemanticEvidence\\Windows:12864:1789055075175045200",
+    "runRef": "engine-run:sha256:7a92d7222011019baa741020dd0e7970bfa19fa58d5449aeaa0038b6a3a17831",
+    "runtimePackageDigest": "sha256:2543bf6b887ca249afe63b5865a5b5b51a69ca91dc24571849fe35636953e62f",
+    "scenarioDigest": "sha256:b9508bd7c4aca8d120ed10a3483d9031ee95740be9a46c8cd904d2dd019bb88c",
+    "scenarioId": "shooter.minimal-game-loop",
+    "scenarioSourceDigest": "sha256:61bd1479ce12aa1706374f00b56a579b43a1fdd3340b65dd3023e2173e4f211d",
+    "scenarioSourcePath": "Tests/game-loop.scenario.json",
+    "semantic": {
+      "assertions": [
+        {
+          "actual": 3,
+          "assertionId": "initial-health",
+          "diagnostic": null,
+          "expected": 3,
+          "path": "player.hp",
+          "presentationFrame": 1,
+          "simulationTick": 1,
+          "status": "passed"
+        },
+        {
+          "actual": false,
+          "assertionId": "initial-live",
+          "diagnostic": null,
+          "expected": false,
+          "path": "game.gameOver",
+          "presentationFrame": 1,
+          "simulationTick": 1,
+          "status": "passed"
+        },
+        {
+          "actual": true,
+          "assertionId": "real-damage",
+          "diagnostic": null,
+          "expected": true,
+          "path": "player.hurt",
+          "presentationFrame": 74,
+          "simulationTick": 74,
+          "status": "passed"
+        },
+        {
+          "actual": true,
+          "assertionId": "real-death",
+          "diagnostic": null,
+          "expected": true,
+          "path": "game.gameOver",
+          "presentationFrame": 384,
+          "simulationTick": 384,
+          "status": "passed"
+        },
+        {
+          "actual": 0,
+          "assertionId": "dead-health",
+          "diagnostic": null,
+          "expected": 0,
+          "path": "player.hp",
+          "presentationFrame": 1100,
+          "simulationTick": 1100,
+          "status": "passed"
+        },
+        {
+          "actual": 0,
+          "assertionId": "dead-no-player-bullets",
+          "diagnostic": null,
+          "expected": 0,
+          "path": "game.bulletCount",
+          "presentationFrame": 1100,
+          "simulationTick": 1100,
+          "status": "passed"
+        },
+        {
+          "actual": 1,
+          "assertionId": "restart-count",
+          "diagnostic": null,
+          "expected": 1,
+          "path": "game.restartCount",
+          "presentationFrame": 1200,
+          "simulationTick": 1200,
+          "status": "passed"
+        },
+        {
+          "actual": false,
+          "assertionId": "restart-live",
+          "diagnostic": null,
+          "expected": false,
+          "path": "game.gameOver",
+          "presentationFrame": 1200,
+          "simulationTick": 1200,
+          "status": "passed"
+        },
+        {
+          "actual": 3,
+          "assertionId": "restart-health",
+          "diagnostic": null,
+          "expected": 3,
+          "path": "player.hp",
+          "presentationFrame": 1200,
+          "simulationTick": 1200,
+          "status": "passed"
+        },
+        {
+          "actual": 0,
+          "assertionId": "restart-score",
+          "diagnostic": null,
+          "expected": 0,
+          "path": "game.score",
+          "presentationFrame": 1200,
+          "simulationTick": 1200,
+          "status": "passed"
+        },
+        {
+          "actual": 1,
+          "assertionId": "restart-wave",
+          "diagnostic": null,
+          "expected": 1,
+          "path": "game.wave",
+          "presentationFrame": 1200,
+          "simulationTick": 1200,
+          "status": "passed"
+        },
+        {
+          "actual": 2,
+          "assertionId": "restart-enemies",
+          "diagnostic": null,
+          "expected": 2,
+          "path": "game.enemyCount",
+          "presentationFrame": 1200,
+          "simulationTick": 1200,
+          "status": "passed"
+        },
+        {
+          "actual": 0,
+          "assertionId": "restart-player-bullets",
+          "diagnostic": null,
+          "expected": 0,
+          "path": "game.bulletCount",
+          "presentationFrame": 1200,
+          "simulationTick": 1200,
+          "status": "passed"
+        },
+        {
+          "actual": 0,
+          "assertionId": "restart-enemy-bullets",
+          "diagnostic": null,
+          "expected": 0,
+          "path": "game.enemyBulletCount",
+          "presentationFrame": 1200,
+          "simulationTick": 1200,
+          "status": "passed"
+        },
+        {
+          "actual": 0,
+          "assertionId": "restart-effects",
+          "diagnostic": null,
+          "expected": 0,
+          "path": "game.effectCount",
+          "presentationFrame": 1200,
+          "simulationTick": 1200,
+          "status": "passed"
+        },
+        {
+          "actual": true,
+          "assertionId": "fire-after-restart",
+          "diagnostic": null,
+          "expected": true,
+          "path": "game.bulletsPresent",
+          "presentationFrame": 1260,
+          "simulationTick": 1260,
+          "status": "passed"
+        },
+        {
+          "actual": true,
+          "assertionId": "score-after-restart",
+          "diagnostic": null,
+          "expected": true,
+          "path": "game.killScored",
+          "presentationFrame": 1260,
+          "simulationTick": 1260,
+          "status": "passed"
+        },
+        {
+          "actual": true,
+          "assertionId": "bounded-after-restart",
+          "diagnostic": null,
+          "expected": true,
+          "path": "game.populationBounded",
+          "presentationFrame": 1500,
+          "simulationTick": 1500,
+          "status": "passed"
+        },
+        {
+          "actual": 0,
+          "assertionId": "release-drains-bullets",
+          "diagnostic": null,
+          "expected": 0,
+          "path": "game.bulletCount",
+          "presentationFrame": 1680,
+          "simulationTick": 1680,
+          "status": "passed"
+        },
+        {
+          "actual": false,
+          "assertionId": "final-live",
+          "diagnostic": null,
+          "expected": false,
+          "path": "game.gameOver",
+          "presentationFrame": 1680,
+          "simulationTick": 1680,
+          "status": "passed"
+        },
+        {
+          "actual": 1,
+          "assertionId": "single-restart",
+          "diagnostic": null,
+          "expected": 1,
+          "path": "game.restartCount",
+          "presentationFrame": 1680,
+          "simulationTick": 1680,
+          "status": "passed"
+        },
+        {
+          "actual": 0,
+          "assertionId": "final-lifetime",
+          "diagnostic": null,
+          "expected": 0,
+          "path": "game.expiredLifetimeCount",
+          "presentationFrame": 1680,
+          "simulationTick": 1680,
+          "status": "passed"
+        }
+      ],
+      "captureEvidence": [
+        {
+          "byteSize": 3687468,
+          "captureId": "loop-100",
+          "height": 720,
+          "path": "\\\\?\\G:\\gameEngin\\samples\\complex_shooter_project\\Library\\EngineTools\\Deliveries\\engine-op-mcp-process-12864-13\\SemanticEvidence\\Windows\\capture-100.png",
+          "presentationFrame": 100,
+          "sessionId": "complex-shooter.runtime-session",
+          "sha256": "sha256:4cd26959af41fedc8be5cfe068786f3824c576955a869c3a4aa4e3b39c1af6af",
+          "simulationTick": 100,
+          "width": 1280
+        },
+        {
+          "byteSize": 3687468,
+          "captureId": "loop-1100",
+          "height": 720,
+          "path": "\\\\?\\G:\\gameEngin\\samples\\complex_shooter_project\\Library\\EngineTools\\Deliveries\\engine-op-mcp-process-12864-13\\SemanticEvidence\\Windows\\capture-1100.png",
+          "presentationFrame": 1100,
+          "sessionId": "complex-shooter.runtime-session",
+          "sha256": "sha256:fd98cf8aca8cd9741551384ad0fe9aa0bd98f298dd663b65a0bd4a56bd481e90",
+          "simulationTick": 1100,
+          "width": 1280
+        },
+        {
+          "byteSize": 3687468,
+          "captureId": "loop-1400",
+          "height": 720,
+          "path": "\\\\?\\G:\\gameEngin\\samples\\complex_shooter_project\\Library\\EngineTools\\Deliveries\\engine-op-mcp-process-12864-13\\SemanticEvidence\\Windows\\capture-1400.png",
+          "presentationFrame": 1400,
+          "sessionId": "complex-shooter.runtime-session",
+          "sha256": "sha256:d71180024ab6845c6b1ff5ea118f0679271d4bbf9a65cf12cd7cd11899831a7c",
+          "simulationTick": 1400,
+          "width": 1280
+        },
+        {
+          "byteSize": 3687468,
+          "captureId": "loop-1680",
+          "height": 720,
+          "path": "\\\\?\\G:\\gameEngin\\samples\\complex_shooter_project\\Library\\EngineTools\\Deliveries\\engine-op-mcp-process-12864-13\\SemanticEvidence\\Windows\\capture-1680.png",
+          "presentationFrame": 1680,
+          "sessionId": "complex-shooter.runtime-session",
+          "sha256": "sha256:ed78e9110a900cf1a81b21be9743bb19632354100a1593eba36eadde419c4d88",
+          "simulationTick": 1680,
+          "width": 1280
+        }
+      ],
+      "captures": {
+        "loop-100": "passed",
+        "loop-1100": "passed",
+        "loop-1400": "passed",
+        "loop-1680": "passed"
+      },
+      "contractDigest": "sha256:7ed7cb759d0c653de985ee3308d4e3ba0d1dfa44b4194f15ced1476718451da8",
+      "fixedDeltaSeconds": 0.01666666753590107,
+      "injectedTransitionCount": 4,
+      "outcome": {
+        "delivery": "not-checked",
+        "gameplay": "passed",
+        "technical": "passed",
+        "visual": "passed"
+      },
+      "overall": "passed",
+      "scenarioId": "shooter.minimal-game-loop",
+      "sessionId": "complex-shooter.runtime-session",
+      "simulationTicks": 1680
+    }
+  },
+  "projectRevision": "sha256:5de7972c57908167b79fda5aae38e78402776d4311c7944716cd2da4f7c8aa30",
+  "receiptRef": null,
+  "recommendedLocalTransitions": [],
+  "replayed": false,
+  "retryability": "not_needed",
+  "schemaVersion": "engine-tool-result.v2",
+  "status": "completed",
+  "toolName": "engine_runtime_observe"
+}

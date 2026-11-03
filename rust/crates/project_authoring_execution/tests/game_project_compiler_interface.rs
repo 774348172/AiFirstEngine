@@ -7,6 +7,10 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
+#[cfg(windows)]
+#[path = "game_project_compiler_interface/generated_content.rs"]
+mod generated_content;
+
 #[test]
 fn game_project_compiler_interface_prepare_is_deterministic_for_same_revision() {
     let fixture = Fixture::new("deterministic", "compiler.fixture.deterministic");
@@ -313,74 +317,108 @@ fn game_project_compiler_assembler_owner_prepares_complex_shooter_runtime_input(
     assert!(prepared.source_file_count() >= 20);
     let input = prepared.runtime_package_build_input();
     assert_eq!(input.scenes.len(), 1);
-    assert_eq!(input.prefabs.len(), 4);
+    // This is a live sample, so assert preservation of the captured source identities,
+    // not the prefab/texture counts from an earlier revision of its gameplay and HUD.
+    let prefab_ids = lease
+        .snapshot()
+        .files
+        .iter()
+        .filter(|file| {
+            file.relative_path.starts_with("Prefabs/")
+                && file.relative_path.ends_with(".prefab.json")
+        })
+        .map(|file| {
+            let source: serde_json::Value = serde_json::from_slice(&file.bytes).unwrap();
+            source["prefabId"].as_str().unwrap().to_string()
+        })
+        .collect::<std::collections::BTreeSet<_>>();
+    assert!(!prefab_ids.is_empty());
+    assert_eq!(input.prefabs.len(), prefab_ids.len());
+    assert_eq!(
+        input
+            .prefabs
+            .iter()
+            .map(|p| p.prefab_id.clone())
+            .collect::<std::collections::BTreeSet<_>>(),
+        prefab_ids
+    );
     assert_eq!(input.aui_documents.len(), 1);
     let hud: engine_runtime::aui::AuiDocument =
         serde_json::from_value(input.aui_documents[0].document.clone()).expect("canonical HUD");
-    let viewport = engine_runtime::aui::AuiComputedRect {
-        x: 0.0,
-        y: 0.0,
-        width: 1280.0,
-        height: 720.0,
-    };
-    let mut rectangles = Vec::new();
-    for node in hud.nodes.iter().filter(|node| node.parent.is_some()) {
-        let rect = node.rect.resolve(viewport);
-        assert!(rect.width > 0.0 && rect.height > 0.0);
-        assert!(
-            rect.width * rect.height < viewport.width * viewport.height / 4.0,
-            "HUD child {} must not cover the game",
-            node.node_id
-        );
-        assert!(
-            rect.x >= 0.0
-                && rect.y >= 0.0
-                && rect.x + rect.width <= viewport.width
-                && rect.y + rect.height <= viewport.height
-        );
-        // Backplates intentionally sit behind controls; controls themselves remain disjoint.
-        if node.kind == engine_runtime::aui::AuiNodeKind::Panel {
-            assert!(!node.consume_input);
-            continue;
-        }
-        for previous in &rectangles {
-            let previous: &engine_runtime::aui::AuiComputedRect = previous;
-            assert!(
-                rect.x + rect.width <= previous.x
-                    || previous.x + previous.width <= rect.x
-                    || rect.y + rect.height <= previous.y
-                    || previous.y + previous.height <= rect.y,
-                "HUD controls must not overlap"
-            );
-        }
-        rectangles.push(rect);
-        assert!(!node.consume_input);
-    }
+    let hud_source = lease
+        .snapshot()
+        .files
+        .iter()
+        .find(|file| file.relative_path == "AUI/hud.aui.json")
+        .unwrap();
+    let source_hud: engine_runtime::aui::AuiDocument =
+        serde_json::from_slice(&hud_source.bytes).unwrap();
+    // Includes every rect, parent, visibility, binding, style and input-consumption field.
+    // Sample-specific overlap/visibility is not an assembler rewrite policy.
+    assert_eq!(
+        serde_json::to_value(&hud).unwrap(),
+        serde_json::to_value(source_hud).unwrap()
+    );
     let paths = hud
         .nodes
         .iter()
         .flat_map(|node| &node.binding_refs)
         .map(|binding| binding.path.as_str())
         .collect::<std::collections::BTreeSet<_>>();
-    assert_eq!(
-        paths,
-        [
-            "game.score_text",
-            "game.wave_text",
-            "game.enemy_count_text",
-            "player.hp_ratio"
-        ]
-        .into_iter()
-        .collect()
-    );
+    for required in [
+        "game.score_text",
+        "game.wave_text",
+        "game.enemy_count_text",
+        "player.hp_ratio",
+    ] {
+        assert!(
+            paths.contains(required),
+            "missing required HUD binding {required}"
+        );
+    }
     assert_eq!(input.input_mappings.len(), 1);
-    assert_eq!(input.assets.len(), 9);
+    let source_assets = lease
+        .snapshot()
+        .files
+        .iter()
+        .filter(|file| {
+            file.relative_path.starts_with("Assets/") && file.relative_path.ends_with(".asset")
+        })
+        .map(|file| serde_json::from_slice::<serde_json::Value>(&file.bytes).unwrap())
+        .collect::<Vec<_>>();
+    let mut asset_ids = source_assets
+        .iter()
+        .map(|asset| asset["assetId"].as_str().unwrap().to_string())
+        .collect::<std::collections::BTreeSet<_>>();
+    asset_ids.insert("scene-main".into());
+    assert_eq!(input.assets.len(), asset_ids.len());
+    assert_eq!(
+        input
+            .assets
+            .iter()
+            .map(|a| a.asset_id.clone())
+            .collect::<std::collections::BTreeSet<_>>(),
+        asset_ids
+    );
     assert!(input.assets.iter().any(|asset| {
         asset.asset_id == "scene-main"
             && asset.asset_type == "scene"
             && asset.runtime_uri == "scenes/scene-main.json"
     }));
-    assert_eq!(input.texture_payloads.len(), 7);
+    let texture_ids = source_assets
+        .iter()
+        .filter(|asset| asset["schemaVersion"] == "texture-asset.v1")
+        .map(|asset| asset["assetId"].as_str().unwrap().to_string())
+        .collect::<std::collections::BTreeSet<_>>();
+    assert_eq!(input.texture_payloads.len(), texture_ids.len());
+    assert_eq!(
+        input
+            .texture_payloads
+            .iter()
+            .map(|texture| texture.metadata.asset_id.clone())
+            .collect::<std::collections::BTreeSet<_>>(),
+        texture_ids
+    );
     assert!(input.texture_payloads.iter().all(|texture| {
         matches!(
             texture.metadata.format.as_str(),
@@ -621,7 +659,7 @@ fn prepare_texture_cache_tracks_shared_dependencies_corruption_and_revision_line
     assert!(first
         .producer_reports()
         .iter()
-        .all(|r| r.cache_status == Status::Miss));
+        .all(|r| r.cache_status == Status::Produced));
     let second = compiler
         .prepare_with_artifact_cache(&lease, TargetProfile::WindowsDev, &cache)
         .unwrap();
@@ -641,12 +679,20 @@ fn prepare_texture_cache_tracks_shared_dependencies_corruption_and_revision_line
     assert_ne!(first.lineage().revision_id(), third.lineage().revision_id());
     assert_eq!(third.prepare_summary()["reusedCount"], 2);
     let payload =
-        Path::new(third.producer_reports()[0].artifact_path.as_ref().unwrap()).join("payload.json");
+        Path::new(third.producer_reports()[0].artifact_path.as_ref().unwrap()).join("payload.bin");
     fs::write(payload, "broken").unwrap();
     let repaired = compiler
         .prepare_with_artifact_cache(&changed_lease, TargetProfile::WindowsDev, &cache)
         .unwrap();
-    assert_eq!(repaired.producer_reports()[0].cache_status, Status::Corrupt);
+    assert_eq!(
+        repaired.producer_reports()[0].cache_status,
+        Status::Produced
+    );
+    assert_eq!(
+        repaired.producer_reports()[0].miss_reason.as_deref(),
+        Some("artifact_payload_digest_mismatch")
+    );
+    assert_eq!(repaired.assembly_digest(), third.assembly_digest());
     assert_eq!(repaired.producer_reports()[1].cache_status, Status::Hit);
     fs::write(
         fixture.path().join("Assets/shared.png"),
@@ -662,7 +708,7 @@ fn prepare_texture_cache_tracks_shared_dependencies_corruption_and_revision_line
     assert!(changed
         .producer_reports()
         .iter()
-        .all(|r| r.cache_status == Status::Miss));
+        .all(|r| r.cache_status == Status::Produced));
     assert_ne!(first.assembly_digest(), changed.assembly_digest());
 }
 
@@ -881,7 +927,7 @@ fn check_invalid_json_profile_schema_and_cross_project_fail_closed() {
         .check(&lease, CheckProfile::new(TargetProfile::AndroidDev))
         .unwrap_err()
         .code()
-        .contains("unsupported"));
+        .contains("build_profile_missing"));
 
     let other = Fixture::new("cross-check", "compiler.other.check");
     let mut other_session =
@@ -943,6 +989,49 @@ fn playtest_scenario_load_uses_retained_manifest_scenario_scene_and_observations
             .load_playtest_scenario()
             .unwrap(),
         first
+    );
+    // Preparation and export retain their own immutable source. Releasing the
+    // capture operation must not invalidate that source or reopen the live tree.
+    drop(lease.release());
+    drop(session);
+    assert_eq!(prepared.load_playtest_scenario().unwrap(), first);
+    assert_eq!(prepared.clone().load_playtest_scenario().unwrap(), first);
+}
+
+#[test]
+fn playtest_ordered_v2_retains_source_and_reports_event_path() {
+    let fixture = playtest_fixture("ordered-v2");
+    let path = fixture.path().join("Tests/default.json");
+    let mut value: serde_json::Value = serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
+    value["schemaVersion"] = "playtest-scenario.v2".into();
+    value["inputs"] = serde_json::json!([{"simulationTick":1,"events":[
+        {"type":"pointerMove","position":[10,20]},
+        {"type":"mouseDown","button":"Left"},
+        {"type":"mouseUp","button":"Left"}
+    ]}]);
+    fs::write(&path, serde_json::to_vec(&value).unwrap()).unwrap();
+    let mut session =
+        project_authoring_execution::ProjectAuthoringSession::open(fixture.path()).unwrap();
+    let lease = full_lease(&mut session, "ordered-v2");
+    let compiler = GameProjectCompiler::bind(&lease).unwrap();
+    let prepared = compiler.prepare(&lease, TargetProfile::WindowsDev).unwrap();
+    let retained = prepared.load_playtest_scenario().unwrap();
+    assert_eq!(retained.scenario().schema_version, "playtest-scenario.v2");
+    assert_eq!(
+        serde_json::to_value(retained.scenario()).unwrap()["inputs"],
+        value["inputs"]
+    );
+    value["inputs"][0]["events"][2]["button"] = "Right".into();
+    fs::write(&path, serde_json::to_vec(&value).unwrap()).unwrap();
+    session.refresh().unwrap();
+    assert_eq!(prepared.load_playtest_scenario().unwrap(), retained);
+    let lease = full_lease(&mut session, "ordered-v2-bad");
+    let compiler = GameProjectCompiler::bind(&lease).unwrap();
+    let prepared = compiler.prepare(&lease, TargetProfile::WindowsDev).unwrap();
+    let error = prepared.load_playtest_scenario().unwrap_err();
+    assert!(
+        format!("{error:?}").contains("/inputs/0/events/2/button"),
+        "{error:?}"
     );
 }
 
@@ -1163,4 +1252,101 @@ impl Drop for Fixture {
     fn drop(&mut self) {
         let _ = fs::remove_dir_all(&self.root);
     }
+}
+
+#[test]
+fn build_preserves_runtime_package_failure() {
+    assert_runtime_package_failure(false);
+}
+
+#[test]
+fn build_preserves_runtime_package_failure_when_report_unwritable() {
+    assert_runtime_package_failure(true);
+}
+
+fn assert_runtime_package_failure(block_report: bool) {
+    let fixture = playtest_fixture("build-first-cause");
+    let contract_path = fixture.path().join("Observations/contract.json");
+    let contract = fs::read_to_string(&contract_path).unwrap();
+    fs::write(
+        &contract_path,
+        contract.replace("game.ready", "laser.0.phase"),
+    )
+    .unwrap();
+    let mut session =
+        project_authoring_execution::ProjectAuthoringSession::open(fixture.path()).unwrap();
+    if block_report {
+        fs::create_dir_all(
+            fixture
+                .path()
+                .join("Build/Windows/dev/reports/build-runtime-package-report.json"),
+        )
+        .unwrap();
+    }
+    let lease = full_lease(&mut session, "build-first-cause");
+    let compiler = GameProjectCompiler::bind(&lease).unwrap();
+    let prepared = compiler.prepare(&lease, TargetProfile::WindowsDev).unwrap();
+    let error = compiler
+        .build(
+            &prepared,
+            BuildRequest::for_project(
+                TargetProfile::WindowsDev,
+                fixture.path().to_path_buf(),
+                project_authoring_execution::ProjectRelativePath::parse("Build/Windows").unwrap(),
+                fixture.path().join("player-build-must-not-start"),
+            )
+            .with_player_verification(false),
+        )
+        .unwrap_err();
+    assert!(
+        error.message().contains("laser.0.phase"),
+        "first cause lost: {error:?}"
+    );
+    assert!(!fixture.path().join("player-build-must-not-start").exists());
+    let report_path = fixture
+        .path()
+        .join("Build/Windows/dev/reports/desktop-export-report.json");
+    let report: project_authoring_execution::DesktopExportReport =
+        serde_json::from_slice(&fs::read(report_path).unwrap()).unwrap();
+    assert_eq!(report.player_exit_reason, "not_started");
+    assert!(report.player_artifact_build_report_path.is_none());
+    assert!(report.player_executable.is_none());
+    assert!(!fixture
+        .path()
+        .join("Build/Windows/dev/package-manifest.json")
+        .exists());
+    if block_report {
+        assert!(report.runtime_package_report_path.is_empty());
+        assert!(report
+            .diagnostics
+            .iter()
+            .any(|d| d.code == "RuntimePackageReportWriteFailed"));
+    } else {
+        let runtime_report: engine_runtime::runtime_package_builder::RuntimePackageBuildReport =
+            serde_json::from_slice(
+                &fs::read(&report.runtime_package_report_path).expect("failure report exists"),
+            )
+            .unwrap();
+        assert_eq!(
+            runtime_report.status,
+            engine_runtime::runtime_package_builder::RuntimePackageBuildStatus::Failed
+        );
+        assert!(runtime_report
+            .diagnostics
+            .iter()
+            .any(|d| d.path.as_deref() == Some("laser.0.phase")));
+    }
+    let first = report
+        .diagnostics
+        .iter()
+        .find(|d| d.path.as_deref() == Some("laser.0.phase"))
+        .unwrap();
+    assert!(first.path.is_some());
+    assert!(first.suggestion.is_some());
+    assert!(
+        error
+            .next_action()
+            .contains(first.suggestion.as_deref().unwrap()),
+        "repair hint lost: {error:?}"
+    );
 }

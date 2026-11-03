@@ -1,0 +1,98 @@
+{
+  "schemaVersion": "254-r2-fc1-production-owner-report.v1",
+  "gate": "R2-FC1",
+  "recordedAt": "2026-07-22T15:16:26.0061629+08:00",
+  "status": "completed",
+  "source": {
+    "root": "H:\\gameEngin-worktrees\\254-r2-fc0-6ec4f62",
+    "branch": "codex/254-r2-fresh-candidate",
+    "parentCommit": "3c583941e45283dee99f4864384aea25726fb797",
+    "parentTree": "8230e0f9df0dc4fee1aa00ff900e0f64435a8d9d",
+    "gitlinkMode": "160000",
+    "gitlinkOid": "e332e0ba6d5c1b7772de57ef69804eebe28ea415",
+    "nestedClean": true
+  },
+  "implementation": {
+    "publicLifecycleInterfacesAdded": 0,
+    "adapterVisibility": "crate-private",
+    "callerArguments": [
+      "--production-candidate-request <absolute-json>",
+      "--production-candidate-result <fresh-absolute-json>"
+    ],
+    "productionModuleConstructionSites": 1,
+    "productionModuleProduceCallSites": 1,
+    "ownerInvocationCountPerRun": 1,
+    "moduleInvocationCountPerRun": 1,
+    "retryCountPerRun": 0,
+    "resultSchemaVersion": "r2-production-candidate-owner-result.v1",
+    "resultLineage": [
+      "requestPath",
+      "requestSha256",
+      "requestByteLength",
+      "canonical request fields",
+      "ownerInvocationCount",
+      "moduleInvocationCount",
+      "retryCount",
+      "canonical CandidateDisposition"
+    ],
+    "terminalVerification": {
+      "sealed": "CandidateRegistryModule reopen and candidate/manifest/package identity match",
+      "failed": "durable failure reopen and operation/diagnostic/cleanup identity match",
+      "result": "typed reread, exact equality, and second terminal reopen"
+    },
+    "atomicPublish": "fresh sibling temp, file sync, Windows MoveFileExW MOVEFILE_WRITE_THROUGH without replace-existing",
+    "files": [
+      {
+        "path": "rust/Cargo.lock",
+        "sha256": "7e08eebc43a930e7fd6f98249b3fd96e2c9d91d40b7157979ce41e2b4ff7377a"
+      },
+      {
+        "path": "rust/crates/editor_host/Cargo.toml",
+        "sha256": "ec83e5cdd5b6fb4fb70a5346800f3a145314cfb8b0611181f2821d8e0947bde1"
+      },
+      {
+        "path": "rust/crates/editor_host/src/main.rs",
+        "sha256": "08f769a13e114c999636f2a2651251cf2e024715fe3b5eb6f5f926384d46991b"
+      },
+      {
+        "path": "rust/crates/editor_host/src/production_candidate_owner.rs",
+        "sha256": "a3669a71b1d307a64fe6faa36cf9784adae80543ab82ef5a16851040dc67468b"
+      },
+      {
+        "path": "rust/crates/editor_host/tests/gateway_process.rs",
+        "sha256": "f633b72cb551d04050b5064630cd91f513e0b024eaab69d3d549b0638a3dc846"
+      },
+      {
+        "path": "rust/crates/ai_tool_gateway/src/production_candidate.rs",
+        "sha256": "316afa25888e1b0b2132d3aa44021b2836075298c15b29e0212de274e246e257"
+      }
+    ]
+  },
+  "verification": {
+    "ownerContract": {
+      "command": "cargo test -p editor_host --test gateway_process production_candidate -- --nocapture",
+      "exitCode": 0,
+      "passed": 3,
+      "failed": 0
+    },
+    "publicGoalModuleSchema": {
+      "command": "cargo test -p ai_tool_gateway --test r2_goal_modules_public_schema -- --nocapture",
+      "exitCode": 0,
+      "passed": 4,
+      "failed": 0
+    },
+    "newWarnings": 0,
+    "newSuppressions": 0
+  },
+  "authorizationBoundary": {
+    "realFreshCandidateProductionOperationStarted": false,
+    "testInvalidSourceFailedDispositionExecuted": true,
+    "candidateIdCreated": false,
+    "activationIdCreated": false,
+    "attemptIdCreated": false,
+    "evaluationStarted": false,
+    "realCodexStarted": false,
+    "fc2Started": false
+  },
+  "nextConstructionGate": "R2-FC2"
+}

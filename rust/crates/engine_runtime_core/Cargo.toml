@@ -1,0 +1,54 @@
+[package]
+name = "engine_runtime_core"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[lib]
+test = false
+doctest = false
+path = "src/lib.rs"
+
+[dependencies]
+glam = "=0.30.10"
+engine_spine_runtime = { path = "../engine_spine_runtime", optional = true }
+engine_content = { path = "../engine_content" }
+engine_text = { path = "../engine_text" }
+engine_render_resources = { path = "../engine_render_resources" }
+engine_input = { path = "../engine_input" }
+project_runtime_abi = { path = "../project_runtime_abi" }
+project_runtime_sdk = { path = "../project_runtime_sdk" }
+serde = { version = "1", features = ["derive", "rc"] }
+serde_json = { version = "1", features = ["raw_value"] }
+unicode-segmentation = "1.12"
+unicode-linebreak = "=0.1.5"
+unicode-bidi = "=0.3.18"
+sha2 = "0.10"
+hound = "3.5.1"
+lyon_tessellation = "=1.0.16"
+taffy = { version = "=0.12.2", default-features = false, features = ["std", "taffy_tree", "flexbox", "grid", "content_size"] }
+wgpu = { version = "26", optional = true }
+bytemuck = { version = "1", features = ["derive"], optional = true }
+pollster = { version = "0.4", optional = true }
+
+[features]
+default = []
+spine = ["dep:engine_spine_runtime"]
+real-wgpu = ["dep:wgpu", "dep:bytemuck", "dep:pollster"]
+
+[dev-dependencies]
+png = "0.17"
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_System_LibraryLoader", "Win32_System_ProcessStatus", "Win32_System_Threading", "Win32_System_Memory", "Win32_Security"] }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+web-time = "=1.1.0"
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+engine_navigation_native = { path = "../engine_navigation_native" }
+oxijolt = { version = "=1.0.1", features = ["cross-platform-deterministic"] }

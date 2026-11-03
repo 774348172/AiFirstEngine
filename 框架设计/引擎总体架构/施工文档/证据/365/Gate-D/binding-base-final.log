@@ -1,0 +1,9 @@
+   Compiling engine_runtime v0.1.0 (G:\gameEngin\rust\crates\engine_runtime)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 12.72s
+     Running unittests src\lib.rs (target\debug\deps\engine_runtime-f2e49a160a17050d.exe)
+
+running 1 test
+test aui_present_cache::tests::aui_animation_binding_changes_remain_base_while_temporarily_overridden ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 773 filtered out; finished in 0.01s
+

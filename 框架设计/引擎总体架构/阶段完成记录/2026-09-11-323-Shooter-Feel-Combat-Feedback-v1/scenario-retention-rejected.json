@@ -1,0 +1,34 @@
+{
+  "id": 4,
+  "jsonrpc": "2.0",
+  "result": {
+    "content": [
+      {
+        "text": "{\"callId\":\"mcp-call-4\",\"diagnostics\":[{\"code\":\"engine_provider.delivery_scenario_unavailable\",\"message\":\"This delivery has no valid frozen playtest scenario.\",\"nextAction\":\"Correct the project scenario and create a new delivery; an old delivery cannot adopt live test input.\"}],\"evidenceRefs\":[],\"operationId\":\"engine-op-323-short-3\",\"output\":null,\"projectRevision\":\"sha256:306d1eade2ec81f5323169e4fa39ec88e5334681cb12a71410f8f3092f56215a\",\"receiptRef\":null,\"recommendedLocalTransitions\":[],\"replayed\":false,\"retryability\":\"not_retryable\",\"schemaVersion\":\"engine-tool-result.v2\",\"status\":\"rejected_by_engine\",\"toolName\":\"engine_runtime_playtest\"}",
+        "type": "text"
+      }
+    ],
+    "isError": true,
+    "structuredContent": {
+      "callId": "mcp-call-4",
+      "diagnostics": [
+        {
+          "code": "engine_provider.delivery_scenario_unavailable",
+          "message": "This delivery has no valid frozen playtest scenario.",
+          "nextAction": "Correct the project scenario and create a new delivery; an old delivery cannot adopt live test input."
+        }
+      ],
+      "evidenceRefs": [],
+      "operationId": "engine-op-323-short-3",
+      "output": null,
+      "projectRevision": "sha256:306d1eade2ec81f5323169e4fa39ec88e5334681cb12a71410f8f3092f56215a",
+      "receiptRef": null,
+      "recommendedLocalTransitions": [],
+      "replayed": false,
+      "retryability": "not_retryable",
+      "schemaVersion": "engine-tool-result.v2",
+      "status": "rejected_by_engine",
+      "toolName": "engine_runtime_playtest"
+    }
+  }
+}

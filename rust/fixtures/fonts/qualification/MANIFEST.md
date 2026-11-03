@@ -1,8 +1,9 @@
 # Font Backend Qualification Fixtures
 
-These files exist only to qualify the editor-side font parser, hinted bitmap
-rasterizer, and MSDF generator. Runtime crates must not load them or depend on
-the parser/rasterizer toolchain.
+These files qualify the font parser, hinted bitmap rasterizer, MSDF generator,
+and 345 runtime shaping tests. Production RuntimePackage input must carry its own
+digest-verified FontFace bytes; runtime must not locate these fixture paths or
+depend on the authoring rasterizer toolchain. Test-only include_bytes is permitted.
 
 ## Noto-derived fixtures
 

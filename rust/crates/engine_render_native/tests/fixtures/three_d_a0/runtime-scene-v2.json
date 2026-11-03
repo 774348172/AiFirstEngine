@@ -1,0 +1,8 @@
+{
+  "schemaVersion":"runtime-scene.v2","id":"main","name":"Spatial contract",
+  "gravity":0,"background":"#000000","skyColor":"#000000","mainCamera":"camera",
+  "entities":[
+    {"schemaVersion":"runtime-entity.v2","id":"cube","name":"Cube","enabled":true,"parentId":null,"siblingOrder":0,"spatial":{"domain":"world3d","transform":{"translation":[0,0,0],"rotationXyzw":[0,0,0,1],"scale":[1,1,1]},"meshRenderer":{"schemaVersion":"mesh-renderer3d.v1","mesh":{"id":"cube","type":"mesh"},"materials":{"surface":{"id":"blue","type":"material"}},"visible":true,"layers":["world"]}},"components":[]},
+    {"schemaVersion":"runtime-entity.v2","id":"camera","name":"Camera","enabled":true,"parentId":null,"siblingOrder":1,"spatial":{"domain":"world3d","transform":{"translation":[0,2,5],"rotationXyzw":[0,0,0,1],"scale":[1,1,1]},"camera":{"schemaVersion":"camera3d.v1","projection":{"kind":"perspective","fovYDegrees":60,"near":0.1,"far":1000},"viewport":"fullWindow","clearColor":[0,0,0,1],"layers":["world"],"enabled":true}},"components":[]}
+  ]
+}

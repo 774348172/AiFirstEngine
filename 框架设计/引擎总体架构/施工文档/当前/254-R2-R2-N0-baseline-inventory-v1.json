@@ -1,0 +1,64 @@
+{
+  "schemaVersion": "254-r2-n0-baseline-inventory.v1",
+  "capturedAt": "2026-07-21",
+  "scope": "R2-N0/R2-N1",
+  "sourceControl": {
+    "gatewayCratePath": "rust/crates/ai_tool_gateway",
+    "gatewayCrateStatus": "untracked",
+    "cleanCheckoutEquivalent": false,
+    "reason": "The active ai_tool_gateway source is not represented by the current Git index, so a clean worktree cannot reproduce the authorized baseline."
+  },
+  "baseline": {
+    "command": "cargo test -p ai_tool_gateway --lib",
+    "cargoTargetDir": "I:/R2N01/baseline-target",
+    "passed": 60,
+    "failed": 0,
+    "ignored": 1,
+    "ignoredTest": "candidate_preparation::tests::r2_g_fresh_environment_preflight"
+  },
+  "legacyPublicLifecycleModules": [
+    "CandidatePreparationModule",
+    "CandidateRegistryModule",
+    "ActivationLeaseModule",
+    "RealCodexAcceptanceModule"
+  ],
+  "legacyPublicRequests": [
+    "CandidatePreparationRequest",
+    "ActivationRequest",
+    "AcceptanceFinalizationInput"
+  ],
+  "externalProductionCallers": [],
+  "externalReferences": [
+    {
+      "path": "rust/crates/editor_host/src/main.rs",
+      "kind": "diagnostic_text",
+      "detail": "Historical disabled-entry message names CandidatePreparationModule and CandidateRegistryModule."
+    }
+  ],
+  "internalTestCallers": [
+    "candidate_preparation.rs",
+    "candidate_registry.rs",
+    "activation_lease.rs",
+    "real_codex_acceptance.rs"
+  ],
+  "targetPublicLifecycleModules": [
+    "ProductionCandidateModule",
+    "CodexOutcomeEvaluationModule"
+  ],
+  "authorization": {
+    "allowed": [
+      "R2-N0 inventory",
+      "R2-N1 schema red tests",
+      "R2-N1 minimal schema and visibility implementation",
+      "R2-N1 targeted tests"
+    ],
+    "forbidden": [
+      "R2-N2 or later implementation",
+      "fresh snapshot",
+      "R2-G",
+      "production candidate",
+      "activation",
+      "real Codex outcome evaluation"
+    ]
+  }
+}

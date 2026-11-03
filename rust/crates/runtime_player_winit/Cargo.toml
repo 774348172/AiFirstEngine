@@ -19,21 +19,28 @@ serde_json = "1"
 winit = { version = "0.30", optional = true }
 wgpu = { version = "26", optional = true }
 pollster = { version = "0.4", optional = true }
+ash = { version = "=0.38.0", default-features = false, features = ["std"], optional = true }
 
 [dev-dependencies]
 project_game_sdk = { path = "../project_game_sdk" }
 png = "0.17"
 
 [features]
+spine = ["engine_runtime/spine"]
 default = []
-real-window = ["dep:winit", "dep:wgpu", "dep:pollster", "engine_runtime/real-wgpu", "dep:rodio"]
+real-window = ["dep:winit", "dep:wgpu", "dep:pollster", "dep:ash", "engine_runtime/real-wgpu", "dep:rodio"]
 
 [target.'cfg(windows)'.dependencies]
 rodio = { version = "0.21.1", default-features = false, features = ["playback"], optional = true }
 windows-sys = { version = "0.59", features = [
     "Win32_Foundation",
     "Win32_Graphics_Gdi",
+    "Win32_System_Diagnostics_Etw",
+    "Win32_System_Performance",
+    "Win32_System_Threading",
+    "Win32_System_Time",
 ] }
 
 [target.'cfg(target_os = "android")'.dependencies]
+rodio = { version = "0.21.1", default-features = false, features = ["playback"], optional = true }
 winit = { version = "0.30", optional = true, features = ["android-game-activity"] }

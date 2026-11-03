@@ -1,4 +1,7 @@
-use editor_core::{ConsistencyReportLevel, SaveReloadRebuildStatus};
+use editor_core::{
+    ConsistencyReportLevel, ReleasePackageBuildRequest, ReleasePackageBuilder,
+    ReleasePackageReportLevel, ReleasePackageStatus, SaveReloadRebuildStatus,
+};
 use project_e2e_gate::{
     run_author_save_child, run_c01_from_blank_creation_gate, run_c01_golden_gate,
     run_reopen_read_child, run_save_reload_rebuild_consistency, validate_existing_c01_project,
@@ -35,9 +38,35 @@ fn run() -> Result<(), String> {
         "c01-golden-gate" => run_c01(flags),
         "c01-validation-only" => run_c01_validation_only(flags),
         "c01-from-blank-creation" => run_c01_from_blank_creation(flags),
+        "release-package" => run_release_package(flags),
         "author-save-child" => run_child_mode(flags, run_author_save_child),
         "reopen-read-child" => run_child_mode(flags, run_reopen_read_child),
         other => Err(format!("unsupported child mode {other}")),
+    }
+}
+
+fn run_release_package(mut flags: BTreeMap<String, String>) -> Result<(), String> {
+    let project = required_path(&mut flags, "--project")?;
+    reject_unused_flags(flags)?;
+    let mut request = ReleasePackageBuildRequest::windows_release(project);
+    request.report_level = ReleasePackageReportLevel::Trace;
+    let report = ReleasePackageBuilder::build(&request);
+    println!(
+        "{}",
+        serde_json::to_string_pretty(&report)
+            .map_err(|error| format!("failed to serialize release package report: {error}"))?
+    );
+    if report.status == ReleasePackageStatus::Success {
+        Ok(())
+    } else {
+        Err(format!(
+            "release package failed: {}",
+            report
+                .diagnostics
+                .first()
+                .map(|diagnostic| diagnostic.message.as_str())
+                .unwrap_or("unknown release-package failure")
+        ))
     }
 }
 

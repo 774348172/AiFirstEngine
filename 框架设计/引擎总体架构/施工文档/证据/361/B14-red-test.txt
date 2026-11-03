@@ -1,0 +1,37 @@
+# 361 B14 首次有效红态
+
+日期：2026-09-26。cwd：`G:/gameEngin/rust`。HEAD：`acaffa8cb95bbb54d093bbf45835a59315c82da5`。
+
+命令：
+
+```powershell
+cargo test -p engine_runtime --test aui_layout_c2_paragraph --locked --message-format short -- b14_retained_c2_publishes_solver_snapshots_without_cloning_geometry
+```
+
+有效失败：
+
+```text
+test b14_retained_c2_publishes_solver_snapshots_without_cloning_geometry ... FAILED
+assertion `left == right` failed
+  left: 1002
+ right: 0
+test result: FAILED. 0 passed; 1 failed; 26 filtered out
+```
+
+命令：
+
+```powershell
+cargo test -p engine_runtime --test aui_retained_layout --locked --message-format short -- b14_single_overflow_flip_does_not_scan_the_full_snapshot_summary
+```
+
+有效失败：
+
+```text
+test b14_single_overflow_flip_does_not_scan_the_full_snapshot_summary ... FAILED
+assertion `left == right` failed
+  left: 1001
+ right: 0
+test result: FAILED. 0 passed; 1 failed; 11 filtered out
+```
+
+结论：1002节点C2变化帧额外clone全部solver snapshot geometry；1001节点retained snapshot中仅1个overflow成员翻转时，旧汇总仍扫描全部1001个geometry。更早一次夹具`instance`未声明`mut`的编译错误不是产品行为红态，已修正且不作为证据。

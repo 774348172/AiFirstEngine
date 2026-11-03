@@ -89,22 +89,75 @@ fn workspace_key(
     channel: &str,
     target: &str,
     environment: &BTreeMap<String, String>,
+    build_profile: ProjectRuntimePlayerArtifactBuildProfile,
 ) -> String {
-    sha256_prefixed(
+    let key = sha256_prefixed(
         &serde_json::to_vec(&(
-            "fixed-engine-player.v1:dev:debug=0:real-window",
+            "fixed-engine-player.v2:debug=0:real-window",
             sdk,
             cargo,
             channel,
             target,
             environment,
+            build_profile.identity(),
         ))
         .expect("engine build identity is serializable"),
-    )
+    );
+    if cfg!(feature = "spine") {
+        sha256_prefixed(format!("{key}|animator.spine.4.2.v1").as_bytes())
+    } else {
+        key
+    }
 }
 
 fn artifact_identity(workspace: &str, source_digest: &str) -> String {
     sha256_prefixed(format!("{workspace}|{source_digest}").as_bytes())
+}
+
+fn engine_player_build_args(
+    build_profile: ProjectRuntimePlayerArtifactBuildProfile,
+) -> Vec<&'static str> {
+    let mut args = vec!["build"];
+    if build_profile == ProjectRuntimePlayerArtifactBuildProfile::Release {
+        args.push("--release");
+    }
+    args.extend([
+        "-p",
+        "runtime_cli",
+        "-p",
+        "engine_runtime_host",
+        "--features",
+        if cfg!(feature = "spine") {
+            "runtime_cli/real-window,runtime_cli/spine,engine_runtime_host/spine"
+        } else {
+            "runtime_cli/real-window"
+        },
+        "--locked",
+        "--offline",
+        "--message-format=json",
+    ]);
+    args
+}
+
+#[cfg(test)]
+#[test]
+fn spine374_b_export_build_args_select_actual_host_backend() {
+    for profile in [
+        ProjectRuntimePlayerArtifactBuildProfile::Dev,
+        ProjectRuntimePlayerArtifactBuildProfile::Release,
+    ] {
+        let args = engine_player_build_args(profile);
+        let feature = args[args.iter().position(|a| *a == "--features").unwrap() + 1];
+        assert!(feature.contains("runtime_cli/real-window"));
+        assert_eq!(
+            feature.contains("runtime_cli/spine"),
+            cfg!(feature = "spine")
+        );
+        assert_eq!(
+            feature.contains("engine_runtime_host/spine"),
+            cfg!(feature = "spine")
+        );
+    }
 }
 
 fn file_hash(path: &Path) -> Result<String, ProjectPlayerArtifactError> {
@@ -113,16 +166,32 @@ fn file_hash(path: &Path) -> Result<String, ProjectPlayerArtifactError> {
     ))
 }
 
-fn receipt_matches(receipt: &Path, identity: &str, host: &Path, dll: &Path) -> bool {
+fn receipt_miss_reason(
+    receipt: &Path,
+    identity: &str,
+    host: &Path,
+    dll: &Path,
+) -> Option<&'static str> {
     let Ok(bytes) = fs::read(receipt) else {
-        return false;
+        return Some("receipt_missing_or_unreadable");
     };
     let Ok(prepared) = serde_json::from_slice::<PreparedEnginePlayer>(&bytes) else {
-        return false;
+        return Some("receipt_invalid");
     };
-    prepared.identity == identity
-        && file_hash(host).ok().as_ref() == Some(&prepared.host_hash)
-        && file_hash(dll).ok().as_ref() == Some(&prepared.dll_hash)
+    if prepared.identity != identity {
+        return Some("build_inputs_changed");
+    }
+    if file_hash(host).ok().as_ref() != Some(&prepared.host_hash)
+        || file_hash(dll).ok().as_ref() != Some(&prepared.dll_hash)
+    {
+        return Some("binary_missing_or_changed");
+    }
+    None
+}
+
+#[cfg(test)]
+fn receipt_matches(receipt: &Path, identity: &str, host: &Path, dll: &Path) -> bool {
+    receipt_miss_reason(receipt, identity, host, dll).is_none()
 }
 
 pub(super) fn prepare_and_stage(
@@ -134,22 +203,36 @@ pub(super) fn prepare_and_stage(
     channel: &str,
     target: &str,
     environment_identity: &BTreeMap<String, String>,
+    build_profile: ProjectRuntimePlayerArtifactBuildProfile,
     timeout_ms: u64,
     capture_limit: usize,
 ) -> Result<(), ProjectPlayerArtifactError> {
-    let key = workspace_key(sdk, cargo, channel, target, environment_identity);
+    let key = workspace_key(
+        sdk,
+        cargo,
+        channel,
+        target,
+        environment_identity,
+        build_profile,
+    );
     let identity = artifact_identity(&key, &engine_sdk_source_digest(sdk)?);
     // The typed engine key already isolates this workspace from project keys.
     // Avoid an extra directory level: MSVC build-script object paths are bounded.
     let workspace = incremental::CompileWorkspace::acquire(build_root, &key)?;
     let target_root = workspace.root.join("target");
-    let output = target_root.join(target).join("debug");
+    let output = target_root
+        .join(target)
+        .join(build_profile.cargo_output_dir());
     let host = output.join("ai_project_runtime_player.exe");
     let dll = output.join("engine_runtime.dll");
     let receipt = workspace.root.join("prepared-engine-player.json");
     report.engine_player_identity = Some(identity.clone());
-    let reusable = receipt_matches(&receipt, &identity, &host, &dll)
-        && validate_engine_runtime_dll(&dll).is_ok();
+    let mut miss_reason = receipt_miss_reason(&receipt, &identity, &host, &dll);
+    if miss_reason.is_none() && validate_engine_runtime_dll(&dll).is_err() {
+        miss_reason = Some("engine_dll_invalid");
+    }
+    let reusable = miss_reason.is_none();
+    report.engine_player_cache_miss_reason = miss_reason.map(str::to_string);
     report.engine_player_cache_status = Some(if reusable { "hit" } else { "rebuilt" }.into());
     if !reusable {
         // No success receipt survives a failed rebuild. Cargo keeps valid dependency objects.
@@ -163,40 +246,17 @@ pub(super) fn prepare_and_stage(
                 fs::remove_file(file).map_err(incremental::io_error)?;
             }
         }
-        let environment = vec![
-            (
-                OsString::from("CARGO_TARGET_DIR"),
-                target_root.into_os_string(),
-            ),
-            (OsString::from("CARGO_NET_OFFLINE"), OsString::from("true")),
-            (OsString::from("CARGO_INCREMENTAL"), OsString::from("1")),
-            (OsString::from("RUSTUP_AUTO_INSTALL"), OsString::from("0")),
-            (OsString::from("RUSTUP_TOOLCHAIN"), OsString::from(channel)),
-            (OsString::from("CARGO_BUILD_TARGET"), OsString::from(target)),
-            (
-                OsString::from("CARGO_PROFILE_DEV_DEBUG"),
-                OsString::from("0"),
-            ),
-        ];
+        let environment =
+            incremental::child_build_environment(&target_root, channel, target, build_profile);
+
         let project_workspace = report
             .compile_workspace
             .replace(workspace.root.display().to_string());
-        let result = run_required_cargo_step(
+        let result = run_required_cargo_step_slice(
             report,
             "build_engine_player",
             cargo,
-            [
-                "build",
-                "-p",
-                "runtime_cli",
-                "-p",
-                "engine_runtime_host",
-                "--features",
-                "runtime_cli/real-window",
-                "--locked",
-                "--offline",
-                "--message-format=json",
-            ],
+            &engine_player_build_args(build_profile),
             sdk,
             &environment,
             timeout_ms,
@@ -272,21 +332,107 @@ mod tests {
         let sdk = Path::new("sdk");
         let cargo = Path::new("cargo");
         let env = BTreeMap::new();
-        let key = workspace_key(sdk, cargo, "1.96", "windows", &env);
+        let key = workspace_key(
+            sdk,
+            cargo,
+            "1.96",
+            "windows",
+            &env,
+            ProjectRuntimePlayerArtifactBuildProfile::Dev,
+        );
         // Project paths/code/AOT are deliberately absent from this interface.
-        assert_eq!(key, workspace_key(sdk, cargo, "1.96", "windows", &env));
-        assert_ne!(key, workspace_key(sdk, cargo, "1.97", "windows", &env));
-        assert_ne!(key, workspace_key(sdk, cargo, "1.96", "other", &env));
+        assert_eq!(
+            key,
+            workspace_key(
+                sdk,
+                cargo,
+                "1.96",
+                "windows",
+                &env,
+                ProjectRuntimePlayerArtifactBuildProfile::Dev,
+            )
+        );
         assert_ne!(
             key,
-            workspace_key(sdk, Path::new("other-cargo"), "1.96", "windows", &env)
+            workspace_key(
+                sdk,
+                cargo,
+                "1.97",
+                "windows",
+                &env,
+                ProjectRuntimePlayerArtifactBuildProfile::Dev,
+            )
+        );
+        assert_ne!(
+            key,
+            workspace_key(
+                sdk,
+                cargo,
+                "1.96",
+                "other",
+                &env,
+                ProjectRuntimePlayerArtifactBuildProfile::Dev,
+            )
+        );
+        assert_ne!(
+            key,
+            workspace_key(
+                sdk,
+                cargo,
+                "1.96",
+                "windows",
+                &env,
+                ProjectRuntimePlayerArtifactBuildProfile::Release,
+            ),
+            "release and dev engine binaries must never share a cache identity"
+        );
+        assert_ne!(
+            key,
+            workspace_key(
+                sdk,
+                Path::new("other-cargo"),
+                "1.96",
+                "windows",
+                &env,
+                ProjectRuntimePlayerArtifactBuildProfile::Dev,
+            )
         );
         let mut changed = env.clone();
         changed.insert("RUSTFLAGS".into(), "-C opt-level=2".into());
-        assert_ne!(key, workspace_key(sdk, cargo, "1.96", "windows", &changed));
+        assert_ne!(
+            key,
+            workspace_key(
+                sdk,
+                cargo,
+                "1.96",
+                "windows",
+                &changed,
+                ProjectRuntimePlayerArtifactBuildProfile::Dev,
+            )
+        );
         assert_ne!(
             artifact_identity(&key, "source1"),
             artifact_identity(&key, "source2")
+        );
+    }
+
+    #[test]
+    fn engine_player_release_profile_uses_release_output_and_command() {
+        assert_eq!(
+            ProjectRuntimePlayerArtifactBuildProfile::Dev.cargo_output_dir(),
+            "debug"
+        );
+        assert_eq!(
+            ProjectRuntimePlayerArtifactBuildProfile::Release.cargo_output_dir(),
+            "release"
+        );
+        assert!(
+            !engine_player_build_args(ProjectRuntimePlayerArtifactBuildProfile::Dev)
+                .contains(&"--release")
+        );
+        assert!(
+            engine_player_build_args(ProjectRuntimePlayerArtifactBuildProfile::Release)
+                .contains(&"--release")
         );
     }
 

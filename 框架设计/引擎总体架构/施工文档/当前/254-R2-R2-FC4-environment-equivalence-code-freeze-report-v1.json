@@ -1,0 +1,79 @@
+{
+  "schemaVersion": "254-r2-fc4-environment-equivalence-code-freeze-report.v1",
+  "gate": "R2-FC4",
+  "recordedAt": "2026-07-22T16:55:00+08:00",
+  "status": "completed",
+  "codeFreeze": {
+    "commit": "35e88d3f3a6e888d8db3b79606ea161f7de07ff8",
+    "tree": "2f2e6d2063e1fcefbf38cb3bd64aec5e0e259feb",
+    "gitlinkMode": "160000",
+    "gitlinkOid": "e332e0ba6d5c1b7772de57ef69804eebe28ea415"
+  },
+  "isolation": {
+    "sourceRoot": "H:\\gameEngin-worktrees\\254-r2-fc4-35e88d3-20260722-c",
+    "cargoTargetDir": "H:\\gameEngin-target\\254-r2-fc4-35e88d3-20260722-c",
+    "tempRoot": "H:\\gameEngin-temp\\254-r2-fc4-35e88d3-20260722-c",
+    "evidenceRoot": "H:\\gameEngin-evidence\\254-r2-fc4-35e88d3-20260722-c",
+    "rootsFreshBefore": true,
+    "rootsMutuallyDisjoint": true,
+    "availableBytesBefore": 733448179712
+  },
+  "preflight": {
+    "schemaVersion": "254-r2-fc4-preflight-result.v1",
+    "status": "passed",
+    "plannedStageCount": 64,
+    "completedStageCount": 64,
+    "nonZeroStageCount": 0,
+    "durationSeconds": 919.83,
+    "resultPath": "H:\\gameEngin-evidence\\254-r2-fc4-35e88d3-20260722-c\\preflight-result.json",
+    "resultSha256": "fdec240706d723eed9ee0e536e1f1f2aad22d4b99d7620c28c92c554a6f002cf",
+    "coverage": [
+      "cargo metadata and formatting",
+      "workspace default and all-features all-targets checks",
+      "owner cumulative scheduling failures",
+      "source and gitlink identity",
+      "release package and production conformance",
+      "durable failure persistence and independent tamper rejection",
+      "cleanup receipts and owned staging absence",
+      "editor_host argument and mode matrix",
+      "affected crate regressions"
+    ]
+  },
+  "infrastructureAttempts": [
+    {
+      "rootSuffix": "20260722-a",
+      "classification": "runner_timeout_configuration",
+      "completedStages": 2,
+      "failedTestStage": null,
+      "reused": false
+    },
+    {
+      "rootSuffix": "20260722-b",
+      "classification": "powershell_native_stderr_capture",
+      "completedStages": 2,
+      "failedTestStage": null,
+      "reused": false
+    }
+  ],
+  "postconditions": {
+    "commitUnchanged": true,
+    "treeUnchanged": true,
+    "outerWorkingTreeClean": true,
+    "outerStagedClean": true,
+    "nestedHeadExact": true,
+    "nestedWorkingTreeClean": true,
+    "generatedSampleBuildRestored": true,
+    "generatedSampleLibraryRemoved": true,
+    "ownedOrphanProcesses": 0
+  },
+  "authorizationBoundary": {
+    "fc5Started": false,
+    "productionCandidateOperationStarted": false,
+    "candidateIdCreated": false,
+    "activationIdCreated": false,
+    "attemptIdCreated": false,
+    "evaluationStarted": false,
+    "realCodexStarted": false
+  },
+  "nextConstructionGate": "R2-FC5"
+}

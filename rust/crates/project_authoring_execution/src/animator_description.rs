@@ -77,7 +77,14 @@ fn valid_name(name: &str) -> bool {
 
 pub(super) fn expand(
     source: &CompilerSourceView,
-) -> Result<CompilerSourceView, GameProjectCompilerError> {
+) -> Result<std::borrow::Cow<'_, CompilerSourceView>, GameProjectCompilerError> {
+    // No description means no expansion. Borrow this operation's immutable
+    // snapshot; do not copy or parse unrelated meshes to build an unused index.
+    if !source.paths().any(|path| {
+        path.starts_with("Animations/") && path.ends_with(".animator-description-2d.json")
+    }) {
+        return Ok(std::borrow::Cow::Borrowed(source));
+    }
     let mut expanded = source.clone();
     let textures: BTreeSet<String> = source
         .paths()
@@ -91,6 +98,9 @@ pub(super) fn expand(
         .paths()
         .filter(|p| p.starts_with("Animations/") && p.ends_with(".animator-description-2d.json"))
     {
+        if super::spine_description::is_v2(source.bytes(path).unwrap()) {
+            continue;
+        }
         let desc: Description = serde_json::from_slice(source.bytes(path).unwrap())
             .map_err(|e| failure(path, "description", e))?;
         if desc.schema != "animator-description-2d.v1"
@@ -273,7 +283,7 @@ pub(super) fn expand(
         }
         expanded.files.remove(path);
     }
-    Ok(expanded)
+    Ok(std::borrow::Cow::Owned(expanded))
 }
 fn insert(
     source: &mut CompilerSourceView,
@@ -297,6 +307,24 @@ fn insert(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn absent_animation_descriptions_borrow_source_backing_without_asset_scan() {
+        for size in [16, 1024, 65536] {
+            let input = CompilerSourceView {
+                files: BTreeMap::from([("Assets/opaque.asset".into(), vec![b'x'; size])]),
+            };
+            let expanded = expand(&input).unwrap();
+            assert_eq!(
+                expanded.bytes("Assets/opaque.asset").unwrap().as_ptr(),
+                input.bytes("Assets/opaque.asset").unwrap().as_ptr(),
+                "no animation work may copy or parse unrelated source backing at {size}"
+            );
+            assert_eq!(
+                *expanded.bytes("Assets/opaque.asset").unwrap(),
+                *input.bytes("Assets/opaque.asset").unwrap()
+            );
+        }
+    }
     fn source(text: &str) -> CompilerSourceView {
         CompilerSourceView {
             files: BTreeMap::from([

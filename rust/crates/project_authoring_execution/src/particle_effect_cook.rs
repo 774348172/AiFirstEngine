@@ -31,13 +31,25 @@ pub(crate) fn cook(
     if paths.is_empty() {
         return Ok(Vec::new());
     }
+    let assets = asset_sources(source).map_err(|e| *e)?;
+    paths
+        .into_iter()
+        .map(|path| cook_one(path, source, &assets))
+        .collect()
+}
+
+type AssetSources<'a> = BTreeMap<String, (&'a str, Value)>;
+
+fn asset_sources(
+    source: &CompilerSourceView,
+) -> Result<AssetSources<'_>, Box<GameProjectCompilerError>> {
     let mut assets = BTreeMap::new();
     let mut guids = BTreeSet::new();
     for path in source.paths().filter(|p| {
         p.starts_with("Assets/") && (p.ends_with(".asset") || p.ends_with(".particle-effect.json"))
     }) {
-        let value: Value = serde_json::from_slice(source.bytes(path).unwrap())
-            .map_err(|e| error(path, "description", e))?;
+        let value = asset_header(source.bytes(path).unwrap())
+            .map_err(|e| Box::new(error(path, "description", e)))?;
         // Match the existing assembler fallback for unrelated legacy assets. Particle
         // descriptions themselves still require an explicit stable ID below.
         let id = value.get("assetId").and_then(Value::as_str).unwrap_or(path);
@@ -45,7 +57,7 @@ pub(crate) fn cook(
             .insert(id.to_string(), (path, value.clone()))
             .is_some()
         {
-            return Err(error(path, "assetId", "duplicate asset identity"));
+            return Err(Box::new(error(path, "assetId", "duplicate asset identity")));
         }
         if let Some(guid) = value
             .get("assetGuid")
@@ -53,14 +65,42 @@ pub(crate) fn cook(
             .and_then(Value::as_str)
         {
             if !guids.insert(guid.to_string()) {
-                return Err(error(path, "assetGuid", "duplicate asset GUID"));
+                return Err(Box::new(error(path, "assetGuid", "duplicate asset GUID")));
             }
         }
     }
-    paths
-        .into_iter()
-        .map(|path| cook_one(path, source, &assets))
-        .collect()
+    Ok(assets)
+}
+
+// Reference validation needs only these headers. In particular a particle in a
+// terrain project must not keep every decoded mesh/collision/nav tree alive.
+// IgnoredAny still parses and rejects malformed JSON without allocating its tree.
+fn asset_header(bytes: &[u8]) -> Result<Value, serde_json::Error> {
+    struct Header;
+    impl<'de> serde::de::Visitor<'de> for Header {
+        type Value = Value;
+        fn expecting(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            f.write_str("an asset object")
+        }
+        fn visit_map<A: serde::de::MapAccess<'de>>(self, mut map: A) -> Result<Value, A::Error> {
+            let mut header = serde_json::Map::new();
+            while let Some(key) = map.next_key::<String>()? {
+                if matches!(
+                    key.as_str(),
+                    "assetId" | "assetGuid" | "asset_guid" | "schemaVersion" | "sourceImage"
+                ) {
+                    header.insert(key, map.next_value::<Value>()?);
+                } else {
+                    map.next_value::<serde::de::IgnoredAny>()?;
+                }
+            }
+            Ok(Value::Object(header))
+        }
+    }
+    let mut decoder = serde_json::Deserializer::from_slice(bytes);
+    let header = serde::Deserializer::deserialize_map(&mut decoder, Header)?;
+    decoder.end()?;
+    Ok(header)
 }
 
 fn cook_one(

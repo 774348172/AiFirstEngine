@@ -221,10 +221,7 @@ fn qualify_case(case: FixtureCase) {
         let output = host.tick_with_runtime_context(
             EngineFrameInput::new(EngineHostMode::EditorPlay),
             &mut world,
-            RuntimeFrameContext {
-                package: &package,
-                instance_loader: hydrator.instance_loader_mut(),
-            },
+            RuntimeFrameContext::new(&package, hydrator.instance_loader_mut()),
         );
         sequence.push(
             world

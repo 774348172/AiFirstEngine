@@ -1,0 +1,111 @@
+{
+  "schemaVersion": "254-r2-fc6-production-operation-terminal-report.v1",
+  "gate": "R2-FC6",
+  "recordedAt": "2026-07-22T18:23:45.5204786+08:00",
+  "status": "terminal_failed",
+  "authorization": {
+    "scope": "one fresh ProductionCandidateModule::produce production operation",
+    "consumed": true,
+    "ownerInvocationCount": 1,
+    "moduleInvocationCount": 1,
+    "retryCount": 0,
+    "fc7Authorized": false,
+    "realEvaluationAuthorized": false
+  },
+  "frozenSource": {
+    "outerRoot": "H:\\gameEngin-worktrees\\254-r2-fc6-35e88d3-20260722-a",
+    "commit": "35e88d3f3a6e888d8db3b79606ea161f7de07ff8",
+    "tree": "2f2e6d2063e1fcefbf38cb3bd64aec5e0e259feb",
+    "gitlinkMode": "160000",
+    "gitlinkOid": "e332e0ba6d5c1b7772de57ef69804eebe28ea415",
+    "outerWorkingTreeCleanAfter": true,
+    "outerStagedCleanAfter": true,
+    "nestedHeadExactAfter": true,
+    "nestedWorkingTreeCleanAfter": true
+  },
+  "producer": {
+    "path": "H:\\gameEngin-target\\254-r2-fc5-35e88d3-20260722-a\\debug\\editor_host.exe",
+    "sha256": "8cc00edcd99aa5e2f64a95d4aef37a3e902045c4dc8b44f12e408b330e4edb12",
+    "byteLength": 62301184
+  },
+  "request": {
+    "path": "H:\\gameEngin-evidence\\254-r2-fc6-35e88d3-20260722-a\\production-candidate-request.json",
+    "sha256": "a8918e21d631d11a46550cf068fd6e3dcea31e9e14e0f4218d0f0025ce416ca7",
+    "byteLength": 614,
+    "schemaVersion": "r2-production-candidate-request.v1",
+    "topLevelFields": [
+      "schemaVersion",
+      "sourceSelection",
+      "targetPlatform",
+      "resources",
+      "totalDeadlineMs"
+    ],
+    "workspaceRoot": "H:\\gameEngin-worktrees\\254-r2-fc6-35e88d3-20260722-a",
+    "includeUntrackedProjectMaterial": true,
+    "targetPlatform": "windows-x64",
+    "workRoot": "H:\\gameEngin-production-work\\254-r2-fc6-35e88d3-20260722-a",
+    "outputRoot": "H:\\gameEngin-production-output\\254-r2-fc6-35e88d3-20260722-a",
+    "maxArtifactBytes": 2147483648,
+    "totalDeadlineMs": 1800000
+  },
+  "invocation": {
+    "receiptPath": "H:\\gameEngin-evidence\\254-r2-fc6-35e88d3-20260722-a\\production-owner-invocation.json",
+    "receiptSha256": "b9c47f9c3c7094f20abd791c217319aeef93589273dee54f15813fe1eaeb340e",
+    "startedAt": "2026-07-22T18:06:15.8702775+08:00",
+    "endedAt": "2026-07-22T18:17:58.9774211+08:00",
+    "durationSeconds": 703.103,
+    "exitCode": 2,
+    "resultPath": "H:\\gameEngin-evidence\\254-r2-fc6-35e88d3-20260722-a\\production-candidate-result.json",
+    "resultSha256": "845745911855b07662de44ac52262f3ebd1c0e1a8f10f793647801ded9c74349",
+    "resultByteLength": 1696,
+    "logPath": "H:\\gameEngin-evidence\\254-r2-fc6-35e88d3-20260722-a\\production-owner.log",
+    "logSha256": "9324944ff166ff2630d62e82907bec4327636344d4cf1cd030b5f183579c303f"
+  },
+  "terminalDisposition": {
+    "status": "failed",
+    "preparationOperationId": "production-candidate-f3e79d487d3f3e339f9139756c66d1a0",
+    "diagnosticCode": "source_snapshot.file_set_mismatch",
+    "message": "Snapshot contains missing or extra material.",
+    "candidateIdCreated": false,
+    "failureArtifactPath": "H:\\gameEngin-production-output\\254-r2-fc6-35e88d3-20260722-a\\failures\\production-candidate-f3e79d487d3f3e339f9139756c66d1a0.json",
+    "failureArtifactDigest": "sha256:6a0f31cbf512f3db4220b92d4451447119ee48a55039ab3f750c08e8dc081695",
+    "failureArtifactRawSha256": "80b56c5bcd823a2377e77ee6440973296c32ab539d66e453143962a221062069",
+    "failureArtifactByteLength": 410318,
+    "canonicalDigestIsSelfExcluding": true,
+    "processResultCount": 11,
+    "allRecordedProcessesCompleted": true,
+    "allRecordedProcessExitCodesZero": true
+  },
+  "cleanup": {
+    "stagingRoot": "H:\\gameEngin-production-work\\254-r2-fc6-35e88d3-20260722-a\\production-candidate-f3e79d487d3f3e339f9139756c66d1a0",
+    "removeAttempted": true,
+    "removeError": null,
+    "stagingAbsentAfterCleanup": true,
+    "stagingActuallyAbsentAtOfflineReview": true,
+    "ownedProcessCleanupConfirmed": true,
+    "activeObservedOwnedProcessesAtOfflineReview": 0,
+    "cleanupMeasurementDigest": "sha256:d020d79e7d39df1182e0fac48bb289cebd59134e8e6a568f7cdae6469ef45d08",
+    "outputRootContainsOnlyDurableFailureArtifact": true,
+    "candidateOutputPresent": false
+  },
+  "rootCause": {
+    "status": "not_diagnosed",
+    "confirmedFact": "The operation terminated with source_snapshot.file_set_mismatch after all 11 recorded child process results completed successfully.",
+    "prohibitedInference": "No implementation root cause is asserted by this terminal report.",
+    "nextAction": "Discuss remediation using the frozen evidence, then require a new explicit construction authorization before any implementation change or future Fresh Candidate operation."
+  },
+  "authorizationOutcome": {
+    "fc6AuthorizationConsumed": true,
+    "fc6Passed": false,
+    "fc6Retried": false,
+    "fc7Executed": false,
+    "productionCandidateCreated": false,
+    "activationExecuted": false,
+    "realCodexEvaluationExecuted": false,
+    "historicalR2GExecuted": false,
+    "fAFBGateGExecuted": false,
+    "threeEngineBChannelExecuted": false
+  },
+  "nextConstructionState": "remediation_discussion_and_new_authorization_pending",
+  "forbiddenActionsExecuted": []
+}

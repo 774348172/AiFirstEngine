@@ -1,0 +1,83 @@
+{
+  "schemaVersion": "254-r2-fc2-directed-negative-matrix-report.v1",
+  "gate": "R2-FC2",
+  "recordedAt": "2026-07-22T15:32:57.9925808+08:00",
+  "status": "completed",
+  "source": {
+    "root": "H:\\gameEngin-worktrees\\254-r2-fc0-6ec4f62",
+    "branch": "codex/254-r2-fresh-candidate",
+    "parentCommit": "bcf12c4d8222fb240042888a341bc8551cbe15e9",
+    "parentTree": "e6965b9ec02df257c80952a6aade34e0da8ecde5",
+    "gitlinkMode": "160000",
+    "gitlinkOid": "e332e0ba6d5c1b7772de57ef69804eebe28ea415",
+    "nestedClean": true,
+    "cargoTargetDir": "H:\\gameEngin-target\\254-r2-fc0-6ec4f62",
+    "tempRoot": "H:\\gameEngin-temp\\254-r2-fc0-6ec4f62"
+  },
+  "coverage": [
+    "unknown request fields",
+    "relative request and result paths",
+    "duplicate request and result arguments",
+    "missing paired arguments",
+    "conflicting editor host modes",
+    "source/work and source/output overlap",
+    "work/output overlap",
+    "preexisting result preservation",
+    "invalid-source durable failed disposition",
+    "cleanup receipt and owned staging absence",
+    "temporary result cleanup",
+    "durable failure artifact tamper rejection",
+    "evaluation/activation/attempt injection rejection"
+  ],
+  "testFile": {
+    "path": "rust/crates/editor_host/tests/gateway_process.rs",
+    "sha256": "4b6911d4deed886486bb4155e4e0820fcbc9f29ca32ae696ad91669c6e129bb6"
+  },
+  "verification": {
+    "gatewayProcess": {
+      "command": "cargo test -p editor_host --test gateway_process -- --nocapture",
+      "exitCode": 0,
+      "passed": 7,
+      "failed": 0
+    },
+    "editorHostBinary": {
+      "command": "cargo test -p editor_host --bin editor_host -- --nocapture",
+      "exitCode": 0,
+      "passed": 18,
+      "failed": 0
+    },
+    "publicGoalModuleSchema": {
+      "command": "cargo test -p ai_tool_gateway --test r2_goal_modules_public_schema -- --nocapture",
+      "exitCode": 0,
+      "passed": 4,
+      "failed": 0
+    },
+    "productionCandidateDomain": {
+      "command": "cargo test -p ai_tool_gateway production_candidate -- --nocapture",
+      "exitCode": 0,
+      "passed": 3,
+      "failed": 0,
+      "ignoredConstructionOnlyHistoricalPreflights": 2
+    },
+    "formatCheck": "passed",
+    "newWarnings": 0,
+    "newSuppressions": 0
+  },
+  "failureConvergence": {
+    "fc2MatrixRuns": 2,
+    "firstFailure": "test asserted the whole workRoot was absent instead of the formal cleanup receipt's per-operation stagingRoot contract",
+    "classification": "test assumption mismatch",
+    "resolution": "assert cleanup measurement fields and exact owned stagingRoot absence, then rerun the focused cumulative failure and the full FC2 matrix",
+    "productionImplementationChanged": false
+  },
+  "authorizationBoundary": {
+    "realFreshCandidateProductionOperationStarted": false,
+    "candidateIdCreated": false,
+    "activationIdCreated": false,
+    "attemptIdCreated": false,
+    "evaluationStarted": false,
+    "realCodexStarted": false,
+    "fc3Started": false
+  },
+  "nextConstructionGate": "R2-FC3"
+}

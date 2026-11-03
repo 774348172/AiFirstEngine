@@ -1,0 +1,41 @@
+{
+  "status": "completed",
+  "qualification": "dirty_source_integration_and_single_fixture_delivery",
+  "date": "2026-09-13",
+  "headForContextOnly": "acaffa8cb95bbb54d093bbf45835a59315c82da5",
+  "uniqueRelevantTestsPassed": 65,
+  "deliveryEvidence": {
+    "path": "G:/gameEngin/.artifacts/335-delivery-consistency/delivery-consistency-evidence.json",
+    "sha256": "f8415368b919d392461e9d1af791fc5847467cd476129c8e39b8c6730088a5e2",
+    "manifestSha256": "678a428bf197d228ce9eb5e5408ddfe3243bcedc07b044e8c1e207fa42672544",
+    "fileCount": 59,
+    "copyAndPostVerificationInventoriesMatch": true,
+    "engineRuntimeExecutionOwner": true,
+    "processId": 25272,
+    "processExitCode": 0,
+    "childExitCode": 0,
+    "frames": 1,
+    "processElapsedMs": 3071,
+    "fixtureScope": "complex_shooter_project with HUD/test.frame observation adaptations",
+    "playerArtifactHash": "sha256:aef17763ece2e8f8e0859ab5df823bba109667e77c8d7d730997747081f0b0d5",
+    "engineRuntimeHash": "sha256:307bf503dc5dfd26945b3d27249b67fdfea5130ea3552d881b7cd2395b414f9f",
+    "projectRuntimeModuleHash": "sha256:0a71244573a1deddf8ce1d820372bfd5adab451cf6a0ed7437bbcbf07dd24a71",
+    "runtimePackageDigest": "sha256:647d9aaeab41673354d88e8f6991684ca1abeb4821acad6d956f5780c766a02c"
+  },
+  "sourceFiles": [
+    {"path":"rust/crates/runtime_cli/src/desktop_dev_package.rs","sha256":"4a142e2650e986c11556586435b0a773d36b625ac16337ad6433a3565b94649c"},
+    {"path":"rust/crates/runtime_cli/src/lib.rs","sha256":"5e86e6c380930df07b4da99ef8a74c2c9624aff53e23cf66bab6ee21cfdb203c"},
+    {"path":"rust/crates/runtime_cli/src/exported_player_verification.rs","sha256":"5324d032729ef2656e00957a020e1ebc6d79c9605100861da77c1525dbc1dc15"},
+    {"path":"rust/crates/runtime_cli/tests/desktop_dev_consistency.rs","sha256":"90a26b73f929f5a0fc2200988114a0fbf41961b12bad0be870dbaf5dc23efa76"},
+    {"path":"rust/crates/runtime_cli/tests/exported_player_process_verification.rs","sha256":"c6b9bdca3c8e3dc724d6175fa5f33221eec48daf01a681043a64f239ce1210c2"},
+    {"path":"rust/crates/project_authoring_execution/src/desktop_export.rs","sha256":"619d01b4aff470b9a6d3fe90159bc7bf19e1d58e1bf65a2d8d17fbfb1c767b62"},
+    {"path":"rust/crates/project_authoring_execution/src/game_project_compiler.rs","sha256":"bd4098ee7bbd6f06cc1337eb5dec9cebdefdfa71caa0bb5bb31b5a74ff11d466"},
+    {"path":"rust/crates/project_authoring_execution/src/game_project_compiler/playtest.rs","sha256":"e303eb706b5b854421db97ab50f0340b36016bd5f4be3e9b3492e79453c4b65c"},
+    {"path":"rust/crates/project_authoring_execution/tests/desktop_export_owner.rs","sha256":"a9d8486ab8e54e61b670295ef8a986405d096fcf03a9007e4bcc93be48907ef7"}
+  ],
+  "installedProviderUpdated": false,
+  "hostConfigChanged": false,
+  "performanceQualified": false,
+  "fullGameplayQualified": false,
+  "historicalMixedArchiveUnmodified": "G:/gameEngin/.artifacts/327-r3-formal-delivery"
+}

@@ -1,0 +1,23 @@
+    Blocking waiting for file lock on build directory
+   Compiling engine_runtime v0.1.0 (G:\gameEngin\rust\crates\engine_runtime)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3m 09s
+     Running unittests src\lib.rs (target\debug\deps\engine_runtime-f2e49a160a17050d.exe)
+
+running 1 test
+test aui::tests::aui_geometry_affine_feedback_shares_hit_draw_and_inherited_clip_matrix ... FAILED
+
+failures:
+
+---- aui::tests::aui_geometry_affine_feedback_shares_hit_draw_and_inherited_clip_matrix stdout ----
+
+thread 'aui::tests::aui_geometry_affine_feedback_shares_hit_draw_and_inherited_clip_matrix' (17824) panicked at crates\engine_runtime\src\aui.rs:13751:9:
+rounded clip leaked: AuiHitTestResult { pointer: AuiPointer { x: 108.884674, y: 64.33966 }, hit_node: Some("parent"), consumed: false, reason: HitNonInteractable, clip_rejected_count: 1 }; child=AuiComputedRect { x: 60.0, y: 50.0, width: 80.0, height: 60.0 }; clip=AuiResolvedClip { transform: Some([-0.8913625, -0.60981387, -0.4065426, 0.5942416, 183.99146, 71.23199]), node_id: "parent", rect: AuiComputedRect { x: 60.0, y: 50.0, width: 80.0, height: 60.0 }, radius: 12.0 }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    aui::tests::aui_geometry_affine_feedback_shares_hit_draw_and_inherited_clip_matrix
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 750 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `-p engine_runtime --lib`

@@ -1,0 +1,194 @@
+warning: variant `IrInterpreter` is never constructed
+  --> crates\engine_runtime\src\project_logic.rs:19:5
+   |
+17 | pub(crate) enum RuleExecutorHint {
+   |                 ---------------- variant in this enum
+18 |     RustAot,
+19 |     IrInterpreter,
+   |     ^^^^^^^^^^^^^
+   |
+   = note: `RuleExecutorHint` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: associated function `validation_only_ir_interpreter` is never used
+  --> crates\engine_runtime\src\project_logic.rs:38:19
+   |
+29 | impl RuleCall {
+   | ------------- associated function in this implementation
+...
+38 |     pub(crate) fn validation_only_ir_interpreter(rule_id: impl Into<String>) -> Self {
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: method `remove_sprite_renderer2d` is never used
+   --> crates\engine_runtime\src\world.rs:529:19
+    |
+160 | impl World {
+    | ---------- method in this implementation
+...
+529 |     pub(crate) fn remove_sprite_renderer2d(&mut self, id: &EntityId) -> Option<SpriteRenderer2D> {
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: `engine_runtime` (lib) generated 3 warnings
+   Compiling engine_runtime v0.1.0 (G:\gameEngin\rust\crates\engine_runtime)
+    Finished `test` profile [unoptimized] target(s) in 8.29s
+     Running tests\aui_controls_m4e.rs (target\debug\deps\aui_controls_m4e-d8f12abde9326b3e.exe)
+
+running 6 tests
+test legacy_v2_document_and_click_action_remain_compatible ... ok
+test composed_button_decorations_do_not_become_activation_targets ... ok
+test toggle_and_slider_share_pointer_keyboard_and_typed_value_payloads ... ok
+test typed_toggle_slider_schema_and_bindings_fail_closed ... ok
+test virtual_list_selection_is_stable_by_key_across_slot_recycling ... ok
+test node_scale_matrix_records_cold_clean_local_and_full_invalidation_counts ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.28s
+
+     Running tests\aui_extension_c4.rs (target\debug\deps\aui_extension_c4-40136a505fe23122.exe)
+
+running 5 tests
+test custom_node_without_a_stable_spec_is_rejected_at_mount ... ok
+test custom_rect_image_and_text_use_the_existing_draw_paths ... ok
+test circular_progress_mesh_reaches_the_real_ui_projection_vertices ... ok
+test radial_custom_layout_overrides_only_direct_child_rects ... ok
+test custom_measure_changes_the_existing_taffy_solver_result ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\aui_layout_c2_paragraph.rs (target\debug\deps\aui_layout_c2_paragraph-e0a699a66a283607.exe)
+
+running 35 tests
+test b11_nested_clip_reset_matches_fresh_runtime_after_local_refresh ... ok
+test b5_shared_canvas_root_keeps_translation_and_clip_indices_separate ... ok
+test b13_presenter_publishes_shared_layout_and_paragraph_map ... ok
+test b4_feedback_cache_invalidates_shared_inputs_resources_scope_and_reset ... ok
+test b3_feedback_settles_to_shared_products_and_refreshes_pressed_then_restored ... ok
+test b5_geometry_font_identity_invalidates_measurements_and_failed_results ... ok
+test b11_clip_radius_and_visibility_propagate_only_through_the_affected_subtree ... ok
+test b10_text_resize_updates_sibling_clip_draw_and_hit_like_a_fresh_presenter ... ok
+test gate_c_invalid_parent_constraints_do_not_poison_restored_mounted_inputs ... ok
+test b14_retained_c2_publishes_solver_snapshots_without_cloning_geometry ... ok
+test gate_c_same_frame_drag_capture_uses_updated_geometry_for_move_and_drop ... ok
+test b12_hit_index_coarsens_queries_and_updates_one_translated_slot ... ok
+test c2_inline_control_labels_and_placeholder_keep_shaping_during_feedback ... ok
+test b8_presenter_and_feedback_reuse_unrelated_draw_and_glyph_fragments ... ok
+test c2_runtime_reuses_paragraphs_across_rebuilds_and_hides_layout_nodes ... ok
+test paragraph_limits_are_frozen ... ok
+test c2_retained_solver_recovers_from_missing_font_and_updates_style_and_viewport ... ok
+test c2_runtime_uses_solver_geometry_for_draw_glyph_and_hit ... ok
+test cache_enforces_entry_byte_and_oversized_item_limits ... ok
+test retained_observer_recovers_from_bounded_change_history ... ok
+test gate_c_layout_input_edits_keep_mounted_solver_and_match_fresh ... ok
+test b11_fixed_text_change_refreshes_one_of_one_thousand_final_nodes_and_paragraphs ... ok
+test gate_c_independent_canvases_share_source_and_only_rebuild_changed_topology ... ok
+test intrinsic_measure_and_final_layout_reuse_one_identity ... ok
+test b5_translation_updates_only_affected_geometry_and_reuses_final_text ... ok
+test max_lines_and_ellipsis_share_the_final_paragraph_product ... ok
+test justify_fills_nonfinal_lines_and_language_direction_change_cache_identity ... ok
+test real_font_multiline_preserves_clusters_breaks_and_line_height ... ok
+test retained_active_false_stays_hidden_after_visibility_write ... ok
+test retained_present_recomputes_clipped_visibility_and_interactable_after_translation ... ok
+test retained_observers_read_one_changed_property_without_draining_each_other ... ok
+test retained_present_connects_text_translation_clip_hit_feedback_and_disposal ... ok
+test retained_translation_revealing_clipped_text_builds_its_final_paragraph ... ok
+test retained_real_font_measure_uses_committed_text_not_authoring_text ... ok
+test gate_c_translation_journal_compares_only_changed_entries_among_ten_thousand_offsets ... ok
+
+test result: ok. 35 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.11s
+
+     Running tests\aui_retained_instance.rs (target\debug\deps\aui_retained_instance-e39f365fbfdf6777.exe)
+
+running 22 tests
+test button_reference_and_style_invalidation_use_the_same_access_contract ... ok
+test changed_and_lifecycle_notifications_obey_barriers_and_silent_writes ... ok
+test dropping_edit_aborts_and_wrong_instance_handle_is_rejected ... ok
+test active_scope_pauses_while_inactive_and_resumes_without_reregistering ... ok
+test active_visibility_and_interactable_are_independent_and_inherit_active ... ok
+test dispose_emits_disable_then_dispose_once_and_releases_subscriptions ... ok
+test binding_owner_rejects_direct_setter_without_changing_other_properties ... ok
+test failed_segment_cannot_partially_commit_or_expose_staged_values ... ok
+test encoded_binding_conflict_and_disposal_are_rechecked_at_commit ... ok
+test encoded_typed_updates_commit_to_retained_instance_only_when_accepted ... ok
+test binding_ownership_can_be_taken_and_released_without_last_writer_wins ... ok
+test invalid_document_is_rejected_before_creating_an_instance ... ok
+test encoded_stale_or_cross_instance_handle_rejects_entire_batch ... ok
+test legacy_import_keeps_source_schema_and_rejects_legacy_c2_mismatch ... ok
+test same_value_and_return_to_original_have_no_work ... ok
+test stale_generation_wrong_value_and_missing_id_are_rejected ... ok
+test text_and_visibility_classify_layout_and_paint_differently ... ok
+test subscription_order_scope_cancellation_and_reentrancy_are_deterministic ... ok
+test typed_setter_reads_own_write_and_leaves_authoring_unchanged ... ok
+test text_budget_failure_rolls_back_and_replacement_releases_budget ... ok
+test property_budget_failure_rejects_the_entire_segment ... ok
+test single_node_change_in_large_instance_only_queues_that_node ... ok
+
+test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.07s
+
+     Running tests\aui_retained_layout.rs (target\debug\deps\aui_retained_layout-f28b9fb6ca3afd42.exe)
+
+running 15 tests
+test retained_aborted_edits_do_not_invalidate_or_change_geometry ... ok
+test retained_hidden_keeps_space_and_collapsed_reflows_then_restores ... ok
+test retained_inactive_subtree_collapses_then_restores_its_own_visibility ... ok
+test retained_failed_measure_keeps_last_good_geometry_and_can_retry ... ok
+test gate_c_fixed_island_keeps_custom_ancestor_layout_dependency ... ok
+test retained_late_canvas_mount_uses_committed_properties_and_dispose_clears_layout ... ok
+test retained_text_updates_size_and_sibling_position_without_reloading_source ... ok
+test retained_mounted_layout_can_move_with_its_exclusive_session_owner ... ok
+test b10_resize_visibility_and_overflow_match_full_collection_across_updates ... ok
+test retained_translation_and_interactable_do_not_relayout ... ok
+test retained_fixed_subtree_reuses_unrelated_measurements_but_content_parent_propagates ... ok
+test b10_single_fixed_node_update_reuses_geometry_storage_among_one_thousand_siblings ... ok
+test retained_clean_and_same_value_frames_do_no_document_or_geometry_work ... ok
+test b14_single_overflow_flip_does_not_scan_the_full_snapshot_summary ... ok
+test gate_c_fixed_manual_island_does_not_visit_one_thousand_sibling_islands ... ok
+
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+
+     Running tests\aui_text_m4d.rs (target\debug\deps\aui_text_m4d-f9f705ae123abf98.exe)
+
+running 6 tests
+test input_editing_uses_utf8_grapheme_offsets_and_composition_is_atomic ... ok
+test typed_spans_roundtrip_and_reject_non_grapheme_boundaries_atomically ... ok
+test windows_real_fonts_shape_arabic_and_indic_without_missing_glyphs ... ok
+test mixed_bidi_uses_visual_runs_and_cluster_safe_geometry ... ok
+test ime_request_uses_focused_input_paragraph_caret_and_disables_when_hidden ... ok
+test rich_text_span_resolves_to_paragraph_metrics_and_final_glyph_paint ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.29s
+
+     Running tests\aui_theme_c2.rs (target\debug\deps\aui_theme_c2-91f28fc7a0285f2c.exe)
+
+running 7 tests
+test state_schema_cannot_smuggle_layout_metrics_into_paint_patch ... ok
+test state_order_is_base_hover_pressed_focus_and_disabled_replaces_pointer_states ... ok
+test state_re_resolve_changes_foreground_without_turning_theme_output_into_inline_override ... ok
+test explicit_style_variant_scope_and_inline_style_have_deterministic_precedence ... ok
+test font_token_selects_the_cooked_bundle_without_overriding_inline_font ... ok
+test typed_tokens_reject_mismatch_missing_and_theme_cycles ... ok
+test builtin_theme_is_versioned_and_covers_default_controls ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\aui_visual_c2.rs (target\debug\deps\aui_visual_c2-978b4774cff2ee5d.exe)
+
+running 4 tests
+test rounded_clip_is_preserved_as_a_shape_chain_for_descendants ... ok
+test resolved_default_control_paint_reaches_ui_projection_data ... ok
+test nine_slice_brush_reaches_overlay_without_renderer_theme_lookup ... ok
+test interaction_state_rebuilds_paint_without_rebuilding_layout ... FAILED
+
+failures:
+
+---- interaction_state_rebuilds_paint_without_rebuilding_layout stdout ----
+
+thread 'interaction_state_rebuilds_paint_without_rebuilding_layout' (32244) panicked at crates\engine_runtime\tests\aui_visual_c2.rs:210:10:
+button paint
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    interaction_state_rebuilds_paint_without_rebuilding_layout
+
+test result: FAILED. 3 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `-p engine_runtime --test aui_visual_c2`

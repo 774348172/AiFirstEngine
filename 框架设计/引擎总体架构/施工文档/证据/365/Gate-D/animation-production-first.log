@@ -1,0 +1,20 @@
+   Compiling project_runtime_sdk v0.1.0 (G:\gameEngin\rust\crates\project_runtime_sdk)
+   Compiling engine_runtime v0.1.0 (G:\gameEngin\rust\crates\engine_runtime)
+error[E0609]: no field `node_id` on type `AuiHitTestResult`
+    --> crates\engine_runtime\src\aui_present_cache.rs:1439:116
+     |
+1439 | ...olved_document, &present.layout, moved[0], moved[1]).node_id.as_deref(), Some("unit"));
+     |                                                         ^^^^^^^ unknown field
+     |
+     = note: available fields are: `pointer`, `hit_node`, `consumed`, `reason`, `clip_rejected_count`
+
+error[E0609]: no field `node_id` on type `AuiHitTestResult`
+    --> crates\engine_runtime\src\aui_present_cache.rs:1449:134
+     |
+1449 | ...resent.layout, feedback_point[0], feedback_point[1]).node_id.as_deref(), Some("unit"));
+     |                                                         ^^^^^^^ unknown field
+     |
+     = note: available fields are: `pointer`, `hit_node`, `consumed`, `reason`, `clip_rejected_count`
+
+For more information about this error, try `rustc --explain E0609`.
+error: could not compile `engine_runtime` (lib test) due to 2 previous errors

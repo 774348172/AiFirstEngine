@@ -1,0 +1,47 @@
+{
+  "schemaVersion": "gate-256-p8r3b-baseline-owner-diagnosis.v1",
+  "status": "passed_no_code_change",
+  "date": "2026-07-24",
+  "scope": "project_e2e_gate baseline owner diagnosis",
+  "test": "tests::llm_provider_repair_complex_shooter_fake_http_e2e",
+  "source": {
+    "commit": "3f188dd30e048772a49aecb72b94e9318a459f2e",
+    "tree": "c7db20edbfb101a43452c25479fac235d15bcbb7",
+    "worktree": "G:\\gameEngin-256-p8r3b-baseline-owner-3f188dd",
+    "initialClean": true,
+    "finalClean": true
+  },
+  "historicalFailure": {
+    "status": "reclassified",
+    "commandStatus": "Failed",
+    "diagnosticCode": "project_runtime.player_artifact_mismatch",
+    "playerDescriptorDigest": "sha256:64710c304433f6e12e5d11eddf7c1dad42dabc348b8c70a3134a936d70e276d4",
+    "runtimePackageExpectedDigest": "sha256:32e83e76c887f4311ae4722d57efeeac34de841981b95c817d00b4ee7bc5584f",
+    "cause": "CARGO_TARGET_DIR was reused across different source worktrees, so the legacy static-linked complex_shooter_player.exe was stale for the consuming RuntimePackage.",
+    "classification": "construction_environment_ownership_defect"
+  },
+  "freshExact": {
+    "runs": 5,
+    "passed": 5,
+    "failed": 0
+  },
+  "freshAllFeatures": {
+    "targetRoot": "G:\\EngineTest\\Gate256P8R3BOwnerFull-3f188dd-target",
+    "tempRoot": "G:\\EngineTest\\Gate256P8R3BOwnerFull-3f188dd-temp",
+    "artifactRoot": "G:\\EngineTest\\Gate256P8R3BOwnerFull-3f188dd-artifact",
+    "libPassed": 63,
+    "libFailed": 0,
+    "libIgnored": 1,
+    "integrationPassed": 5,
+    "integrationFailed": 0,
+    "docTestsFailed": 0,
+    "stdoutSha256": "9990e4dce082fd8fec19426a1cf7ec07d160f7c630b1654712e76e2bcc28876c",
+    "stderrSha256": "02282bfc088cc6a1241e996f13d9ad307bb1fd2edf0b3806db8c4e8d01bca9b5"
+  },
+  "codeChange": "none",
+  "freshP8R3B": {
+    "authorized": false,
+    "executed": false
+  },
+  "nextAction": "Require separate authorization for one fresh P8R3B lifecycle stability qualification using source-exclusive target, TEMP, TMP, and artifact roots."
+}

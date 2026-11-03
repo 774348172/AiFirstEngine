@@ -1,0 +1,26 @@
+{
+  "schemaVersion": "256-p8r3b-lifecycle-stability-qualification-report.v1",
+  "status": "passed",
+  "exactCommit": "7e91de5b3ae4abacef3a14faa92ff4c7474d0b50",
+  "exactTree": "5781059f37b6e3a4ab666331df69552a45bcda48",
+  "exactLifecycle": "1 passed / 0 failed",
+  "stress": "12 passed / 0 failed / 0 timed out / 0 surviving",
+  "projectE2eGateAllFeatures": "63 passed / 0 failed / 1 explicit ignored; integrations 1+1+3 passed; doc tests passed",
+  "editorCoreLifecycleOwners": "42 passed / 0 failed / 1 ignored",
+  "sourceInitialClean": true,
+  "sourceFinalClean": true,
+  "cleanup": {
+    "sourceWorktree": "removed",
+    "cargoTarget": "removed",
+    "cargoTemp": "removed",
+    "stressTemp": "removed",
+    "liveRelevantProcesses": 0
+  },
+  "externalArtifact": "G:\\EngineTest\\Gate256P8R3B-7e91de5-20260724-175543-evidence\\p8r3b-lifecycle-stability-qualification.v1.json",
+  "externalArtifactSha256": "88f0c0e47bed3ec2c0c68244b2b3a0108c00a20fe158cf9aa179550a6881fa8d",
+  "stressArtifactSha256": "258bbad47f32a81175fb82e02cd0228f1cdd99b51b2a68ec9bc0d7eaeaa9c98f",
+  "authorizationConsumed": true,
+  "rerunAllowed": false,
+  "downstreamStarted": false,
+  "nextAction": "separate authorization for P8R3C construction Runner Qualification/Freeze split"
+}

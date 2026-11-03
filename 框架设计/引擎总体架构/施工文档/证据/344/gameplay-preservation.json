@@ -1,0 +1,14 @@
+{
+  "gameplayEntityCount": 17,
+  "geometryAndGameplayComponentsIdentical": true,
+  "unchangedFiles": [
+    "Input\\input.default.json",
+    "Rules\\laser_house.rule.json",
+    "Rules\\rule-manifest.json",
+    "Animations\\README.md",
+    "Animations\\robot.animator-description-2d.json",
+    "BuildProfiles\\windows.dev.json",
+    "Observations\\project.observations.json"
+  ],
+  "stage": "all"
+}

@@ -1,0 +1,41 @@
+{
+  "repository": "KhronosGroup/glTF-Sample-Assets",
+  "commit": "81e8b567643b5166e6ff40024e4ff71ad4b18676",
+  "files": [
+    {
+      "file": "UPSTREAM-README.md",
+      "url": "https://api.github.com/repos/KhronosGroup/glTF-Sample-Assets/contents/Models/Box/README.md?ref=81e8b567643b5166e6ff40024e4ff71ad4b18676",
+      "gitBlob": "f522414e2090580bcb127020c5a13067fd182e44",
+      "sha256": "ae63b4ad1c8136b881686e66faf930c9b9e71fa823a7a4b1738076ae06739c35",
+      "bytes": 898
+    },
+    {
+      "file": "glTF-Binary/Box.glb",
+      "url": "https://api.github.com/repos/KhronosGroup/glTF-Sample-Assets/contents/Models/Box/glTF-Binary/Box.glb?ref=81e8b567643b5166e6ff40024e4ff71ad4b18676",
+      "gitBlob": "95ec886b6b92b134291fd41d34ac9d5349306e0a",
+      "sha256": "ed52f7192b8311d700ac0ce80644e3852cd01537e4d62241b9acba023da3d54e",
+      "bytes": 1664
+    },
+    {
+      "file": "glTF/Box.gltf",
+      "url": "https://api.github.com/repos/KhronosGroup/glTF-Sample-Assets/contents/Models/Box/glTF/Box.gltf?ref=81e8b567643b5166e6ff40024e4ff71ad4b18676",
+      "gitBlob": "7f603f07fcca2aa7992d0f831519e7c2791c5506",
+      "sha256": "4a0d69eecfce0672a50b71dc218cbacec6c53fe2445040c235c6314b1b2c41b9",
+      "bytes": 2898
+    },
+    {
+      "file": "glTF/Box0.bin",
+      "url": "https://api.github.com/repos/KhronosGroup/glTF-Sample-Assets/contents/Models/Box/glTF/Box0.bin?ref=81e8b567643b5166e6ff40024e4ff71ad4b18676",
+      "gitBlob": "d7798abb5161eca17ac8a6883a1f53c6786b484d",
+      "sha256": "3266a8e39b9f425b3341cbe5eec7849f44310256bfa651e6b8b40c85ce0ccafb",
+      "bytes": 648
+    },
+    {
+      "file": "metadata.json",
+      "url": "https://api.github.com/repos/KhronosGroup/glTF-Sample-Assets/contents/Models/Box/metadata.json?ref=81e8b567643b5166e6ff40024e4ff71ad4b18676",
+      "gitBlob": "05c31b0b549fb78c5fc046089194a820b1e35a50",
+      "sha256": "f5867d1cb319a739e434cce40177c7da65701e747198eef97da025610eac9af6",
+      "bytes": 624
+    }
+  ]
+}

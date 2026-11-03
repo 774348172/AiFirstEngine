@@ -1,0 +1,30 @@
+   Compiling laser_house_project_runtime v0.1.0 (G:\gameEngin\samples\laser_house_project\RuntimeModule)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.52s
+     Running unittests src\lib.rs (samples\laser_house_project\RuntimeModule\target\debug\deps\laser_house_project_runtime-ba49c4655ba6501a.exe)
+
+running 16 tests
+test tests::final_room_periodic_hazard_win_and_restart ... ok
+test tests::animator2d_project_submits_semantics_and_one_death_override ... ok
+test tests::audio_aui_controls_commit_immediately_and_fixed_update_does_not_duplicate ... ok
+test tests::laser_death_and_manual_restart_restore_all_room_state ... ok
+test tests::audio_pause_resume_and_restart_submit_ordered_controls_without_replay ... ok
+test tests::fourth_room_is_reached_before_victory_and_final_restart_returns_to_first ... ok
+test tests::art_hud_clock_freezes_on_pause_and_resets_only_for_new_run ... ok
+test tests::art_hud_resolves_only_active_paths_and_reuses_frozen_values ... ok
+test tests::full_three_room_route_from_spawn_without_teleport ... ok
+test tests::audio_events_submit_once_and_sources_bind_real_clips ... ok
+test tests::particle_events_follow_world_position_once_and_reset_clears_every_source ... ok
+test tests::art_visuals_follow_laser_state_room_visibility_and_original_collision ... ok
+test tests::platform_carries_jump_detaches_and_pausing_freezes_time ... ok
+test tests::scene_driven_room_one_blocks_then_jump_switch_and_exit_work ... ok
+test tests::level_parameter_change_and_fourth_room_reuse_need_no_engine_changes ... ok
+test tests::authored_level_route ... ok
+
+test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+   Doc-tests laser_house_project_runtime
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

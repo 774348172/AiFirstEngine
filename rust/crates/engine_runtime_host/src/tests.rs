@@ -16,6 +16,7 @@ fn request(mode: NativePlayerWindowRunMode) -> EngineRuntimeExecutionRequest {
 
 fn scenario(target: PlaytestTarget) -> PlaytestScenario {
     PlaytestScenario {
+        spatial_observation: None,
         schema_version: PLAYTEST_SCENARIO_SCHEMA_VERSION.into(),
         scenario_id: "engine-dll-test".into(),
         initial_scene_id: "scene.main".into(),
@@ -147,6 +148,20 @@ fn execution_missing_package_reports_failure_in_requested_mode() {
     assert_ne!(report.exit_code, 0);
     assert!(!report.diagnostics.is_empty());
     fs::remove_file(report_path).unwrap();
+    fs::remove_dir(root).unwrap();
+}
+
+#[test]
+fn staged_module_lookup_preserves_package_loader_first_cause() {
+    let root = temp_directory();
+    fs::write(root.join("manifest.json"), b"{}").unwrap();
+    let error = load_project_runtime_module(&root)
+        .err()
+        .expect("invalid package");
+    assert!(error.contains("manifest.json"), "{error}");
+    assert!(error.contains("schemaVersion"), "{error}");
+    assert!(!error.contains("no Project RuntimeModule DLL"), "{error}");
+    fs::remove_file(root.join("manifest.json")).unwrap();
     fs::remove_dir(root).unwrap();
 }
 

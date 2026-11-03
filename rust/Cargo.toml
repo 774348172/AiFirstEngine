@@ -10,6 +10,12 @@ members = [
   "crates/engine_public_api",
   "crates/project_runtime_sdk",
   "crates/project_game_sdk",
+  "crates/engine_content",
+  "crates/engine_text",
+  "crates/engine_render_resources",
+  "crates/engine_navigation_native",
+  "crates/engine_runtime_core",
+  "crates/engine_render_native",
   "crates/engine_runtime",
   "crates/engine_runtime_host",
   "crates/editor_ui_model",
@@ -25,8 +31,10 @@ members = [
   "crates/runtime_cli",
   "crates/runtime_player_winit",
   "crates/runtime_player_android",
+  "crates/runtime_player_web",
   "project_players/empty",
 ]
+exclude = ["crates/engine_spine_runtime"]
 resolver = "2"
 
 [workspace.package]
@@ -40,3 +48,13 @@ warnings = "warn"
 [workspace.lints.clippy]
 all = { level = "warn", priority = -1 }
 correctness = { level = "deny", priority = 0 }
+
+# Development correctness feedback only. Release performance keeps Cargo's
+# unchanged release profile. A separate name preserves the existing test cache.
+[profile.dev-fast]
+inherits = "dev"
+debug = "line-tables-only"
+
+# Same-version lifetime correction; see native vendor provenance.
+[patch.crates-io]
+wgpu = { path = "crates/engine_render_native/vendor/wgpu" }

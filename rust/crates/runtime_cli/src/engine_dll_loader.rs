@@ -8,7 +8,8 @@ use std::io::Read;
 use std::path::Path;
 use windows_sys::Win32::Foundation::{FreeLibrary, HMODULE};
 use windows_sys::Win32::System::LibraryLoader::{
-    GetProcAddress, LoadLibraryExW, LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR, LOAD_LIBRARY_SEARCH_SYSTEM32,
+    GetModuleHandleExW, GetProcAddress, LoadLibraryExW, GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS,
+    GET_MODULE_HANDLE_EX_FLAG_PIN, LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR, LOAD_LIBRARY_SEARCH_SYSTEM32,
 };
 
 #[repr(C)]
@@ -66,6 +67,27 @@ impl Library {
         }
         Ok(info)
     }
+
+    fn pin_for_execution(&self) -> Result<(), String> {
+        let mut pinned = std::ptr::null_mut();
+        // The module address identifies the exact loaded image, independent of
+        // path aliases. Native workers may outlive bounded object shutdown.
+        let ok = unsafe {
+            GetModuleHandleExW(
+                GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_PIN,
+                self.0.cast(),
+                &mut pinned,
+            )
+        };
+        if ok == 0 {
+            Err(format!(
+                "cannot retain executing engine module: {}",
+                std::io::Error::last_os_error()
+            ))
+        } else {
+            Ok(())
+        }
+    }
 }
 
 impl Drop for Library {
@@ -89,8 +111,8 @@ pub fn require_execution_api(info: ApiInfo) -> Result<(), String> {
     Ok(())
 }
 
-/// Execute inside the loaded DLL; keep it loaded until its native objects have
-/// been destroyed and its report has been read. No static execution fallback.
+/// Execute inside the loaded DLL. The executed image remains mapped until process
+/// exit because bounded shutdown can detach native workers. Probes still unload.
 pub fn execute(
     path: &Path,
     request: &EngineRuntimeExecutionRequest,
@@ -113,29 +135,50 @@ pub fn execute(
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
         Err(error) => return Err(format!("cannot clear prior engine report: {error}")),
     }
+    library.pin_for_execution()?;
     let result = unsafe { entry(bytes.as_ptr(), bytes.len()) };
     if result.struct_size < std::mem::size_of::<RunResult>() as u32 {
         return Err("engine runtime returned a truncated execution result".into());
     }
-    let mut report_bytes = Vec::new();
-    fs::File::open(&request.report_path)
-        .and_then(|file| {
-            file.take(4 * 1024 * 1024 + 1)
-                .read_to_end(&mut report_bytes)
-        })
-        .map_err(|error| {
-            format!(
-                "engine runtime report missing (status {}): {error}",
-                result.status
-            )
-        })?;
-    if report_bytes.len() > 4 * 1024 * 1024 {
-        return Err("engine runtime report exceeds its byte limit".into());
-    }
+    let report_bytes = read_report_bytes(&request.report_path, report_byte_limit(request))
+        .map_err(|error| format!("engine runtime report (status {}): {error}", result.status))?;
     let report: NativeWindowHostReport = serde_json::from_slice(&report_bytes)
         .map_err(|error| format!("engine runtime report invalid: {error}"))?;
     validate_report(&report, result, request)?;
     Ok(report)
+}
+
+fn report_byte_limit(request: &EngineRuntimeExecutionRequest) -> usize {
+    if request.request.performance_sample_frames == 0 {
+        return 4 * 1024 * 1024;
+    }
+    // A ten-minute Trace includes ~39k CPU/GPU/owner records (~10 KiB each
+    // in current pretty JSON). Scale only the explicit capture, with a hard cap.
+    // Summary and a 300-frame filtered Trace retain the existing 128 MiB bound.
+    let policy = request.request.measurement_policy();
+    let frames = if policy.level == runtime_player_winit::measurement::MeasurementLevel::Trace {
+        let end = policy
+            .end_frame
+            .unwrap_or(request.request.frame_limit)
+            .min(request.request.frame_limit);
+        end.saturating_sub(policy.first_frame.unwrap_or(0))
+    } else {
+        0
+    };
+    frames
+        .saturating_mul(16 * 1024)
+        .clamp(128 * 1024 * 1024, 512 * 1024 * 1024) as usize
+}
+
+fn read_report_bytes(path: &Path, limit: usize) -> Result<Vec<u8>, String> {
+    let mut report_bytes = Vec::new();
+    fs::File::open(path)
+        .and_then(|file| file.take(limit as u64 + 1).read_to_end(&mut report_bytes))
+        .map_err(|error| format!("missing: {error}"))?;
+    if report_bytes.len() > limit {
+        return Err("engine runtime report exceeds its byte limit".into());
+    }
+    Ok(report_bytes)
 }
 
 fn validate_report(
@@ -162,6 +205,73 @@ fn validate_report(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn explicit_performance_report_can_exceed_normal_report_limit() {
+        let root = std::env::temp_dir().join(format!("aui-report-limit-{}", std::process::id()));
+        fs::create_dir_all(&root).unwrap();
+        let path = root.join("large.json");
+        let bytes = vec![b' '; 4 * 1024 * 1024 + 1];
+        fs::write(&path, &bytes).unwrap();
+        let mut request = EngineRuntimeExecutionRequest {
+            request: runtime_player_winit::NativePlayerWindowRunRequest::windowed("package"),
+            scenario: None,
+            report_path: path.clone(),
+            capture_directory: None,
+        };
+        assert!(read_report_bytes(&path, report_byte_limit(&request)).is_err());
+        request.request.performance_sample_frames = 2048;
+        let actual = read_report_bytes(&path, report_byte_limit(&request));
+        fs::remove_file(&path).unwrap();
+        fs::remove_dir(&root).unwrap();
+        assert_eq!(actual.unwrap(), bytes);
+    }
+
+    #[test]
+    fn long_trace_budget_covers_declared_frames_without_unbounding_normal_or_filtered_reports() {
+        let mut request = EngineRuntimeExecutionRequest {
+            request: runtime_player_winit::NativePlayerWindowRunRequest::windowed("package"),
+            scenario: None,
+            report_path: "report.json".into(),
+            capture_directory: None,
+        };
+        request.request.performance_sample_frames = 100000;
+        request.request.frame_limit = 100000;
+        request.request.measurement = Some(runtime_player_winit::measurement::MeasurementPolicy {
+            level: runtime_player_winit::measurement::MeasurementLevel::Trace,
+            native_events: false,
+            allocation_frame: None,
+            allocation_end_frame: None,
+            allocation_summary: false,
+            first_frame: None,
+            end_frame: None,
+
+            cpu_probe: false,
+        });
+        assert!(
+            report_byte_limit(&request) >= 384 * 1024 * 1024,
+            "ten-minute raw CPU/GPU/owner trace exceeds the old 128 MiB cap"
+        );
+        assert!(report_byte_limit(&request) <= 512 * 1024 * 1024);
+        request.request.measurement.as_mut().unwrap().first_frame = Some(1801);
+        request.request.measurement.as_mut().unwrap().end_frame = Some(2101);
+        assert_eq!(report_byte_limit(&request), 128 * 1024 * 1024);
+        request.request.performance_sample_frames = 0;
+        assert_eq!(report_byte_limit(&request), 4 * 1024 * 1024);
+    }
+    #[test]
+    fn report_reader_still_rejects_limit_plus_one() {
+        let root = std::env::temp_dir().join(format!("aui-report-bound-{}", std::process::id()));
+        fs::create_dir_all(&root).unwrap();
+        let path = root.join("bounded.json");
+        fs::write(&path, b"12345").unwrap();
+        assert_eq!(read_report_bytes(&path, 5).unwrap(), b"12345");
+        assert!(read_report_bytes(&path, 4)
+            .unwrap_err()
+            .contains("byte limit"));
+        fs::remove_file(&path).unwrap();
+        fs::remove_dir(&root).unwrap();
+    }
 
     #[test]
     fn old_headless_api_cannot_claim_windowed_or_semantic_execution() {

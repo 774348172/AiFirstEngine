@@ -1,0 +1,18 @@
+[
+  {
+    "case": "left",
+    "capture": "G:/a323-opt/pointer-left-final.png",
+    "expectedCenterX": 200,
+    "actualCenterX": 199.49117174959872,
+    "blueHullPixelCount": 623,
+    "status": "passed"
+  },
+  {
+    "case": "right",
+    "capture": "G:/a323-opt/pointer-right-final.png",
+    "expectedCenterX": 1000,
+    "actualCenterX": 999.4911717495987,
+    "blueHullPixelCount": 623,
+    "status": "passed"
+  }
+]

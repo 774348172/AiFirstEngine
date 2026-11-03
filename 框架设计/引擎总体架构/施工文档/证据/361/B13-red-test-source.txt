@@ -1,0 +1,7 @@
+crates\engine_runtime\src\project_logic.rs:19:5: warning: variant `IrInterpreter` is never constructed
+crates\engine_runtime\src\project_logic.rs:38:19: warning: associated function `validation_only_ir_interpreter` is never used
+crates\engine_runtime\src\world.rs:529:19: warning: method `remove_sprite_renderer2d` is never used
+warning: `engine_runtime` (lib) generated 3 warnings
+   Compiling runtime_player_winit v0.1.0 (G:\gameEngin\rust\crates\runtime_player_winit)
+crates\runtime_player_winit\src\lib.rs:5096:26: error[E0609]: no field `source_nodes_compared` on type `AuiGeometryUpdateStats`: unknown field
+error: could not compile `runtime_player_winit` (lib test) due to 1 previous error

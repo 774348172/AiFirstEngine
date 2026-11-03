@@ -187,6 +187,113 @@ struct Fixture {
 }
 
 #[test]
+fn import_decode_check_evidence_is_preserved_across_native_and_mcp() {
+    let fixture = Fixture::new("import-decode");
+    let sources = [
+        (
+            "Scenes/main.json",
+            include_bytes!(
+                "../../project_authoring_execution/tests/fixtures/three_d_a0/scene.json"
+            )
+            .as_slice(),
+        ),
+        (
+            "Assets/cube.json",
+            include_bytes!("../../project_authoring_execution/tests/fixtures/three_d_a0/mesh.json")
+                .as_slice(),
+        ),
+        (
+            "Assets/blue.json",
+            include_bytes!(
+                "../../project_authoring_execution/tests/fixtures/three_d_a0/material.json"
+            )
+            .as_slice(),
+        ),
+        (
+            "Assets/import.json",
+            include_bytes!(
+                "../../project_authoring_execution/tests/fixtures/three_d_a0/import.json"
+            )
+            .as_slice(),
+        ),
+    ];
+    for (path, bytes) in sources {
+        let target = fixture.root.join(path);
+        fs::create_dir_all(target.parent().unwrap()).unwrap();
+        fs::write(target, bytes).unwrap();
+    }
+    fs::write(fixture.root.join("project.aife.json"), br#"{"schemaVersion":"aife-project.v3","projectId":"provider.adapter","defaultScene":"Scenes/main.json"}"#).unwrap();
+    fs::create_dir_all(fixture.root.join("Models")).unwrap();
+    fs::write(
+        fixture.root.join("Models/scene.gltf"),
+        br#"{"asset":{"version":"2.0"},"scenes":[{"nodes":[]}]}"#,
+    )
+    .unwrap();
+    let import_path = fixture.root.join("Assets/import.json");
+    let mut descriptor: serde_json::Value =
+        serde_json::from_slice(&fs::read(&import_path).unwrap()).unwrap();
+    let mut output = descriptor["outputs"][1].clone();
+    use sha2::{Digest, Sha256};
+    output["sourceFingerprint"] = json!(format!("sha256:{:x}", Sha256::digest(br#"{"nodes":[]}"#)));
+    descriptor["outputs"] = json!([output]);
+    descriptor["nodes"] = json!([]);
+    fs::write(&import_path, serde_json::to_vec(&descriptor).unwrap()).unwrap();
+    let mut native = NativeHostAdapter::attach(fixture.host()).unwrap();
+    let mut mcp = McpHostAdapter::attach(fixture.host()).unwrap();
+    let result = native.invoke(HostToolCall {
+        call_id: "import-decode".into(),
+        tool_name: "engine_project_check".into(),
+        arguments: json!({}),
+        approved: true,
+    });
+    assert_eq!(
+        result,
+        mcp.invoke_canonical("import-decode", "engine_project_check", json!({}))
+    );
+    assert_eq!(
+        result.status,
+        engine_tool_provider::CanonicalToolStatus::Completed,
+        "{result:?}"
+    );
+    let report = &result.output["checkReport"]["modelImports"][0];
+    assert_eq!(report["stage"], "assembly");
+    assert_eq!(report["assemblyAvailable"], true);
+    assert_eq!(report["dependencies"][0]["sourcePath"], "Models/scene.gltf");
+    assert!(report["sourceDigest"]
+        .as_str()
+        .unwrap()
+        .starts_with("sha256:"));
+    fs::write(
+        fixture.root.join("Models/scene.gltf"),
+        br#"{"asset":{"version":"1.0"}}"#,
+    )
+    .unwrap();
+    let error = native.invoke(HostToolCall {
+        call_id: "import-invalid".into(),
+        tool_name: "engine_project_check".into(),
+        arguments: json!({}),
+        approved: true,
+    });
+    assert_eq!(
+        error,
+        mcp.invoke_canonical("import-invalid", "engine_project_check", json!({}))
+    );
+    let error = serde_json::to_value(error).unwrap();
+    assert!(error["diagnostics"][0]["code"]
+        .as_str()
+        .unwrap()
+        .ends_with("import_version_unsupported"));
+    assert_eq!(
+        error["diagnostics"][0]["sourceLocation"]["sourcePath"],
+        "Models/scene.gltf"
+    );
+    assert_eq!(
+        error["diagnostics"][0]["sourceLocation"]["fieldPath"],
+        "/asset"
+    );
+}
+
+#[test]
 fn semantic_adapters_share_approval_reference_and_schema_rejections() {
     let fixture = Fixture::new("semantic-equivalence");
     let mut native = NativeHostAdapter::attach(fixture.host()).unwrap();
@@ -280,4 +387,209 @@ impl Drop for Fixture {
     fn drop(&mut self) {
         let _ = fs::remove_dir_all(&self.root);
     }
+}
+
+#[test]
+fn reimport_inspect_revision_bound_mutation_and_rollback_use_context_owner() {
+    use engine_tool_provider::CanonicalToolStatus;
+    use sha2::{Digest, Sha256};
+    let fixture = Fixture::new("import-cas");
+    for (path, bytes) in [
+        (
+            "Scenes/main.json",
+            include_bytes!(
+                "../../project_authoring_execution/tests/fixtures/three_d_a0/scene.json"
+            )
+            .as_slice(),
+        ),
+        (
+            "Assets/cube.json",
+            include_bytes!("../../project_authoring_execution/tests/fixtures/three_d_a0/mesh.json")
+                .as_slice(),
+        ),
+        (
+            "Assets/blue.json",
+            include_bytes!(
+                "../../project_authoring_execution/tests/fixtures/three_d_a0/material.json"
+            )
+            .as_slice(),
+        ),
+    ] {
+        let target = fixture.root.join(path);
+        fs::create_dir_all(target.parent().unwrap()).unwrap();
+        fs::write(target, bytes).unwrap();
+    }
+    fs::write(fixture.root.join("project.aife.json"),br#"{"schemaVersion":"aife-project.v3","projectId":"provider.adapter","defaultScene":"Scenes/main.json"}"#).unwrap();
+    fs::create_dir_all(fixture.root.join("Models")).unwrap();
+    fs::create_dir_all(fixture.root.join("Assets")).unwrap();
+    fs::write(
+        fixture.root.join("Models/scene.gltf"),
+        br#"{"asset":{"version":"2.0"},"scenes":[{"nodes":[]}]}"#,
+    )
+    .unwrap();
+    let mut descriptor: serde_json::Value = serde_json::from_slice(include_bytes!(
+        "../../project_authoring_execution/tests/fixtures/three_d_a0/import.json"
+    ))
+    .unwrap();
+    descriptor["outputs"] = json!([]);
+    descriptor["nodes"] = json!([]);
+    let original = serde_json::to_vec(&descriptor).unwrap();
+    fs::write(fixture.root.join("Assets/import.json"), &original).unwrap();
+    let mut native = NativeHostAdapter::attach(fixture.host()).unwrap();
+    let mut mcp = McpHostAdapter::attach(fixture.host()).unwrap();
+    let request = json!({"modelImport":{"descriptorPath":"Assets/import.json"}});
+    let inspect = native.invoke(HostToolCall {
+        call_id: "import-plan".into(),
+        tool_name: "engine_project_inspect".into(),
+        arguments: request.clone(),
+        approved: false,
+    });
+    assert_eq!(
+        inspect,
+        mcp.invoke_canonical("import-plan", "engine_project_inspect", request.clone())
+    );
+    assert_eq!(
+        inspect.status,
+        CanonicalToolStatus::Completed,
+        "{inspect:?}"
+    );
+    let plan = &inspect.output["modelImportInspection"];
+    assert_eq!(plan["buildable"], false);
+    assert!(plan["requiredObjects"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|o| o["sourceLocator"] == "/scenes/0"));
+    assert_eq!(
+        fs::read(fixture.root.join("Assets/import.json")).unwrap(),
+        original
+    );
+    descriptor["outputs"] = json!([{"key":"persistent-prefab","assetId":"import.prefab","assetGuid":"guid-import-prefab","kind":"prefab","sourceLocator":"/scenes/0","sourceFingerprint":format!("sha256:{:x}",Sha256::digest(br#"{"nodes":[]}"#)),"materialSlots":[]}]);
+    let mut mutation = json!({"goal":"explicit first import mapping","domain":"assets","expectedRevisionId":plan["expectedRevisionId"],"changes":[{"operation":"create_or_replace","path":"Assets/import.json","content":serde_json::to_string(&descriptor).unwrap()}]});
+    fs::write(
+        fixture.root.join("game.rs"),
+        b"fn game() { /* changed after preview */ }",
+    )
+    .unwrap();
+    let stale = native.invoke(HostToolCall {
+        call_id: "import-stale".into(),
+        tool_name: "engine_project_mutate".into(),
+        arguments: mutation.clone(),
+        approved: true,
+    });
+    assert_ne!(stale.status, CanonicalToolStatus::Completed);
+    assert!(stale.receipt_ref.is_none());
+    assert!(stale.diagnostics[0].code.contains("revision"), "{stale:?}");
+    assert_eq!(
+        fs::read(fixture.root.join("Assets/import.json")).unwrap(),
+        original
+    );
+    let fresh = native.invoke(HostToolCall {
+        call_id: "import-fresh".into(),
+        tool_name: "engine_project_inspect".into(),
+        arguments: request.clone(),
+        approved: false,
+    });
+    mutation["expectedRevisionId"] =
+        fresh.output["modelImportInspection"]["expectedRevisionId"].clone();
+    let applied = native.invoke(HostToolCall {
+        call_id: "import-apply".into(),
+        tool_name: "engine_project_mutate".into(),
+        arguments: mutation,
+        approved: true,
+    });
+    assert_eq!(
+        applied.status,
+        CanonicalToolStatus::Completed,
+        "{applied:?}"
+    );
+    assert_ne!(applied.project_revision, fresh.project_revision);
+    let after = native.invoke(HostToolCall {
+        call_id: "import-after".into(),
+        tool_name: "engine_project_inspect".into(),
+        arguments: request,
+        approved: false,
+    });
+    assert_eq!(
+        after.output["modelImportInspection"]["buildable"], true,
+        "{after:?}"
+    );
+    let checked = native.invoke(HostToolCall {
+        call_id: "import-checked".into(),
+        tool_name: "engine_project_check".into(),
+        arguments: json!({}),
+        approved: true,
+    });
+    assert_eq!(
+        checked.status,
+        CanonicalToolStatus::Completed,
+        "{checked:?}"
+    );
+    let old_model = fs::read(fixture.root.join("Models/scene.gltf")).unwrap();
+    let old_mapping = fs::read(fixture.root.join("Assets/import.json")).unwrap();
+    let renamed_scene = json!({"nodes":[],"name":"Renamed"});
+    let renamed_model = json!({"asset":{"version":"2.0"},"scenes":[renamed_scene]});
+    descriptor["outputs"][0]["sourceFingerprint"] = json!(format!(
+        "sha256:{:x}",
+        Sha256::digest(serde_json::to_vec(&renamed_scene).unwrap())
+    ));
+    let reimport=native.invoke(HostToolCall {call_id:"import-source-and-mapping".into(),tool_name:"engine_project_mutate".into(),arguments:json!({"goal":"explicit reimport keeps persistent prefab identity","expectedRevisionId":checked.project_revision,"changes":[
+        {"operation":"create_or_replace","path":"Models/scene.gltf","content":serde_json::to_string(&renamed_model).unwrap()},
+        {"operation":"create_or_replace","path":"Assets/import.json","content":serde_json::to_string(&descriptor).unwrap()}
+    ]}),approved:true});
+    assert_eq!(
+        reimport.status,
+        CanonicalToolStatus::Completed,
+        "{reimport:?}"
+    );
+    let checked_again = native.invoke(HostToolCall {
+        call_id: "reimport-checked".into(),
+        tool_name: "engine_project_check".into(),
+        arguments: json!({}),
+        approved: true,
+    });
+    assert_eq!(
+        checked_again.status,
+        CanonicalToolStatus::Completed,
+        "{checked_again:?}"
+    );
+    assert_ne!(checked_again.project_revision, checked.project_revision);
+    let rollback_reimport = native.invoke(HostToolCall {
+        call_id: "reimport-rollback".into(),
+        tool_name: "engine_project_rollback".into(),
+        arguments: json!({"rollbackRef":reimport.receipt_ref.unwrap()}),
+        approved: true,
+    });
+    assert_eq!(
+        rollback_reimport.status,
+        CanonicalToolStatus::Completed,
+        "{rollback_reimport:?}"
+    );
+    assert_eq!(
+        fs::read(fixture.root.join("Models/scene.gltf")).unwrap(),
+        old_model
+    );
+    assert_eq!(
+        fs::read(fixture.root.join("Assets/import.json")).unwrap(),
+        old_mapping
+    );
+    let rollback = native.invoke(HostToolCall {
+        call_id: "import-rollback".into(),
+        tool_name: "engine_project_rollback".into(),
+        arguments: json!({"rollbackRef":applied.receipt_ref.unwrap()}),
+        approved: true,
+    });
+    assert_eq!(
+        rollback.status,
+        CanonicalToolStatus::Completed,
+        "{rollback:?}"
+    );
+    assert_eq!(
+        fs::read(fixture.root.join("Assets/import.json")).unwrap(),
+        original
+    );
+    assert_eq!(
+        fs::read(fixture.root.join("game.rs")).unwrap(),
+        b"fn game() { /* changed after preview */ }"
+    );
 }

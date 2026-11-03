@@ -40,7 +40,7 @@ facade_only = ["crates/editor_core/src/lib.rs"]
 [[domains]]
 id = "runtime"
 owner = "runtime-platform"
-include = ["crates/engine_input/**", "crates/engine_runtime/**", "crates/runtime_cli/**", "crates/runtime_player_winit/**"]
+include = ["crates/engine_input/**", "crates/engine_content/**", "crates/engine_text/**", "crates/engine_render_resources/**", "crates/engine_runtime_core/**", "crates/engine_render_native/**", "crates/engine_runtime/**", "crates/runtime_cli/**", "crates/runtime_player_winit/**"]
 facade_only = ["crates/runtime_player_winit/src/lib.rs"]
 
 [[domains]]

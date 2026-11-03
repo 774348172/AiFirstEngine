@@ -22,6 +22,44 @@ fn open_valid_project_without_editor_dependencies() {
 }
 
 #[test]
+fn three_d_manifest_v3_open_and_refresh_preserve_v2_and_reject_unknown_versions() {
+    for schema in ["aife-project.v2", "aife-project.v3"] {
+        let fixture = Fixture::with_manifest(
+            "spatial-version",
+            format!(r#"{{"schemaVersion":"{schema}","projectId":"spatial-version"}}"#).as_bytes(),
+        );
+        let mut context = EmbeddedAuthoringProjectContext::new();
+        let handle = context
+            .open(ProjectLocator::new(fixture.path()), OpenOptions)
+            .unwrap();
+        assert_eq!(
+            context.refresh(handle).unwrap().revision.qualification,
+            ProjectQualification::Ready
+        );
+        fs::write(
+            fixture.path().join("project.aife.json"),
+            br#"{"schemaVersion":"aife-project.v99","projectId":"spatial-version"}"#,
+        )
+        .unwrap();
+        let report = context.refresh(handle).unwrap();
+        assert_eq!(report.revision.qualification, ProjectQualification::Invalid);
+        assert!(report
+            .diagnostics
+            .iter()
+            .any(|d| d.code == "authoring_context.manifest_schema_unsupported"));
+        let mut other = EmbeddedAuthoringProjectContext::new();
+        assert_eq!(
+            other
+                .open(ProjectLocator::new(fixture.path()), OpenOptions)
+                .unwrap_err()
+                .diagnostic
+                .code,
+            "authoring_context.manifest_schema_unsupported"
+        );
+    }
+}
+
+#[test]
 fn open_missing_root_returns_typed_diagnostic() {
     let fixture = Fixture::missing("missing-root");
     let mut context = EmbeddedAuthoringProjectContext::new();

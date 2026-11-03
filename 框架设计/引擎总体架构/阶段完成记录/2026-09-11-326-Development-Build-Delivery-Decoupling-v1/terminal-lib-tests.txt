@@ -1,0 +1,99 @@
+Finished `test` profile [unoptimized + debuginfo] target(s) in 36.98s
+     Running unittests src\lib.rs (target\debug\deps\engine_tool_provider-8a53e8b02c29a225.exe)
+
+running 25 tests
+test tests::compiler_diagnostic_fields_are_optional_and_retry_requires_project_error ... ok
+test semantic::tests::semantic_inputs_are_bounded_references_not_paths_or_runtime_commands ... ok
+test tests::concrete_tool_surface_has_no_catalog_execute_or_context_tools ... ok
+test mcp_stdio::tests::mcp_model_default_projection_is_exact_and_stable ... ok
+test tests::engine_tool_kernel_rejects_hidden_revision_and_unknown_input_fields ... ok
+test tests::hidden_tool_is_rejected_by_model_adapter ... ok
+test mcp_stdio::tests::mcp_hidden_tool_is_distinct_from_unknown_protocol_tool ... ok
+test tests::local_transition_is_bounded_and_reconstructed_from_result_facts ... ok
+test tests::clean_repeated_inspect_does_not_touch_canonical_bytes_or_mtime ... ok
+test mcp_stdio::tests::mcp_output_limit_rejects_oversized_inline_results ... ok
+test mcp_stdio::tests::mcp_local_transition_projects_complete_v2_structured_content ... ok
+test tests::direct_file_refresh_invalid_manifest_replaces_ready_qualification ... ok
+test tests::qualified_check_requires_process_capabilities ... ok
+test tests::operation_cancel_distinguishes_cancelled_terminal_and_unknown ... ok
+test tests::direct_file_refresh_is_observed_by_next_engine_tool ... ok
+test tests::permission_matrix_and_terminal_outcomes_are_distinct ... ok
+test tests::model_default_projection_is_exact_and_stable ... ok
+test tests::operation_exact_replay_is_idempotent_and_mismatch_is_rejected ... ok
+test tests::project_locator_rejects_a_project_outside_the_workspace ... ok
+test tests::provider_session_rebind_rejects_another_non_terminal_operation ... ok
+test tests::write_requires_host_approval_but_read_does_not ... ok
+test tests::warm_cache_is_not_authority_for_object_reads ... ok
+test tests::grant_is_operation_bound_and_scoped_to_the_refreshed_revision ... ok
+test tests::provider_session_does_not_inherit_rollback_or_approval ... ok
+test tests::mutation_injects_revision_and_exact_rollback_consumes_opaque_ref ... ok
+
+test result: ok. 25 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.11s
+
+     Running unittests src\lib.rs (target\debug\deps\project_authoring_execution-ba97fa57d9198ecd.exe)
+
+running 62 tests
+test font_bundle::tests::project_font_auto_hybrid_uses_physical_px_scale_outline_and_continuity ... ok
+test font_assets::tests::font_family_resolution_uses_exact_nearest_lower_weight_and_stable_id ... ok
+test font_assets::tests::font_diagnostic_has_domain_stage_source_next_action_and_report_levels ... ok
+test desktop_export::verification_policy_tests::default_verification_survives_deserialization_and_can_be_disabled_internally ... ok
+test font_assets::tests::font_stack_preserves_fallback_order_and_rejects_cycle ... ok
+test font_assets::tests::project_font_asset_graph_has_exact_source_family_stack_profile_dependencies ... ok
+test font_bundle::tests::project_font_bundle_builder_fails_closed_on_page_budget ... ok
+test font_bundle::tests::project_font_bundle_determinism_covers_all_page_bytes ... ok
+test font_bundle::tests::project_font_bundle_builder_packs_bitmap_multi_page_and_loads ... ok
+test artifact_cache::tests::project_assembly_artifact_cache_rejects_unsafe_identity ... ok
+test font_cook::tests::project_font_cook_required_glyph_missing_fails_closed ... ok
+test font_assets::tests::project_font_asset_schema_path_hash_face_index_and_digest_are_closed ... ok
+test artifact_cache::tests::project_assembly_artifact_cache_concurrency_publishes_one_sealed_output ... ok
+test artifact_cache::tests::project_assembly_artifact_cache_round_trips_and_detects_corruption ... ok
+test artifact_cache::tests::project_assembly_artifact_cache_invalid_recipe_is_quarantined_and_rebuilt ... ok
+test font_cook::tests::compiler_prepare_reuses_font_cook_across_unrelated_rust_source_changes ... ok
+test game_project_compiler::check::tests::check_cargo_messages_are_structured_and_malformed_output_is_not_success ... ok
+test game_project_compiler::tests::game_project_compiler_interface_delivery_identity_is_revision_bound ... ok
+test game_project_compiler::tests::game_project_compiler_source_view_reads_only_lease_owned_bytes ... ok
+test game_project_compiler::tests::run_and_build_verification_defaults_remain_enabled_with_explicit_opt_out ... ok
+test generated_runtime_glue::tests::cargo_manifest_path_removes_windows_extended_path_prefix ... ok
+test font_cook::tests::project_font_msdf_orientation_matches_bitmap_asymmetric_a ... ok
+test generated_runtime_glue::tests::generated_runtime_glue_is_deterministic_and_path_neutral ... ok
+test generated_runtime_glue::tests::project_rust_without_sdk_requirement_fails_closed ... ok
+test font_assets::tests::font_backend_qualification_real_ttf_otf_ttc_hinting_and_msdf_are_deterministic ... ok
+test generated_runtime_glue::tests::rule_artifact_identity_is_generated_from_the_leased_manifest ... ok
+test generated_runtime_glue::tests::source_map_covers_every_generated_callback ... ok
+test generated_runtime_glue::tests::runtime_source_or_target_changes_invalidate_generation ... ok
+test font_cook::tests::project_font_cook_reuses_same_face_and_variant_key ... ok
+test neutral_assembler::legacy_aui_tests::legacy_aui_explicit_rect_style_and_visibility_survive_cooking ... ok
+test font_cook::tests::project_font_cook_accepts_additional_profile_without_project_default ... ok
+test neutral_assembler::legacy_aui_tests::legacy_aui_hud_children_do_not_cover_the_game_view ... ok
+test neutral_assembler::legacy_aui_tests::legacy_aui_repair_preserves_canonical_document ... ok
+test font_cook::tests::project_font_variant_metrics_are_shared_between_bitmap_and_msdf ... ok
+test project_player_artifact::incremental::tests::engine_source_edit_preserves_compile_workspace_but_changes_artifact_input ... ok
+test project_player_artifact::tests::project_player_artifact_generated_host_links_runtime_glue ... ok
+test project_player_artifact::tests::project_runtime_player_default_build_root_is_application_owned_and_overridable ... ok
+test font_cook::tests::project_font_hinting_r8_has_valid_stride_metrics_and_real_pixels ... ok
+test project_player_artifact::tests::workspace_target_dir_respects_absolute_and_relative_cargo_overrides ... ok
+test project_player_artifact::incremental::tests::stable_workspace_preserves_unchanged_files_removes_deleted_sources_and_excludes_competitors ... ok
+test project_player_artifact::tests::validated_artifact_staging_publish_moves_the_complete_tree ... ok
+test project_player_artifact::tests::project_runtime_player_production_staging_source_digest_tracks_copied_inputs_only ... ok
+test project_player_artifact::tests::project_player_artifact_cache_identity_tracks_engine_sdk_sources ... ok
+test project_write_scope::tests::cloned_scope_reuses_open_root_capability ... ok
+test project_write_scope::tests::project_write_containment_atomic_replace_breaks_external_hard_link_alias ... ok
+test project_write_scope::tests::project_write_scope_creates_replaces_reads_and_removes ... ok
+test project_write_scope::tests::project_write_scope_publishes_directory_atomically ... ok
+test project_write_scope::tests::project_write_scope_rejects_unsafe_relative_paths ... ok
+test project_runtime_player_staging::tests::project_runtime_player_production_staging_normalizes_trusted_and_crates_io_dependencies ... ok
+test tests::refresh_direct_file_changes_without_editor ... ok
+test tests::operation_owned_lease_keeps_old_bytes_across_refresh ... ok
+test tests::structured_commit_and_rollback_use_context_authority ... ok
+test font_cook::tests::project_font_msdf_bundle_uses_rgba8_multi_page ... ok
+test project_runtime_player_staging::tests::project_runtime_player_production_staging_rejects_uncontrolled_dependency ... ok
+test font_cook::tests::project_font_msdf_is_deterministic_and_nonempty ... ok
+test font_cook::tests::project_font_cook_collects_real_cjk_and_is_deterministic ... ok
+test font_cook::tests::project_font_glyph_collection_changes_dependency_digest ... ok
+test project_runtime_player_staging::tests::project_editor_composition_staging_reuses_player_production_owner ... ok
+test project_runtime_player_staging::tests::project_runtime_player_production_staging_resolves_relative_sdk_from_arbitrary_build_root ... ok
+test font_cook::tests::project_font_hot_reload_reuses_dependency_when_glyphs_and_pairs_are_unchanged ... ok
+test project_player_artifact::incremental::tests::real_cargo_reuses_stable_sdk_project_and_rebuilds_only_changed_unit ... ok
+test generated_runtime_glue::tests::generated_runtime_glue_compiles_and_exposes_the_runtime_entry ... ok
+
+test result: ok. 62 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 14.01s

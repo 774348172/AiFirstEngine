@@ -1,0 +1,24 @@
+schema=254-r2-r2-f-automated-regression-summary-v1
+entryCount=16
+canonicalEncoding=utf-8-no-bom
+canonicalLineFormat=group|result
+canonicalOrdering=execution-summary-order
+canonicalPayloadSha256=df3311cf022e07dadf38ce89fee7d7f7b6de7a6e7a58c752b64d38accef9c706
+productionConformanceReceiptCreated=false
+--- canonical payload ---
+cargo fmt --all -- --check|passed
+ai_tool_gateway default|57 lib + 1 reconnect + 2 mcp process passed
+ai_tool_gateway legacy-r1|77 lib + 5 freezer + 13 gate-f + integrations passed
+editor_core ai_capability_tool_kernel|30 passed
+editor_core ai_goal_grant|4 passed
+editor_core ai_tool_contract|4 passed
+editor_core visual_evidence_ref|5 passed
+editor_ui_model|56 passed
+editor_ui_renderer|32 passed
+runtime_cli|23 lib + 7 bounded process + 4 exported player passed
+editor_host|18 + cli/process integrations passed
+editor_window_winit default|118 passed
+project_e2e_gate gateway aggregate|2 passed
+editor_wgpu_renderer real-wgpu|20 passed
+editor_window_winit real-wgpu-surface|128 passed + 9 expected ignored
+final ai_tool_gateway default|57 lib + 1 reconnect + 2 mcp process passed

@@ -29,7 +29,7 @@ pub struct CheckDiagnostic {
     pub next_action: String,
 }
 
-pub(super) fn error(
+pub(crate) fn error(
     code: &str,
     message: impl Into<String>,
     location: Option<SourceLocation>,
@@ -74,6 +74,108 @@ fn json(path: &str, bytes: &[u8]) -> Result<Value, GameProjectCompilerError> {
     })
 }
 
+// Unlike IgnoredAny, this consumes numeric values through deserialize_any:
+// overflow, malformed strings, recursion limits and trailing input stay errors.
+// Only root fields used by generic reference checks receive owned Value trees.
+struct SourceHeader;
+impl<'de> serde::de::DeserializeSeed<'de> for SourceHeader {
+    type Value = Value;
+    fn deserialize<D: serde::Deserializer<'de>>(self, d: D) -> Result<Value, D::Error> {
+        d.deserialize_any(HeaderVisitor(true))
+    }
+}
+struct HeaderVisitor(bool);
+impl<'de> serde::de::Visitor<'de> for HeaderVisitor {
+    type Value = Value;
+    fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.write_str("a JSON source value")
+    }
+    fn visit_unit<E: serde::de::Error>(self) -> Result<Value, E> {
+        Ok(Value::Null)
+    }
+    fn visit_bool<E: serde::de::Error>(self, _: bool) -> Result<Value, E> {
+        Ok(Value::Null)
+    }
+    fn visit_i64<E: serde::de::Error>(self, _: i64) -> Result<Value, E> {
+        Ok(Value::Null)
+    }
+    fn visit_u64<E: serde::de::Error>(self, _: u64) -> Result<Value, E> {
+        Ok(Value::Null)
+    }
+    fn visit_f64<E: serde::de::Error>(self, _: f64) -> Result<Value, E> {
+        Ok(Value::Null)
+    }
+    fn visit_str<E: serde::de::Error>(self, _: &str) -> Result<Value, E> {
+        Ok(Value::Null)
+    }
+    fn visit_seq<A: serde::de::SeqAccess<'de>>(self, mut seq: A) -> Result<Value, A::Error> {
+        while seq.next_element_seed(DiscardSource)?.is_some() {}
+        Ok(Value::Null)
+    }
+    fn visit_map<A: serde::de::MapAccess<'de>>(self, mut map: A) -> Result<Value, A::Error> {
+        let mut header = serde_json::Map::new();
+        while let Some(key) = map.next_key::<SourceHeaderKey>()? {
+            if self.0 {
+                if let Some(key) = key.0 {
+                    // Value preserves the old get/as_str behavior for null,
+                    // wrong types and duplicate keys (last value wins).
+                    header.insert(key.into(), map.next_value()?);
+                    continue;
+                }
+            }
+            map.next_value_seed(DiscardSource)?;
+        }
+        Ok(if self.0 {
+            Value::Object(header)
+        } else {
+            Value::Null
+        })
+    }
+}
+struct DiscardSource;
+impl<'de> serde::de::DeserializeSeed<'de> for DiscardSource {
+    type Value = Value;
+    fn deserialize<D: serde::Deserializer<'de>>(self, d: D) -> Result<Value, D::Error> {
+        d.deserialize_any(HeaderVisitor(false))
+    }
+}
+struct SourceHeaderKey(Option<&'static str>);
+impl<'de> Deserialize<'de> for SourceHeaderKey {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        struct Key;
+        impl serde::de::Visitor<'_> for Key {
+            type Value = SourceHeaderKey;
+            fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+                f.write_str("a JSON object key")
+            }
+            fn visit_str<E: serde::de::Error>(self, key: &str) -> Result<Self::Value, E> {
+                Ok(SourceHeaderKey(match key {
+                    "schemaVersion" => Some("schemaVersion"),
+                    "sourceImage" => Some("sourceImage"),
+                    "sourceAudio" => Some("sourceAudio"),
+                    "sourceCubemap" => Some("sourceCubemap"),
+                    _ => None,
+                }))
+            }
+        }
+        d.deserialize_str(Key)
+    }
+}
+fn source_header(path: &str, bytes: &[u8]) -> Result<Value, GameProjectCompilerError> {
+    use serde::de::DeserializeSeed;
+    let mut d = serde_json::Deserializer::from_slice(bytes);
+    let result = SourceHeader.deserialize(&mut d).and_then(|value| {
+        d.end()?;
+        Ok(value)
+    });
+    result.map_err(|cause| {
+        let mut at = location(path, None);
+        at.line = Some(cause.line() as u64);
+        at.column = Some(cause.column() as u64);
+        error("source_json_invalid", cause.to_string(), Some(at))
+    })
+}
+
 pub(super) fn validate_source(
     source: &CompilerSourceView,
     snapshot: &ProjectSnapshot,
@@ -103,10 +205,13 @@ fn validate_source_inner(
                 Some(location(PROJECT_MANIFEST_PATH, None)),
             )
         })?;
-    if manifest.schema_version != crate::PROJECT_MANIFEST_SCHEMA_VERSION {
+    if !matches!(
+        manifest.schema_version.as_str(),
+        crate::PROJECT_MANIFEST_SCHEMA_VERSION | crate::SPATIAL_PROJECT_MANIFEST_SCHEMA_VERSION
+    ) {
         return Err(error(
             "manifest_schema_unsupported",
-            "Expected aife-project.v2.",
+            "Expected aife-project.v2 or aife-project.v3.",
             Some(location(PROJECT_MANIFEST_PATH, Some("/schemaVersion"))),
         ));
     }
@@ -121,6 +226,20 @@ fn validate_source_inner(
         if let Some(path) = value.get(field).and_then(Value::as_str) {
             require_source(source, path, PROJECT_MANIFEST_PATH, &format!("/{field}"))?;
         }
+    }
+    if matches!(
+        target,
+        TargetProfile::WindowsRelease
+            | TargetProfile::AndroidDev
+            | TargetProfile::AndroidRelease
+            | TargetProfile::WebDev
+    ) && source.bytes(target.source_path()).is_none()
+    {
+        return Err(error(
+            "build_profile_missing",
+            "Release requires an explicit leased BuildProfile.",
+            Some(location(target.source_path(), None)),
+        ));
     }
     if let Some(bytes) = source.bytes(target.source_path()) {
         let value = json(target.source_path(), bytes)?;
@@ -165,7 +284,7 @@ fn validate_source_inner(
         .any(|prefix| path.starts_with(prefix))
             && (path.ends_with(".json") || path.ends_with(".asset"))
     }) {
-        let value = json(path, source.bytes(path).unwrap())?;
+        let value = source_header(path, source.bytes(path).unwrap())?;
         if path.starts_with("Assets/") {
             if value.get("schemaVersion").and_then(Value::as_str) == Some("audio-asset.v1")
                 && value.get("sourceImage").is_some()
@@ -175,6 +294,16 @@ fn validate_source_inner(
                     "Audio assets cannot contain sourceImage; use sourceAudio.",
                     Some(location(path, Some("/sourceImage"))),
                 ));
+            }
+            if value["schemaVersion"] == "environment-asset.v1" {
+                let cube = value["sourceCubemap"].as_str().ok_or_else(|| {
+                    error(
+                        "environment_source_missing",
+                        "Environment needs sourceCubemap.",
+                        Some(location(path, Some("/sourceCubemap"))),
+                    )
+                })?;
+                require_source(source, cube, path, "/sourceCubemap")?;
             }
             if let Some(image) = value.get("sourceImage").and_then(Value::as_str) {
                 require_source(source, image, path, "/sourceImage")?;
@@ -203,6 +332,19 @@ fn validate_source_inner(
             }
         }
     }
+    crate::neutral_assembler::validate_spine_source(source).map_err(|error| *error)?;
+    crate::three_d_contract::validate_source(source, &manifest.schema_version).map_err(
+        |failure| {
+            error(
+                &failure.error.code,
+                failure.error.message,
+                Some(location(
+                    &failure.source_path,
+                    Some(&failure.error.field_path),
+                )),
+            )
+        },
+    )?;
     if snapshot.qualification != ProjectQualification::Ready {
         return Err(error(
             "project_invalid",
@@ -257,7 +399,10 @@ pub(super) fn check_rust(
         error(
             "check_glue_invalid",
             cause.message,
-            Some(location(PROJECT_MANIFEST_PATH, Some("/runtimeModule"))),
+            cause
+                .source_location
+                .map(|location| *location)
+                .or_else(|| Some(location(PROJECT_MANIFEST_PATH, Some("/runtimeModule")))),
         )
     })?
     .ok_or_else(|| {
@@ -270,6 +415,19 @@ pub(super) fn check_rust(
             )),
         )
     })?;
+    if matches!(
+        profile.target_profile,
+        TargetProfile::AndroidDev | TargetProfile::AndroidRelease
+    ) {
+        let preflight = crate::android_export::AndroidToolchainPreflight::probe_host();
+        if !preflight.ready {
+            return Err(error(
+                "android_toolchain_blocked",
+                format!("{:?}", preflight.checks),
+                None,
+            ));
+        }
+    }
     let root = scratch_root()?;
     let outcome = check_in_scratch(source, profile, &glue, &root);
     if outcome
@@ -372,15 +530,36 @@ fn check_in_scratch(
                 None,
             )
         })?;
-    let target = format!(
-        "{}-pc-windows-{}",
-        std::env::consts::ARCH,
-        if cfg!(target_env = "msvc") {
-            "msvc"
-        } else {
-            "gnu"
-        }
-    );
+    let target = if profile.target_profile == TargetProfile::WebDev {
+        "wasm32-unknown-unknown".to_string()
+    } else if matches!(
+        profile.target_profile,
+        TargetProfile::AndroidDev | TargetProfile::AndroidRelease
+    ) {
+        "aarch64-linux-android".to_string()
+    } else {
+        format!(
+            "{}-pc-windows-{}",
+            std::env::consts::ARCH,
+            if cfg!(target_env = "msvc") {
+                "msvc"
+            } else {
+                "gnu"
+            }
+        )
+    };
+    let native_environment = if matches!(
+        profile.target_profile,
+        TargetProfile::AndroidDev | TargetProfile::AndroidRelease
+    ) {
+        crate::android_export::native_environment(
+            &crate::android_export::AndroidToolchainPreflight::probe_host(),
+            crate::android_export::AndroidDevAbi::Arm64V8a,
+        )
+        .map_err(|message| error("android_toolchain_blocked", message, None))?
+    } else {
+        Vec::new()
+    };
     let started = Instant::now();
     let run = |args: &[&str]| {
         let remaining = Duration::from_millis(profile.timeout_ms).saturating_sub(started.elapsed());
@@ -391,13 +570,25 @@ fn check_in_scratch(
             environment: vec![
                 (
                     "CARGO_TARGET_DIR".into(),
-                    root.join("target").into_os_string(),
+                    crate::project_player_artifact::cargo_target_directory(&root.join("target")),
                 ),
                 ("CARGO_NET_OFFLINE".into(), "true".into()),
                 ("RUSTUP_AUTO_INSTALL".into(), "0".into()),
                 ("RUSTUP_TOOLCHAIN".into(), channel.into()),
                 ("CARGO_BUILD_TARGET".into(), target.clone().into()),
-            ],
+                ("CARGO_PROFILE_RELEASE_OPT_LEVEL".into(), "3".into()),
+                (
+                    "CARGO_PROFILE_RELEASE_DEBUG_ASSERTIONS".into(),
+                    "false".into(),
+                ),
+                (
+                    "CARGO_PROFILE_RELEASE_OVERFLOW_CHECKS".into(),
+                    "false".into(),
+                ),
+            ]
+            .into_iter()
+            .chain(native_environment.clone())
+            .collect(),
             timeout: remaining,
             stdout_capture_limit_bytes: 1024 * 1024,
             stderr_capture_limit_bytes: 1024 * 1024,
@@ -407,13 +598,20 @@ fn check_in_scratch(
     // Normalize only the derived lock; canonical project lock bytes are never changed.
     let lock = run(&["generate-lockfile", "--offline"]);
     validate_process(&lock)?;
-    let result = run(&[
+    let mut args = vec![
         "check",
         "--lib",
         "--locked",
         "--offline",
         "--message-format=json",
-    ]);
+    ];
+    if matches!(
+        profile.target_profile,
+        TargetProfile::WindowsRelease | TargetProfile::AndroidRelease
+    ) {
+        args.push("--release");
+    }
+    let result = run(&args);
     let parsed = cargo_diagnostics(&result.stdout_summary, &cargo_dir);
     if let Err(mut failure) = validate_process(&result) {
         let diagnostics = parsed.unwrap_or_default();
@@ -578,6 +776,80 @@ mod tests {
     use super::*;
 
     #[test]
+    fn source_header_retains_references_without_materializing_geometry_payload() {
+        for count in [8, 128, 2048] {
+            let bytes = serde_json::to_vec(&serde_json::json!({
+                "schemaVersion":"mesh-asset.v1", "sourceImage":"Assets/a.png",
+                "vertices": vec![[1.25, -2.0, 3.5]; count], "indices": vec![0; count],
+                "metadata": {"largeUnusedPayload":vec!["text";count]}
+            }))
+            .unwrap();
+            let header = source_header("Assets/mesh.asset", &bytes).unwrap();
+            assert_eq!(
+                header.get("sourceImage"),
+                Some(&Value::String("Assets/a.png".into()))
+            );
+            assert_eq!(
+                header.as_object().unwrap().len(),
+                2,
+                "generic source checks must not construct geometry/metadata Value trees"
+            );
+        }
+    }
+
+    #[test]
+    fn source_header_preserves_json_errors_and_reference_field_semantics() {
+        let mut cases: Vec<Vec<u8>> = [
+            "null",
+            "123",
+            "true",
+            "\"text\"",
+            "[]",
+            "[{},3,null]",
+            r#"{"schemaVersion":"a","schemaVersion":"b","sourceImage":null}"#,
+            r#"{"sourceImage":5,"sourceAudio":[1],"sourceCubemap":{"x":true}}"#,
+            r#"{"\u0073ourceImage":"Assets/a.png","ignored":{"sourceImage":"nested"}}"#,
+            r#"{"ignored":1e999}"#,
+            r#"{"ignored":[1e999]}"#,
+            "{} trailing",
+            r#"{"ignored":"\uD800"}"#,
+            "{\"ignored\":[1,]}",
+            r#"{"ignored":18446744073709551616000000}"#,
+            r#"{"sourceImage":"a","sourceImage":false}"#,
+        ]
+        .iter()
+        .map(|s| s.as_bytes().to_vec())
+        .collect();
+        cases.push(format!("{}0{}", "[".repeat(140), "]".repeat(140)).into_bytes());
+        for bytes in cases {
+            let old = json("Assets/input.asset", &bytes);
+            let new = source_header("Assets/input.asset", &bytes);
+            match (old, new) {
+                (Ok(old), Ok(new)) => {
+                    for key in [
+                        "schemaVersion",
+                        "sourceImage",
+                        "sourceAudio",
+                        "sourceCubemap",
+                    ] {
+                        assert_eq!(
+                            old.get(key),
+                            new.get(key),
+                            "{key} in {}",
+                            String::from_utf8_lossy(&bytes)
+                        );
+                    }
+                }
+                (Err(old), Err(new)) => {
+                    assert_eq!(old.code(), new.code());
+                    assert_eq!(old.source_location(), new.source_location());
+                }
+                (old, new) => panic!("syntax acceptance changed: {old:?} / {new:?}"),
+            }
+        }
+    }
+
+    #[test]
     fn audio_source_check_rejects_source_image_with_source_location() {
         let source = CompilerSourceView {
             files: BTreeMap::from([
@@ -632,5 +904,37 @@ mod tests {
         assert_eq!(messages.len(), 1);
         assert_eq!(messages[0].code, "E0308");
         assert!(messages[0].location.is_none());
+    }
+
+    #[test]
+    fn check_named_ui_view_failure_preserves_authoring_location_before_cargo() {
+        let manifest: CompilerProjectManifest = serde_json::from_value(serde_json::json!({
+            "runtimeModule": {
+                "moduleId":"fixture", "interfaceVersion":"1", "cargoManifest":"RuntimeModule/Cargo.toml",
+                "cargoPackage":"fixture", "playerBinary":"fixture", "projectGameSdk":"project-game-sdk.v1"
+            }
+        })).unwrap();
+        let source = CompilerSourceView {
+            files: BTreeMap::from([
+                (
+                    "RuntimeModule/src/lib.rs".into(),
+                    b"fn project_game() {}".to_vec(),
+                ),
+                (
+                    "RuntimeModule/ui.views.json".into(),
+                    br#"{"views":[{"name":"SettingsViewRefs","document":"missing","fields":[]}]}"#
+                        .to_vec(),
+                ),
+            ]),
+        };
+        let profile = CheckProfile::new(TargetProfile::WindowsDev)
+            .with_process_approval(true)
+            .with_cargo_executable(PathBuf::from("must-not-launch-cargo"));
+        let failure = check_rust(&source, &manifest, &profile).unwrap_err();
+        let at = failure.source_location().unwrap();
+        assert_eq!(at.source_path, "RuntimeModule/ui.views.json");
+        assert_eq!(at.field_path.as_deref(), Some("/views/0/document"));
+        assert_eq!(failure.diagnostics[0].location.as_ref(), Some(at));
+        assert!(failure.message.contains("Unknown document missing"));
     }
 }

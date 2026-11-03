@@ -1,0 +1,95 @@
+{
+  "schemaVersion": "project-runtime-player-artifact-build-report.v1",
+  "status": "success",
+  "projectRoot": "\\\\?\\G:\\gameEngin\\samples\\complex_shooter_project",
+  "engineSdkRoot": "G:\\gameEngin\\rust\\crates\\project_authoring_execution\\..\\..",
+  "buildRoot": "\\\\?\\G:\\a323-cache",
+  "artifactRoot": "\\\\?\\G:\\a323-cache\\a-1c7a6e862d96074f102849c2",
+  "sourceDigest": "sha256:4f7603ba2a0d83707e749934ed1e6fb3e5881e4452a766bc82b7b78596fc9df6",
+  "engineSdkDigest": "sha256:64a578c4f51b1949f3212560084c7b3c59963546c43598f5936c2dfd302c99cf",
+  "stagingPolicy": "project-runtime-player-production-staging.v1",
+  "normalizedManifestDigest": "sha256:fd1168d10a81d8aa8af822f057545edd68fc356cb6d3b650487e10aa0ab1df21",
+  "normalizedDependencyDigest": "sha256:2167db14f7bc5a52643dfffaaa75fc5167bcaf8b278fdd33a7f63cc0c7506626",
+  "normalizedDependencies": [
+    {
+      "name": "project_game_sdk",
+      "dependencyKind": "engine_sdk",
+      "resolvedVersion": "0.1.0",
+      "sourceIdentity": "\\\\?\\G:\\gameEngin\\rust\\crates\\project_game_sdk"
+    }
+  ],
+  "trustedLockDigest": "sha256:a8486ab4ceb2db06bd346c7b7b68ecbfb4d318314574864b49ca0abe28febb09",
+  "cacheStatus": "hit",
+  "compileWorkspace": "\\\\?\\G:\\a323-cache\\c-4f46b37249d3b45a",
+  "cargoFreshArtifacts": 0,
+  "cargoRebuiltArtifacts": 0,
+  "hostManifestPath": "\\\\?\\G:\\a323-cache\\a-1c7a6e862d96074f102849c2\\Host\\Cargo.toml",
+  "executablePath": "\\\\?\\G:\\a323-cache\\a-1c7a6e862d96074f102849c2\\target\\debug\\ai_project_runtime_player.exe",
+  "expectedModule": {
+    "moduleId": "sample.complex-shooter.runtime",
+    "interfaceVersion": "project-runtime-module.v2",
+    "aotContentDigest": "sha256:dbe958ce111689bf07284b1dbe42c68117bae7605fa72ada07865118ab138144"
+  },
+  "actualDescriptor": {
+    "moduleId": "sample.complex-shooter.runtime",
+    "interfaceVersion": "project-runtime-module.v2",
+    "aotContentDigest": "sha256:dbe958ce111689bf07284b1dbe42c68117bae7605fa72ada07865118ab138144"
+  },
+  "executableHash": "sha256:5c208afc15959ac1aff66934fcd9beb8d4a1f42d4e015fce372855ef0dd490ae",
+  "buildReportPath": "\\\\?\\G:\\a323-cache\\a-1c7a6e862d96074f102849c2\\project-runtime-player-build-report.json",
+  "cleanupStatus": "cache_reused",
+  "steps": [
+    {
+      "stage": "describe_cached_artifact",
+      "command": [
+        "\\\\?\\G:\\a323-cache\\a-1c7a6e862d96074f102849c2\\target\\debug\\ai_project_runtime_player.exe",
+        "--describe-project-runtime-module"
+      ],
+      "timeoutMs": 10000,
+      "process": {
+        "processId": 19984,
+        "exitReason": "completed",
+        "exitCode": 0,
+        "elapsedMs": 106,
+        "stdoutSummary": "{\"moduleId\":\"sample.complex-shooter.runtime\",\"interfaceVersion\":\"project-runtime-module.v2\",\"aotContentDigest\":\"sha256:dbe958ce111689bf07284b1dbe42c68117bae7605fa72ada07865118ab138144\"}\n",
+        "stderrSummary": "",
+        "stdoutTotalBytes": 186,
+        "stderrTotalBytes": 0,
+        "stdoutTruncated": false,
+        "stderrTruncated": false,
+        "spawnError": null,
+        "killError": null,
+        "waitError": null,
+        "readerJoinError": null,
+        "ownership": {
+          "ownershipKind": "windows_job_object",
+          "processGroupCreated": true,
+          "rootProcessBound": true,
+          "terminationRequested": false,
+          "rootProcessWaitCompleted": true,
+          "processGroupReleaseCompleted": true,
+          "outputReadersJoined": true
+        },
+        "priority": {
+          "requested": "normal",
+          "effective": "normal",
+          "applied": true,
+          "error": null
+        }
+      }
+    }
+  ],
+  "artifact": {
+    "schemaVersion": "project-player-artifact.v1",
+    "executablePath": "\\\\?\\G:\\a323-cache\\a-1c7a6e862d96074f102849c2\\target\\debug\\ai_project_runtime_player.exe",
+    "moduleDescriptor": {
+      "moduleId": "sample.complex-shooter.runtime",
+      "interfaceVersion": "project-runtime-module.v2",
+      "aotContentDigest": "sha256:dbe958ce111689bf07284b1dbe42c68117bae7605fa72ada07865118ab138144"
+    },
+    "sourceExecutableHash": "sha256:5c208afc15959ac1aff66934fcd9beb8d4a1f42d4e015fce372855ef0dd490ae",
+    "buildReportPath": "\\\\?\\G:\\a323-cache\\a-1c7a6e862d96074f102849c2\\project-runtime-player-build-report.json"
+  },
+  "diagnostics": [],
+  "nextActions": []
+}

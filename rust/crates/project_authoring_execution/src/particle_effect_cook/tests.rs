@@ -1,4 +1,68 @@
 use super::*;
+
+#[test]
+fn particle_dependency_index_does_not_retain_unrelated_geometry() {
+    let document = serde_json::json!({
+        "schemaVersion": "mesh-asset.v1", "assetId": "ground", "assetGuid": "guid-ground",
+        "renderData": {"vertices": vec![1.25; 4096]},
+        "sourceImage": "Images/ground.png"
+    });
+    let source = CompilerSourceView {
+        files: [(
+            "Assets/ground.asset".into(),
+            serde_json::to_vec(&document).unwrap(),
+        )]
+        .into(),
+    };
+    let assets = asset_sources(&source).unwrap();
+    let (path, header) = &assets["ground"];
+    assert_eq!(*path, "Assets/ground.asset");
+    assert_eq!(header["assetGuid"], "guid-ground");
+    assert_eq!(header["schemaVersion"], "mesh-asset.v1");
+    assert_eq!(header["sourceImage"], "Images/ground.png");
+    assert!(
+        header.get("renderData").is_none(),
+        "particle reference lookup retained unrelated decoded geometry"
+    );
+    assert!(serde_json::to_vec(header).unwrap().len() < 256);
+}
+
+#[test]
+fn particle_dependency_headers_preserve_metadata_and_validate_skipped_json() {
+    for input in [
+        r#"{"assetId":"a","asset_guid":"legacy","schemaVersion":"texture-asset.v1","sourceImage":"image.png","payload":[{"data":[1,2,3]}]}"#,
+        r#"{"assetId":"a","assetGuid":null,"asset_guid":"legacy","sourceImage":42,"payload":true}"#,
+        r#"{"assetId":"first","assetId":"last","assetGuid":"g","other":null}"#,
+    ] {
+        let mut expected: Value = serde_json::from_str(input).unwrap();
+        expected.as_object_mut().unwrap().retain(|k, _| {
+            matches!(
+                k.as_str(),
+                "assetId" | "assetGuid" | "asset_guid" | "schemaVersion" | "sourceImage"
+            )
+        });
+        assert_eq!(asset_header(input.as_bytes()).unwrap(), expected);
+    }
+    for broken in [
+        br#"{"assetId":"a","payload":[1,]}"#.as_slice(),
+        br#"{"assetId":"a"} trailing"#.as_slice(),
+    ] {
+        assert!(asset_header(broken).is_err());
+    }
+    let mut snapshot = source(false);
+    snapshot.files.insert(
+        "Assets/a.asset".into(),
+        br#"{"assetId":"a","asset_guid":"same"}"#.to_vec(),
+    );
+    snapshot.files.insert(
+        "Assets/b.asset".into(),
+        br#"{"assetId":"b","assetGuid":"same"}"#.to_vec(),
+    );
+    assert!(cook(&snapshot)
+        .unwrap_err()
+        .message()
+        .contains("duplicate asset GUID"));
+}
 use engine_runtime::runtime_package::{
     load_runtime_package, RuntimeProjectInfo, RuntimeScene, RUNTIME_SCENE_SCHEMA_VERSION,
 };
@@ -119,6 +183,7 @@ fn particle_effect_cook_gpu_consumer_executes_packaged_author_program() {
             .simulate_particle_effect(
                 1,
                 ParticleGpuStep {
+                    emitter_affine: Default::default(),
                     step_id,
                     delta_seconds: 1.0 / 64.0,
                     origin: [0.0; 3],
@@ -379,7 +444,7 @@ fn particle_effect_cook_is_consumed_by_the_existing_assembler() {
         "project.aife.json".into(),
         br#"{"projectId":"particle-test","projectName":"Particle Test"}"#.to_vec(),
     );
-    let (input, digest, _) = crate::neutral_assembler::assemble(&snapshot, None).unwrap();
+    let (input, digest, _) = crate::neutral_assembler::assemble(&snapshot, None, "test").unwrap();
     assert_eq!(
         input
             .assets
@@ -395,7 +460,7 @@ fn particle_effect_cook_is_consumed_by_the_existing_assembler() {
             .replace("sin(ctx.time)", "cos(ctx.time)")
             .into_bytes(),
     );
-    let (_, after, _) = crate::neutral_assembler::assemble(&snapshot, None).unwrap();
+    let (_, after, _) = crate::neutral_assembler::assemble(&snapshot, None, "test").unwrap();
     assert_ne!(before, after);
 }
 
@@ -418,6 +483,7 @@ fn particle_effect_cook_package_owns_exact_program_bytes_without_author_tree() {
         },
     );
     input.scenes.push(RuntimeScene {
+        main_camera: None,
         schema_version: RUNTIME_SCENE_SCHEMA_VERSION.into(),
         id: "main".into(),
         name: "Main".into(),

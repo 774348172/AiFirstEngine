@@ -1,0 +1,86 @@
+{
+  "schemaVersion": "254-r2-n7w-authoritative-verification-failure-report.v1",
+  "status": "r2_n7w_failed_cleanup_residual_identity_unproven",
+  "recordedAt": "2026-07-21T21:31:18.2196835+08:00",
+  "authorization": {
+    "gate": "R2-N7W",
+    "consumed": true,
+    "retryCount": 0,
+    "retryAuthorized": false,
+    "r2N8ConditionallyAuthorized": true,
+    "r2N8ConditionSatisfied": false,
+    "r2N8Executed": false
+  },
+  "freshEnvironment": {
+    "root": "I:\\R2N7W\\20260721-211340",
+    "targetRoot": "I:\\R2N7W\\20260721-211340\\target",
+    "evidenceRoot": "I:\\R2N7W\\20260721-211340\\evidence",
+    "historicalRootReused": false
+  },
+  "freeze": {
+    "manifestPath": "I:\\R2N7W\\20260721-211340\\freeze-manifest.json",
+    "manifestSha256": "sha256:1fa000195304d6b6e9895a5b8c99d08580346fb06000f3b41a2658bc0b9b4612",
+    "fileCount": 480,
+    "verifiedBeforeAndAfterEveryExecutedStage": true,
+    "drift": false
+  },
+  "passedStages": [
+    {
+      "stage": "gateway-all-features-compile",
+      "exitCode": 0,
+      "elapsedMs": 110261,
+      "residualProcessIds": [],
+      "resultSha256": "sha256:471ddb64ac5e05eeccdda953691ff3225778484e494e843f713b68ffb864341a"
+    },
+    {
+      "stage": "gateway-all-features-test",
+      "exitCode": 0,
+      "elapsedMs": 30839,
+      "residualProcessIds": [],
+      "resultSha256": "sha256:d5f3f2a97ac0d71ecdc61172344436284547a1ad03bd3467d8017afb0180c419"
+    }
+  ],
+  "terminalStage": {
+    "stage": "workspace-default-test",
+    "terminalKind": "failed",
+    "diagnosticCode": "r2_n7v.cleanup_residual_process",
+    "elapsedMs": 748990,
+    "exitCode": null,
+    "testOkSummaryCount": 70,
+    "failedMarkerCount": 0,
+    "residualProcessIds": [6740, 10528, 5632, 19956, 21472, 10608, 13892, 1788],
+    "lastHeartbeatDescendantProcessIds": [17848, 13600, 3900],
+    "resultSha256": "sha256:fac5e3e8da37af3adc3c7039b9b8ecf2dc440259c1d9381a026c79fe793841cf",
+    "stdoutSha256": "sha256:a2a7bcdb1a6b4d346ffc113a2216df5d5a97dbb4f34f03d42db68d28531365ff",
+    "stderrSha256": "sha256:1a90a2c61a6d4e79d7600425a8e17b32b5ba19fdca77092f2fb9c713f43e8e5c",
+    "eventsSha256": "sha256:41a21e44c97d4486369a6aa17b655caa3fbd1d19f81954dab58198f2513d56ac"
+  },
+  "evidenceGap": {
+    "domain": "construction validation runner process identity",
+    "diagnosticCode": "r2_n7w.cleanup_identity_unproven",
+    "summary": "The Runner retained every observed descendant as a raw PID and rechecked all historical PIDs after a 12.5 minute run. It did not retain process image, creation time, or parent lineage at terminal cleanup, so the eight matches cannot be proven to be leaked descendants rather than PID reuse.",
+    "cargoExitCodeProven": false,
+    "productTestFailureProven": false,
+    "formal254R2DesignFailureProven": false
+  },
+  "cleanup": {
+    "reportedResidualIdsTerminatedByRunner": true,
+    "postRunCargoProcessCount": 0,
+    "postRunRustcProcessCount": 0,
+    "currentResidualProcessIds": []
+  },
+  "notExecuted": [
+    "workspace-all-features-test",
+    "workspace-default-check",
+    "workspace-all-features-check",
+    "workspace-fmt-check",
+    "R2-N8",
+    "R2-G",
+    "production candidate",
+    "activation",
+    "real Codex evaluation",
+    "F-A/F-B/G",
+    "three-engine B channel"
+  ],
+  "disposition": "Stop after R2-N7W failure. Do not retry. R2-N8 conditional authorization did not activate."
+}

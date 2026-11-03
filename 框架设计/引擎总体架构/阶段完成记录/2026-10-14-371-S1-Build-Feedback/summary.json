@@ -1,0 +1,43 @@
+{
+  "historicalPreparationMs": 1847660,
+  "comparison": "Historical combination, not a controlled same-source speedup.",
+  "runs": [
+    {
+      "role": "first",
+      "preparationMs": 1293567,
+      "savedHistoricalMinutes": 9.234883333333334,
+      "totalHarnessMs": 1295477,
+      "states": {
+        "produced": 10331
+      },
+      "engineCache": "rebuilt"
+    },
+    {
+      "role": "warm-alias",
+      "preparationMs": 508067,
+      "savedHistoricalMinutes": 22.32655,
+      "totalHarnessMs": 511638,
+      "states": {
+        "hit": 10331
+      },
+      "engineCache": "artifact_hit"
+    },
+    {
+      "role": "one-material",
+      "preparationMs": 270253,
+      "savedHistoricalMinutes": 26.290116666666666,
+      "totalHarnessMs": 272614,
+      "states": {
+        "hit": 10330,
+        "produced": 1
+      },
+      "engineCache": "artifact_hit"
+    }
+  ],
+  "unchangedContentEqual": true,
+  "cargoAliasIdentityEqual": true,
+  "changedPayloads": [
+    "material-000"
+  ],
+  "playerProcesses": 0
+}

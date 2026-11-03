@@ -1,0 +1,12 @@
+Command: cargo clippy -p engine_runtime --lib --locked --message-format short
+Working directory: G:/gameEngin/rust
+Result: exit 0, 28.52s
+
+Warning inventory after normalizing file + message and ignoring line/column movement:
+- engine_runtime: 121 existing warnings
+- engine_input: 2 existing warnings
+- aui_geometry_cache.rs: 0 warnings
+- aui_layout_runtime.rs: 0 warnings
+- B11-introduced warnings: 0
+
+Baseline comparison: identical to B10-lint.txt. No allow attribute or debt-ledger change was added.

@@ -1,0 +1,95 @@
+{
+  "schemaVersion": "254-r2-n6-fresh-environment-equivalence-failure-report.v1",
+  "observedAt": "2026-07-21T16:01:57.9925930+08:00",
+  "status": "failed",
+  "constructionState": "r2_n6_failed_source_snapshot_gitlink_material_invalid",
+  "scope": {
+    "authorizedGate": "R2-N6",
+    "authorizedExecutionCount": 1,
+    "retryCount": 0,
+    "freshRoot": "I:\\R2N6\\20260721-152100",
+    "sourceRoot": "G:\\gameEngin",
+    "constructionPreflightOnly": true,
+    "productionAuthorizationProduced": false
+  },
+  "sourceInventoryBeforeExecution": {
+    "trackedCount": 1911,
+    "untrackedNonIgnoredCount": 205,
+    "cleanCheckoutEquivalentClaimed": false
+  },
+  "execution": {
+    "command": "cargo test -p ai_tool_gateway 'production_candidate::tests::r2_n6_fresh_environment_equivalence_preflight' -- --ignored --exact --test-threads=1 --nocapture",
+    "deadlineMs": 1800000,
+    "result": "failed",
+    "testSummary": {
+      "passed": 0,
+      "failed": 1
+    },
+    "panic": "R2-N6 production-equivalent candidate did not seal; inspect durable failure output"
+  },
+  "moduleInvocations": [
+    {
+      "purpose": "cheap durable-failure probe",
+      "preparationOperationId": "production-candidate-8a569202166ae16f9f569bf17d8722ee",
+      "result": "expected_failure",
+      "diagnosticCode": "production_candidate.request_invalid",
+      "message": "Target platform, artifact budget, and total deadline are required.",
+      "failureArtifactPath": "I:\\R2N6\\20260721-152100\\failure-output\\failures\\production-candidate-8a569202166ae16f9f569bf17d8722ee.json",
+      "failureArtifactFileSha256": "926bea22821dbf45dfa409e6665225ab142c48b3a283c3faa6ec6c8da5a2d54b",
+      "failureArtifactSemanticDigest": "sha256:9df8068d904a4fb45791ce311330252ecb288a4c68a598c0942116142bb796bb",
+      "cleanupMeasurementDigest": "sha256:23a4feb5ac628a7c19ab0b7bcf14761bce13f37a25c7bd95180a08a294d7eb57",
+      "reopenedAndVerified": true
+    },
+    {
+      "purpose": "single production-equivalent preflight invocation",
+      "preparationOperationId": "production-candidate-05d89dde918a089b1e3c986c054d0073",
+      "result": "failed",
+      "diagnosticCode": "source_snapshot.material_invalid",
+      "message": "Source material 'AiFirstEngine' is not a regular file.",
+      "processResults": [],
+      "failureArtifactPath": "I:\\R2N6\\20260721-152100\\output\\failures\\production-candidate-05d89dde918a089b1e3c986c054d0073.json",
+      "failureArtifactFileSha256": "e0662a9e5858790e476e8d2342a50435d57f41ecce851d5416da1a339e251648",
+      "failureArtifactSemanticDigest": "sha256:a663f607c9a25f187100a7b6b10094ccd5477edb4d59d99ea6527c7dc93f1594",
+      "cleanupMeasurementDigest": "sha256:5d0114dc5e0b0067b54148647baf71a4c9fe864d58e1017cf8a8871c9a13f954",
+      "reopenedAndVerified": true
+    }
+  ],
+  "firstTrueFailure": {
+    "stage": "source snapshot inventory",
+    "diagnosticCode": "source_snapshot.material_invalid",
+    "material": "AiFirstEngine",
+    "gitIndexMode": "160000",
+    "gitObjectType": "commit",
+    "gitObjectId": "e332e0ba6d5c1b7772de57ef69804eebe28ea415",
+    "filesystemType": "directory",
+    "gitmodulesPresent": false,
+    "cause": "The tracked inventory is sourced from git ls-files --cached and assumes every returned path is a regular file. AiFirstEngine is a gitlink entry, so the producer rejected it before copying source material.",
+    "classification": "implementation and repository-source-contract mismatch",
+    "productionProcessesStarted": false,
+    "editorConformanceReached": false
+  },
+  "cleanup": {
+    "workRootExists": true,
+    "workRootRecursiveChildren": 0,
+    "failureWorkRootExists": false,
+    "outputRootContainsOnlyDurableFailure": true,
+    "failureOutputRootContainsOnlyDurableFailure": true,
+    "evidenceRootExists": false,
+    "stagingAbsentAfterCleanup": true,
+    "observedProcessIds": [],
+    "childProcessesReaped": true
+  },
+  "authorizationOutcome": {
+    "r2N6AuthorizationConsumed": true,
+    "r2N6Passed": false,
+    "r2N6Retried": false,
+    "historicalR2GExecuted": false,
+    "productionCandidateCreated": false,
+    "activationExecuted": false,
+    "realCodexEvaluationExecuted": false,
+    "fAFBGateGExecuted": false,
+    "threeEngineBChannelExecuted": false
+  },
+  "nextAction": "Stop. A new design/construction decision is required for gitlink source-material semantics before any separately authorized future preflight.",
+  "forbiddenActionsExecuted": []
+}

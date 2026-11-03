@@ -1,0 +1,76 @@
+{
+  "schemaVersion": "project-observation-contract.v1",
+  "contractId": "bm09.actual-cross-domain",
+  "observations": [
+    {
+      "path": "bm09.tick",
+      "type": "integer",
+      "description": "Committed SDK state and preceding native query; no formal GPU or performance claim"
+    },
+    {
+      "path": "bm09.base",
+      "type": "number",
+      "description": "Committed SDK state and preceding native query; no formal GPU or performance claim"
+    },
+    {
+      "path": "bm09.rebases",
+      "type": "integer",
+      "description": "Committed SDK state and preceding native query; no formal GPU or performance claim"
+    },
+    {
+      "path": "bm09.spatialRead",
+      "type": "integer",
+      "description": "Committed SDK state and preceding native query; no formal GPU or performance claim"
+    },
+    {
+      "path": "bm09.charactersRead",
+      "type": "integer",
+      "description": "Committed SDK state and preceding native query; no formal GPU or performance claim"
+    },
+    {
+      "path": "bm09.jointsRead",
+      "type": "integer",
+      "description": "Committed SDK state and preceding native query; no formal GPU or performance claim"
+    },
+    {
+      "path": "bm09.bodiesRead",
+      "type": "integer",
+      "description": "Committed SDK state and preceding native query; no formal GPU or performance claim"
+    },
+    {
+      "path": "bm09.pathsRead",
+      "type": "integer",
+      "description": "Committed SDK state and preceding native query; no formal GPU or performance claim"
+    },
+    {
+      "path": "bm09.queriesRead",
+      "type": "integer",
+      "description": "Committed SDK state and preceding native query; no formal GPU or performance claim"
+    },
+    {
+      "path": "bm09.maxSpatialErrorM",
+      "type": "number",
+      "description": "Committed SDK state and preceding native query; no formal GPU or performance claim"
+    },
+    {
+      "path": "bm09.maxQueryErrorM",
+      "type": "number",
+      "description": "Committed SDK state and preceding native query; no formal GPU or performance claim"
+    },
+    {
+      "path": "bm09.maxPathEndpointErrorM",
+      "type": "number",
+      "description": "Committed SDK state and preceding native query; no formal GPU or performance claim"
+    },
+    {
+      "path": "bm09.domainsValid",
+      "type": "bool",
+      "description": "Committed SDK state and preceding native query; no formal GPU or performance claim"
+    },
+    {
+      "path": "bm09.sample",
+      "type": "string",
+      "description": "Committed SDK state and preceding native query; no formal GPU or performance claim"
+    }
+  ]
+}

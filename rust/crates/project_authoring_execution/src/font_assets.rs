@@ -11,7 +11,7 @@ pub const FONT_STACK_ASSET_SCHEMA_VERSION: &str = "font-stack-asset.v1";
 pub const FONT_ATLAS_PROFILE_ASSET_SCHEMA_VERSION: &str = "font-atlas-profile-asset.v1";
 pub const PROJECT_FONT_ASSET_GRAPH_SCHEMA_VERSION: &str = "project-font-asset-graph.v1";
 pub const PROJECT_FONT_RECIPE_VERSION: &str =
-    "project-font-recipe.v1;swash=0.2.10;fdsm=0.8.0;fdsm-ttf-parser=0.2.0";
+    "project-font-recipe.v2;swash=0.2.10;fdsm=0.8.0;fdsm-ttf-parser=0.2.0;rustybuzz=0.20.1;shaping=default-latin-cjk;plane-bounds=1;outline-union=i_overlay-8.1.2-nonzero-flatness-0.01px";
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]

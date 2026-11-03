@@ -17,3 +17,10 @@ project_authoring_execution = { path = "../project_authoring_execution" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 sha2 = "0.10"
+
+[dev-dependencies]
+runtime_player_winit = { path = "../runtime_player_winit" }
+png = "0.17"
+
+[features]
+spine = ["project_authoring_execution/spine"]

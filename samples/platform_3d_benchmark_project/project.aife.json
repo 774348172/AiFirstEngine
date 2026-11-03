@@ -1,0 +1,20 @@
+{
+  "schemaVersion": "aife-project.v3",
+  "projectId": "platform-3d-benchmark",
+  "projectName": "371 3D benchmark",
+  "engineVersion": "0.1.0",
+  "defaultScene": "Scenes/Main.scene.json",
+  "assetRoot": "Assets",
+  "settingsVersion": "aife-project-settings.v1",
+  "createdAt": "2026-10-10T00:00:00Z",
+  "lastOpenedAt": null,
+  "runtimeModule": {
+    "sourceKind": "projectRust",
+    "moduleId": "sample.platform-3d-benchmark.runtime",
+    "interfaceVersion": "project-runtime-module.v2",
+    "cargoManifest": "RuntimeModule/Cargo.toml",
+    "cargoPackage": "platform_3d_benchmark_project_runtime",
+    "playerBinary": "platform_3d_benchmark_player",
+    "projectGameSdk": "project-game-sdk.v1"
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "callId": "mcp-call-3",
+  "diagnostics": [],
+  "evidenceRefs": [
+    "\\\\?\\G:\\gameEngin\\samples\\complex_shooter_project\\Library\\EngineTools\\Deliveries\\engine-op-323-short-2\\Build\\Windows\\dev\\package-manifest.json",
+    "\\\\?\\G:\\gameEngin\\samples\\complex_shooter_project\\Library\\EngineTools\\Deliveries\\engine-op-323-short-2\\Build\\Windows\\dev\\data\\runtime_package\\reports\\build-runtime-package-report.json",
+    "\\\\?\\G:\\gameEngin\\samples\\complex_shooter_project\\Library\\EngineTools\\Deliveries\\engine-op-323-short-2\\Build\\Windows\\dev\\reports\\windowed-player-run-report.json"
+  ],
+  "operationId": "engine-op-323-short-2",
+  "output": {
+    "artifactIdentity": "sha256:83592b1cc68a6a08d8786340867891d38c5f9fe4c501686eb7b46fd4a1ea9952",
+    "deliveryIdentity": "sha256:56e6b2e4d4610c7a9ef5f43becea92e2ef2fc8ba1aba71b3a79bbb0500955185",
+    "deliveryRef": "engine-delivery:sha256:56e6b2e4d4610c7a9ef5f43becea92e2ef2fc8ba1aba71b3a79bbb0500955185",
+    "packageDir": "\\\\?\\G:\\gameEngin\\samples\\complex_shooter_project\\Library\\EngineTools\\Deliveries\\engine-op-323-short-2\\Build\\Windows\\dev",
+    "playerExecutable": "\\\\?\\G:\\gameEngin\\samples\\complex_shooter_project\\Library\\EngineTools\\Deliveries\\engine-op-323-short-2\\Build\\Windows\\dev\\Game.exe",
+    "prepareSummary": {
+      "missReasons": [],
+      "preparationIdentity": "sha256:c3482987675730d68faef4e94cb251f069336bec33bb79c083899edbdfe0c56f",
+      "producedCount": 0,
+      "producerCount": 10,
+      "reusedCount": 10,
+      "sourceIdentity": "sha256:24bc21ba5ab9afb9e147aa0d82bec67762744605e4d6a9bf7f1b6ec5df1d333f",
+      "targetProfile": "windows-dev",
+      "uncachedStages": [
+        "source-validation",
+        "scene-prefab-rule-aui-input",
+        "runtime-glue",
+        "package-assembly"
+      ]
+    },
+    "runtimePackageDir": "\\\\?\\G:\\gameEngin\\samples\\complex_shooter_project\\Library\\EngineTools\\Deliveries\\engine-op-323-short-2\\Build\\Windows\\dev\\data\\runtime_package",
+    "status": "success",
+    "targetProfile": "windows-dev"
+  },
+  "projectRevision": "sha256:306d1eade2ec81f5323169e4fa39ec88e5334681cb12a71410f8f3092f56215a",
+  "receiptRef": null,
+  "recommendedLocalTransitions": [
+    {
+      "category": "verify_delivery",
+      "reason": "The completed build returned a delivery reference that can be verified.",
+      "toolName": "engine_delivery_verify"
+    }
+  ],
+  "replayed": false,
+  "retryability": "not_needed",
+  "schemaVersion": "engine-tool-result.v2",
+  "status": "completed",
+  "toolName": "engine_project_build"
+}

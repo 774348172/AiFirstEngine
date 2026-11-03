@@ -1,0 +1,11 @@
+    Finished `test` profile [unoptimized] target(s) in 0.22s
+     Running unittests src\lib.rs (target\debug\deps\engine_runtime-8d6e86943e999f7f.exe)
+
+running 3 tests
+test wgpu_backend::real::tests::b3_real_gpu_vertex_cache_is_bounded_and_retires_unused_sources ... ok
+test runtime_renderer::tests::b3_real_gpu_projection_upload_reuse_and_cow_pixel_refresh ... ok
+gate_d_gpu: adapter=WgpuDeviceContext { backend_name: "Vulkan", device_label: "runtime-wgpu-device", queue_label: "runtime-wgpu-queue", real_wgpu_enabled: true }, full_bytes=1011648, changed_bytes=7872, partial_uploads=1
+test runtime_renderer::tests::gate_d_real_gpu_presenter_partial_upload_and_backend_recovery_match_fresh_pixels ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 792 filtered out; finished in 0.81s
+

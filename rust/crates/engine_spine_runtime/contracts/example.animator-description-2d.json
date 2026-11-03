@@ -1,0 +1,16 @@
+{
+  "schema": "animator-description-2d.v2",
+  "assetId": "probe.animator",
+  "backend": "spine",
+  "skeleton": {"assetId": "probe.skeleton"},
+  "default": "walk",
+  "parameters": {"moving":{"kind":"bool","default":true}, "attack":{"kind":"trigger"}},
+  "layers": [{"name":"base","blend":"replace"},{"name":"upper","blend":"replace","mask":"upperBody"}],
+  "masks": {"upperBody":["upper"]},
+  "animations": {
+    "walk":{"clip":"motion","layer":"base","playback":"loop","speedPermille":1000,"mixInSeconds":0.08},
+    "attack":{"clip":"attack","layer":"upper","playback":"once","speedPermille":1000,"mixInSeconds":0.08,"fadeOutSeconds":0.12,"onComplete":"fadeOutLayer"}
+  },
+  "rules": [{"all":[{"triggered":"attack"}],"play":"attack"}],
+  "sockets": {"muzzle":{"bone":"upper","offset":[0,0,0]}}
+}

@@ -1,8 +1,8 @@
 use engine_input::{RuntimeInputEvent, RuntimeInputFrame, RuntimePointerButton};
 use engine_runtime::aui::{
-    AuiActionRef, AuiCanvas, AuiCompositionStage, AuiDocument, AuiInteractionConfig,
-    AuiInteractionProductizationReport, AuiInteractionState, AuiInteractionSystem, AuiLayoutEngine,
-    AuiNode, AuiNodeKind, AuiRect,
+    AuiActionEvent, AuiActionRef, AuiCanvas, AuiCompositionStage, AuiDocument,
+    AuiInteractionConfig, AuiInteractionProductizationReport, AuiInteractionState,
+    AuiInteractionSystem, AuiLayoutEngine, AuiNode, AuiNodeKind, AuiRect,
 };
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -39,6 +39,9 @@ pub struct ComplexShooterAuiComplexControlsMetrics {
     pub scroll_applied_node_count: usize,
     pub clipped_node_count: usize,
     pub scene_selectable_proxy_count: usize,
+    pub toggle_value_changed_action_count: usize,
+    pub slider_value_changed_action_count: usize,
+    pub composed_activation_action_count: usize,
     pub deferred_flag_count: usize,
 }
 
@@ -55,6 +58,7 @@ pub struct ComplexShooterAuiComplexControlsReport {
     pub focus_report: AuiInteractionProductizationReport,
     pub wheel_scroll_report: AuiInteractionProductizationReport,
     pub drag_scroll_report: AuiInteractionProductizationReport,
+    pub control_report: AuiInteractionProductizationReport,
     pub scene_authoring_report: ComplexShooterAuiSceneAuthoringReport,
     pub artifacts: Vec<String>,
     pub diagnostics: Vec<String>,
@@ -155,6 +159,68 @@ pub fn run_complex_shooter_aui_complex_controls_report(
         &mut drag_state,
     );
 
+    let controls_document = controls_document();
+    let controls_layout = AuiLayoutEngine::layout(&controls_document, 1);
+    let controls_frame = runtime_frame(vec![
+        RuntimeInputEvent::PointerDown {
+            x: 20.0,
+            y: 20.0,
+            button: RuntimePointerButton::Primary,
+        },
+        RuntimeInputEvent::PointerUp {
+            x: 20.0,
+            y: 20.0,
+            button: RuntimePointerButton::Primary,
+        },
+        RuntimeInputEvent::PointerDown {
+            x: 75.0,
+            y: 80.0,
+            button: RuntimePointerButton::Primary,
+        },
+        RuntimeInputEvent::PointerUp {
+            x: 75.0,
+            y: 80.0,
+            button: RuntimePointerButton::Primary,
+        },
+        RuntimeInputEvent::KeyDown {
+            key: "ArrowRight".to_string(),
+        },
+        RuntimeInputEvent::PointerDown {
+            x: 20.0,
+            y: 140.0,
+            button: RuntimePointerButton::Primary,
+        },
+        RuntimeInputEvent::PointerUp {
+            x: 20.0,
+            y: 140.0,
+            button: RuntimePointerButton::Primary,
+        },
+    ]);
+    let mut controls_state = AuiInteractionState::default();
+    let (controls_result, control_report) = run_interaction(
+        &controls_document,
+        &controls_layout,
+        &controls_frame,
+        &mut controls_state,
+    );
+    let toggle_value_changed_action_count = controls_result
+        .actions
+        .iter()
+        .filter(|action| action.node_id == "toggle" && action.event == AuiActionEvent::ValueChanged)
+        .count();
+    let slider_value_changed_action_count = controls_result
+        .actions
+        .iter()
+        .filter(|action| action.node_id == "slider" && action.event == AuiActionEvent::ValueChanged)
+        .count();
+    let composed_activation_action_count = controls_result
+        .actions
+        .iter()
+        .filter(|action| {
+            action.node_id == "composed_button" && action.event == AuiActionEvent::Activate
+        })
+        .count();
+
     let scene_authoring_report = run_complex_shooter_aui_scene_authoring_report(
         ComplexShooterAuiSceneAuthoringRequest::new(&request.project_root, &request.output_root),
     );
@@ -185,6 +251,9 @@ pub fn run_complex_shooter_aui_complex_controls_report(
             clipped_node_count: wheel_scroll_report.clipped_node_count
                 + drag_scroll_report.clipped_node_count,
             scene_selectable_proxy_count: scene_authoring_report.metrics.selectable_proxy_count,
+            toggle_value_changed_action_count,
+            slider_value_changed_action_count,
+            composed_activation_action_count,
             deferred_flag_count: [
                 modal_report.authoring_action_payload_deferred,
                 modal_report.control_style_deferred,
@@ -198,6 +267,7 @@ pub fn run_complex_shooter_aui_complex_controls_report(
         focus_report,
         wheel_scroll_report,
         drag_scroll_report,
+        control_report,
         scene_authoring_report,
         artifacts: Vec::new(),
         diagnostics: Vec::new(),
@@ -213,6 +283,18 @@ fn run_interaction_report(
     frame: &RuntimeInputFrame,
     state: &mut AuiInteractionState,
 ) -> AuiInteractionProductizationReport {
+    run_interaction(document, layout, frame, state).1
+}
+
+fn run_interaction(
+    document: &AuiDocument,
+    layout: &engine_runtime::aui::AuiLayoutResult,
+    frame: &RuntimeInputFrame,
+    state: &mut AuiInteractionState,
+) -> (
+    engine_runtime::aui::AuiInteractionResult,
+    AuiInteractionProductizationReport,
+) {
     let config = AuiInteractionConfig::default();
     let result = AuiInteractionSystem::process_with_state(document, layout, frame, state, config);
     let filtered = frame.filter_consumed_events(&result.consumed_event_indices);
@@ -221,7 +303,7 @@ fn run_interaction_report(
         frame.frame_id,
         &state.scroll_offsets,
     );
-    AuiInteractionProductizationReport::from_result(
+    let report = AuiInteractionProductizationReport::from_result(
         document,
         frame.events.len(),
         filtered.events.len(),
@@ -230,7 +312,8 @@ fn run_interaction_report(
         state.active_drag_source().map(ToOwned::to_owned),
     )
     .with_focus_state(&state.focus)
-    .with_layout_report(&layout_after.report)
+    .with_layout_report(&layout_after.report);
+    (result, report)
 }
 
 fn recompute(report: &mut ComplexShooterAuiComplexControlsReport) {
@@ -276,10 +359,25 @@ fn recompute(report: &mut ComplexShooterAuiComplexControlsReport) {
             .diagnostics
             .push("error:aui_scene_hit_test.no_selectable_proxy".to_string());
     }
-    if report.metrics.deferred_flag_count != 2 {
+    if report.metrics.toggle_value_changed_action_count == 0 {
+        report
+            .diagnostics
+            .push("error:aui_toggle.value_changed_missing".to_string());
+    }
+    if report.metrics.slider_value_changed_action_count < 2 {
+        report
+            .diagnostics
+            .push("error:aui_slider.pointer_or_keyboard_value_changed_missing".to_string());
+    }
+    if report.metrics.composed_activation_action_count == 0 {
+        report
+            .diagnostics
+            .push("error:aui_composed_control.activation_missing".to_string());
+    }
+    if report.metrics.deferred_flag_count != 1 {
         report
             .next_actions
-            .push("verify_214_deferred_flags".to_string());
+            .push("verify_m4e_deferred_flags".to_string());
     }
     report.status = if report
         .diagnostics
@@ -418,6 +516,54 @@ fn scroll_document() -> AuiDocument {
         vec![AuiCanvas::screen_overlay("main", 320.0, 240.0, "root")],
         vec![root, list, item_0, item_1, item_2],
     )
+}
+
+fn controls_document() -> AuiDocument {
+    let root = AuiNode::new("root", AuiNodeKind::Panel, AuiRect::stretch_full()).with_children([
+        "toggle",
+        "slider",
+        "composed_button",
+    ]);
+    let toggle = AuiNode::new(
+        "toggle",
+        AuiNodeKind::Toggle,
+        AuiRect::fixed_position(0.0, 0.0, 100.0, 40.0),
+    )
+    .with_parent("root")
+    .with_interactable(true)
+    .with_toggle_checked(false)
+    .with_action(AuiActionRef::value_changed("settings.toggle"));
+    let slider = AuiNode::new(
+        "slider",
+        AuiNodeKind::Slider,
+        AuiRect::fixed_position(0.0, 60.0, 100.0, 40.0),
+    )
+    .with_parent("root")
+    .with_interactable(true)
+    .with_slider(0.25, 0.0, 1.0, 0.1)
+    .with_action(AuiActionRef::value_changed("settings.slider"));
+    let button = AuiNode::new(
+        "composed_button",
+        AuiNodeKind::Button,
+        AuiRect::fixed_position(0.0, 120.0, 160.0, 40.0),
+    )
+    .with_parent("root")
+    .with_children(["button_icon"])
+    .with_interactable(true)
+    .with_action(AuiActionRef::activate("menu.play"));
+    let icon = AuiNode::new(
+        "button_icon",
+        AuiNodeKind::Image,
+        AuiRect::fixed_position(8.0, 4.0, 32.0, 32.0),
+    )
+    .with_parent("composed_button");
+    let mut document = AuiDocument::new(
+        "complex-controls-values",
+        vec![AuiCanvas::screen_overlay("main", 320.0, 200.0, "root")],
+        vec![root, toggle, slider, button, icon],
+    );
+    document.schema_version = engine_runtime::aui_layout_schema::AUI_LAYOUT_SCHEMA_VERSION.into();
+    document
 }
 
 fn runtime_frame(events: Vec<RuntimeInputEvent>) -> RuntimeInputFrame {

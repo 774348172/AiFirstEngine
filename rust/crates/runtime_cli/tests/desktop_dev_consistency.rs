@@ -338,3 +338,50 @@ impl Drop for Fixture {
         let _ = fs::remove_dir_all(&self.root);
     }
 }
+
+#[test]
+fn desktop_release_dev_relabel_and_wrong_profile_report_are_rejected() {
+    let f = Fixture::new("release-dev-relabel");
+    let mut manifest = f.manifest_value();
+    manifest["profile"] = "release".into();
+    f.write_manifest_value(&manifest);
+    assert!(
+        validate_desktop_dev_package(&f.package).is_err(),
+        "relabelled dev delivery must not pass"
+    );
+    fs::create_dir_all(f.package.join("reports")).unwrap();
+    let report = json!({"buildProfile":"dev","status":"success","executableHash":manifest["playerArtifactHash"],"actualDescriptor":manifest["playerModuleDescriptor"]});
+    fs::write(
+        f.package.join("reports/player-artifact-build-report.json"),
+        serde_json::to_vec(&report).unwrap(),
+    )
+    .unwrap();
+    assert_eq!(
+        validate_desktop_dev_package(&f.package).unwrap_err().code,
+        "desktop_release_build_invalid"
+    );
+}
+#[test]
+fn desktop_release_checks_composition_and_rejects_wrong_dll() {
+    let f = Fixture::new("release-matching-composition");
+    let mut manifest = f.manifest_value();
+    manifest["profile"] = "release".into();
+    f.write_manifest_value(&manifest);
+    fs::create_dir_all(f.package.join("reports")).unwrap();
+    let report = json!({"buildProfile":"release","status":"success","executableHash":manifest["playerArtifactHash"],"actualDescriptor":manifest["playerModuleDescriptor"]});
+    fs::write(
+        f.package.join("reports/player-artifact-build-report.json"),
+        serde_json::to_vec(&report).unwrap(),
+    )
+    .unwrap();
+    validate_desktop_dev_package(&f.package).unwrap();
+    fs::write(
+        f.package.join("engine_runtime.dll"),
+        b"wrong-profile-or-content DLL",
+    )
+    .unwrap();
+    assert_eq!(
+        validate_desktop_dev_package(&f.package).unwrap_err().code,
+        "desktop_dev_file_hash_mismatch"
+    );
+}

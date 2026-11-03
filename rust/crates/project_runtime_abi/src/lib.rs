@@ -9,17 +9,24 @@ use sha2::{Digest, Sha256};
 use std::mem::size_of;
 
 pub const PROJECT_RUNTIME_ABI_MAJOR: u32 = 1;
-pub const PROJECT_RUNTIME_ABI_MINOR: u32 = 1;
+pub const PROJECT_RUNTIME_ABI_MINOR: u32 = 7;
 pub const PROJECT_RUNTIME_ENTRY_SYMBOL: &[u8] = b"aife_project_runtime_entry_v1\0";
 pub const PROJECT_RUNTIME_ABI_SCHEMA: &str = concat!(
     "project-runtime-abi.v1;",
     "status:i32;handle:u64,u64;slice:*const-u8,u64;buffer:*mut-u8,u64,u64;",
-    "host-api:u32,u32,world-query,world-read-component;",
+    "host-api:u32,u32,world-query,world-read-component,ui-query,ui-stage,ui-subscribe,ui-cancel,ui-structure,ui-invalidate,spatial-resolve.v1;",
     "call-context:u32,u32,handle,*host-api,u64,time-context;",
     "module-api:u32,u32,u32,u32,u64,handle,[u8;32],",
     "descriptor,create-session,destroy-session,session-id,invoke-rule,",
-    "handle-aui-actions,fixed-update,resolve-ui-state,observe"
+    "handle-aui-actions,fixed-update,resolve-ui-state,observe,lifecycle,ui-event,ui-extension"
 );
+
+pub const PROJECT_RUNTIME_CAP_LIFECYCLE: u64 = 1 << 8;
+pub const PROJECT_RUNTIME_CAP_UI_EVENTS: u64 = 1 << 9;
+pub const PROJECT_RUNTIME_CAP_UI_EXTENSIONS: u64 = 1 << 10;
+/// Optional data-plane capabilities. No HostApi layout extension is implied.
+pub const PROJECT_RUNTIME_CAP_GENERATED_CONTENT: u64 = 1 << 11;
+pub const PROJECT_RUNTIME_CAP_PROJECT_STORAGE: u64 = 1 << 12;
 
 pub const PROJECT_RUNTIME_CAP_RULES: u64 = 1 << 0;
 pub const PROJECT_RUNTIME_CAP_SESSIONS: u64 = 1 << 1;
@@ -137,9 +144,33 @@ pub struct ProjectRuntimeHostApi {
     pub reserved: u32,
     pub world_query: Option<ProjectRuntimeHostCall>,
     pub world_read_component: Option<ProjectRuntimeHostCall>,
+    pub ui_query: Option<ProjectRuntimeHostCall>,
+    pub ui_stage: Option<ProjectRuntimeHostCall>,
+    pub ui_subscribe: Option<ProjectRuntimeHostCall>,
+    pub ui_cancel: Option<ProjectRuntimeHostCall>,
+    pub ui_structure: Option<ProjectRuntimeHostCall>,
+    pub ui_invalidate: Option<ProjectRuntimeHostCall>,
+    pub spatial_resolve: Option<ProjectRuntimeHostCall>,
 }
 
 pub const PROJECT_RUNTIME_HOST_API_STRUCT_SIZE: u32 = size_of::<ProjectRuntimeHostApi>() as u32;
+
+/// # Safety
+/// A non-null pointer must expose its readable size prefix. If it advertises the current
+/// size, it must point to an aligned, initialized host table live for this call.
+pub unsafe fn copy_validated_host_api(
+    api: *const ProjectRuntimeHostApi,
+) -> Option<ProjectRuntimeHostApi> {
+    if api.is_null() {
+        return None;
+    }
+    // SAFETY: only the size prefix is required until the size has been checked.
+    if unsafe { api.cast::<u32>().read() } < PROJECT_RUNTIME_HOST_API_STRUCT_SIZE {
+        return None;
+    }
+    // SAFETY: the caller guarantees initialized storage matching the checked size.
+    Some(unsafe { api.read() })
+}
 
 #[repr(C)]
 #[derive(Clone, Copy)]
@@ -184,6 +215,9 @@ pub struct ProjectRuntimeApi {
     pub fixed_update: Option<ProjectRuntimeModuleCall>,
     pub resolve_ui_state: Option<ProjectRuntimeModuleCall>,
     pub observe: Option<ProjectRuntimeModuleCall>,
+    pub lifecycle: Option<ProjectRuntimeModuleCall>,
+    pub ui_event: Option<ProjectRuntimeModuleCall>,
+    pub ui_extension: Option<ProjectRuntimeModuleCall>,
 }
 
 pub const PROJECT_RUNTIME_API_STRUCT_SIZE: u32 = size_of::<ProjectRuntimeApi>() as u32;
@@ -217,6 +251,7 @@ mod tests {
 
     #[test]
     fn abi_layout_uses_fixed_width_fields_and_explicit_struct_sizes() {
+        assert_eq!(PROJECT_RUNTIME_ABI_MINOR, 7);
         assert_eq!(size_of::<ProjectRuntimeAbiStatus>(), size_of::<i32>());
         assert_eq!(size_of::<ProjectRuntimeOpaqueHandle>(), 16);
         assert_eq!(
@@ -273,5 +308,73 @@ mod tests {
                 "forbidden dependency: {forbidden}"
             );
         }
+    }
+}
+
+/// Copy a module table only after validating its fixed prefix.
+///
+/// # Safety
+/// `api` must point to a live ABI table with at least its declared size and a readable u32 prefix.
+pub unsafe fn copy_validated_api(api: *const ProjectRuntimeApi) -> Option<ProjectRuntimeApi> {
+    if api.is_null() {
+        return None;
+    }
+    // SAFETY: the ABI guarantees the first u32 is readable before any layout-dependent access.
+    let size = unsafe { api.cast::<u32>().read() };
+    if size < PROJECT_RUNTIME_API_STRUCT_SIZE {
+        return None;
+    }
+    // SAFETY: the declared table size includes the version prefix.
+    let major = unsafe { api.cast::<u32>().add(1).read() };
+    let minor = unsafe { api.cast::<u32>().add(2).read() };
+    if major != PROJECT_RUNTIME_ABI_MAJOR || minor != PROJECT_RUNTIME_ABI_MINOR {
+        return None;
+    }
+    // SAFETY: the checked size/version cover the complete current table.
+    Some(unsafe { api.read() })
+}
+
+#[cfg(test)]
+mod lifecycle_abi_tests {
+    #[test]
+    fn short_host_table_is_rejected_before_reading_ui_callbacks() {
+        let old_prefix: u32 = 4;
+        // SAFETY: only the readable prefix may be accessed for this short table.
+        assert!(
+            unsafe { super::copy_validated_host_api((&old_prefix as *const u32).cast()) }.is_none()
+        );
+        assert!(unsafe { super::copy_validated_host_api(std::ptr::null()) }.is_none());
+        let current = super::ProjectRuntimeHostApi {
+            struct_size: super::PROJECT_RUNTIME_HOST_API_STRUCT_SIZE,
+            reserved: 0,
+            world_query: None,
+            world_read_component: None,
+            ui_query: None,
+            ui_stage: None,
+            ui_subscribe: None,
+            ui_cancel: None,
+            ui_structure: None,
+            ui_invalidate: None,
+            spatial_resolve: None,
+        };
+        // SAFETY: current is a live fully initialized table.
+        assert!(unsafe { super::copy_validated_host_api(&current) }.is_some());
+    }
+    #[test]
+    fn short_table_is_rejected_before_reading_new_callback() {
+        let old_prefix: u32 = 4;
+        // SAFETY: a short table needs only its readable size field; no other bytes may be read.
+        assert!(unsafe { super::copy_validated_api((&old_prefix as *const u32).cast()) }.is_none());
+    }
+
+    #[test]
+    fn abi_1_5_module_is_rejected_after_ui_extension_table_growth() {
+        // SAFETY: every field in this C ABI table has an all-zero valid representation.
+        let mut legacy: super::ProjectRuntimeApi = unsafe { std::mem::zeroed() };
+        legacy.struct_size = super::PROJECT_RUNTIME_API_STRUCT_SIZE;
+        legacy.abi_major = super::PROJECT_RUNTIME_ABI_MAJOR;
+        legacy.abi_minor = 5;
+        // SAFETY: legacy is a live, fully sized table with an intentionally stale ABI version.
+        assert!(unsafe { super::copy_validated_api(&legacy) }.is_none());
     }
 }

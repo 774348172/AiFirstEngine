@@ -1,0 +1,20 @@
+   Compiling engine_runtime v0.1.0 (G:\gameEngin\rust\crates\engine_runtime)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 26.98s
+     Running unittests src\lib.rs (target\debug\deps\engine_runtime-f2e49a160a17050d.exe)
+
+running 12 tests
+test aui_animation::tests::once_per_present_frame_and_cancel_restore_current_controller_base ... ok
+test aui_animation::tests::unrelated_base_write_does_not_block_commit_and_slot_reuse_rejects_old_handle ... ok
+test aui_animation::tests::dispose_before_completion_reports_distinct_outcome_and_old_session_handle_is_invalid ... ok
+test aui_animation::tests::commit_final_checks_property_revision_and_does_not_restore_start_snapshot ... ok
+test aui_animation::tests::release_complete_is_single_and_hold_is_lifecycle_bound ... ok
+test aui_animation::tests::immediate_conflicts_reject_and_replace_cancel_existing_once ... ok
+test aui_animation::tests::delayed_overlap_is_checked_on_activation_and_reused_slot_does_not_change_priority ... ok
+test aui_animation::tests::ui_clock_continues_when_game_clock_paused_and_resume_never_catches_up ... ok
+test aui_animation::tests::sequence_gaps_release_override_and_parallel_can_reuse_property_in_gap ... ok
+test aui_animation::tests::active_scope_pauses_and_hidden_remains_alive ... ok
+test aui_animation::tests::infinite_playback_clamps_long_frames_and_drag_cancels_translation_only ... ok
+test aui_animation::tests::reverse_yoyo_loop_and_zero_duration_commit_have_defined_endpoints ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 753 filtered out; finished in 0.01s
+

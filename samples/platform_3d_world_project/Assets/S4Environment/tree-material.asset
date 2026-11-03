@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "material-asset.v2",
+  "assetId": "s4-tree-material",
+  "assetGuid": "guid-s4-tree-material",
+  "preset": "unlit",
+  "baseColor": [
+    0.12,
+    0.38,
+    0.15,
+    1
+  ],
+  "blend": "opaque",
+  "cull": "back",
+  "depth": "testAndWrite",
+  "displayName": "S4 forest material"
+}

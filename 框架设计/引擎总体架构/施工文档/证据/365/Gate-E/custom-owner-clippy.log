@@ -1,0 +1,1499 @@
+warning: this `impl` can be derived
+   --> crates\engine_input\src\input_mapping.rs:496:1
+    |
+496 | / impl Default for InputProcessorPreset {
+497 | |     fn default() -> Self {
+498 | |         Self::None
+499 | |     }
+500 | | }
+    | |_^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#derivable_impls
+    = note: `-W clippy::derivable-impls` implied by `-W clippy::all`
+    = help: to override `-W clippy::all` add `#[allow(clippy::derivable_impls)]`
+help: replace the manual implementation with a derive attribute and mark the default variant
+    |
+488 + #[derive(Default)]
+489 | pub enum InputProcessorPreset {
+490 ~     #[default]
+491 ~     None,
+    |
+
+warning: this `impl` can be derived
+   --> crates\engine_input\src\input_mapping.rs:532:1
+    |
+532 | / impl Default for InputTriggerPreset {
+533 | |     fn default() -> Self {
+534 | |         Self::Pressed
+535 | |     }
+536 | | }
+    | |_^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#derivable_impls
+help: replace the manual implementation with a derive attribute and mark the default variant
+    |
+503 + #[derive(Default)]
+504 | pub enum InputTriggerPreset {
+505 |     /// One press edge. `JustPressed` is the explicit authoring alias.
+...
+509 |     #[serde(alias = "WhilePressed")]
+510 ~     #[default]
+511 ~     Pressed,
+    |
+
+warning: `engine_input` (lib) generated 2 warnings (run `cargo clippy --fix --lib -p engine_input -- ` to apply 2 suggestions)
+    Checking engine_runtime v0.1.0 (G:\gameEngin\rust\crates\engine_runtime)
+warning: unneeded unit expression
+   --> crates\engine_runtime\src\render_contract\cooked.rs:388:21
+    |
+388 |                     ()
+    |                     ^^ help: remove the final `()`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#unused_unit
+    = note: `-W clippy::unused-unit` implied by `-W clippy::all`
+    = help: to override `-W clippy::all` add `#[allow(clippy::unused_unit)]`
+
+warning: variant `IrInterpreter` is never constructed
+  --> crates\engine_runtime\src\project_logic.rs:19:5
+   |
+17 | pub(crate) enum RuleExecutorHint {
+   |                 ---------------- variant in this enum
+18 |     RustAot,
+19 |     IrInterpreter,
+   |     ^^^^^^^^^^^^^
+   |
+   = note: `RuleExecutorHint` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: associated function `validation_only_ir_interpreter` is never used
+  --> crates\engine_runtime\src\project_logic.rs:38:19
+   |
+29 | impl RuleCall {
+   | ------------- associated function in this implementation
+...
+38 |     pub(crate) fn validation_only_ir_interpreter(rule_id: impl Into<String>) -> Self {
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: method `remove_sprite_renderer2d` is never used
+   --> crates\engine_runtime\src\world.rs:529:19
+    |
+160 | impl World {
+    | ---------- method in this implementation
+...
+529 |     pub(crate) fn remove_sprite_renderer2d(&mut self, id: &EntityId) -> Option<SpriteRenderer2D> {
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: enum `ComponentColumn` has a public `len` method, but no `is_empty` method
+   --> crates\engine_runtime\src\archetype.rs:155:5
+    |
+155 |     pub fn len(&self) -> usize {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#len_without_is_empty
+    = note: `-W clippy::len-without-is-empty` implied by `-W clippy::all`
+    = help: to override `-W clippy::all` add `#[allow(clippy::len_without_is_empty)]`
+
+warning: explicit call to `.into_iter()` in function argument accepting `IntoIterator`
+   --> crates\engine_runtime\src\archetype.rs:326:60
+    |
+326 |         for (column, value) in self.columns.iter_mut().zip(values.into_iter()) {
+    |                                                            ^^^^^^^^^^^^^^^^^^
+    |
+note: this parameter accepts any `IntoIterator`, so you don't need to call `.into_iter()`
+   --> /rustc/ac68faa20c58cbccd01ee7208bf3b6e93a7d7f96/library\core\src\iter\traits\iterator.rs:634:11
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#useless_conversion
+    = note: `-W clippy::useless-conversion` implied by `-W clippy::all`
+    = help: to override `-W clippy::all` add `#[allow(clippy::useless_conversion)]`
+help: consider removing the `.into_iter()`
+    |
+326 -         for (column, value) in self.columns.iter_mut().zip(values.into_iter()) {
+326 +         for (column, value) in self.columns.iter_mut().zip(values) {
+    |
+
+warning: this can be `std::io::Error::other(_)`
+   --> crates\engine_runtime\src\atomic_file_replace.rs:199:13
+    |
+199 |           Err(io::Error::new(
+    |  _____________^
+200 | |             io::ErrorKind::Other,
+201 | |             format!("injected {current:?} fault"),
+202 | |         ))
+    | |_________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#io_other_error
+    = note: `-W clippy::io-other-error` implied by `-W clippy::all`
+    = help: to override `-W clippy::all` add `#[allow(clippy::io_other_error)]`
+help: use `std::io::Error::other`
+    |
+199 ~         Err(io::Error::other(
+200 ~             format!("injected {current:?} fault"),
+    |
+
+warning: this `impl` can be derived
+   --> crates\engine_runtime\src\aui.rs:300:1
+    |
+300 | / impl Default for AuiCompositionStage {
+301 | |     fn default() -> Self {
+302 | |         Self::ScreenOverlay
+303 | |     }
+304 | | }
+    | |_^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#derivable_impls
+    = note: `-W clippy::derivable-impls` implied by `-W clippy::all`
+    = help: to override `-W clippy::all` add `#[allow(clippy::derivable_impls)]`
+help: replace the manual implementation with a derive attribute and mark the default variant
+    |
+294 + #[derive(Default)]
+295 | pub enum AuiCompositionStage {
+296 |     BeforeWorld,
+297 ~     #[default]
+298 ~     ScreenOverlay,
+    |
+
+warning: large size difference between variants
+    --> crates\engine_runtime\src\aui.rs:1050:1
+     |
+1050 | / pub enum ProjectUiStateSnapshotCacheResult {
+1051 | |     Reuse,
+     | |     ----- the second-largest variant carries no data at all
+1052 | |     Replace(ProjectUiStateSnapshotOutput),
+     | |     ------------------------------------- the largest variant contains at least 440 bytes
+1053 | | }
+     | |_^ the entire enum is at least 440 bytes
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#large_enum_variant
+     = note: `-W clippy::large-enum-variant` implied by `-W clippy::all`
+     = help: to override `-W clippy::all` add `#[allow(clippy::large_enum_variant)]`
+help: consider boxing the large fields or introducing indirection in some other way to reduce the total size of the enum
+     |
+1052 -     Replace(ProjectUiStateSnapshotOutput),
+1052 +     Replace(Box<ProjectUiStateSnapshotOutput>),
+     |
+
+warning: unnecessary closure used to substitute value for `Option::None`
+    --> crates\engine_runtime\src\aui.rs:6868:28
+     |
+6868 |               let authored = node.style.get_or_insert_with(|| AuiStyle {
+     |  ____________________________^
+6869 | |                 color: None,
+6870 | |                 text_color: None,
+6871 | |                 font_size: None,
+6872 | |                 font: None,
+6873 | |             });
+     | |______________^
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#unnecessary_lazy_evaluations
+     = note: `-W clippy::unnecessary-lazy-evaluations` implied by `-W clippy::all`
+     = help: to override `-W clippy::all` add `#[allow(clippy::unnecessary_lazy_evaluations)]`
+help: use `get_or_insert` instead
+     |
+6868 ~             let authored = node.style.get_or_insert(AuiStyle {
+6869 +                 color: None,
+6870 +                 text_color: None,
+6871 +                 font_size: None,
+6872 +                 font: None,
+6873 ~             });
+     |
+
+warning: this function has too many arguments (8/7)
+    --> crates\engine_runtime\src\aui.rs:7952:5
+     |
+7952 | /     fn apply_control_feedback_measured_inner(
+7953 | |         output: &mut AuiRuntimePresentOutput,
+7954 | |         interaction: &AuiInteractionResult,
+7955 | |         state: &mut crate::aui_control_feedback::AuiControlFeedbackState,
+...    |
+7960 | |         presentation: Option<&ResolvedGameViewPresentation>,
+7961 | |     ) -> crate::aui_control_feedback::AuiControlFeedbackFrame {
+     | |_____________________________________________________________^
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#too_many_arguments
+     = note: `-W clippy::too-many-arguments` implied by `-W clippy::all`
+     = help: to override `-W clippy::all` add `#[allow(clippy::too_many_arguments)]`
+
+warning: the following explicit lifetimes could be elided: 'a
+     --> crates\engine_runtime\src\aui.rs:10428:35
+      |
+10428 |     fn explicit_navigation_target<'a>(
+      |                                   ^^
+10429 |         node: &'a AuiNode,
+      |                ^^
+10430 |         direction: AuiNavigationDirection,
+10431 |     ) -> Option<&'a str> {
+      |                  ^^
+      |
+      = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#needless_lifetimes
+      = note: `-W clippy::needless-lifetimes` implied by `-W clippy::all`
+      = help: to override `-W clippy::all` add `#[allow(clippy::needless_lifetimes)]`
+help: elide the lifetimes
+      |
+10428 ~     fn explicit_navigation_target(
+10429 ~         node: &AuiNode,
+10430 |         direction: AuiNavigationDirection,
+10431 ~     ) -> Option<&str> {
+      |
+
+warning: the following explicit lifetimes could be elided: 'a
+     --> crates\engine_runtime\src\aui.rs:10626:35
+      |
+10626 |     fn scrollbar_thumb_at_pointer<'a>(
+      |                                   ^^
+10627 |         layout: &'a AuiLayoutResult,
+      |                  ^^
+10628 |         pointer: AuiPointer,
+10629 |     ) -> Option<&'a AuiScrollbarMetrics> {
+      |                  ^^
+      |
+      = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#needless_lifetimes
+help: elide the lifetimes
+      |
+10626 ~     fn scrollbar_thumb_at_pointer(
+10627 ~         layout: &AuiLayoutResult,
+10628 |         pointer: AuiPointer,
+10629 ~     ) -> Option<&AuiScrollbarMetrics> {
+      |
+
+warning: field assignment outside of initializer for an instance created with Default::default()
+     --> crates\engine_runtime\src\aui.rs:11090:9
+      |
+11090 |         result.input_mode_before = state.input_mode.label();
+      |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      |
+note: consider initializing the variable with `aui::AuiInteractionResult { input_mode_before: state.input_mode.label(), ime_platform_coverage: AUI_IME_PLATFORM_COVERAGE.to_string(), focusable_derived_from_interactable: document
+                  .nodes
+                  .iter()
+                  .any(|node| node.focusable.is_none() && node.interactable), ..Default::default() }` and removing relevant reassignments
+     --> crates\engine_runtime\src\aui.rs:11089:9
+      |
+11089 |         let mut result = AuiInteractionResult::default();
+      |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#field_reassign_with_default
+      = note: `-W clippy::field-reassign-with-default` implied by `-W clippy::all`
+      = help: to override `-W clippy::all` add `#[allow(clippy::field_reassign_with_default)]`
+
+warning: this function has too many arguments (13/7)
+     --> crates\engine_runtime\src\aui.rs:13332:5
+      |
+13332 | /     fn layout_node(
+13333 | |         canvas: &AuiCanvas,
+13334 | |         nodes_by_id: &HashMap<&str, &AuiNode>,
+13335 | |         node_id: &str,
+...     |
+13345 | |         parent_effective_visible: bool,
+13346 | |     ) {
+      | |_____^
+      |
+      = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#too_many_arguments
+
+warning: this function has too many arguments (8/7)
+   --> crates\engine_runtime\src\frame_loop.rs:270:5
+    |
+270 | /     pub fn tick_runtime_frame_with_input_delta_and_fixed_steps(
+271 | |         &mut self,
+272 | |         world: &mut World,
+273 | |         render_scene: &mut RenderSceneState,
+...   |
+278 | |         fixed_step_count: usize,
+279 | |     ) -> RuntimeFrameOutput {
+    | |___________________________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#too_many_arguments
+
+warning: this function has too many arguments (8/7)
+   --> crates\engine_runtime\src\frame_loop.rs:292:5
+    |
+292 | /     pub fn tick_runtime_frame_with_runtime_context_and_delta(
+293 | |         &mut self,
+294 | |         world: &mut World,
+295 | |         render_scene: &mut RenderSceneState,
+...   |
+300 | |         runtime_context: RuntimeFrameContext<'_>,
+301 | |     ) -> RuntimeFrameOutput {
+    | |___________________________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#too_many_arguments
+
+warning: this function has too many arguments (9/7)
+   --> crates\engine_runtime\src\frame_loop.rs:314:5
+    |
+314 | /     fn tick_runtime_frame_with_input_delta_and_runtime(
+315 | |         &mut self,
+316 | |         world: &mut World,
+317 | |         render_scene: &mut RenderSceneState,
+...   |
+323 | |         fixed_step_count: usize,
+324 | |     ) -> RuntimeFrameOutput {
+    | |___________________________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#too_many_arguments
+
+warning: the `Err`-variant returned from this function is very large
+   --> crates\engine_runtime\src\frame_loop.rs:349:10
+    |
+349 |     ) -> Result<RuntimeFrameOutput, RuntimeFrameSessionFault> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 288 bytes
+    |
+    = help: try reducing the size of `frame_loop::RuntimeFrameSessionFault`, for example by boxing large elements or replacing it with `Box<frame_loop::RuntimeFrameSessionFault>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+    = note: `-W clippy::result-large-err` implied by `-W clippy::all`
+    = help: to override `-W clippy::all` add `#[allow(clippy::result_large_err)]`
+
+warning: this function has too many arguments (9/7)
+   --> crates\engine_runtime\src\frame_loop.rs:339:5
+    |
+339 | /     pub fn tick_runtime_frame_with_project_session_and_delta(
+340 | |         &mut self,
+341 | |         world: &mut World,
+342 | |         render_scene: &mut RenderSceneState,
+...   |
+348 | |         project_session: ProjectRuntimeFrameSession<'_>,
+349 | |     ) -> Result<RuntimeFrameOutput, RuntimeFrameSessionFault> {
+    | |_____________________________________________________________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#too_many_arguments
+
+warning: the `Err`-variant returned from this function is very large
+   --> crates\engine_runtime\src\frame_loop.rs:374:10
+    |
+374 |     ) -> Result<RuntimeFrameOutput, RuntimeFrameSessionFault> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 288 bytes
+    |
+    = help: try reducing the size of `frame_loop::RuntimeFrameSessionFault`, for example by boxing large elements or replacing it with `Box<frame_loop::RuntimeFrameSessionFault>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: this function has too many arguments (10/7)
+   --> crates\engine_runtime\src\frame_loop.rs:363:5
+    |
+363 | /     pub fn tick_runtime_frame_with_project_session_delta_and_fixed_steps(
+364 | |         &mut self,
+365 | |         world: &mut World,
+366 | |         render_scene: &mut RenderSceneState,
+...   |
+373 | |         fixed_step_count: usize,
+374 | |     ) -> Result<RuntimeFrameOutput, RuntimeFrameSessionFault> {
+    | |_____________________________________________________________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#too_many_arguments
+
+warning: the `Err`-variant returned from this function is very large
+   --> crates\engine_runtime\src\frame_loop.rs:399:10
+    |
+399 |     ) -> Result<RuntimeFrameOutput, RuntimeFrameSessionFault> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 288 bytes
+    |
+    = help: try reducing the size of `frame_loop::RuntimeFrameSessionFault`, for example by boxing large elements or replacing it with `Box<frame_loop::RuntimeFrameSessionFault>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: this function has too many arguments (10/7)
+   --> crates\engine_runtime\src\frame_loop.rs:388:5
+    |
+388 | /     fn tick_runtime_frame_with_input_delta_runtime_and_session(
+389 | |         &mut self,
+390 | |         world: &mut World,
+391 | |         render_scene: &mut RenderSceneState,
+...   |
+398 | |         mut project_session: Option<ProjectRuntimeFrameSession<'_>>,
+399 | |     ) -> Result<RuntimeFrameOutput, RuntimeFrameSessionFault> {
+    | |_____________________________________________________________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#too_many_arguments
+
+warning: this function has too many arguments (8/7)
+  --> crates\engine_runtime\src\gameplay_trace.rs:23:5
+   |
+23 | /     pub fn write(
+24 | |         frame_index: u64,
+25 | |         phase: impl Into<String>,
+26 | |         rule_id: impl Into<String>,
+...  |
+31 | |         after: Option<String>,
+32 | |     ) -> Self {
+   | |_____________^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#too_many_arguments
+
+warning: the `Err`-variant returned from this function is very large
+   --> crates\engine_runtime\src\logic_executor.rs:287:10
+    |
+287 |     ) -> Result<Vec3, WorldApiError> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 168 bytes
+    |
+    = help: try reducing the size of `world::WorldMutationError`, for example by boxing large elements or replacing it with `Box<world::WorldMutationError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> crates\engine_runtime\src\logic_executor.rs:309:10
+    |
+309 |     ) -> Result<ComponentValue, WorldApiError> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 168 bytes
+    |
+    = help: try reducing the size of `world::WorldMutationError`, for example by boxing large elements or replacing it with `Box<world::WorldMutationError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> crates\engine_runtime\src\logic_executor.rs:323:10
+    |
+323 |     ) -> Result<LogicWrite, WorldApiError> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 168 bytes
+    |
+    = help: try reducing the size of `world::WorldMutationError`, for example by boxing large elements or replacing it with `Box<world::WorldMutationError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> crates\engine_runtime\src\logic_executor.rs:335:10
+    |
+335 |     ) -> Result<LogicWrite, WorldApiError> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 168 bytes
+    |
+    = help: try reducing the size of `world::WorldMutationError`, for example by boxing large elements or replacing it with `Box<world::WorldMutationError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> crates\engine_runtime\src\logic_executor.rs:345:10
+    |
+345 |     ) -> Result<LogicWrite, WorldApiError> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 168 bytes
+    |
+    = help: try reducing the size of `world::WorldMutationError`, for example by boxing large elements or replacing it with `Box<world::WorldMutationError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: manual implementation of `.is_multiple_of()`
+  --> crates\engine_runtime\src\particle_render.rs:20:16
+   |
+20 |             || indices.len() % 3 != 0
+   |                ^^^^^^^^^^^^^^^^^^^^^^ help: replace with: `!indices.len().is_multiple_of(3)`
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#manual_is_multiple_of
+   = note: `-W clippy::manual-is-multiple-of` implied by `-W clippy::all`
+   = help: to override `-W clippy::all` add `#[allow(clippy::manual_is_multiple_of)]`
+
+warning: this function has too many arguments (9/7)
+   --> crates\engine_runtime\src\particle_render.rs:350:5
+    |
+350 | /     fn upload(
+351 | |         &self,
+352 | |         device: &wgpu::Device,
+353 | |         encoder: &mut wgpu::CommandEncoder,
+...   |
+359 | |         k: u32,
+360 | |     ) {
+    | |_____^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#too_many_arguments
+
+warning: this function has too many arguments (8/7)
+   --> crates\engine_runtime\src\project_logic.rs:196:5
+    |
+196 | /     pub fn run_fixed_update_with_runtime_and_time_context(
+197 | |         &self,
+198 | |         frame_index: u64,
+199 | |         world: &mut World,
+...   |
+204 | |         instance_loader: &mut RuntimeInstanceLoader,
+205 | |     ) -> Vec<LogicResult> {
+    | |_________________________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#too_many_arguments
+
+warning: this function has too many arguments (8/7)
+   --> crates\engine_runtime\src\project_logic.rs:287:5
+    |
+287 | /     pub fn run_frame_update_with_runtime_and_time_context(
+288 | |         &self,
+289 | |         frame_index: u64,
+290 | |         world: &mut World,
+...   |
+295 | |         instance_loader: &mut RuntimeInstanceLoader,
+296 | |     ) -> Vec<LogicResult> {
+    | |_________________________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#too_many_arguments
+
+warning: this function has too many arguments (9/7)
+   --> crates\engine_runtime\src\project_logic.rs:313:5
+    |
+313 | /     pub fn run_post_physics_with_runtime_and_time_context(
+314 | |         &self,
+315 | |         frame_index: u64,
+316 | |         world: &mut World,
+...   |
+322 | |         instance_loader: &mut RuntimeInstanceLoader,
+323 | |     ) -> Vec<LogicResult> {
+    | |_________________________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#too_many_arguments
+
+warning: this function has too many arguments (10/7)
+   --> crates\engine_runtime\src\project_logic.rs:340:5
+    |
+340 | /     fn run_phase(
+341 | |         &self,
+342 | |         frame_index: u64,
+343 | |         phase: RulePhase,
+...   |
+350 | |         runtime_context: Option<RuntimeCommandContext<'_>>,
+351 | |     ) -> Vec<LogicResult> {
+    | |_________________________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#too_many_arguments
+
+warning: this `impl` can be derived
+  --> crates\engine_runtime\src\project_rule_asset.rs:92:1
+   |
+92 | / impl Default for ProjectRuleAssetValidationStatus {
+93 | |     fn default() -> Self {
+94 | |         Self::Unknown
+95 | |     }
+96 | | }
+   | |_^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#derivable_impls
+help: replace the manual implementation with a derive attribute and mark the default variant
+   |
+86 + #[derive(Default)]
+87 | pub enum ProjectRuleAssetValidationStatus {
+88 ~     #[default]
+89 ~     Unknown,
+   |
+
+warning: the `Err`-variant returned from this function is very large
+   --> crates\engine_runtime\src\project_runtime_module.rs:105:63
+    |
+105 |     fn matches(&self, requested: &RuntimeProjectModuleRef) -> Result<(), ProjectRuntimeError> {
+    |                                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 136 bytes
+    |
+    = help: try reducing the size of `project_runtime_module::ProjectRuntimeError`, for example by boxing large elements or replacing it with `Box<project_runtime_module::ProjectRuntimeError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> crates\engine_runtime\src\project_runtime_module.rs:149:10
+    |
+149 |     ) -> Result<(), ProjectRuntimeError>;
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 136 bytes
+    |
+    = help: try reducing the size of `project_runtime_module::ProjectRuntimeError`, for example by boxing large elements or replacing it with `Box<project_runtime_module::ProjectRuntimeError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> crates\engine_runtime\src\project_runtime_module.rs:274:10
+    |
+274 |     ) -> Result<(), ProjectRuntimeError> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 136 bytes
+    |
+    = help: try reducing the size of `project_runtime_module::ProjectRuntimeError`, for example by boxing large elements or replacing it with `Box<project_runtime_module::ProjectRuntimeError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> crates\engine_runtime\src\project_runtime_module.rs:310:10
+    |
+310 |     ) -> Result<(), ProjectRuntimeError> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 136 bytes
+    |
+    = help: try reducing the size of `project_runtime_module::ProjectRuntimeError`, for example by boxing large elements or replacing it with `Box<project_runtime_module::ProjectRuntimeError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> crates\engine_runtime\src\project_runtime_module.rs:336:10
+    |
+336 |     ) -> Result<(), ProjectRuntimeError> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 136 bytes
+    |
+    = help: try reducing the size of `project_runtime_module::ProjectRuntimeError`, for example by boxing large elements or replacing it with `Box<project_runtime_module::ProjectRuntimeError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> crates\engine_runtime\src\project_runtime_module.rs:362:10
+    |
+362 |     ) -> Result<(), ProjectRuntimeError> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 136 bytes
+    |
+    = help: try reducing the size of `project_runtime_module::ProjectRuntimeError`, for example by boxing large elements or replacing it with `Box<project_runtime_module::ProjectRuntimeError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> crates\engine_runtime\src\project_runtime_module.rs:381:10
+    |
+381 |     ) -> Result<RegistrationRuntimeParts, ProjectRuntimeError> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 136 bytes
+    |
+    = help: try reducing the size of `project_runtime_module::ProjectRuntimeError`, for example by boxing large elements or replacing it with `Box<project_runtime_module::ProjectRuntimeError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> crates\engine_runtime\src\project_runtime_module.rs:484:64
+    |
+484 |     pub fn singleton(module: Arc<dyn ProjectRuntimeModule>) -> Result<Self, ProjectRuntimeError> {
+    |                                                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 136 bytes
+    |
+    = help: try reducing the size of `project_runtime_module::ProjectRuntimeError`, for example by boxing large elements or replacing it with `Box<project_runtime_module::ProjectRuntimeError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> crates\engine_runtime\src\project_runtime_module.rs:498:10
+    |
+498 |     ) -> Result<&mut Self, ProjectRuntimeError> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 136 bytes
+    |
+    = help: try reducing the size of `project_runtime_module::ProjectRuntimeError`, for example by boxing large elements or replacing it with `Box<project_runtime_module::ProjectRuntimeError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> crates\engine_runtime\src\project_runtime_module.rs:527:38
+    |
+527 |     pub fn only_descriptor(&self) -> Result<&ProjectRuntimeModuleDescriptor, ProjectRuntimeError> {
+    |                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 136 bytes
+    |
+    = help: try reducing the size of `project_runtime_module::ProjectRuntimeError`, for example by boxing large elements or replacing it with `Box<project_runtime_module::ProjectRuntimeError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> crates\engine_runtime\src\project_runtime_module.rs:559:10
+    |
+559 |     ) -> Result<Arc<dyn ProjectRuntimeModule>, ProjectRuntimeError> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 136 bytes
+    |
+    = help: try reducing the size of `project_runtime_module::ProjectRuntimeError`, for example by boxing large elements or replacing it with `Box<project_runtime_module::ProjectRuntimeError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> crates\engine_runtime\src\project_runtime_module.rs:589:10
+    |
+589 |     ) -> Result<BoundProjectRuntime, ProjectRuntimeError> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 136 bytes
+    |
+    = help: try reducing the size of `project_runtime_module::ProjectRuntimeError`, for example by boxing large elements or replacing it with `Box<project_runtime_module::ProjectRuntimeError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> crates\engine_runtime\src\project_runtime_native_adapter.rs:141:43
+    |
+141 |     pub fn new(api: ProjectRuntimeApi) -> Result<Self, ProjectRuntimeError> {
+    |                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 136 bytes
+    |
+    = help: try reducing the size of `project_runtime_module::ProjectRuntimeError`, for example by boxing large elements or replacing it with `Box<project_runtime_module::ProjectRuntimeError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> crates\engine_runtime\src\project_runtime_native_adapter.rs:149:10
+    |
+149 |     ) -> Result<Self, ProjectRuntimeError>
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 136 bytes
+    |
+    = help: try reducing the size of `project_runtime_module::ProjectRuntimeError`, for example by boxing large elements or replacing it with `Box<project_runtime_module::ProjectRuntimeError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> crates\engine_runtime\src\project_runtime_native_adapter.rs:159:10
+    |
+159 |     ) -> Result<Self, ProjectRuntimeError> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 136 bytes
+    |
+    = help: try reducing the size of `project_runtime_module::ProjectRuntimeError`, for example by boxing large elements or replacing it with `Box<project_runtime_module::ProjectRuntimeError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> crates\engine_runtime\src\project_runtime_native_adapter.rs:202:6
+    |
+202 | ) -> Result<LinkedProjectRuntimeSet, ProjectRuntimeError> {
+    |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 136 bytes
+    |
+    = help: try reducing the size of `project_runtime_module::ProjectRuntimeError`, for example by boxing large elements or replacing it with `Box<project_runtime_module::ProjectRuntimeError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> crates\engine_runtime\src\project_runtime_native_adapter.rs:209:6
+    |
+209 | ) -> Result<LinkedProjectRuntimeSet, ProjectRuntimeError> {
+    |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 136 bytes
+    |
+    = help: try reducing the size of `project_runtime_module::ProjectRuntimeError`, for example by boxing large elements or replacing it with `Box<project_runtime_module::ProjectRuntimeError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: using `clone` on type `ProjectRuntimeTransform` which implements the `Copy` trait
+    --> crates\engine_runtime\src\project_runtime_native_adapter.rs:1938:60
+     |
+1938 |                 ComponentValue::Transform(engine_transform(transform.clone())),
+     |                                                            ^^^^^^^^^^^^^^^^^ help: try dereferencing it: `*transform`
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#clone_on_copy
+     = note: `-W clippy::clone-on-copy` implied by `-W clippy::all`
+     = help: to override `-W clippy::all` add `#[allow(clippy::clone_on_copy)]`
+
+warning: the `Err`-variant returned from this function is very large
+    --> crates\engine_runtime\src\project_runtime_native_adapter.rs:2029:45
+     |
+2029 | fn validate_api(api: &ProjectRuntimeApi) -> Result<(), ProjectRuntimeError> {
+     |                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 136 bytes
+     |
+     = help: try reducing the size of `project_runtime_module::ProjectRuntimeError`, for example by boxing large elements or replacing it with `Box<project_runtime_module::ProjectRuntimeError>`
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+    --> crates\engine_runtime\src\project_runtime_native_adapter.rs:2113:61
+     |
+2113 | fn validate_descriptor(descriptor: &SdkModuleDescriptor) -> Result<(), ProjectRuntimeError> {
+     |                                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 136 bytes
+     |
+     = help: try reducing the size of `project_runtime_module::ProjectRuntimeError`, for example by boxing large elements or replacing it with `Box<project_runtime_module::ProjectRuntimeError>`
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+    --> crates\engine_runtime\src\project_runtime_native_adapter.rs:2140:6
+     |
+2140 | ) -> Result<project_runtime_abi::ProjectRuntimeModuleCall, ProjectRuntimeError> {
+     |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 136 bytes
+     |
+     = help: try reducing the size of `project_runtime_module::ProjectRuntimeError`, for example by boxing large elements or replacing it with `Box<project_runtime_module::ProjectRuntimeError>`
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+  --> crates\engine_runtime\src\project_runtime_session\spatial.rs:10:6
+   |
+10 | ) -> Result<Option<ComponentValue>, WorldApiError> {
+   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 168 bytes
+   |
+   = help: try reducing the size of `world::WorldMutationError`, for example by boxing large elements or replacing it with `Box<world::WorldMutationError>`
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+  --> crates\engine_runtime\src\project_runtime_session\structural.rs:16:10
+   |
+16 |     ) -> Result<CommitWithReceipts, ProjectRuntimeMutationError> {
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 168 bytes
+   |
+   = help: try reducing the size of `project_runtime_session::ProjectRuntimeMutationError`, for example by boxing large elements or replacing it with `Box<project_runtime_session::ProjectRuntimeMutationError>`
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> crates\engine_runtime\src\project_runtime_session.rs:317:10
+    |
+317 |     ) -> Result<PreparedProjectRuntimeMutationBatch, ProjectRuntimeMutationError> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 168 bytes
+    |
+    = help: try reducing the size of `project_runtime_session::ProjectRuntimeMutationError`, for example by boxing large elements or replacing it with `Box<project_runtime_session::ProjectRuntimeMutationError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> crates\engine_runtime\src\project_runtime_session.rs:597:10
+    |
+597 |     ) -> Result<ProjectRuntimeMutationCommitReport, ProjectRuntimeMutationError> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 168 bytes
+    |
+    = help: try reducing the size of `project_runtime_session::ProjectRuntimeMutationError`, for example by boxing large elements or replacing it with `Box<project_runtime_session::ProjectRuntimeMutationError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: this function has too many arguments (12/7)
+   --> crates\engine_runtime\src\project_runtime_session.rs:966:1
+    |
+966 | / pub(crate) fn execute_project_runtime_session_stage_with_media(
+967 | |     session: &mut dyn ProjectRuntimeSession,
+968 | |     stage: ProjectRuntimeSessionStage,
+969 | |     frame_index: u64,
+...   |
+978 | |     runtime_context: Option<crate::gameplay_command::RuntimeCommandContext<'_>>,
+979 | | ) -> ProjectRuntimeSessionStageReport {
+    | |_____________________________________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#too_many_arguments
+
+warning: the `Err`-variant returned from this function is very large
+    --> crates\engine_runtime\src\project_runtime_session.rs:1150:10
+     |
+1150 |     ) -> Result<ProjectRuntimeMutationPreparation, ProjectRuntimeMutationError> {
+     |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 168 bytes
+     |
+     = help: try reducing the size of `project_runtime_session::ProjectRuntimeMutationError`, for example by boxing large elements or replacing it with `Box<project_runtime_session::ProjectRuntimeMutationError>`
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: this function has too many arguments (8/7)
+   --> crates\engine_runtime\src\render_command.rs:298:5
+    |
+298 | /     pub fn new(
+299 | |         command_id: RenderCommandId,
+300 | |         frame_index: u64,
+301 | |         source_entity_id: SourceEntityId,
+...   |
+306 | |         source_dirty_type: DirtyType,
+307 | |     ) -> Self {
+    | |_____________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#too_many_arguments
+
+warning: manual implementation of `.is_multiple_of()`
+   --> crates\engine_runtime\src\render_contract\cooked.rs:169:16
+    |
+169 |             || self.vertex_stride % 4 != 0
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: replace with: `!self.vertex_stride.is_multiple_of(4)`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#manual_is_multiple_of
+
+warning: manual implementation of `.is_multiple_of()`
+   --> crates\engine_runtime\src\render_contract\cooked.rs:177:16
+    |
+177 |             || self.index_count % 3 != 0
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^ help: replace with: `!self.index_count.is_multiple_of(3)`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#manual_is_multiple_of
+
+warning: manual implementation of `.is_multiple_of()`
+   --> crates\engine_runtime\src\render_geometry.rs:201:16
+    |
+201 |             || self.index_count % 3 != 0
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^ help: replace with: `!self.index_count.is_multiple_of(3)`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#manual_is_multiple_of
+
+warning: manual implementation of `.is_multiple_of()`
+   --> crates\engine_runtime\src\render_geometry.rs:202:16
+    |
+202 |             || self.first_index % 3 != 0
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^ help: replace with: `!self.first_index.is_multiple_of(3)`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#manual_is_multiple_of
+
+warning: large size difference between variants
+   --> crates\engine_runtime\src\render_graph.rs:432:1
+    |
+432 | /   pub enum RenderPassCommand {
+433 | | /     BeginView {
+434 | | |         target: String,
+435 | | |         view: crate::render_contract::ExecutableRenderView,
+436 | | |         depth_target: Option<String>,
+437 | | |     },
+    | | |_____- the second-largest variant contains at least 440 bytes
+438 | | /     DrawGeometry {
+439 | | |         draw: crate::render_geometry::DrawGeometry,
+440 | | |     },
+    | | |_____- the largest variant contains at least 952 bytes
+...   |
+514 | |       },
+515 | |   }
+    | |___^ the entire enum is at least 952 bytes
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#large_enum_variant
+help: consider boxing the large fields or introducing indirection in some other way to reduce the total size of the enum
+    |
+439 -         draw: crate::render_geometry::DrawGeometry,
+439 +         draw: Box<crate::render_geometry::DrawGeometry>,
+    |
+
+warning: this function has too many arguments (9/7)
+   --> crates\engine_runtime\src\render_resource.rs:758:5
+    |
+758 | /     fn push_event(
+759 | |         &mut self,
+760 | |         event_type: RenderResourceEventType,
+761 | |         key: &RenderAssetKey,
+...   |
+767 | |         diagnostic: Option<RenderResourceDiagnostic>,
+768 | |     ) {
+    | |_____^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#too_many_arguments
+
+warning: large size difference between variants
+   --> crates\engine_runtime\src\render_thread_worker.rs:134:1
+    |
+134 | /   pub enum RenderThreadCommand {
+135 | | /     SubmitFrame {
+136 | | |         packet: RenderFramePacket,
+137 | | |         ticket: RenderSubmissionTicket,
+138 | | |     },
+    | | |_____- the largest variant contains at least 880 bytes
+139 | | /     InsertFence {
+140 | | |         fence: RenderFence,
+141 | | |     },
+    | | |_____- the second-largest variant contains at least 40 bytes
+...   |
+144 | |       },
+145 | |   }
+    | |___^ the entire enum is at least 880 bytes
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#large_enum_variant
+help: consider boxing the large fields or introducing indirection in some other way to reduce the total size of the enum
+    |
+136 -         packet: RenderFramePacket,
+136 +         packet: Box<RenderFramePacket>,
+    |
+
+warning: large size difference between variants
+   --> crates\engine_runtime\src\render_thread_worker.rs:253:1
+    |
+253 | / enum RenderWorkerEvent {
+254 | |     Submission(RenderThreadFrameOutput, RenderSubmissionReport),
+    | |     ----------------------------------------------------------- the largest variant contains at least 2624 bytes
+255 | |     Fence(RenderFenceResult),
+256 | |     WorkerReport(RenderWorkerReport),
+    | |     -------------------------------- the second-largest variant contains at least 128 bytes
+257 | | }
+    | |_^ the entire enum is at least 2624 bytes
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#large_enum_variant
+help: consider boxing the large fields or introducing indirection in some other way to reduce the total size of the enum
+    |
+254 -     Submission(RenderThreadFrameOutput, RenderSubmissionReport),
+254 +     Submission(Box<RenderThreadFrameOutput>, Box<RenderSubmissionReport>),
+    |
+
+warning: large size difference between variants
+  --> crates\engine_runtime\src\rhi_command_plan.rs:31:1
+   |
+31 | /   pub enum RhiCommand {
+32 | | /     BeginView {
+33 | | |         target: String,
+34 | | |         view: crate::render_contract::ExecutableRenderView,
+35 | | |         depth_target: Option<String>,
+36 | | |     },
+   | | |_____- the second-largest variant contains at least 440 bytes
+...  |
+51 | | /     Draw {
+52 | | |         target: String,
+53 | | |         draw_kind: RhiDrawKind,
+54 | | |         vertex_count: u32,
+55 | | |         payload: RhiDrawPayload,
+56 | | |     },
+   | | |_____- the largest variant contains at least 981 bytes
+...  |
+60 | |       },
+61 | |   }
+   | |___^ the entire enum is at least 984 bytes
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#large_enum_variant
+help: consider boxing the large fields or introducing indirection in some other way to reduce the total size of the enum
+   |
+55 -         payload: RhiDrawPayload,
+55 +         payload: Box<RhiDrawPayload>,
+   |
+
+warning: large size difference between variants
+   --> crates\engine_runtime\src\rhi_command_plan.rs:78:1
+    |
+ 78 | /   pub enum RhiDrawPayload {
+ 79 | | /     Geometry {
+ 80 | | |         draw: crate::render_geometry::DrawGeometry,
+ 81 | | |     },
+    | | |_____- the largest variant contains at least 952 bytes
+...   |
+103 | | /     SpriteTextured {
+104 | | |         sprite_ref: String,
+105 | | |         material_ref: Option<String>,
+106 | | |         sort_key: String,
+...   | |
+111 | | |         vertices: Vec<RenderDrawVertex>,
+112 | | |     },
+    | | |_____- the second-largest variant contains at least 249 bytes
+...   |
+137 | |       },
+138 | |   }
+    | |___^ the entire enum is at least 952 bytes
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#large_enum_variant
+help: consider boxing the large fields or introducing indirection in some other way to reduce the total size of the enum
+    |
+ 80 -         draw: crate::render_geometry::DrawGeometry,
+ 80 +         draw: Box<crate::render_geometry::DrawGeometry>,
+    |
+
+warning: this `impl` can be derived
+  --> crates\engine_runtime\src\rule_ir.rs:90:1
+   |
+90 | / impl Default for RuleTrigger {
+91 | |     fn default() -> Self {
+92 | |         Self::Always
+93 | |     }
+94 | | }
+   | |_^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#derivable_impls
+help: replace the manual implementation with a derive attribute and mark the default variant
+   |
+84 + #[derive(Default)]
+85 | pub enum RuleTrigger {
+86 ~     #[default]
+87 ~     Always,
+   |
+
+warning: this returns a `Result<_, ()>`
+  --> crates\engine_runtime\src\runtime_asset_loader.rs:66:5
+   |
+66 |     pub fn load(&mut self, asset_ref: &RuntimeAssetRef) -> Result<RuntimeAssetHandle, ()> {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use a custom `Error` type instead
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_unit_err
+   = note: `-W clippy::result-unit-err` implied by `-W clippy::all`
+   = help: to override `-W clippy::all` add `#[allow(clippy::result_unit_err)]`
+
+warning: this returns a `Result<_, ()>`
+  --> crates\engine_runtime\src\runtime_asset_loader.rs:77:5
+   |
+77 |     pub fn load_async(&mut self, asset_ref: &RuntimeAssetRef) -> Result<RuntimeAssetHandle, ()> {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use a custom `Error` type instead
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_unit_err
+
+warning: this returns a `Result<_, ()>`
+  --> crates\engine_runtime\src\runtime_asset_loader.rs:88:5
+   |
+88 | /     pub fn load_by_id(
+89 | |         &mut self,
+90 | |         asset_id: impl Into<String>,
+91 | |         asset_type: impl Into<String>,
+92 | |     ) -> Result<RuntimeAssetHandle, ()> {
+   | |_______________________________________^
+   |
+   = help: use a custom `Error` type instead
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_unit_err
+
+warning: this returns a `Result<_, ()>`
+   --> crates\engine_runtime\src\runtime_asset_loader.rs:101:5
+    |
+101 |     pub fn release(&mut self, handle: &RuntimeAssetHandle) -> Result<(), ()> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: use a custom `Error` type instead
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_unit_err
+
+warning: the `Err`-variant returned from this function is very large
+    --> crates\engine_runtime\src\runtime_instance_loader.rs:1563:10
+     |
+1563 |     ) -> Result<(), PrefabInstantiateReport> {
+     |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+     |
+     = help: try reducing the size of `runtime_instance::RuntimeInstantiateReport`, for example by boxing large elements or replacing it with `Box<runtime_instance::RuntimeInstantiateReport>`
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> crates\engine_runtime\src\runtime_package_builder.rs:300:63
+    |
+300 | pub fn validate_runtime_content_hash_evidence(value: &str) -> Result<(), RuntimePackageDiagnostic> {
+    |                                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+    |
+    = help: try reducing the size of `runtime_package_builder::RuntimePackageDiagnostic`, for example by boxing large elements or replacing it with `Box<runtime_package_builder::RuntimePackageDiagnostic>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> crates\engine_runtime\src\runtime_package_builder.rs:317:6
+    |
+317 | ) -> Result<(), RuntimePackageDiagnostic> {
+    |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+    |
+    = help: try reducing the size of `runtime_package_builder::RuntimePackageDiagnostic`, for example by boxing large elements or replacing it with `Box<runtime_package_builder::RuntimePackageDiagnostic>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+    --> crates\engine_runtime\src\runtime_package_builder.rs:1164:6
+     |
+1164 | ) -> Result<serde_json::Value, RuntimePackageDiagnostic> {
+     |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+     |
+     = help: try reducing the size of `runtime_package_builder::RuntimePackageDiagnostic`, for example by boxing large elements or replacing it with `Box<runtime_package_builder::RuntimePackageDiagnostic>`
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+    --> crates\engine_runtime\src\runtime_package_builder.rs:1215:6
+     |
+1215 | ) -> Result<RuntimePrefabData, RuntimePackageDiagnostic> {
+     |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+     |
+     = help: try reducing the size of `runtime_package_builder::RuntimePackageDiagnostic`, for example by boxing large elements or replacing it with `Box<runtime_package_builder::RuntimePackageDiagnostic>`
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: manual implementation of `.is_multiple_of()`
+  --> crates\engine_runtime\src\runtime_particles.rs:92:16
+   |
+92 |             || self.indices.len() % 3 != 0
+   |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: replace with: `!self.indices.len().is_multiple_of(3)`
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#manual_is_multiple_of
+
+warning: this function has too many arguments (9/7)
+   --> crates\engine_runtime\src\runtime_renderer.rs:675:5
+    |
+675 | /     fn push_ui_composition_pass(
+676 | |         &self,
+677 | |         graph: &mut RenderGraph,
+678 | |         composition: Option<&AuiCompositionFrame>,
+...   |
+684 | |         shared_presentation: Option<&ResolvedGameViewPresentation>,
+685 | |     ) {
+    | |_____^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#too_many_arguments
+
+warning: large size difference between variants
+  --> crates\engine_runtime\src\spatial_contract\document.rs:93:1
+   |
+93 | / pub enum RuntimeEntityDocument {
+94 | |     Legacy(RuntimeEntity),
+   | |     --------------------- the largest variant contains at least 1368 bytes
+95 | |     Spatial(RuntimeEntityV2),
+   | |     ------------------------ the second-largest variant contains at least 576 bytes
+96 | | }
+   | |_^ the entire enum is at least 1368 bytes
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#large_enum_variant
+help: consider boxing the large fields or introducing indirection in some other way to reduce the total size of the enum
+   |
+94 -     Legacy(RuntimeEntity),
+94 +     Legacy(Box<RuntimeEntity>),
+   |
+
+warning: usage of `contains_key` followed by `insert` on a `BTreeMap`
+   --> crates\engine_runtime\src\wgpu_backend.rs:888:25
+    |
+888 | /                         if !self.particle_meshes.contains_key(&handle) {
+889 | |                             self.particle_meshes.insert(handle, mesh);
+890 | |                             self.owned_particle_meshes.insert(handle);
+891 | |                         }
+    | |_________________________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#map_entry
+    = note: `-W clippy::map-entry` implied by `-W clippy::all`
+    = help: to override `-W clippy::all` add `#[allow(clippy::map_entry)]`
+help: try
+    |
+888 ~                         if let std::collections::btree_map::Entry::Vacant(e) = self.particle_meshes.entry(handle) {
+889 +                             e.insert(mesh);
+890 +                             self.owned_particle_meshes.insert(handle);
+891 +                         }
+    |
+
+warning: the `Err`-variant returned from this function is very large
+   --> crates\engine_runtime\src\spatial_3d.rs:120:6
+    |
+120 | ) -> Result<SpatialWorldState, WorldMutationError> {
+    |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 168 bytes
+    |
+    = help: try reducing the size of `world::WorldMutationError`, for example by boxing large elements or replacing it with `Box<world::WorldMutationError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this closure is very large
+   --> crates\engine_runtime\src\spatial_3d.rs:141:14
+    |
+141 |         .map(|p| evaluate(p, node, cache, visiting))
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 168 bytes
+    |
+    = help: try reducing the size of `world::WorldMutationError`, for example by boxing large elements or replacing it with `Box<world::WorldMutationError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> crates\engine_runtime\src\spatial_3d.rs:193:10
+    |
+193 |     ) -> Result<(), WorldMutationError> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 168 bytes
+    |
+    = help: try reducing the size of `world::WorldMutationError`, for example by boxing large elements or replacing it with `Box<world::WorldMutationError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> crates\engine_runtime\src\spatial_3d.rs:293:67
+    |
+293 |     pub fn select_main_camera(&mut self, id: Option<EntityId>) -> Result<(), WorldMutationError> {
+    |                                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 168 bytes
+    |
+    = help: try reducing the size of `world::WorldMutationError`, for example by boxing large elements or replacing it with `Box<world::WorldMutationError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> crates\engine_runtime\src\spatial_3d.rs:367:10
+    |
+367 |     ) -> Result<(), WorldMutationError> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 168 bytes
+    |
+    = help: try reducing the size of `world::WorldMutationError`, for example by boxing large elements or replacing it with `Box<world::WorldMutationError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> crates\engine_runtime\src\spatial_3d.rs:391:10
+    |
+391 |     ) -> Result<(), WorldMutationError> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 168 bytes
+    |
+    = help: try reducing the size of `world::WorldMutationError`, for example by boxing large elements or replacing it with `Box<world::WorldMutationError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> crates\engine_runtime\src\spatial_3d.rs:482:64
+    |
+482 |     fn validate_changed_node(&self, id: &EntityId, n: Node) -> Result<(), WorldMutationError> {
+    |                                                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 168 bytes
+    |
+    = help: try reducing the size of `world::WorldMutationError`, for example by boxing large elements or replacing it with `Box<world::WorldMutationError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> crates\engine_runtime\src\spatial_3d.rs:500:10
+    |
+500 |     ) -> Result<(), WorldMutationError> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 168 bytes
+    |
+    = help: try reducing the size of `world::WorldMutationError`, for example by boxing large elements or replacing it with `Box<world::WorldMutationError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> crates\engine_runtime\src\spatial_3d.rs:520:10
+    |
+520 |     ) -> Result<(), WorldMutationError> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 168 bytes
+    |
+    = help: try reducing the size of `world::WorldMutationError`, for example by boxing large elements or replacing it with `Box<world::WorldMutationError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> crates\engine_runtime\src\world.rs:172:10
+    |
+172 |     ) -> Result<RuntimeEntityId, WorldMutationError> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 168 bytes
+    |
+    = help: try reducing the size of `world::WorldMutationError`, for example by boxing large elements or replacing it with `Box<world::WorldMutationError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> crates\engine_runtime\src\world.rs:186:10
+    |
+186 |     ) -> Result<RuntimeEntityId, WorldMutationError> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 168 bytes
+    |
+    = help: try reducing the size of `world::WorldMutationError`, for example by boxing large elements or replacing it with `Box<world::WorldMutationError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: this function has too many arguments (8/7)
+   --> crates\engine_runtime\src\world.rs:177:5
+    |
+177 | /     pub fn try_spawn_with_components(
+178 | |         &mut self,
+179 | |         id: EntityId,
+180 | |         name: impl Into<String>,
+...   |
+185 | |         renderable: Option<Renderable>,
+186 | |     ) -> Result<RuntimeEntityId, WorldMutationError> {
+    | |____________________________________________________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#too_many_arguments
+
+warning: the `Err`-variant returned from this function is very large
+   --> crates\engine_runtime\src\world.rs:231:10
+    |
+231 |     ) -> Result<(), WorldMutationError> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 168 bytes
+    |
+    = help: try reducing the size of `world::WorldMutationError`, for example by boxing large elements or replacing it with `Box<world::WorldMutationError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> crates\engine_runtime\src\world.rs:242:10
+    |
+242 |     ) -> Result<(), WorldMutationError> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 168 bytes
+    |
+    = help: try reducing the size of `world::WorldMutationError`, for example by boxing large elements or replacing it with `Box<world::WorldMutationError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> crates\engine_runtime\src\world.rs:253:10
+    |
+253 |     ) -> Result<(), WorldMutationError> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 168 bytes
+    |
+    = help: try reducing the size of `world::WorldMutationError`, for example by boxing large elements or replacing it with `Box<world::WorldMutationError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> crates\engine_runtime\src\world.rs:265:10
+    |
+265 |     ) -> Result<(), WorldMutationError> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 168 bytes
+    |
+    = help: try reducing the size of `world::WorldMutationError`, for example by boxing large elements or replacing it with `Box<world::WorldMutationError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> crates\engine_runtime\src\world.rs:283:10
+    |
+283 |     ) -> Result<(), WorldMutationError> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 168 bytes
+    |
+    = help: try reducing the size of `world::WorldMutationError`, for example by boxing large elements or replacing it with `Box<world::WorldMutationError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> crates\engine_runtime\src\world.rs:301:10
+    |
+301 |     ) -> Result<ComponentValue, WorldMutationError> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 168 bytes
+    |
+    = help: try reducing the size of `world::WorldMutationError`, for example by boxing large elements or replacing it with `Box<world::WorldMutationError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> crates\engine_runtime\src\world.rs:328:10
+    |
+328 |     ) -> Result<(), WorldMutationError> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 168 bytes
+    |
+    = help: try reducing the size of `world::WorldMutationError`, for example by boxing large elements or replacing it with `Box<world::WorldMutationError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> crates\engine_runtime\src\world.rs:338:10
+    |
+338 |     ) -> Result<RuntimeEntityId, WorldMutationError> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 168 bytes
+    |
+    = help: try reducing the size of `world::WorldMutationError`, for example by boxing large elements or replacing it with `Box<world::WorldMutationError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> crates\engine_runtime\src\world.rs:348:10
+    |
+348 |     ) -> Result<&EntitySlot, WorldMutationError> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 168 bytes
+    |
+    = help: try reducing the size of `world::WorldMutationError`, for example by boxing large elements or replacing it with `Box<world::WorldMutationError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> crates\engine_runtime\src\world.rs:374:10
+    |
+374 |     ) -> Result<SourceEntityId, WorldMutationError> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 168 bytes
+    |
+    = help: try reducing the size of `world::WorldMutationError`, for example by boxing large elements or replacing it with `Box<world::WorldMutationError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: this function has too many arguments (8/7)
+   --> crates\engine_runtime\src\world.rs:411:5
+    |
+411 | /     pub(crate) fn spawn_with_components(
+412 | |         &mut self,
+413 | |         id: EntityId,
+414 | |         name: impl Into<String>,
+...   |
+419 | |         renderable: Option<Renderable>,
+420 | |     ) -> RuntimeEntityId {
+    | |________________________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#too_many_arguments
+
+warning: the `Err`-variant returned from this function is very large
+   --> crates\engine_runtime\src\world.rs:754:10
+    |
+754 |     ) -> Result<(), WorldMutationError> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 168 bytes
+    |
+    = help: try reducing the size of `world::WorldMutationError`, for example by boxing large elements or replacing it with `Box<world::WorldMutationError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> crates\engine_runtime\src\world.rs:805:10
+    |
+805 |     ) -> Result<(), WorldMutationError> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 168 bytes
+    |
+    = help: try reducing the size of `world::WorldMutationError`, for example by boxing large elements or replacing it with `Box<world::WorldMutationError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> crates\engine_runtime\src\world.rs:822:10
+    |
+822 |     ) -> Result<(), WorldMutationError> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 168 bytes
+    |
+    = help: try reducing the size of `world::WorldMutationError`, for example by boxing large elements or replacing it with `Box<world::WorldMutationError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+  --> crates\engine_runtime\src\world_api.rs:34:59
+   |
+34 |     pub fn read_transform(&self, entity_id: &EntityId) -> Result<Transform, WorldApiError> {
+   |                                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 168 bytes
+   |
+   = help: try reducing the size of `world::WorldMutationError`, for example by boxing large elements or replacing it with `Box<world::WorldMutationError>`
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+  --> crates\engine_runtime\src\world_api.rs:48:10
+   |
+48 |     ) -> Result<ComponentValue, WorldApiError> {
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 168 bytes
+   |
+   = help: try reducing the size of `world::WorldMutationError`, for example by boxing large elements or replacing it with `Box<world::WorldMutationError>`
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+  --> crates\engine_runtime\src\world_api.rs:79:59
+   |
+79 |     pub fn read_transform(&self, entity_id: &EntityId) -> Result<Transform, WorldApiError> {
+   |                                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 168 bytes
+   |
+   = help: try reducing the size of `world::WorldMutationError`, for example by boxing large elements or replacing it with `Box<world::WorldMutationError>`
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+  --> crates\engine_runtime\src\world_api.rs:93:10
+   |
+93 |     ) -> Result<ComponentValue, WorldApiError> {
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 168 bytes
+   |
+   = help: try reducing the size of `world::WorldMutationError`, for example by boxing large elements or replacing it with `Box<world::WorldMutationError>`
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> crates\engine_runtime\src\world_api.rs:113:10
+    |
+113 |     ) -> Result<WorldWriteRecord, WorldApiError> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 168 bytes
+    |
+    = help: try reducing the size of `world::WorldMutationError`, for example by boxing large elements or replacing it with `Box<world::WorldMutationError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> crates\engine_runtime\src\world_api.rs:131:10
+    |
+131 |     ) -> Result<WorldWriteRecord, WorldApiError> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 168 bytes
+    |
+    = help: try reducing the size of `world::WorldMutationError`, for example by boxing large elements or replacing it with `Box<world::WorldMutationError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> crates\engine_runtime\src\world_api.rs:160:10
+    |
+160 |     ) -> Result<WorldWriteRecord, WorldApiError> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 168 bytes
+    |
+    = help: try reducing the size of `world::WorldMutationError`, for example by boxing large elements or replacing it with `Box<world::WorldMutationError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> crates\engine_runtime\src\world_api.rs:188:10
+    |
+188 |     ) -> Result<WorldWriteRecord, WorldApiError> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 168 bytes
+    |
+    = help: try reducing the size of `world::WorldMutationError`, for example by boxing large elements or replacing it with `Box<world::WorldMutationError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> crates\engine_runtime\src\world_api.rs:224:10
+    |
+224 |     ) -> Result<WorldWriteRecord, WorldApiError> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 168 bytes
+    |
+    = help: try reducing the size of `world::WorldMutationError`, for example by boxing large elements or replacing it with `Box<world::WorldMutationError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> crates\engine_runtime\src\world_api.rs:319:6
+    |
+319 | ) -> Result<ComponentValue, WorldApiError> {
+    |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 168 bytes
+    |
+    = help: try reducing the size of `world::WorldMutationError`, for example by boxing large elements or replacing it with `Box<world::WorldMutationError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#result_large_err
+
+warning: `engine_runtime` (lib) generated 125 warnings (run `cargo clippy --fix --lib -p engine_runtime -- ` to apply 17 suggestions)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 33.45s

@@ -1,0 +1,339 @@
+{
+  "schemaVersion": "playtest-scenario.v2",
+  "scenarioId": "bm09.actual-cross-domain",
+  "initialSceneId": "main",
+  "target": "windows-windowed",
+  "maxSimulationTicks": 660,
+  "maxPresentationFrames": 660,
+  "timeoutMs": 180000,
+  "inputs": [],
+  "assertions": [
+    {
+      "assertionId": "t29-tick",
+      "fromSimulationTick": 29,
+      "throughSimulationTick": 29,
+      "path": "bm09.tick",
+      "equals": 29
+    },
+    {
+      "assertionId": "t29-spatialRead",
+      "fromSimulationTick": 29,
+      "throughSimulationTick": 29,
+      "path": "bm09.spatialRead",
+      "equals": 1000
+    },
+    {
+      "assertionId": "t29-charactersRead",
+      "fromSimulationTick": 29,
+      "throughSimulationTick": 29,
+      "path": "bm09.charactersRead",
+      "equals": 10
+    },
+    {
+      "assertionId": "t29-jointsRead",
+      "fromSimulationTick": 29,
+      "throughSimulationTick": 29,
+      "path": "bm09.jointsRead",
+      "equals": 30
+    },
+    {
+      "assertionId": "t29-bodiesRead",
+      "fromSimulationTick": 29,
+      "throughSimulationTick": 29,
+      "path": "bm09.bodiesRead",
+      "equals": 100
+    },
+    {
+      "assertionId": "t29-pathsRead",
+      "fromSimulationTick": 29,
+      "throughSimulationTick": 29,
+      "path": "bm09.pathsRead",
+      "equals": 4
+    },
+    {
+      "assertionId": "t29-queriesRead",
+      "fromSimulationTick": 29,
+      "throughSimulationTick": 29,
+      "path": "bm09.queriesRead",
+      "equals": 198
+    },
+    {
+      "assertionId": "t29-domainsValid",
+      "fromSimulationTick": 29,
+      "throughSimulationTick": 29,
+      "path": "bm09.domainsValid",
+      "equals": true
+    },
+    {
+      "assertionId": "t59-tick",
+      "fromSimulationTick": 59,
+      "throughSimulationTick": 59,
+      "path": "bm09.tick",
+      "equals": 59
+    },
+    {
+      "assertionId": "t59-spatialRead",
+      "fromSimulationTick": 59,
+      "throughSimulationTick": 59,
+      "path": "bm09.spatialRead",
+      "equals": 1000
+    },
+    {
+      "assertionId": "t59-charactersRead",
+      "fromSimulationTick": 59,
+      "throughSimulationTick": 59,
+      "path": "bm09.charactersRead",
+      "equals": 10
+    },
+    {
+      "assertionId": "t59-jointsRead",
+      "fromSimulationTick": 59,
+      "throughSimulationTick": 59,
+      "path": "bm09.jointsRead",
+      "equals": 30
+    },
+    {
+      "assertionId": "t59-bodiesRead",
+      "fromSimulationTick": 59,
+      "throughSimulationTick": 59,
+      "path": "bm09.bodiesRead",
+      "equals": 100
+    },
+    {
+      "assertionId": "t59-pathsRead",
+      "fromSimulationTick": 59,
+      "throughSimulationTick": 59,
+      "path": "bm09.pathsRead",
+      "equals": 4
+    },
+    {
+      "assertionId": "t59-queriesRead",
+      "fromSimulationTick": 59,
+      "throughSimulationTick": 59,
+      "path": "bm09.queriesRead",
+      "equals": 198
+    },
+    {
+      "assertionId": "t59-domainsValid",
+      "fromSimulationTick": 59,
+      "throughSimulationTick": 59,
+      "path": "bm09.domainsValid",
+      "equals": true
+    },
+    {
+      "assertionId": "t329-tick",
+      "fromSimulationTick": 329,
+      "throughSimulationTick": 329,
+      "path": "bm09.tick",
+      "equals": 329
+    },
+    {
+      "assertionId": "t329-spatialRead",
+      "fromSimulationTick": 329,
+      "throughSimulationTick": 329,
+      "path": "bm09.spatialRead",
+      "equals": 1000
+    },
+    {
+      "assertionId": "t329-charactersRead",
+      "fromSimulationTick": 329,
+      "throughSimulationTick": 329,
+      "path": "bm09.charactersRead",
+      "equals": 10
+    },
+    {
+      "assertionId": "t329-jointsRead",
+      "fromSimulationTick": 329,
+      "throughSimulationTick": 329,
+      "path": "bm09.jointsRead",
+      "equals": 30
+    },
+    {
+      "assertionId": "t329-bodiesRead",
+      "fromSimulationTick": 329,
+      "throughSimulationTick": 329,
+      "path": "bm09.bodiesRead",
+      "equals": 100
+    },
+    {
+      "assertionId": "t329-pathsRead",
+      "fromSimulationTick": 329,
+      "throughSimulationTick": 329,
+      "path": "bm09.pathsRead",
+      "equals": 4
+    },
+    {
+      "assertionId": "t329-queriesRead",
+      "fromSimulationTick": 329,
+      "throughSimulationTick": 329,
+      "path": "bm09.queriesRead",
+      "equals": 198
+    },
+    {
+      "assertionId": "t329-domainsValid",
+      "fromSimulationTick": 329,
+      "throughSimulationTick": 329,
+      "path": "bm09.domainsValid",
+      "equals": true
+    },
+    {
+      "assertionId": "t629-tick",
+      "fromSimulationTick": 629,
+      "throughSimulationTick": 629,
+      "path": "bm09.tick",
+      "equals": 629
+    },
+    {
+      "assertionId": "t629-spatialRead",
+      "fromSimulationTick": 629,
+      "throughSimulationTick": 629,
+      "path": "bm09.spatialRead",
+      "equals": 1000
+    },
+    {
+      "assertionId": "t629-charactersRead",
+      "fromSimulationTick": 629,
+      "throughSimulationTick": 629,
+      "path": "bm09.charactersRead",
+      "equals": 10
+    },
+    {
+      "assertionId": "t629-jointsRead",
+      "fromSimulationTick": 629,
+      "throughSimulationTick": 629,
+      "path": "bm09.jointsRead",
+      "equals": 30
+    },
+    {
+      "assertionId": "t629-bodiesRead",
+      "fromSimulationTick": 629,
+      "throughSimulationTick": 629,
+      "path": "bm09.bodiesRead",
+      "equals": 100
+    },
+    {
+      "assertionId": "t629-pathsRead",
+      "fromSimulationTick": 629,
+      "throughSimulationTick": 629,
+      "path": "bm09.pathsRead",
+      "equals": 4
+    },
+    {
+      "assertionId": "t629-queriesRead",
+      "fromSimulationTick": 629,
+      "throughSimulationTick": 629,
+      "path": "bm09.queriesRead",
+      "equals": 198
+    },
+    {
+      "assertionId": "t629-domainsValid",
+      "fromSimulationTick": 629,
+      "throughSimulationTick": 629,
+      "path": "bm09.domainsValid",
+      "equals": true
+    },
+    {
+      "assertionId": "t660-tick",
+      "fromSimulationTick": 660,
+      "throughSimulationTick": 660,
+      "path": "bm09.tick",
+      "equals": 660
+    },
+    {
+      "assertionId": "t660-spatialRead",
+      "fromSimulationTick": 660,
+      "throughSimulationTick": 660,
+      "path": "bm09.spatialRead",
+      "equals": 1000
+    },
+    {
+      "assertionId": "t660-charactersRead",
+      "fromSimulationTick": 660,
+      "throughSimulationTick": 660,
+      "path": "bm09.charactersRead",
+      "equals": 10
+    },
+    {
+      "assertionId": "t660-jointsRead",
+      "fromSimulationTick": 660,
+      "throughSimulationTick": 660,
+      "path": "bm09.jointsRead",
+      "equals": 30
+    },
+    {
+      "assertionId": "t660-bodiesRead",
+      "fromSimulationTick": 660,
+      "throughSimulationTick": 660,
+      "path": "bm09.bodiesRead",
+      "equals": 100
+    },
+    {
+      "assertionId": "t660-pathsRead",
+      "fromSimulationTick": 660,
+      "throughSimulationTick": 660,
+      "path": "bm09.pathsRead",
+      "equals": 4
+    },
+    {
+      "assertionId": "t660-queriesRead",
+      "fromSimulationTick": 660,
+      "throughSimulationTick": 660,
+      "path": "bm09.queriesRead",
+      "equals": 198
+    },
+    {
+      "assertionId": "t660-domainsValid",
+      "fromSimulationTick": 660,
+      "throughSimulationTick": 660,
+      "path": "bm09.domainsValid",
+      "equals": true
+    },
+    {
+      "assertionId": "twenty-rebases",
+      "fromSimulationTick": 660,
+      "throughSimulationTick": 660,
+      "path": "bm09.rebases",
+      "equals": 20
+    }
+  ],
+  "captures": [
+    {
+      "captureId": "precision-29",
+      "presentationFrame": 29,
+      "required": true,
+      "subjectiveReview": false
+    },
+    {
+      "captureId": "precision-329",
+      "presentationFrame": 329,
+      "required": true,
+      "subjectiveReview": false
+    },
+    {
+      "captureId": "precision-629",
+      "presentationFrame": 629,
+      "required": true,
+      "subjectiveReview": false
+    }
+  ],
+  "spatialObservation": {
+    "schemaVersion": "spatial-observation-request.v1",
+    "level": "trace",
+    "entities": [
+      "camera",
+      "node-0000",
+      "node-0039",
+      "node-0480",
+      "node-0999",
+      "actor-00",
+      "actor-09",
+      "actor-00-root",
+      "actor-00-mesh",
+      "actor-00-hand",
+      "actor-09-root",
+      "actor-09-mesh",
+      "actor-09-hand",
+      "domain-root"
+    ]
+  }
+}

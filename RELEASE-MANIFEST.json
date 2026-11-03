@@ -1,23 +1,37 @@
 {
   "schemaVersion": "aife-source-release-manifest.v1",
-  "productVersion": "0.0.4",
-  "releaseDate": "2026-09-16",
-  "releaseKind": "source-preview",
+  "productVersion": "0.0.7",
+  "buildId": "20261031-r1",
+  "releaseDate": "2026-10-31",
   "sourceCapture": {
     "kind": "working-tree-snapshot",
     "baseCommit": "acaffa8cb95bbb54d093bbf45835a59315c82da5",
-    "dirty": true
+    "fileCount": 3302
   },
   "releaseRepository": {
-    "branch": "main",
-    "tag": "v0.0.4-source"
+    "tag": "v0.0.7-source-20261031-r1"
   },
-  "validation": "Source copy/hash checks only; no build or runtime qualification",
-  "exclusions": [
-    "build caches",
-    "samples",
-    "legacy prototypes",
-    "obsolete v0.0.3 Rust files"
-  ],
-  "hashIndex": "SHA256SUMS.txt"
+  "validation": {
+    "copySha256": "passed",
+    "cargoMetadataLockedOfflineAllFeatures": "passed",
+    "workspaceMembers": 33,
+    "localDependenciesContained": 99,
+    "final376SourceMatches": 1232,
+    "providerScriptsSyntax": "passed",
+    "binaryBuild": "pending_external_installation_record"
+  },
+  "gameBaseline": "V0.0.5 unchanged",
+  "hashIndex": "SHA256SUMS.txt",
+  "githubPublication": {
+    "date": "2026-11-03",
+    "originalFrozenCommit": "7dd6e30e09f27215cea6c49c31c55954fde5b759",
+    "previousMain": "553042cf420d690b0152921d4920cbc46f0b9762",
+    "preservedRemoteWorkflows": [
+      ".github/workflows/rust-quality.yml",
+      ".github/workflows/rust.yml"
+    ],
+    "engineSourceBytesUnchanged": true,
+    "notes": "GITHUB-PUBLICATION.md",
+    "originalArchiveSha256": "636a2d20c478f21169d281cfbfd16e73cdfc3bfcf6949af1e8062ada0a5c38d8"
+  }
 }

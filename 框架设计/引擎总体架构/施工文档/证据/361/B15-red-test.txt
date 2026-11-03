@@ -1,0 +1,51 @@
+warning: variant `IrInterpreter` is never constructed
+  --> crates\engine_runtime\src\project_logic.rs:19:5
+   |
+17 | pub(crate) enum RuleExecutorHint {
+   |                 ---------------- variant in this enum
+18 |     RustAot,
+19 |     IrInterpreter,
+   |     ^^^^^^^^^^^^^
+   |
+   = note: `RuleExecutorHint` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: associated function `validation_only_ir_interpreter` is never used
+  --> crates\engine_runtime\src\project_logic.rs:38:19
+   |
+29 | impl RuleCall {
+   | ------------- associated function in this implementation
+...
+38 |     pub(crate) fn validation_only_ir_interpreter(rule_id: impl Into<String>) -> Self {
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: method `remove_sprite_renderer2d` is never used
+   --> crates\engine_runtime\src\world.rs:529:19
+    |
+160 | impl World {
+    | ---------- method in this implementation
+...
+529 |     pub(crate) fn remove_sprite_renderer2d(&mut self, id: &EntityId) -> Option<SpriteRenderer2D> {
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: `engine_runtime` (lib) generated 3 warnings
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.15s
+     Running unittests src\lib.rs (target\debug\deps\runtime_player_winit-f505e6e0fc620891.exe)
+
+running 1 test
+
+thread 'tests::aui_present_cache_retained_edits_bypass_snapshot_reuse_without_overwriting_bindings' (7000) panicked at crates\runtime_player_winit\src\lib.rs:5312:13:
+assertion `left == right` failed: without an external old output, a one-node retained edit must not copy the 1002-node prepared document
+  left: 0x179311c2040
+ right: 0x179308b8040
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test tests::aui_present_cache_retained_edits_bypass_snapshot_reuse_without_overwriting_bindings ... FAILED
+
+failures:
+
+failures:
+    tests::aui_present_cache_retained_edits_bypass_snapshot_reuse_without_overwriting_bindings
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 74 filtered out; finished in 0.37s
+
+error: test failed, to rerun pass `-p runtime_player_winit --lib`

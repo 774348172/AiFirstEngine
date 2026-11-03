@@ -1,0 +1,66 @@
+   Compiling project_runtime_sdk v0.1.0 (G:\gameEngin\rust\crates\project_runtime_sdk)
+   Compiling engine_runtime v0.1.0 (G:\gameEngin\rust\crates\engine_runtime)
+error[E0599]: no method named `resolve` found for struct `aui_session::AuiSession` in the current scope
+    --> crates\engine_runtime\src\aui_present_cache.rs:1484:30
+     |
+1484 |         let target = host.ui.resolve("ui", "unit").unwrap();
+     |                              ^^^^^^^ method not found in `aui_session::AuiSession`
+     |
+    ::: crates\project_runtime_sdk\src\aui.rs:306:8
+     |
+ 306 |     fn resolve(&self, document: &str, node: &str) -> Result<UiNodeHandle, UiError>;
+     |        ------- the method is available for `aui_session::AuiSession` here
+     |
+    ::: crates\engine_runtime\src\aui_session.rs:12:1
+     |
+  12 | pub struct AuiSession {
+     | --------------------- method `resolve` not found for this struct
+     |
+     = help: items from traits can only be used if the trait is in scope
+help: trait `UiAccess` which provides `resolve` is implemented but not in scope; perhaps you want to import it
+     |
+ 790 +     use project_runtime_sdk::aui::UiAccess;
+     |
+
+error[E0599]: no variant, associated function, or constant named `Opacity` found for enum `project_runtime_sdk::aui::UiValue` in the current scope
+    --> crates\engine_runtime\src\aui_present_cache.rs:1495:81
+     |
+1495 |         assert_eq!(host.ui.read(target, UiProperty::Opacity).unwrap(), UiValue::Opacity(0.8));
+     |                                                                                 ^^^^^^^ variant, associated function, or constant not found in `project_runtime_sdk::aui::UiValue`
+
+error[E0308]: mismatched types
+    --> crates\engine_runtime\src\aui_present_cache.rs:1498:49
+     |
+1498 |               request: AnimationPlay::new(target, Animation2D {
+     |  ______________________------------------_________^
+     | |                      |
+     | |                      arguments to this function are incorrect
+1499 | |                 version: ANIMATION_2D_VERSION,
+1500 | |                 root: AnimationStep::Tween { track: TweenTrack {
+1501 | |                     target, property: TweenProperty::Opacity,
+...    |
+1506 | |                 completion: CompletionPolicy::Hold,
+1507 | |             }),
+     | |_____________^ expected `UiNodeHandle`, found `Animation2D`
+     |
+note: associated function defined here
+    --> crates\project_runtime_sdk\src\aui_animation.rs:105:12
+     |
+ 105 |     pub fn new(animation: Animation2D, owner: UiNodeHandle) -> Self {
+     |            ^^^
+
+error[E0599]: no variant, associated function, or constant named `Opacity` found for enum `project_runtime_sdk::aui::UiValue` in the current scope
+    --> crates\engine_runtime\src\aui_present_cache.rs:1516:81
+     |
+1516 |         assert_eq!(host.ui.read(target, UiProperty::Opacity).unwrap(), UiValue::Opacity(0.8));
+     |                                                                                 ^^^^^^^ variant, associated function, or constant not found in `project_runtime_sdk::aui::UiValue`
+
+error[E0599]: no variant, associated function, or constant named `Opacity` found for enum `project_runtime_sdk::aui::UiValue` in the current scope
+    --> crates\engine_runtime\src\aui_present_cache.rs:1525:81
+     |
+1525 |         assert_eq!(host.ui.read(target, UiProperty::Opacity).unwrap(), UiValue::Opacity(0.3));
+     |                                                                                 ^^^^^^^ variant, associated function, or constant not found in `project_runtime_sdk::aui::UiValue`
+
+Some errors have detailed explanations: E0308, E0599.
+For more information about an error, try `rustc --explain E0308`.
+error: could not compile `engine_runtime` (lib test) due to 5 previous errors

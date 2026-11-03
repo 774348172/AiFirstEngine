@@ -1,0 +1,143 @@
+{
+  "schemaVersion": "playtest-scenario.v2",
+  "scenarioId": "bm05.full-pc.sim-v1",
+  "initialSceneId": "main",
+  "target": "windows-windowed",
+  "maxSimulationTicks": 720,
+  "maxPresentationFrames": 720,
+  "timeoutMs": 120000,
+  "inputs": [],
+  "assertions": [
+    {
+      "assertionId": "160-actualActors",
+      "fromSimulationTick": 160,
+      "throughSimulationTick": 160,
+      "path": "bm05.actualActors",
+      "equals": 100
+    },
+    {
+      "assertionId": "160-actualJoints",
+      "fromSimulationTick": 160,
+      "throughSimulationTick": 160,
+      "path": "bm05.actualJoints",
+      "equals": 6400
+    },
+    {
+      "assertionId": "160-actorsWithEvents",
+      "fromSimulationTick": 160,
+      "throughSimulationTick": 160,
+      "path": "bm05.actorsWithEvents",
+      "equals": 100
+    },
+    {
+      "assertionId": "340-actualActors",
+      "fromSimulationTick": 340,
+      "throughSimulationTick": 340,
+      "path": "bm05.actualActors",
+      "equals": 100
+    },
+    {
+      "assertionId": "340-actualJoints",
+      "fromSimulationTick": 340,
+      "throughSimulationTick": 340,
+      "path": "bm05.actualJoints",
+      "equals": 6400
+    },
+    {
+      "assertionId": "340-offscreenActors",
+      "fromSimulationTick": 340,
+      "throughSimulationTick": 340,
+      "path": "bm05.offscreenActors",
+      "equals": 75
+    },
+    {
+      "assertionId": "340-offscreenActorsWithNewEvents",
+      "fromSimulationTick": 340,
+      "throughSimulationTick": 340,
+      "path": "bm05.offscreenActorsWithNewEvents",
+      "equals": 75
+    },
+    {
+      "assertionId": "380-pausedPoseUnchanged",
+      "fromSimulationTick": 380,
+      "throughSimulationTick": 380,
+      "path": "bm05.pausedPoseUnchanged",
+      "equals": true
+    },
+    {
+      "assertionId": "410-pausedStepChangedPose",
+      "fromSimulationTick": 410,
+      "throughSimulationTick": 410,
+      "path": "bm05.pausedStepChangedPose",
+      "equals": true
+    },
+    {
+      "assertionId": "600-actualActors",
+      "fromSimulationTick": 600,
+      "throughSimulationTick": 600,
+      "path": "bm05.actualActors",
+      "equals": 100
+    },
+    {
+      "assertionId": "600-actualJoints",
+      "fromSimulationTick": 600,
+      "throughSimulationTick": 600,
+      "path": "bm05.actualJoints",
+      "equals": 6400
+    },
+    {
+      "assertionId": "600-offscreenActors",
+      "fromSimulationTick": 600,
+      "throughSimulationTick": 600,
+      "path": "bm05.offscreenActors",
+      "equals": 0
+    },
+    {
+      "assertionId": "600-actualRootMotionModes",
+      "fromSimulationTick": 600,
+      "throughSimulationTick": 600,
+      "path": "bm05.actualRootMotionModes",
+      "equals": 10
+    },
+    {
+      "assertionId": "600-rootMotionActorsMoved",
+      "fromSimulationTick": 600,
+      "throughSimulationTick": 600,
+      "path": "bm05.rootMotionActorsMoved",
+      "equals": 10
+    },
+    {
+      "assertionId": "600-motorActorsMoved",
+      "fromSimulationTick": 600,
+      "throughSimulationTick": 600,
+      "path": "bm05.motorActorsMoved",
+      "equals": 10
+    }
+  ],
+  "captures": [
+    {
+      "captureId": "all-visible",
+      "presentationFrame": 160,
+      "required": true,
+      "subjectiveReview": false
+    },
+    {
+      "captureId": "offscreen-events",
+      "presentationFrame": 340,
+      "required": true,
+      "subjectiveReview": false
+    },
+    {
+      "captureId": "paused-step",
+      "presentationFrame": 410,
+      "required": true,
+      "subjectiveReview": false
+    },
+    {
+      "captureId": "root-motion-motor",
+      "presentationFrame": 600,
+      "required": true,
+      "subjectiveReview": false
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+   Compiling engine_runtime v0.1.0 (G:\gameEngin\rust\crates\engine_runtime)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 17.42s
+     Running unittests src\lib.rs (target\debug\deps\engine_runtime-f2e49a160a17050d.exe)
+
+running 1 test
+test aui_present_cache::tests::custom_measure_and_layout_products_still_invalidate_layout ... FAILED
+
+failures:
+
+---- aui_present_cache::tests::custom_measure_and_layout_products_still_invalidate_layout stdout ----
+
+thread 'aui_present_cache::tests::custom_measure_and_layout_products_still_invalidate_layout' (23308) panicked at crates\engine_runtime\src\aui_present_cache.rs:3490:13:
+frame=2, work=AuiUpdateWork { active_binding_paths_compared: 0, paragraph_preflight_nodes_visited: 0, full_prepare_count: 0, full_prepare_node_count: 0, prepared_nodes_rebuilt: 0, prepared_document_nodes_copied: 0, layout_source_nodes_copied: 0, layout_nodes_visited: 0, layout_measure_calls: 0, layout_source_nodes_loaded: 0, layout_geometry_nodes: 0, geometry_nodes_updated: 0, geometry_source_nodes_compared: 0, geometry_snapshot_nodes_copied: 0, translation_entries_compared: 0 }, output=Some(AuiCustomRuntimeOutput { measure: Some(UiExtensionMeasureOutput { size: [23.0, 17.0], first_baseline: None }), child_rects: [], paint: None, measure_identity: None, layout_identity: None, paint_identity: None, revision: 1 }), layout=[AuiComputedNode { presentation: Some(AuiPresentationGeometry { local_to_canvas: [1.0, 0.0, 0.0, 1.0, 0.0, 0.0], vertex_transform: [1.0, 0.0, 0.0, 1.0, 0.0, 0.0], bounds: AuiComputedRect { x: 0.0, y: 0.0, width: 160.0, height: 120.0 }, modulation: [1.0, 1.0, 1.0, 1.0] }), canvas_id: "main", composition_stage: ScreenOverlay, node_id: "root", kind: Custom, rect: AuiComputedRect { x: 0.0, y: 0.0, width: 160.0, height: 120.0 }, effective_clip_rect: None, effective_clips: [], clipped_by_node: None, tree_order: 0, local_visible: true, effective_visible: true }, AuiComputedNode { presentation: Some(AuiPresentationGeometry { local_to_canvas: [1.0, 0.0, 0.0, 1.0, 0.0, 0.0], vertex_transform: [1.0, 0.0, 0.0, 1.0, 0.0, 0.0], bounds: AuiComputedRect { x: 0.0, y: 0.0, width: 23.0, height: 17.0 }, modulation: [1.0, 1.0, 1.0, 1.0] }), canvas_id: "main", composition_stage: ScreenOverlay, node_id: "unit", kind: Custom, rect: AuiComputedRect { x: 0.0, y: 0.0, width: 23.0, height: 17.0 }, effective_clip_rect: None, effective_clips: [], clipped_by_node: None, tree_order: 1, local_visible: true, effective_visible: true }]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    aui_present_cache::tests::custom_measure_and_layout_products_still_invalidate_layout
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 776 filtered out; finished in 0.01s
+
+error: test failed, to rerun pass `-p engine_runtime --lib`

@@ -1,0 +1,77 @@
+{
+  "schemaVersion": "model-import.v1",
+  "assetId": "model",
+  "assetGuid": "guid-model",
+  "displayName": "Authored S3 rig",
+  "source": "Models/character.gltf",
+  "scene": 0,
+  "coordinates": {
+    "upAxis": "y",
+    "handedness": "right",
+    "metersPerUnit": 1
+  },
+  "outputs": [
+    {
+      "key": "stable-mesh-0",
+      "assetId": "import.mesh.0",
+      "assetGuid": "guid-import.mesh.0",
+      "kind": "mesh",
+      "sourceLocator": "/meshes/0",
+      "sourceFingerprint": "sha256:4f45f00b7dc7841e4f162bb37aa42129f5540c6fc10478e1aa37af66ee4a780e",
+      "materialSlots": [
+        {
+          "key": "surface-key",
+          "name": "surface0",
+          "sourceLocator": "/meshes/0/primitives/0"
+        }
+      ]
+    },
+    {
+      "key": "stable-material-0",
+      "assetId": "import.material.0",
+      "assetGuid": "guid-import.material.0",
+      "kind": "material",
+      "sourceLocator": "/materials/0",
+      "sourceFingerprint": "sha256:8c8504f433fdbef2168359e28a773467bd33ecde0139773b8a5bf9c1d28481e7",
+      "materialSlots": []
+    },
+    {
+      "key": "stable-prefab-0",
+      "assetId": "import.prefab.0",
+      "assetGuid": "guid-import.prefab.0",
+      "kind": "prefab",
+      "sourceLocator": "/scenes/0",
+      "sourceFingerprint": "sha256:8b8fbd9e7f5bdaf5525a5e926d0ff7e317f3510016975de6af8a10726427f97c",
+      "materialSlots": []
+    },
+    {
+      "key": "stable-character-0",
+      "assetId": "import.character.0",
+      "assetGuid": "guid-import.character.0",
+      "kind": "character",
+      "sourceLocator": "/scenes/0/character",
+      "sourceFingerprint": "sha256:8b8fbd9e7f5bdaf5525a5e926d0ff7e317f3510016975de6af8a10726427f97c",
+      "materialSlots": []
+    }
+  ],
+  "nodes": [
+    {
+      "key": "stable-node-0",
+      "entityId": "authored-node-0",
+      "sourceLocator": "/nodes/0",
+      "sourceFingerprint": "sha256:e4ae00d50b0c150146b7df326de9195af43b75b67e431042e65d4e0ec5b52bfe"
+    },
+    {
+      "key": "stable-node-1",
+      "entityId": "authored-node-1",
+      "sourceLocator": "/nodes/1",
+      "sourceFingerprint": "sha256:a6d3dea8a6004719b7e9e9e4d756b82d3384e72a1eadfea0e5b66c68321fc7db"
+    },
+    {
+      "key": "stable-node-2",
+      "entityId": "authored-node-2",
+      "sourceLocator": "/nodes/2",
+      "sourceFingerprint": "sha256:b32889c78cd8504ab5c36c5acb0c27bbde0c430c83dae8d82a3cb83cc58b9c08"
+    }
+  ]
+}

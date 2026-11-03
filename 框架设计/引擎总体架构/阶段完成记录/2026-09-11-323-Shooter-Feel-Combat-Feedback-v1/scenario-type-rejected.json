@@ -1,0 +1,47 @@
+{
+  "id": 5,
+  "jsonrpc": "2.0",
+  "result": {
+    "content": [
+      {
+        "text": "{\"callId\":\"mcp-call-5\",\"diagnostics\":[{\"code\":\"game_project_compiler.playtest.observation_type_mismatch\",\"message\":\"Expected value must match the declared scalar type exactly.\",\"nextAction\":\"Correct the indicated project scenario or manifest field and prepare a fresh snapshot.\",\"sourceLocation\":{\"column\":null,\"fieldPath\":\"/assertions/0/equals\",\"generated\":false,\"line\":null,\"sourcePath\":\"Tests/game-loop.scenario.json\"}}],\"evidenceRefs\":[],\"operationId\":\"engine-op-323-short-4\",\"output\":null,\"projectRevision\":\"sha256:306d1eade2ec81f5323169e4fa39ec88e5334681cb12a71410f8f3092f56215a\",\"receiptRef\":null,\"recommendedLocalTransitions\":[{\"category\":\"retry_with_correction\",\"reason\":\"The tool input or canonical project source can be corrected before retrying.\",\"toolName\":\"engine_runtime_playtest\"}],\"replayed\":false,\"retryability\":\"retry_after_correction\",\"schemaVersion\":\"engine-tool-result.v2\",\"status\":\"rejected_by_engine\",\"toolName\":\"engine_runtime_playtest\"}",
+        "type": "text"
+      }
+    ],
+    "isError": true,
+    "structuredContent": {
+      "callId": "mcp-call-5",
+      "diagnostics": [
+        {
+          "code": "game_project_compiler.playtest.observation_type_mismatch",
+          "message": "Expected value must match the declared scalar type exactly.",
+          "nextAction": "Correct the indicated project scenario or manifest field and prepare a fresh snapshot.",
+          "sourceLocation": {
+            "column": null,
+            "fieldPath": "/assertions/0/equals",
+            "generated": false,
+            "line": null,
+            "sourcePath": "Tests/game-loop.scenario.json"
+          }
+        }
+      ],
+      "evidenceRefs": [],
+      "operationId": "engine-op-323-short-4",
+      "output": null,
+      "projectRevision": "sha256:306d1eade2ec81f5323169e4fa39ec88e5334681cb12a71410f8f3092f56215a",
+      "receiptRef": null,
+      "recommendedLocalTransitions": [
+        {
+          "category": "retry_with_correction",
+          "reason": "The tool input or canonical project source can be corrected before retrying.",
+          "toolName": "engine_runtime_playtest"
+        }
+      ],
+      "replayed": false,
+      "retryability": "retry_after_correction",
+      "schemaVersion": "engine-tool-result.v2",
+      "status": "rejected_by_engine",
+      "toolName": "engine_runtime_playtest"
+    }
+  }
+}

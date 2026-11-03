@@ -61,10 +61,13 @@ impl GameProjectCompiler {
                 "Scenario and delivery must originate from the same prepared input.",
             ));
         }
-        if delivery.lineage.target_profile != TargetProfile::WindowsDev {
+        if !matches!(
+            delivery.lineage.target_profile,
+            TargetProfile::WindowsDev | TargetProfile::WindowsRelease
+        ) {
             return Err(playtest_execution_error(
                 "delivery_target_unsupported",
-                "Only Windows Dev delivery is qualified.",
+                "Playtest requires a Windows Dev or Release delivery.",
             ));
         }
         delivery.ensure_manifest_identity()?;
@@ -273,4 +276,88 @@ fn scenario_error(
         generated: false,
     });
     error
+}
+
+#[cfg(test)]
+mod delivery_target_tests {
+    use super::*;
+
+    #[test]
+    fn windows_release_playtest_reaches_retained_delivery_validation() {
+        let compiler = GameProjectCompiler {
+            binding: CompilerOperationBinding {
+                project_identity: "target-test-project".into(),
+                opened_project_binding: "target-test-binding".into(),
+                revision_id: "target-test-revision".into(),
+            },
+        };
+        // No build, files or Player are needed: the next real boundary must
+        // reject the missing sealed manifest, rather than rejecting Release.
+        let root = std::env::temp_dir().join(format!(
+            "aife-playtest-target-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        for target in [
+            TargetProfile::WindowsDev,
+            TargetProfile::WindowsRelease,
+            TargetProfile::AndroidRelease,
+        ] {
+            let lineage = ProjectArtifactLineage {
+                project_identity: compiler.binding.project_identity.clone(),
+                opened_project_binding: compiler.binding.opened_project_binding.clone(),
+                revision_id: compiler.binding.revision_id.clone(),
+                snapshot_id: "target-test-snapshot".into(),
+                source_identity: "target-test-source".into(),
+                target_profile: target,
+            };
+            let delivery = DeliveryRef {
+                lineage: lineage.clone(),
+                preparation_identity: "prepared".into(),
+                delivery_identity: "delivery".into(),
+                package_dir: root.clone(),
+                artifact_identity: "not-a-real-player".into(),
+                runtime_package_digest: "not-a-real-package".into(),
+                manifest_digest: "not-a-real-manifest".into(),
+                evidence_refs: Vec::new(),
+            };
+            let mut scenario = PreparedPlaytestScenario {
+                scenario: serde_json::from_value(serde_json::json!({
+                    "schemaVersion":"playtest-scenario.v2", "scenarioId":"target-test",
+                    "initialSceneId":"main", "target":"windows-windowed",
+                    "maxSimulationTicks":1, "maxPresentationFrames":1,
+                    "timeoutMs":1000, "inputs":[], "assertions":[], "captures":[]
+                }))
+                .unwrap(),
+                source_path: "Tests/target.json".into(),
+                source_digest: "source".into(),
+                preparation_identity: delivery.preparation_identity.clone(),
+                lineage,
+            };
+            let error = compiler
+                .playtest_delivery(&delivery, &scenario, root.join("output"))
+                .unwrap_err();
+            assert_eq!(
+                error.code(),
+                if target == TargetProfile::AndroidRelease {
+                    "game_project_compiler.playtest_delivery_target_unsupported"
+                } else {
+                    "game_project_compiler.delivery_changed"
+                },
+                "{target:?}"
+            );
+            scenario.preparation_identity = "different-input".into();
+            assert_eq!(
+                compiler
+                    .playtest_delivery(&delivery, &scenario, root.join("output"))
+                    .unwrap_err()
+                    .code(),
+                "game_project_compiler.playtest_scenario_delivery_mismatch"
+            );
+        }
+        assert!(!root.exists(), "no process or output may precede admission");
+    }
 }

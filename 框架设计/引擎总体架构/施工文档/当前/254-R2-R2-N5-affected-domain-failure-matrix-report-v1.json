@@ -1,0 +1,226 @@
+{
+  "schemaVersion": "254-r2-n5-affected-domain-failure-matrix-report.v1",
+  "completedAt": "2026-07-21",
+  "status": "passed",
+  "constructionState": "r2_n5_passed_awaiting_r2_n6_authorization",
+  "scope": {
+    "authorizedGate": "R2-N5",
+    "affectedDomains": [
+      "ai_tool_gateway",
+      "editor_core",
+      "editor_ui_model",
+      "editor_window_winit",
+      "editor_host",
+      "runtime_cli"
+    ],
+    "sharedCargoTargetExecution": "serial",
+    "productionAuthorizationProduced": false
+  },
+  "matrixAdditions": [
+    {
+      "case": "outcome cancellation at all internally observable boundaries",
+      "test": "codex_outcome_cancel_converges_awaiting_active_and_terminal_boundaries",
+      "result": "passed",
+      "boundaries": [
+        "awaiting_user",
+        "active_collecting",
+        "terminal_idempotent"
+      ]
+    },
+    {
+      "case": "bounded goal grant mutation budget overflow",
+      "test": "ai_capability_tool_kernel_rejects_mutation_beyond_goal_grant_budget",
+      "result": "passed",
+      "terminalDiagnostic": "ai_tool.mutation_budget_exhausted",
+      "lineageAfterRejection": {
+        "mutationCount": 1,
+        "receiptCount": 1
+      }
+    }
+  ],
+  "matrixCoverage": [
+    {
+      "category": "source missing/extra/tamper/drift/generated contamination",
+      "status": "passed"
+    },
+    {
+      "category": "release binary missing/extra/tamper/cross-candidate splice",
+      "status": "passed"
+    },
+    {
+      "category": "typed MCP/catalog/schema mismatch",
+      "status": "passed"
+    },
+    {
+      "category": "production Editor launch/discovery/session/project mismatch",
+      "status": "passed"
+    },
+    {
+      "category": "child spawn/timeout/non-zero/kill/wait/read/join failure",
+      "status": "passed"
+    },
+    {
+      "category": "failure artifact tamper/reopen after staging cleanup",
+      "status": "passed"
+    },
+    {
+      "category": "config compare-and-replace race and rollback conflict",
+      "status": "passed"
+    },
+    {
+      "category": "approval stale/duplicate/wrong-project/timeout/revoke",
+      "status": "passed"
+    },
+    {
+      "category": "Grant budget overflow and risk expansion",
+      "status": "passed"
+    },
+    {
+      "category": "cross-project/cross-session/cross-attempt evidence",
+      "status": "passed"
+    },
+    {
+      "category": "operation cancel at every internally observable boundary",
+      "status": "passed"
+    },
+    {
+      "category": "cleanup residue in staging/process/config/project state",
+      "status": "passed"
+    }
+  ],
+  "regressionsConverged": [
+    {
+      "tests": [
+        "project_runtime_player_artifact_project_rust_preview_project_rust_export_share_identity"
+      ],
+      "cause": "The test relied on the workspace target directory inside the trusted Engine SDK root, which correctly violated the artifact isolation contract.",
+      "resolution": "Preview and Export requests now accept a non-serialized producer-owned artifact build root builder, and the test shares one short isolated root across build, Preview, and Export.",
+      "securityContractWeakened": false
+    },
+    {
+      "tests": [
+        "apply_imported_project_patch_executes_patch_transaction",
+        "provider_and_imported_project_patch_share_candidate_entry_and_apply_path",
+        "project_intent_workflow_from_blank_waits_for_approval_then_attaches_journal_and_preview"
+      ],
+      "cause": "The synchronous compatibility adapter advanced a valid Previewing run into the intentionally fail-closed synchronous Preview path and misclassified ai_tool.preview_async_execution_required as mutation failure.",
+      "resolution": "The adapter commits the approved mutation and stops at Previewing; exact presented-frame verification remains owned by the asynchronous Tool Kernel and running Native Editor.",
+      "syncPreviewRecipeRestored": false
+    }
+  ],
+  "targetedVerification": [
+    {
+      "command": "cargo test -p editor_core apply_imported_project_patch_executes_patch_transaction -- --test-threads=1",
+      "status": "passed",
+      "durationSeconds": 16.4
+    },
+    {
+      "command": "cargo test -p editor_core provider_and_imported_project_patch_share_candidate_entry_and_apply_path -- --test-threads=1",
+      "status": "passed",
+      "durationSeconds": 0.8
+    },
+    {
+      "command": "cargo test -p editor_core project_intent_workflow_from_blank_waits_for_approval_then_attaches_journal_and_preview -- --test-threads=1",
+      "status": "passed",
+      "durationSeconds": 0.6
+    },
+    {
+      "command": "cargo test -p editor_core project_runtime_player_artifact_project_rust_preview_project_rust_export_share_identity -- --test-threads=1",
+      "status": "passed",
+      "durationSeconds": 88.8
+    }
+  ],
+  "cumulativeVerification": [
+    {
+      "command": "cargo test -p ai_tool_gateway -p editor_core -p editor_ui_model -p editor_window_winit -p editor_host -p runtime_cli --no-fail-fast --quiet -- --test-threads=1",
+      "status": "passed",
+      "exitCode": 0,
+      "durationSeconds": 414.6,
+      "notableCounts": {
+        "aiToolGatewayPassed": 74,
+        "aiToolGatewayIgnored": 1,
+        "editorCorePassed": 541,
+        "editorCoreIgnored": 2
+      }
+    },
+    {
+      "command": "cargo test --workspace --no-fail-fast --quiet -- --test-threads=1",
+      "status": "passed",
+      "exitCode": 0,
+      "durationSeconds": 999.2
+    },
+    {
+      "command": "cargo test --workspace --all-features --no-fail-fast --quiet -- --test-threads=1",
+      "status": "passed",
+      "exitCode": 0,
+      "durationSeconds": 1113.2
+    },
+    {
+      "command": "cargo check --workspace --all-targets --quiet",
+      "status": "passed",
+      "exitCode": 0,
+      "durationSeconds": 66.7
+    },
+    {
+      "command": "cargo check --workspace --all-targets --all-features --quiet",
+      "status": "passed",
+      "exitCode": 0,
+      "durationSeconds": 54.9
+    },
+    {
+      "command": "cargo fmt --all -- --check",
+      "status": "passed",
+      "exitCode": 0,
+      "durationSeconds": 2.6
+    }
+  ],
+  "sourceFiles": [
+    {
+      "path": "rust/crates/ai_tool_gateway/src/codex_outcome_runtime.rs",
+      "sha256": "993a0885dd8fa1603a9d9c6ef7fadc65f3a32bde97bce285276fcfcb56d39f98"
+    },
+    {
+      "path": "rust/crates/editor_core/src/tests/ai_capability_tool_kernel_tests.rs",
+      "sha256": "e851c193b8a7d531349d6395c0bf07100b694c6fd00deb68c19e01e3e0034cc4"
+    },
+    {
+      "path": "rust/crates/editor_core/src/project_player_artifact.rs",
+      "sha256": "02d2e56b6a1e32bea0c99ff3a153b473b3747030c7fbebb254ba7d33d1f6eb03"
+    },
+    {
+      "path": "rust/crates/editor_core/src/editor_preview_package.rs",
+      "sha256": "7f808008262d0e8d95e21ed47fef4c7bb63e7701312a2d3dc132285194e489bb"
+    },
+    {
+      "path": "rust/crates/editor_core/src/desktop_export.rs",
+      "sha256": "f157cfef3c47d2b9fc8878a84855920d36800c150c8654a24c1c973579b88fe4"
+    },
+    {
+      "path": "rust/crates/editor_core/src/services/ai_service.rs",
+      "sha256": "76e8bc9df1306b26a5b578846e3dc4da4aee2c49a196f80f126ae18843ad4fdb"
+    },
+    {
+      "path": "rust/crates/editor_core/src/tests/project_intent_workflow_tests.rs",
+      "sha256": "767be5d6c91093389d8eb0f1412715cbcc7c29a0b443597862435b0b138f7112"
+    }
+  ],
+  "workspaceTruth": {
+    "gatewayCrateTrackedByCurrentGitIndex": false,
+    "cleanCheckoutEquivalentClaimed": false,
+    "deadCodeSuppressionAdded": false,
+    "existingWarningsTreatedAsFailures": false
+  },
+  "productionActionsExecuted": {
+    "r2N5": true,
+    "r2N6": false,
+    "freshSnapshot": false,
+    "r2G": false,
+    "productionCandidate": false,
+    "realEnvironmentActivation": false,
+    "realCodexEvaluation": false,
+    "historicalFAFBOrGateG": false,
+    "threeEngineBChannel": false
+  },
+  "nextAuthorization": "R2-N6 requires a new explicit user authorization.",
+  "forbiddenActionsExecuted": []
+}

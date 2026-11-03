@@ -3,6 +3,7 @@ use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 pub const PROJECT_ASSEMBLY_ARTIFACT_ENVELOPE_SCHEMA_VERSION: &str =
@@ -200,6 +201,41 @@ impl ProjectAssemblyArtifactCache {
         recipe_key: &str,
         expected_recipe_version: &str,
     ) -> ProjectAssemblyArtifactLookup<T> {
+        self.lookup_encoded(
+            producer_id,
+            recipe_key,
+            expected_recipe_version,
+            "payload.json",
+            |payload| {
+                serde_json::from_slice(&payload)
+                    .map_err(|e| format!("Typed artifact decode failed: {e}"))
+            },
+        )
+    }
+
+    pub(crate) fn lookup_bytes(
+        &self,
+        producer_id: &str,
+        recipe_key: &str,
+        expected_recipe_version: &str,
+    ) -> ProjectAssemblyArtifactLookup<Vec<u8>> {
+        self.lookup_encoded(
+            producer_id,
+            recipe_key,
+            expected_recipe_version,
+            "payload.bin",
+            Ok,
+        )
+    }
+
+    fn lookup_encoded<T>(
+        &self,
+        producer_id: &str,
+        recipe_key: &str,
+        expected_recipe_version: &str,
+        payload_name: &str,
+        decode: impl FnOnce(Vec<u8>) -> Result<T, String>,
+    ) -> ProjectAssemblyArtifactLookup<T> {
         let artifact_path = match self.artifact_path(producer_id, recipe_key) {
             Ok(path) => path,
             Err(source) => {
@@ -222,12 +258,19 @@ impl ProjectAssemblyArtifactCache {
             };
         }
 
-        match self.read_json_artifact::<T>(
-            &artifact_path,
-            producer_id,
-            recipe_key,
-            expected_recipe_version,
-        ) {
+        match self
+            .read_encoded_artifact(
+                &artifact_path,
+                producer_id,
+                recipe_key,
+                expected_recipe_version,
+                payload_name,
+            )
+            .and_then(|(envelope, payload)| {
+                decode(payload)
+                    .map(|value| (envelope, value))
+                    .map_err(|reason| (ProjectAssemblyArtifactCacheStatus::Corrupt, reason))
+            }) {
             Ok((envelope, artifact)) => ProjectAssemblyArtifactLookup {
                 status: ProjectAssemblyArtifactCacheStatus::Hit,
                 artifact: Some(artifact),
@@ -263,6 +306,51 @@ impl ProjectAssemblyArtifactCache {
         output_digest: &str,
         artifact: &T,
     ) -> Result<ProjectAssemblyArtifactPublishResult, ProjectAssemblyArtifactCacheError> {
+        let payload = serde_json::to_vec(artifact).map_err(|source| {
+            error(
+                "artifact_cache.payload_encode_failed",
+                format!("Cannot encode typed artifact: {source}"),
+            )
+        })?;
+        self.publish_encoded(
+            producer_id,
+            producer_recipe_version,
+            recipe_key,
+            dependency_digest,
+            output_digest,
+            (&payload, "payload.json"),
+        )
+    }
+
+    pub(crate) fn publish_bytes(
+        &self,
+        producer_id: &str,
+        producer_recipe_version: &str,
+        recipe_key: &str,
+        dependency_digest: &str,
+        output_digest: &str,
+        payload: &[u8],
+    ) -> Result<ProjectAssemblyArtifactPublishResult, ProjectAssemblyArtifactCacheError> {
+        self.publish_encoded(
+            producer_id,
+            producer_recipe_version,
+            recipe_key,
+            dependency_digest,
+            output_digest,
+            (payload, "payload.bin"),
+        )
+    }
+
+    fn publish_encoded(
+        &self,
+        producer_id: &str,
+        producer_recipe_version: &str,
+        recipe_key: &str,
+        dependency_digest: &str,
+        output_digest: &str,
+        encoded: (&[u8], &str),
+    ) -> Result<ProjectAssemblyArtifactPublishResult, ProjectAssemblyArtifactCacheError> {
+        let (payload, payload_name) = encoded;
         let artifact_path = self.artifact_path(producer_id, recipe_key)?;
         let parent = artifact_path.parent().ok_or_else(|| {
             error(
@@ -279,13 +367,7 @@ impl ProjectAssemblyArtifactCache {
                 ),
             )
         })?;
-        let payload = serde_json::to_vec(artifact).map_err(|source| {
-            error(
-                "artifact_cache.payload_encode_failed",
-                format!("Cannot encode typed artifact: {source}"),
-            )
-        })?;
-        let payload_digest = sha256_prefixed(&payload);
+        let payload_digest = sha256_prefixed(payload);
         let envelope = ProjectAssemblyArtifactEnvelope {
             schema_version: PROJECT_ASSEMBLY_ARTIFACT_ENVELOPE_SCHEMA_VERSION.to_string(),
             producer_id: producer_id.to_string(),
@@ -317,7 +399,7 @@ impl ProjectAssemblyArtifactCache {
             )
         })?;
         let write_result = (|| {
-            write_synced(&temp_path.join("payload.json"), &payload)?;
+            write_synced(&temp_path.join(payload_name), payload)?;
             write_synced(&temp_path.join("artifact-envelope.json"), &envelope_bytes)?;
             Ok::<(), ProjectAssemblyArtifactCacheError>(())
         })();
@@ -392,14 +474,17 @@ impl ProjectAssemblyArtifactCache {
             .join(digest))
     }
 
-    fn read_json_artifact<T: DeserializeOwned>(
+    fn read_encoded_artifact(
         &self,
         artifact_path: &Path,
         producer_id: &str,
         recipe_key: &str,
         expected_recipe_version: &str,
-    ) -> Result<(ProjectAssemblyArtifactEnvelope, T), (ProjectAssemblyArtifactCacheStatus, String)>
-    {
+        payload_name: &str,
+    ) -> Result<
+        (ProjectAssemblyArtifactEnvelope, Vec<u8>),
+        (ProjectAssemblyArtifactCacheStatus, String),
+    > {
         let envelope = self
             .read_envelope(artifact_path)
             .map_err(|reason| (ProjectAssemblyArtifactCacheStatus::Corrupt, reason))?;
@@ -413,7 +498,7 @@ impl ProjectAssemblyArtifactCache {
                 "artifact_identity_incompatible".to_string(),
             ));
         }
-        let payload_path = artifact_path.join("payload.json");
+        let payload_path = artifact_path.join(payload_name);
         let payload = fs::read(&payload_path).map_err(|source| {
             (
                 ProjectAssemblyArtifactCacheStatus::Corrupt,
@@ -426,13 +511,7 @@ impl ProjectAssemblyArtifactCache {
                 "artifact_payload_digest_mismatch".to_string(),
             ));
         }
-        let artifact = serde_json::from_slice::<T>(&payload).map_err(|source| {
-            (
-                ProjectAssemblyArtifactCacheStatus::Corrupt,
-                format!("Typed artifact decode failed: {source}"),
-            )
-        })?;
-        Ok((envelope, artifact))
+        Ok((envelope, payload))
     }
 
     fn read_envelope(
@@ -499,11 +578,16 @@ fn quarantine_path(path: &Path) -> Result<(), std::io::Error> {
     )
 }
 
-fn unique_suffix() -> u128 {
-    SystemTime::now()
+fn unique_suffix() -> String {
+    static NEXT_SUFFIX: AtomicU64 = AtomicU64::new(0);
+    let timestamp = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap_or_default()
-        .as_nanos()
+        .as_nanos();
+    format!(
+        "{timestamp}-{}",
+        NEXT_SUFFIX.fetch_add(1, Ordering::Relaxed)
+    )
 }
 
 fn error(code: &'static str, message: impl Into<String>) -> ProjectAssemblyArtifactCacheError {

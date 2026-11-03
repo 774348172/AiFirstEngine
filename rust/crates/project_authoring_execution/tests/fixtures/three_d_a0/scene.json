@@ -1,0 +1,23 @@
+{
+  "schemaVersion": "authoring-scene.v2",
+  "id": "main", "name": "Contract fixture",
+  "gravity": 0, "background": "#000000", "skyColor": "#000000",
+  "mainCamera": "camera",
+  "entities": [
+    {
+      "id": "cube", "name": "Cube", "enabled": true, "parentId": null, "siblingOrder": 0,
+      "components": [
+        {"componentType": "Transform3D", "data": {"schemaVersion": "transform3d.v1", "translation": [0,0,0], "rotation": {"kind": "eulerDegrees", "xyz": [0,0,0]}, "scale": [1,1,1]}},
+        {"componentType": "Visibility3D", "data": {"schemaVersion": "visibility3d.v1", "visible": true}},
+        {"componentType": "MeshRenderer3D", "data": {"schemaVersion": "mesh-renderer3d.v1", "mesh": {"id": "cube", "type": "mesh", "guid": "guid-cube"}, "materials": {"surface": {"id": "blue", "type": "material", "guid": "guid-blue"}}, "visible": true, "layers": ["world"]}}
+      ]
+    },
+    {
+      "id": "camera", "name": "Camera", "enabled": true, "parentId": null, "siblingOrder": 1,
+      "components": [
+        {"componentType": "Transform3D", "data": {"schemaVersion": "transform3d.v1", "translation": [0,2,5], "rotation": {"kind": "quaternion", "xyzw": [0,0,0,1]}, "scale": [1,1,1]}},
+        {"componentType": "Camera3D", "data": {"schemaVersion": "camera3d.v1", "projection": {"kind": "perspective", "fovYDegrees": 60, "near": 0.1, "far": 1000}, "viewport": "fullWindow", "clearColor": [0,0,0,1], "layers": ["world"], "enabled": true}}
+      ]
+    }
+  ]
+}

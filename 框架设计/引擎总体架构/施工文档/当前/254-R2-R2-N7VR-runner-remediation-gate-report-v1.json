@@ -1,0 +1,67 @@
+{
+  "schemaVersion": "254-r2-n7vr-runner-remediation-gate-report.v1",
+  "status": "r2_n7vr_passed_new_verification_authorization_pending",
+  "recordedAt": "2026-07-21T20:08:16.2011362+08:00",
+  "authorization": {
+    "gate": "R2-N7VR",
+    "scope": "construction-only process exit-code, incremental-output, timeout, and cleanup remediation",
+    "consumed": true,
+    "cargoInvocationAuthorized": false,
+    "newVerificationRunAuthorized": false,
+    "r2N8Authorized": false
+  },
+  "redReproduction": {
+    "fixture": "exit-zero",
+    "iterations": 5,
+    "observedEveryIteration": true,
+    "hasExited": true,
+    "exitCode": null,
+    "diagnostic": "Start-Process returned a completed Process wrapper without a readable exit code on this redirected fast-exit path."
+  },
+  "rootCause": {
+    "domain": "construction validation runner implementation",
+    "diagnosticCode": "r2_n7v.runner_process_handle_not_retained",
+    "summary": "The Runner used Start-Process -PassThru and treated an unavailable exit code as a real nonzero result.",
+    "formal254R2DesignFailure": false,
+    "productRustFailure": false
+  },
+  "implementation": {
+    "processControlPath": "tools/r2_n7v_process_control.ps1",
+    "processControlSha256": "sha256:6c55548fee83b210f54b9b62c298b2688daab347c08c60b8f02f0b3ff0d1bd20",
+    "runnerPath": "tools/r2_n7v_validation_runner.ps1",
+    "runnerSha256": "sha256:9e662cd640f61c75e025cef00814ba876769965509def33a9edc24a1a5ae7c06",
+    "testPath": "tools/tests/r2_n7v_process_control_regression.ps1",
+    "testSha256": "sha256:ed313aa44967b459d878296bb6659d09ca70ed2e093c12a9a7ed61ced09455db",
+    "retainsSystemDiagnosticsProcessFromSpawn": true,
+    "incrementalStdoutStderr": true,
+    "nullExitCodeDistinctFromNonzero": true,
+    "descendantTreeCleanup": true
+  },
+  "greenVerification": {
+    "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools/tests/r2_n7v_process_control_regression.ps1",
+    "iterations": 5,
+    "durationsMs": [851, 765, 807, 758, 778],
+    "cases": [
+      "exit-disposition-null-zero-nonzero",
+      "exit-zero",
+      "exit-nonzero-7",
+      "incremental-output-visible-while-running",
+      "timeout-descendant-tree-cleanup-no-residual"
+    ],
+    "powershellAstParseErrorCount": 0,
+    "passed": true
+  },
+  "notExecuted": [
+    "cargo",
+    "R2-N7V stage",
+    "new verification run",
+    "R2-N8",
+    "R2-G",
+    "production candidate",
+    "activation",
+    "real Codex evaluation",
+    "F-A/F-B/G",
+    "three-engine B channel"
+  ],
+  "disposition": "Stop after passing R2-N7VR. Preserve historical R2-N7V failure. Require a separate authorization and fresh roots before any new verification run."
+}

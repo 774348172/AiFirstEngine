@@ -1,0 +1,25 @@
+   Compiling project_runtime_sdk v0.1.0 (G:\gameEngin\rust\crates\project_runtime_sdk)
+   Compiling engine_runtime v0.1.0 (G:\gameEngin\rust\crates\engine_runtime)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1m 20s
+     Running unittests src\lib.rs (target\debug\deps\engine_runtime-f2e49a160a17050d.exe)
+
+running 1 test
+test aui_animation::tests::yoyo_turning_point_preserves_the_peak_instead_of_flashing_base ... FAILED
+
+failures:
+
+---- aui_animation::tests::yoyo_turning_point_preserves_the_peak_instead_of_flashing_base stdout ----
+
+thread 'aui_animation::tests::yoyo_turning_point_preserves_the_peak_instead_of_flashing_base' (21312) panicked at crates\engine_runtime\src\aui_animation.rs:1083:45:
+assertion `left == right` failed
+  left: None
+ right: Some(1.0)
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    aui_animation::tests::yoyo_turning_point_preserves_the_peak_instead_of_flashing_base
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 771 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `-p engine_runtime --lib`

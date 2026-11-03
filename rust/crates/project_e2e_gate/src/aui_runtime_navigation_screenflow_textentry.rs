@@ -293,12 +293,12 @@ fn recompute(report: &mut ComplexShooterAuiRuntimeNavigationScreenFlowTextEntryR
             .diagnostics
             .push("error:aui_text_entry.ime_missing".to_string());
     }
-    if report.core_report.ime_platform_coverage != "schema_headless_and_winit_cmin" {
+    if report.core_report.ime_platform_coverage != engine_runtime::aui::AUI_IME_PLATFORM_COVERAGE {
         report
             .diagnostics
             .push("error:aui_text_entry.ime_platform_coverage_missing".to_string());
     }
-    if report.metrics.deferred_flag_count != 10 {
+    if report.metrics.deferred_flag_count != 8 {
         report
             .next_actions
             .push("verify_216_deferred_flags".to_string());

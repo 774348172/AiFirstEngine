@@ -27,6 +27,7 @@ pub struct ExportedPlayerProcessVerificationRequest {
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct ExportedPlayerProcessVerificationOptions {
+    pub measurement: Option<runtime_player_winit::measurement::MeasurementPolicy>,
     pub input_script_path: Option<PathBuf>,
     pub runtime_report_level: Option<String>,
     pub performance_warmup_frames: u64,
@@ -472,6 +473,14 @@ fn run_child_process(
         args.push(options.performance_warmup_frames.to_string().into());
         args.push("--performance-sample-frames".into());
         args.push(options.performance_sample_frames.to_string().into());
+    }
+    if let Some(policy) = &options.measurement {
+        args.push("--measurement-policy".into());
+        args.push(
+            serde_json::to_string(policy)
+                .expect("measurement policy serializes")
+                .into(),
+        );
     }
     args.extend(screenshot_args(request, paths).into_iter().map(Into::into));
     let process = run_bounded_child_process(BoundedChildProcessRequest {

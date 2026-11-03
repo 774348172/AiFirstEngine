@@ -608,12 +608,61 @@ impl EngineToolProvider {
                 ))
             }
             "engine_project_inspect" => {
+                let input: ProjectInspectInput = serde_json::from_value(call.arguments.clone())
+                    .map_err(|error| execution_input_diagnostic("inspect", error))?;
                 let session = self.project_mut()?;
                 let inventory = session.source_inventory().map_err(context_diagnostic)?;
                 let refresh = required_refresh(refresh)?;
+                let aui_paths = inventory
+                    .entries
+                    .iter()
+                    .map(|entry| entry.relative_path.clone())
+                    .collect::<Vec<_>>();
+                let aui_lease = session
+                    .acquire_snapshot_lease(format!("{operation_id}:aui-inspect"), aui_paths)
+                    .map_err(context_diagnostic)?;
+                if aui_lease.snapshot().revision.revision_id != refresh.revision.revision_id {
+                    return Err(revision_changed_diagnostic());
+                }
+                let aui_inspection = if let Some(request) = input.aui.as_ref() {
+                    project_authoring_execution::inspect_aui_project_snapshot_with_request(
+                        aui_lease.snapshot(),
+                        request,
+                    )
+                } else {
+                    project_authoring_execution::inspect_aui_project_snapshot(aui_lease.snapshot())
+                };
+                let model_inspection = input
+                    .model_import
+                    .as_ref()
+                    .map(|request| {
+                        project_authoring_execution::inspect_model_import_snapshot(
+                            aui_lease.snapshot(),
+                            request,
+                        )
+                        .map_err(compiler_diagnostic)
+                    })
+                    .transpose()?;
+                let spatial_inspection =
+                    project_authoring_execution::three_d_contract::inspect_spatial_project_snapshot(
+                        aui_lease.snapshot(),
+                    );
+                let spine_inspection = project_authoring_execution::inspect_spine_project_snapshot(
+                    aui_lease.snapshot(),
+                );
+                let _ = aui_lease.release();
+                let mut output = inspection_output(refresh, &inventory, &aui_inspection);
+                output["spineInspection"] =
+                    serde_json::to_value(spine_inspection).expect("Spine domain report");
+                output["spatialInspection"] =
+                    serde_json::to_value(spatial_inspection).expect("spatial report");
+                if let Some(report) = model_inspection {
+                    output["modelImportInspection"] =
+                        serde_json::to_value(report).expect("import report");
+                }
                 Ok(InvocationSuccess::new(
                     refresh.revision.revision_id.clone(),
-                    inspection_output(&refresh, &inventory),
+                    output,
                 ))
             }
             "engine_project_search"
@@ -704,13 +753,17 @@ impl EngineToolProvider {
     ) -> Result<InvocationSuccess, ToolDiagnostic> {
         let input: ProjectRunInput = serde_json::from_value(call.arguments.clone())
             .map_err(|error| execution_input_diagnostic("run", error))?;
-        if input.mode.as_deref().unwrap_or("headless") != "headless" {
-            return Err(diagnostic(
-                "engine_provider.run_mode_unsupported",
-                "The qualified No-Editor run tool currently supports only headless mode.",
-                "Use mode=headless.",
-            ));
-        }
+        let mode = match input.mode.as_deref().unwrap_or("headless") {
+            "headless" => ExecutionMode::Headless,
+            "windowed" => ExecutionMode::Windowed,
+            _ => {
+                return Err(diagnostic(
+                    "engine_provider.run_mode_unsupported",
+                    "Run supports headless or windowed mode.",
+                    "Use mode=headless or mode=windowed.",
+                ))
+            }
+        };
         let refresh = required_refresh(refresh)?;
         let frame_limit = input.frame_limit.unwrap_or(3).max(1);
         let timeout_ms = input.timeout_ms.unwrap_or(30_000).max(1);
@@ -730,8 +783,11 @@ impl EngineToolProvider {
             let report = compiler
                 .run(
                     &prepared,
-                    RunOptions::new(ExecutionMode::Headless, frame_limit, timeout_ms)
-                        .with_project_delivery(&project_root, output, player_build_root),
+                    RunOptions::new(mode, frame_limit, timeout_ms).with_project_delivery(
+                        &project_root,
+                        output,
+                        player_build_root,
+                    ),
                 )
                 .map_err(compiler_diagnostic)?;
             let scenario = prepared.load_playtest_scenario().ok();
@@ -756,7 +812,7 @@ impl EngineToolProvider {
         Ok(InvocationSuccess {
             revision: Some(report.lineage().revision_id().to_string()),
             output: json!({
-                "mode": "headless",
+                "mode": match mode { ExecutionMode::Headless => "headless", ExecutionMode::Windowed => "windowed" },
                 "preparationIdentity": report.preparation_identity(),
                 "prepareSummary": preparation_summary,
                 "deliveryRef": delivery_ref,
@@ -778,16 +834,17 @@ impl EngineToolProvider {
         operation_id: &str,
         refresh: Option<&RefreshReport>,
     ) -> Result<InvocationSuccess, ToolDiagnostic> {
+        let input: ProjectCheckInput = serde_json::from_value(call.arguments.clone())
+            .map_err(|error| execution_input_diagnostic("check", error))?;
+        let target = parse_target_profile(input.target_profile.as_deref())?;
         let refresh = required_refresh(refresh)?;
         let session = self.project_mut()?;
         let (lease, compiler) = compiler_for_operation(session, operation_id, refresh)?;
         let report = compiler
             .check(
                 &lease,
-                project_authoring_execution::CheckProfile::new(
-                    project_authoring_execution::TargetProfile::WindowsDev,
-                )
-                .with_process_approval(call.approved),
+                project_authoring_execution::CheckProfile::new(target)
+                    .with_process_approval(call.approved),
             )
             .map_err(compiler_diagnostic)?;
         Ok(InvocationSuccess::new(
@@ -810,13 +867,7 @@ impl EngineToolProvider {
     ) -> Result<InvocationSuccess, ToolDiagnostic> {
         let input: ProjectBuildInput = serde_json::from_value(call.arguments.clone())
             .map_err(|error| execution_input_diagnostic("build", error))?;
-        if input.target_profile.as_deref().unwrap_or("windows-dev") != "windows-dev" {
-            return Err(diagnostic(
-                "engine_provider.build_target_not_ready",
-                "Only the existing Windows Dev delivery target is ready on this Provider.",
-                "Use targetProfile=windows-dev.",
-            ));
-        }
+        let target = parse_target_profile(input.target_profile.as_deref())?;
         let refresh = required_refresh(refresh)?;
         let frame_limit = input.frame_limit.unwrap_or(3).max(1);
         let (report, preparation_summary, compiler, scenario) = {
@@ -827,7 +878,7 @@ impl EngineToolProvider {
             let prepared = compiler
                 .prepare_with_artifact_cache(
                     &lease,
-                    TargetProfile::WindowsDev,
+                    target,
                     &project_root.join("Library/CompilerCache"),
                 )
                 .map_err(compiler_diagnostic)?;
@@ -840,14 +891,10 @@ impl EngineToolProvider {
             let report = compiler
                 .build(
                     &prepared,
-                    BuildRequest::for_project(
-                        TargetProfile::WindowsDev,
-                        &project_root,
-                        output,
-                        player_build_root,
-                    )
-                    .with_frame_limit(frame_limit)
-                    .with_player_verification(false),
+                    BuildRequest::for_project(target, &project_root, output, player_build_root)
+                        .with_frame_limit(frame_limit)
+                        .with_timeout_ms(input.timeout_ms.unwrap_or(30_000))
+                        .with_player_verification(false),
                 )
                 .map_err(compiler_diagnostic)?;
             let scenario = prepared.load_playtest_scenario().ok();
@@ -863,18 +910,20 @@ impl EngineToolProvider {
             },
         );
         let desktop = report.desktop_export();
+        let android = report.android_export();
         Ok(InvocationSuccess {
             revision: Some(report.delivery().lineage().revision_id().to_string()),
             output: json!({
-                "targetProfile": "windows-dev",
+                "targetProfile": target.as_str(),
                 "prepareSummary": preparation_summary,
                 "deliveryRef": delivery_ref,
                 "deliveryIdentity": report.delivery().delivery_identity(),
                 "artifactIdentity": report.delivery().artifact_identity(),
                 "packageDir": report.delivery().package_dir(),
-                "runtimePackageDir": desktop.runtime_package_dir,
-                "playerExecutable": desktop.player_executable,
-                "status": desktop.status,
+                "runtimePackageDir": desktop.map(|d| &d.runtime_package_dir),
+                "playerExecutable": desktop.and_then(|d| d.player_executable.as_ref()),
+                "apkPath": android.and_then(|a| a.apk_path.as_ref()),
+                "status": "success",
             }),
             receipt_ref: None,
             evidence_refs: report.delivery().evidence_refs().to_vec(),
@@ -980,7 +1029,12 @@ impl EngineToolProvider {
             ));
         }
         let refresh = required_refresh(refresh)?;
-        if grant.project_revision.as_deref() != Some(refresh.revision.revision_id.as_str()) {
+        if grant.project_revision.as_deref() != Some(refresh.revision.revision_id.as_str())
+            || input
+                .expected_revision_id
+                .as_deref()
+                .is_some_and(|expected| expected != refresh.revision.revision_id)
+        {
             return Err(revision_changed_diagnostic());
         }
         if input.changes.len() > grant.max_mutation_count as usize {
@@ -1439,6 +1493,8 @@ impl InvocationSuccess {
 struct MutationInput {
     goal: String,
     #[serde(default)]
+    expected_revision_id: Option<String>,
+    #[serde(default)]
     domain: Option<String>,
     changes: Vec<MutationChange>,
 }
@@ -1456,11 +1512,32 @@ struct ProjectRunInput {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct ProjectCheckInput {
+    #[serde(default)]
+    target_profile: Option<String>,
+}
+fn parse_target_profile(value: Option<&str>) -> Result<TargetProfile, ToolDiagnostic> {
+    match value.unwrap_or("windows-dev") {
+        "windows-dev" => Ok(TargetProfile::WindowsDev),
+        "windows-release" => Ok(TargetProfile::WindowsRelease),
+        "android-dev" => Ok(TargetProfile::AndroidDev),
+        "android-release" => Ok(TargetProfile::AndroidRelease),
+        _ => Err(diagnostic(
+            "engine_provider.build_target_not_ready",
+            "Unsupported target profile.",
+            "Use windows-dev, windows-release, android-dev or android-release.",
+        )),
+    }
+}
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct ProjectBuildInput {
     #[serde(default)]
     target_profile: Option<String>,
     #[serde(default)]
     frame_limit: Option<u64>,
+    #[serde(default)]
+    timeout_ms: Option<u64>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -1507,7 +1584,24 @@ pub fn tool_definitions() -> Vec<ToolDefinition> {
             "Inspect current canonical project facts and Context revision.",
             ToolSideEffect::Read,
             ToolMaturity::Ready,
-            object(json!({}), &[]),
+            object(
+                json!({
+                    "modelImport": {"type":"object","additionalProperties":false,"properties":{
+                        "descriptorPath":{"type":"string","minLength":1},
+                        "maxEntries":{"type":"integer","minimum":1,"maximum":4096}
+                    },"required":["descriptorPath"]},
+                    "aui": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                            "mode": {"type":"string", "enum":["summary", "trace"]},
+                            "documentId": {"type":"string", "minLength":1, "maxLength":256},
+                            "nodeId": {"type":"string", "minLength":1, "maxLength":256}
+                        }
+                    }
+                }),
+                &[],
+            ),
         ),
         definition(
             "engine_project_search",
@@ -1546,10 +1640,10 @@ pub fn tool_definitions() -> Vec<ToolDefinition> {
         ),
         definition(
             "engine_project_check",
-            "Check the canonical project snapshot for the Windows Dev target.",
+            "Check the canonical project snapshot for the selected platform/profile.",
             ToolSideEffect::ProcessSpawn,
             ToolMaturity::Ready,
-            object(json!({}), &[]),
+            object(json!({"targetProfile":{"type":"string","enum":["windows-dev","windows-release","android-dev","android-release"],"default":"windows-dev"}}), &[]),
         ),
         definition(
             "engine_project_mutate",
@@ -1609,7 +1703,7 @@ pub fn tool_definitions() -> Vec<ToolDefinition> {
         ),
         definition(
             "engine_runtime_run",
-            "Prepare and run the current project through the qualified Headless Runtime path.",
+            "Prepare and run the current project through the fixed Host/Engine DLL path. Defaults to headless; use mode=windowed for GPU presentation.",
             ToolSideEffect::ProcessSpawn,
             ToolMaturity::Ready,
             run_schema(),
@@ -1754,7 +1848,7 @@ fn run_schema() -> Value {
         "type":"object",
         "additionalProperties":false,
         "properties":{
-            "mode":{"type":"string","enum":["headless"],"default":"headless"},
+            "mode":{"type":"string","enum":["headless","windowed"],"default":"headless"},
             "frameLimit":{"type":"integer","minimum":1,"maximum":10000,"default":3},
             "timeoutMs":{"type":"integer","minimum":1,"maximum":300000,"default":30000}
         },
@@ -1767,8 +1861,9 @@ fn build_schema() -> Value {
         "type":"object",
         "additionalProperties":false,
         "properties":{
-            "targetProfile":{"type":"string","enum":["windows-dev"],"default":"windows-dev"},
-            "frameLimit":{"type":"integer","minimum":1,"maximum":10000,"default":3}
+            "targetProfile":{"type":"string","enum":["windows-dev","windows-release","android-dev","android-release"],"default":"windows-dev"},
+            "frameLimit":{"type":"integer","minimum":1,"maximum":10000,"default":3},
+            "timeoutMs":{"type":"integer","minimum":1,"maximum":600000,"default":30000,"description":"Compiler export timeout; native build stages keep their existing 300000 ms minimum. Use an explicit larger bound for a measured cold build."}
         },
         "required":[]
     })
@@ -1803,6 +1898,7 @@ fn mutation_schema() -> Value {
         "properties":{
             "goal":{"type":"string","minLength":1,"maxLength":512},
             "domain":{"type":"string","minLength":1,"maxLength":64},
+            "expectedRevisionId":{"type":"string","minLength":1},
             "changes":{"type":"array","minItems":1,"maxItems":32,"items":{"oneOf":[
                 {"type":"object","additionalProperties":false,"properties":{"operation":{"const":"create_or_replace"},"path":{"type":"string"},"content":{"type":"string"}},"required":["operation","path","content"]},
                 {"type":"object","additionalProperties":false,"properties":{"operation":{"const":"delete"},"path":{"type":"string"}},"required":["operation","path"]},
@@ -1816,6 +1912,15 @@ fn mutation_schema() -> Value {
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct EmptyInput {}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct ProjectInspectInput {
+    #[serde(default)]
+    aui: Option<project_authoring_execution::AuiInspectionRequest>,
+    #[serde(default)]
+    model_import: Option<project_authoring_execution::ModelImportInspectionRequest>,
+}
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -1854,7 +1959,19 @@ fn validate_tool_input(tool_name: &str, arguments: &Value) -> Result<(), ToolDia
         "engine_project_open" => serde_json::from_value::<ProjectOpenInput>(arguments.clone())
             .map(|input| !input.project_root.trim().is_empty()),
         "engine_project_inspect" => {
-            serde_json::from_value::<EmptyInput>(arguments.clone()).map(|_| true)
+            serde_json::from_value::<ProjectInspectInput>(arguments.clone()).map(|input| {
+                input.aui.as_ref().is_none_or(|request| {
+                    let bounded = |value: &Option<String>| {
+                        value
+                            .as_ref()
+                            .is_none_or(|value| !value.trim().is_empty() && value.len() <= 256)
+                    };
+                    bounded(&request.document_id)
+                        && bounded(&request.node_id)
+                        && (request.mode == project_authoring_execution::AuiInspectionMode::Trace
+                            || (request.document_id.is_none() && request.node_id.is_none()))
+                })
+            })
         }
         "engine_project_search"
         | "engine_project_references"
@@ -1869,9 +1986,21 @@ fn validate_tool_input(tool_name: &str, arguments: &Value) -> Result<(), ToolDia
             serde_json::from_value::<PathInput>(arguments.clone())
                 .map(|input| !input.path.trim().is_empty())
         }
-        "engine_project_diagnostics" | "engine_project_check" => {
+        "engine_project_diagnostics" => {
             serde_json::from_value::<EmptyInput>(arguments.clone()).map(|_| true)
         }
+        "engine_project_check" => serde_json::from_value::<ProjectCheckInput>(arguments.clone())
+            .map(|input| parse_target_profile(input.target_profile.as_deref()).is_ok()),
+        "engine_project_build" => serde_json::from_value::<ProjectBuildInput>(arguments.clone())
+            .map(|input| {
+                parse_target_profile(input.target_profile.as_deref()).is_ok()
+                    && input
+                        .frame_limit
+                        .is_none_or(|value| (1..=10_000).contains(&value))
+                    && input
+                        .timeout_ms
+                        .is_none_or(|value| (1..=600_000).contains(&value))
+            }),
         "engine_project_mutate" => {
             serde_json::from_value::<MutationInput>(arguments.clone()).map(|input| {
                 !input.goal.trim().is_empty()
@@ -2069,6 +2198,12 @@ fn derive_local_flow(
     let correctable = !revision_drifted
         && diagnostics.iter().any(|diagnostic| {
             is_correctable_diagnostic(&diagnostic.code)
+                || (diagnostic
+                    .code
+                    .starts_with("game_project_compiler.three_d.")
+                    && diagnostic.source_location.as_ref().is_some_and(|location| {
+                        !location.generated && !location.source_path.is_empty()
+                    }))
                 || (tool_name == "engine_runtime_playtest"
                     && diagnostic
                         .code
@@ -2173,6 +2308,8 @@ fn is_correctable_diagnostic(code: &str) -> bool {
             | "game_project_compiler.source_json_invalid"
             | "game_project_compiler.source_reference_missing"
     ) || code.starts_with("game_project_compiler.animator2d.")
+        || code.starts_with("game_project_compiler.animator.")
+        || code.starts_with("game_project_compiler.spine.")
         || code.starts_with("game_project_compiler.prefab_")
         || code.starts_with("game_project_compiler.aui_")
 }
@@ -2191,6 +2328,7 @@ fn operation_state_for_status(status: CanonicalToolStatus) -> OperationState {
 fn inspection_output(
     refresh: &authoring_project_context::RefreshReport,
     inventory: &ProjectSourceInventory,
+    aui_inspection: &project_authoring_execution::AuiProjectInspectionReport,
 ) -> Value {
     json!({
         "projectIdentity": refresh.revision.portable_project_identity,
@@ -2199,6 +2337,7 @@ fn inspection_output(
         "sourceDigest": inventory.source_digest,
         "files": inventory.entries,
         "diagnostics": refresh.diagnostics,
+        "auiInspection": aui_inspection,
     })
 }
 
@@ -2477,6 +2616,35 @@ mod tests {
     }
 
     #[test]
+    fn runtime_run_windowed_and_headless_share_the_project_refresh_guard() {
+        let fixture = Fixture::new("windowed-run-mode");
+        let mut provider = fixture.provider();
+        assert_eq!(
+            run_schema()["properties"]["mode"]["enum"],
+            json!(["headless", "windowed"])
+        );
+        for mode in [None, Some("headless"), Some("windowed"), Some("invalid")] {
+            let mut arguments = json!({});
+            if let Some(mode) = mode {
+                arguments["mode"] = mode.into();
+            }
+            let call = write_call("run-mode", "engine_runtime_run", arguments);
+            let error = provider
+                .invoke_project_run(&call, "run-mode", None)
+                .err()
+                .unwrap();
+            assert_eq!(
+                error.code,
+                if mode == Some("invalid") {
+                    "engine_provider.run_mode_unsupported"
+                } else {
+                    "engine_provider.project_refresh_missing"
+                }
+            );
+        }
+    }
+
+    #[test]
     fn compiler_diagnostic_fields_are_optional_and_retry_requires_project_error() {
         let mut failure = diagnostic(
             "game_project_compiler.check_cargo_failed",
@@ -2533,6 +2701,49 @@ mod tests {
             .retryability,
             ToolRetryability::NotRetryable
         );
+    }
+
+    #[test]
+    fn spatial_retry_requires_an_ordinary_source_location() {
+        let mut failure = diagnostic(
+            "game_project_compiler.three_d.material.normal_required",
+            "Normals missing",
+            "Repair source",
+        );
+        for (location, expected) in [
+            (None, ToolRetryability::NotRetryable),
+            (
+                Some((true, "Generated/mesh.json")),
+                ToolRetryability::NotRetryable,
+            ),
+            (Some((false, "")), ToolRetryability::NotRetryable),
+            (
+                Some((false, "Models/character.gltf")),
+                ToolRetryability::RetryAfterCorrection,
+            ),
+        ] {
+            failure.source_location =
+                location.map(
+                    |(generated, path)| project_authoring_execution::SourceLocation {
+                        source_path: path.into(),
+                        field_path: Some("/meshes/0/primitives/0".into()),
+                        line: None,
+                        column: None,
+                        generated,
+                    },
+                );
+            assert_eq!(
+                derive_local_flow(
+                    "engine_project_check",
+                    CanonicalToolStatus::RejectedByEngine,
+                    &Value::Null,
+                    &[failure.clone()],
+                    None
+                )
+                .retryability,
+                expected
+            );
+        }
     }
 
     #[test]
@@ -2818,6 +3029,53 @@ mod tests {
         assert_eq!(second.status, CanonicalToolStatus::Completed);
         assert_eq!(first.project_revision, second.project_revision);
         assert_eq!(before, [file_state(&manifest), file_state(&source)]);
+    }
+
+    #[test]
+    fn project_inspect_and_check_project_shared_aui_tooling_report() {
+        let fixture = Fixture::new("aui-tooling");
+        fs::create_dir_all(fixture.root.join("AUI")).unwrap();
+        fs::write(
+            fixture.root.join("AUI/menu.aui.json"),
+            br#"{"documentId":"menu","root":{"nodeId":"root","nodeType":"canvas","children":[{"nodeId":"title","nodeType":"text","text":"Menu"}]}}"#,
+        )
+        .unwrap();
+        let mut provider = fixture.provider();
+
+        let inspected = provider.invoke(read_call(
+            "aui-inspect",
+            "engine_project_inspect",
+            json!({}),
+        ));
+        let traced = provider.invoke(read_call(
+            "aui-trace",
+            "engine_project_inspect",
+            json!({"aui":{"mode":"trace","documentId":"menu","nodeId":"title"}}),
+        ));
+        let checked = provider.invoke(write_call("aui-check", "engine_project_check", json!({})));
+
+        assert_eq!(inspected.status, CanonicalToolStatus::Completed);
+        assert_eq!(inspected.output["auiInspection"]["status"], "passed");
+        assert_eq!(inspected.output["auiInspection"]["documentCount"], 1);
+        assert_eq!(
+            inspected.output["auiInspection"]["migrationCandidateCount"],
+            1
+        );
+        assert_eq!(inspected.output["auiInspection"]["trace"], json!([]));
+        assert_eq!(traced.status, CanonicalToolStatus::Completed);
+        assert_eq!(
+            traced.output["auiInspection"]["trace"][0]["nodeId"],
+            "title"
+        );
+        assert_eq!(
+            traced.output["auiInspection"]["trace"][0]["ancestorPath"],
+            json!(["root", "title"])
+        );
+        assert_eq!(checked.status, CanonicalToolStatus::Completed);
+        assert_eq!(
+            checked.output["checkReport"]["auiInspection"]["status"],
+            "passed"
+        );
     }
 
     #[test]
@@ -3186,5 +3444,56 @@ mod tests {
         fn drop(&mut self) {
             let _ = fs::remove_dir_all(&self.root);
         }
+    }
+    #[test]
+    fn target_profiles_are_typed_in_check_and_build_schema() {
+        for target in [
+            "windows-dev",
+            "windows-release",
+            "android-dev",
+            "android-release",
+        ] {
+            assert_eq!(parse_target_profile(Some(target)).unwrap().as_str(), target);
+            validate_tool_input("engine_project_check", &json!({"targetProfile":target})).unwrap();
+            assert!(build_schema()["properties"]["targetProfile"]["enum"]
+                .as_array()
+                .unwrap()
+                .contains(&json!(target)));
+        }
+        assert!(parse_target_profile(Some("android-fast-fake")).is_err());
+        assert!(
+            validate_tool_input("engine_project_check", &json!({"targetProfile":"unknown"}))
+                .is_err()
+        );
+    }
+
+    #[test]
+    fn build_timeout_is_explicit_bounded_and_validated_before_compiler() {
+        assert_eq!(
+            build_schema()["properties"]["timeoutMs"]["maximum"],
+            json!(600_000)
+        );
+        for value in [1, 30_000, 600_000] {
+            validate_tool_input("engine_project_build", &json!({"timeoutMs":value})).unwrap();
+        }
+        for value in [
+            json!(0),
+            json!(600_001),
+            json!(-1),
+            json!(1.5),
+            json!("600000"),
+        ] {
+            assert!(
+                validate_tool_input("engine_project_build", &json!({"timeoutMs":value})).is_err()
+            );
+        }
+        assert!(
+            validate_tool_input("engine_project_build", &json!({"targetProfile":"fake"})).is_err()
+        );
+        assert!(validate_tool_input(
+            "engine_project_build",
+            &json!({"timeoutMs":600_000,"unexpected":true})
+        )
+        .is_err());
     }
 }

@@ -1,0 +1,450 @@
+{
+  "background": "#000000",
+  "entities": [
+    {
+      "components": [
+        {
+          "componentType": "Transform3D",
+          "data": {
+            "rotation": {
+              "kind": "eulerDegrees",
+              "xyz": [
+                0,
+                0,
+                0
+              ]
+            },
+            "scale": [
+              1,
+              1,
+              1
+            ],
+            "schemaVersion": "transform3d.v1",
+            "translation": [
+              0,
+              0,
+              -6
+            ]
+          }
+        },
+        {
+          "componentType": "Visibility3D",
+          "data": {
+            "schemaVersion": "visibility3d.v1",
+            "visible": true
+          }
+        },
+        {
+          "componentType": "MeshRenderer3D",
+          "data": {
+            "layers": [
+              "world"
+            ],
+            "materials": {
+              "surface0": {
+                "guid": "guid-import-material-0",
+                "id": "import.material.0",
+                "sub_asset": "stable-material-0",
+                "type": "material"
+              },
+              "surface1": {
+                "guid": "guid-import-material-1",
+                "id": "import.material.1",
+                "sub_asset": "stable-material-1",
+                "type": "material"
+              },
+              "surface2": {
+                "guid": "guid-import-material-2",
+                "id": "import.material.2",
+                "sub_asset": "stable-material-2",
+                "type": "material"
+              },
+              "surface3": {
+                "guid": "guid-import-material-3",
+                "id": "import.material.3",
+                "sub_asset": "stable-material-3",
+                "type": "material"
+              },
+              "surface4": {
+                "guid": "guid-import-material-4",
+                "id": "import.material.4",
+                "sub_asset": "stable-material-4",
+                "type": "material"
+              },
+              "surface5": {
+                "guid": "guid-import-material-5",
+                "id": "import.material.5",
+                "sub_asset": "stable-material-5",
+                "type": "material"
+              }
+            },
+            "mesh": {
+              "guid": "guid-import-mesh-0",
+              "id": "import.mesh.0",
+              "sub_asset": "stable-mesh-0",
+              "type": "mesh"
+            },
+            "schemaVersion": "mesh-renderer3d.v1",
+            "visible": true
+          }
+        }
+      ],
+      "enabled": true,
+      "id": "cube",
+      "name": "Cube",
+      "parentId": null,
+      "siblingOrder": 0
+    },
+    {
+      "components": [
+        {
+          "componentType": "Transform3D",
+          "data": {
+            "rotation": {
+              "kind": "quaternion",
+              "xyzw": [
+                0,
+                0,
+                0,
+                1
+              ]
+            },
+            "scale": [
+              1,
+              1,
+              1
+            ],
+            "schemaVersion": "transform3d.v1",
+            "translation": [
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        {
+          "componentType": "Camera3D",
+          "data": {
+            "clearColor": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "enabled": true,
+            "layers": [
+              "world"
+            ],
+            "projection": {
+              "far": 20.0,
+              "kind": "orthographic",
+              "near": 0.1,
+              "size": 5.0
+            },
+            "schemaVersion": "camera3d.v1",
+            "viewport": "fullWindow"
+          }
+        }
+      ],
+      "enabled": true,
+      "id": "camera",
+      "name": "Camera",
+      "parentId": null,
+      "siblingOrder": 1
+    },
+    {
+      "id": "sun",
+      "name": "sun",
+      "enabled": true,
+      "parentId": null,
+      "siblingOrder": 2,
+      "components": [
+        {
+          "componentType": "Transform3D",
+          "data": {
+            "schemaVersion": "transform3d.v1",
+            "translation": [
+              0,
+              0,
+              0
+            ],
+            "rotation": {
+              "kind": "eulerDegrees",
+              "xyz": [
+                30,
+                25,
+                0
+              ]
+            },
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "componentType": "Light3D",
+          "data": {
+            "schemaVersion": "light3d.v1",
+            "enabled": true,
+            "color": [
+              1.0,
+              0.9,
+              0.8
+            ],
+            "kind": {
+              "type": "directional",
+              "illuminanceLux": 2.0
+            },
+            "layers": [
+              "world"
+            ],
+            "castShadows": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "point",
+      "name": "point",
+      "enabled": true,
+      "parentId": null,
+      "siblingOrder": 3,
+      "components": [
+        {
+          "componentType": "Transform3D",
+          "data": {
+            "schemaVersion": "transform3d.v1",
+            "translation": [
+              -3,
+              2,
+              -3
+            ],
+            "rotation": {
+              "kind": "eulerDegrees",
+              "xyz": [
+                0,
+                0,
+                0
+              ]
+            },
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "componentType": "Light3D",
+          "data": {
+            "schemaVersion": "light3d.v1",
+            "enabled": true,
+            "color": [
+              0.35,
+              0.6,
+              1.0
+            ],
+            "kind": {
+              "type": "point",
+              "intensityCandela": 12.0,
+              "rangeM": 12.0
+            },
+            "layers": [
+              "world"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "spot",
+      "name": "spot",
+      "enabled": true,
+      "parentId": null,
+      "siblingOrder": 4,
+      "components": [
+        {
+          "componentType": "Transform3D",
+          "data": {
+            "schemaVersion": "transform3d.v1",
+            "translation": [
+              3,
+              2,
+              -1
+            ],
+            "rotation": {
+              "kind": "eulerDegrees",
+              "xyz": [
+                -20,
+                15,
+                0
+              ]
+            },
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "componentType": "Light3D",
+          "data": {
+            "schemaVersion": "light3d.v1",
+            "enabled": true,
+            "color": [
+              1.0,
+              0.3,
+              0.15
+            ],
+            "kind": {
+              "type": "spot",
+              "intensityCandela": 30.0,
+              "rangeM": 12.0,
+              "innerHalfAngleDegrees": 15.0,
+              "outerHalfAngleDegrees": 35.0
+            },
+            "layers": [
+              "world"
+            ],
+            "castShadows": true
+          }
+        }
+      ]
+    },
+    {
+      "components": [
+        {
+          "componentType": "Transform3D",
+          "data": {
+            "rotation": {
+              "kind": "eulerDegrees",
+              "xyz": [
+                0,
+                0,
+                0
+              ]
+            },
+            "scale": [
+              9,
+              5,
+              0.1
+            ],
+            "schemaVersion": "transform3d.v1",
+            "translation": [
+              0,
+              0,
+              -7.5
+            ]
+          }
+        },
+        {
+          "componentType": "Visibility3D",
+          "data": {
+            "schemaVersion": "visibility3d.v1",
+            "visible": true
+          }
+        },
+        {
+          "componentType": "MeshRenderer3D",
+          "data": {
+            "layers": [
+              "world"
+            ],
+            "materials": {
+              "surface": {
+                "guid": "guid-import-material-0",
+                "id": "import.material.0",
+                "sub_asset": "stable-material-0",
+                "type": "material"
+              }
+            },
+            "mesh": {
+              "id": "cube",
+              "guid": "guid-cube",
+              "type": "mesh"
+            },
+            "schemaVersion": "mesh-renderer3d.v1",
+            "visible": true
+          }
+        }
+      ],
+      "enabled": true,
+      "id": "backdrop",
+      "name": "PBR receiver backdrop",
+      "parentId": null,
+      "siblingOrder": 5
+    },
+    {
+      "components": [
+        {
+          "componentType": "Transform3D",
+          "data": {
+            "rotation": {
+              "kind": "eulerDegrees",
+              "xyz": [
+                0,
+                0,
+                0
+              ]
+            },
+            "scale": [
+              0.8,
+              0.8,
+              0.8
+            ],
+            "schemaVersion": "transform3d.v1",
+            "translation": [
+              4.9,
+              0,
+              -5
+            ]
+          }
+        },
+        {
+          "componentType": "Visibility3D",
+          "data": {
+            "schemaVersion": "visibility3d.v1",
+            "visible": true
+          }
+        },
+        {
+          "componentType": "MeshRenderer3D",
+          "data": {
+            "layers": [
+              "world"
+            ],
+            "materials": {
+              "surface": {
+                "guid": "guid-import-material-0",
+                "id": "import.material.0",
+                "sub_asset": "stable-material-0",
+                "type": "material"
+              }
+            },
+            "mesh": {
+              "id": "cube",
+              "guid": "guid-cube",
+              "type": "mesh"
+            },
+            "schemaVersion": "mesh-renderer3d.v1",
+            "visible": true
+          }
+        }
+      ],
+      "enabled": true,
+      "id": "off-camera-caster",
+      "name": "Outside camera, inside shadow projection",
+      "parentId": null,
+      "siblingOrder": 6
+    }
+  ],
+  "gravity": 0,
+  "id": "main",
+  "mainCamera": "camera",
+  "name": "S2-B directional cascades and spot shadows",
+  "schemaVersion": "authoring-scene.v2",
+  "skyColor": "#000000"
+}

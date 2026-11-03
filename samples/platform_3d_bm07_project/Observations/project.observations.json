@@ -1,0 +1,106 @@
+{
+  "schemaVersion": "project-observation-contract.v1",
+  "contractId": "bm07.actual-navigation",
+  "observations": [
+    {
+      "path": "bm07.tick",
+      "type": "integer",
+      "description": "Actual ordinary SDK / committed navigation and motor result; phase samples retain sampleTick"
+    },
+    {
+      "path": "bm07.issuedReachable",
+      "type": "integer",
+      "description": "Actual ordinary SDK / committed navigation and motor result; phase samples retain sampleTick"
+    },
+    {
+      "path": "bm07.issuedUnreachable",
+      "type": "integer",
+      "description": "Actual ordinary SDK / committed navigation and motor result; phase samples retain sampleTick"
+    },
+    {
+      "path": "bm07.issuedNotResident",
+      "type": "integer",
+      "description": "Actual ordinary SDK / committed navigation and motor result; phase samples retain sampleTick"
+    },
+    {
+      "path": "bm07.completedReachable",
+      "type": "integer",
+      "description": "Actual ordinary SDK / committed navigation and motor result; phase samples retain sampleTick"
+    },
+    {
+      "path": "bm07.completedUnreachable",
+      "type": "integer",
+      "description": "Actual ordinary SDK / committed navigation and motor result; phase samples retain sampleTick"
+    },
+    {
+      "path": "bm07.completedNotResident",
+      "type": "integer",
+      "description": "Actual ordinary SDK / committed navigation and motor result; phase samples retain sampleTick"
+    },
+    {
+      "path": "bm07.actualAgents",
+      "type": "integer",
+      "description": "Actual ordinary SDK / committed navigation and motor result; phase samples retain sampleTick"
+    },
+    {
+      "path": "bm07.actualMotorStates",
+      "type": "integer",
+      "description": "Actual ordinary SDK / committed navigation and motor result; phase samples retain sampleTick"
+    },
+    {
+      "path": "bm07.movedAgents",
+      "type": "integer",
+      "description": "Actual ordinary SDK / committed navigation and motor result; phase samples retain sampleTick"
+    },
+    {
+      "path": "bm07.crossedEast",
+      "type": "integer",
+      "description": "Actual ordinary SDK / committed navigation and motor result; phase samples retain sampleTick"
+    },
+    {
+      "path": "bm07.crossedWest",
+      "type": "integer",
+      "description": "Actual ordinary SDK / committed navigation and motor result; phase samples retain sampleTick"
+    },
+    {
+      "path": "bm07.invalidatedAfterUnload",
+      "type": "integer",
+      "description": "Actual ordinary SDK / committed navigation and motor result; phase samples retain sampleTick"
+    },
+    {
+      "path": "bm07.movedObstacles",
+      "type": "integer",
+      "description": "Actual ordinary SDK / committed navigation and motor result; phase samples retain sampleTick"
+    },
+    {
+      "path": "bm07.unloadedTileGone",
+      "type": "bool",
+      "description": "Actual ordinary SDK / committed navigation and motor result; phase samples retain sampleTick"
+    },
+    {
+      "path": "bm07.requestMixExact",
+      "type": "bool",
+      "description": "Actual ordinary SDK / committed navigation and motor result; phase samples retain sampleTick"
+    },
+    {
+      "path": "bm07.requestOutcomesMet",
+      "type": "bool",
+      "description": "Actual ordinary SDK / committed navigation and motor result; phase samples retain sampleTick"
+    },
+    {
+      "path": "bm07.opposingCrossingsObserved",
+      "type": "bool",
+      "description": "Actual ordinary SDK / committed navigation and motor result; phase samples retain sampleTick"
+    },
+    {
+      "path": "bm07.noUnexpectedResults",
+      "type": "bool",
+      "description": "Actual ordinary SDK / committed navigation and motor result; phase samples retain sampleTick"
+    },
+    {
+      "path": "bm07.sampleTick",
+      "type": "integer",
+      "description": "Actual ordinary SDK / committed navigation and motor result; phase samples retain sampleTick"
+    }
+  ]
+}

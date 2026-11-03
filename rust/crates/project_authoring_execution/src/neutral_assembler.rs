@@ -11,7 +11,6 @@ use engine_runtime::animator2d::{
 };
 use engine_runtime::aui::{
     AuiAssetRef, AuiCanvas, AuiDocument, AuiNode, AuiNodeKind, AuiRect, AuiStyle,
-    AUI_DOCUMENT_SCHEMA_VERSION,
 };
 use engine_runtime::project_runtime_module::{
     project_runtime_aot_digest, ProjectRuntimeAotDigestSource, EMPTY_PROJECT_RUNTIME_AOT_DIGEST,
@@ -25,7 +24,7 @@ use engine_runtime::runtime_package::{
 };
 use engine_runtime::runtime_package_builder::{
     RuntimePackageBuildInput, RuntimePackageSourceAsset, RuntimePackageSourceJson,
-    RuntimePackageSourcePrefab, RuntimePackageSourceTexture,
+    RuntimePackageSourcePrefab, RuntimePackageSourceTexture, RuntimePackageTexturePixels,
 };
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
@@ -34,10 +33,51 @@ use std::path::Path;
 
 #[path = "animator_description.rs"]
 mod animator_description;
+#[path = "spine_description.rs"]
+mod spine_description;
+#[path = "spine_import.rs"]
+mod spine_import;
+#[path = "terrain_cook.rs"]
+pub(crate) mod terrain_cook;
+pub(crate) use spine_description::inspect as inspect_spine_description;
+pub(crate) use spine_import::check as validate_spine_source;
+
+#[path = "environment_cook.rs"]
+mod environment_cook;
+#[path = "navigation_cook.rs"]
+mod navigation_cook;
+#[path = "texture_cook.rs"]
+pub(crate) mod texture_cook;
+
+#[path = "render_asset_cook.rs"]
+mod render_asset_cook;
+
+#[path = "spatial_prefab_assembly.rs"]
+mod spatial_prefab_assembly;
+
+#[path = "import_asset_assembly.rs"]
+mod import_asset_assembly;
 
 pub(crate) fn assemble(
     source: &CompilerSourceView,
     artifact_cache_root: Option<&Path>,
+    import_cache_scope: &str,
+) -> Result<
+    (
+        RuntimePackageBuildInput,
+        String,
+        Vec<ProjectAssemblyProducerReport>,
+    ),
+    GameProjectCompilerError,
+> {
+    assemble_cancellable(source, artifact_cache_root, import_cache_scope, &|| false)
+}
+
+pub(crate) fn assemble_cancellable(
+    source: &CompilerSourceView,
+    artifact_cache_root: Option<&Path>,
+    import_cache_scope: &str,
+    cancelled: &dyn Fn() -> bool,
 ) -> Result<
     (
         RuntimePackageBuildInput,
@@ -47,6 +87,7 @@ pub(crate) fn assemble(
     GameProjectCompilerError,
 > {
     let expanded = animator_description::expand(source)?;
+    let expanded = terrain_cook::expand(&expanded)?;
     let source = &expanded;
     let manifest = source.project_manifest_value()?;
     let project_id = manifest
@@ -122,34 +163,100 @@ pub(crate) fn assemble(
         .transpose()
         .map_err(|error| assembly_error("artifact_cache_open_failed", error.to_string()))?;
     let mut producer_reports = Vec::new();
+    let mut render_cook_context = render_asset_cook::CookContext::new(source);
     let animator2d_registry = cook_animator2d_registry(source)?;
 
     let mut prefab_documents = BTreeMap::new();
-    for path in source
-        .paths()
-        .filter(|path| path.starts_with("Prefabs/") && path.ends_with(".prefab.json"))
-    {
-        let document = parse_json(path, source.bytes(path).unwrap())?;
+    import_asset_assembly::append(
+        source,
+        &mut input,
+        &mut producer_reports,
+        cache.as_ref(),
+        import_cache_scope,
+        cancelled,
+    )?;
+    for prefab in &input.prefabs {
+        prefab_documents.insert(prefab.prefab_id.clone(), prefab.document.clone());
+    }
+    for path in source.paths().filter(|path| {
+        path.starts_with("Prefabs/")
+            && (path.ends_with(".prefab.json")
+                || (manifest
+                    .get("schemaVersion")
+                    .and_then(serde_json::Value::as_str)
+                    == Some(crate::SPATIAL_PROJECT_MANIFEST_SCHEMA_VERSION)
+                    && path.ends_with(".json")))
+    }) {
+        let mut document = parse_json(path, source.bytes(path).unwrap())?;
+        if document
+            .get("schemaVersion")
+            .and_then(serde_json::Value::as_str)
+            == Some(crate::three_d_contract::AUTHORING_PREFAB_V2)
+        {
+            let source: crate::three_d_contract::SpatialSourcePrefab =
+                engine_runtime::spatial_contract::decode(document.clone(), "")
+                    .map_err(|e| assembly_error("three_d.prefab_invalid", e.to_string()))?;
+            let mut runtime = source
+                .canonicalize()
+                .map_err(|e| assembly_error("three_d.prefab_invalid", e.to_string()))?;
+            for (entity, original) in runtime.entities.iter_mut().zip(&source.entities) {
+                if matches!(
+                    entity,
+                    engine_runtime::spatial_contract::RuntimeEntityDocument::Legacy(_)
+                ) {
+                    *entity = engine_runtime::spatial_contract::RuntimeEntityDocument::Legacy(
+                        parse_entity(
+                            &serde_json::to_value(original).unwrap(),
+                            &animator2d_registry,
+                        )?,
+                    );
+                }
+            }
+            document = serde_json::to_value(runtime)
+                .map_err(|e| assembly_error("three_d.prefab_invalid", e.to_string()))?;
+        }
         let prefab_id = document
             .get("prefabId")
+            .or_else(|| document.get("id"))
             .and_then(serde_json::Value::as_str)
             .unwrap_or(path)
             .to_string();
         prefab_documents.insert(prefab_id.clone(), document.clone());
         input.prefabs.push(RuntimePackageSourcePrefab {
+            identity: None,
             prefab_id,
             document,
         });
     }
 
+    let spine_owned_paths = spine_import::owned_paths(source);
     for path in source.paths() {
-        if path.starts_with("Scenes/") && path.ends_with(".scene.json") {
-            let scene = parse_scene(
+        if spine_owned_paths.contains(path) {
+            continue;
+        }
+        if path.starts_with("Scenes/")
+            && (path.ends_with(".scene.json")
+                || (manifest
+                    .get("schemaVersion")
+                    .and_then(serde_json::Value::as_str)
+                    == Some(crate::SPATIAL_PROJECT_MANIFEST_SCHEMA_VERSION)
+                    && path.ends_with(".json")))
+        {
+            let mut scene = parse_scene(
                 path,
                 source.bytes(path).unwrap(),
                 &prefab_documents,
+                &input.prefabs,
                 &animator2d_registry,
             )?;
+            if input.prefabs.iter().any(|p| {
+                p.document
+                    .get("schemaVersion")
+                    .and_then(serde_json::Value::as_str)
+                    == Some(engine_runtime::spatial_contract::RUNTIME_PREFAB_V2)
+            }) {
+                scene.schema_version = engine_runtime::spatial_contract::RUNTIME_SCENE_V2.into();
+            }
             input.assets.push(RuntimePackageSourceAsset::new(
                 scene.id.clone(),
                 scene.name.clone(),
@@ -158,7 +265,14 @@ pub(crate) fn assemble(
                 format!("scenes/{}.json", scene.id),
             ));
             input.scenes.push(scene);
-        } else if path.starts_with("Prefabs/") && path.ends_with(".prefab.json") {
+        } else if path.starts_with("Prefabs/")
+            && (path.ends_with(".prefab.json")
+                || (manifest
+                    .get("schemaVersion")
+                    .and_then(serde_json::Value::as_str)
+                    == Some(crate::SPATIAL_PROJECT_MANIFEST_SCHEMA_VERSION)
+                    && path.ends_with(".json")))
+        {
             continue;
         } else if path.starts_with("AUI/") && path.ends_with(".json") {
             let source_document = parse_json(path, source.bytes(path).unwrap())?;
@@ -182,8 +296,17 @@ pub(crate) fn assemble(
                 serde_json::from_slice(source.bytes(path).unwrap())
                     .map_err(|error| assembly_error("rule_manifest_invalid", error.to_string()))?,
             );
-        } else if path.starts_with("Assets/") && path.ends_with(".asset") {
-            append_asset(
+        } else if path.starts_with("Assets/")
+            // The particle cooker below owns both validation and the compiled payload.
+            // Spatial projects also admit generic JSON assets; never emit the source twice.
+            && !path.ends_with(".particle-effect.json")
+            && (path.ends_with(".asset")
+                || (manifest["schemaVersion"].as_str()
+                    == Some(crate::SPATIAL_PROJECT_MANIFEST_SCHEMA_VERSION)
+                    && path.ends_with(".json")))
+        {
+            append_asset_with_context(
+                &mut render_cook_context,
                 path,
                 source,
                 &mut input,
@@ -275,6 +398,15 @@ pub(crate) fn assemble(
                 .map_err(|error| assembly_error("builtin_font_pack_invalid", error.to_string()))?,
         );
     }
+    spine_import::append(
+        source,
+        &mut input,
+        cache.as_ref(),
+        &mut producer_reports,
+        import_cache_scope,
+    )
+    .map_err(|error| *error)?;
+    spine_description::append(source, &mut input)?;
     input.animator2d_registry = animator2d_registry;
     input
         .assets
@@ -629,9 +761,49 @@ fn parse_scene(
     path: &str,
     bytes: &[u8],
     prefabs: &BTreeMap<String, serde_json::Value>,
+    typed_prefabs: &[RuntimePackageSourcePrefab],
     animator2d_registry: &CookedAnimator2DRegistry,
 ) -> Result<RuntimeScene, GameProjectCompilerError> {
     let document = parse_json(path, bytes)?;
+    if document
+        .get("schemaVersion")
+        .and_then(serde_json::Value::as_str)
+        == Some(crate::three_d_contract::AUTHORING_SCENE_V2)
+    {
+        let source: crate::three_d_contract::SpatialSourceScene =
+            engine_runtime::spatial_contract::decode(document.clone(), "")
+                .map_err(|e| assembly_error("three_d.scene_invalid", e.to_string()))?;
+        let mut runtime = source
+            .canonicalize_placements()
+            .map_err(|e| assembly_error("three_d.scene_invalid", e.to_string()))?;
+        // Preserve the existing Animator/Sprite lowering for legacy roots in a mixed scene.
+        for (entity, original) in runtime.entities.iter_mut().zip(&source.entities) {
+            if matches!(
+                entity,
+                engine_runtime::spatial_contract::RuntimeEntityDocument::Legacy(_)
+            ) {
+                *entity =
+                    engine_runtime::spatial_contract::RuntimeEntityDocument::Legacy(parse_entity(
+                        &serde_json::to_value(original).unwrap(),
+                        animator2d_registry,
+                    )?);
+            }
+        }
+        spatial_prefab_assembly::expand(&source, &mut runtime, typed_prefabs).map_err(|error| {
+            crate::game_project_compiler::check::error(
+                &error.code,
+                error.message,
+                Some(crate::SourceLocation {
+                    source_path: path.into(),
+                    field_path: Some(error.field_path),
+                    line: None,
+                    column: None,
+                    generated: false,
+                }),
+            )
+        })?;
+        return Ok(runtime.into());
+    }
     let source_entities = document
         .get("entities")
         .and_then(serde_json::Value::as_array)
@@ -652,6 +824,7 @@ fn parse_scene(
         }
     }
     Ok(RuntimeScene {
+        main_camera: None,
         schema_version: RUNTIME_SCENE_SCHEMA_VERSION.to_string(),
         id: document
             .get("id")
@@ -946,7 +1119,26 @@ fn parse_entity(
             }
         }
     }
+    if let Some(binding) = value.get("spineAnimator") {
+        if components
+            .iter()
+            .any(|c| c.component_type == "SpineAnimator")
+        {
+            return Err(assembly_error(
+                "animator.binding.duplicate_entity",
+                "Duplicate SpineAnimator binding.",
+            ));
+        }
+        let b: engine_runtime::spine_animation::SpineAnimatorBinding =
+            serde_json::from_value(binding.clone())
+                .map_err(|e| assembly_error("animator.binding.entity_invalid", e.to_string()))?;
+        components.push(RuntimeProjectComponent {
+            component_type: "SpineAnimator".into(),
+            data: serde_json::to_value(b).unwrap(),
+        });
+    }
     Ok(RuntimeEntity {
+        spatial: None,
         schema_version: RUNTIME_ENTITY_SCHEMA_VERSION.to_string(),
         id: value
             .get("id")
@@ -1024,6 +1216,7 @@ fn parse_asset_ref(value: &serde_json::Value) -> Option<RuntimeAssetRef> {
     })
 }
 
+#[cfg(test)]
 fn append_asset(
     path: &str,
     source: &CompilerSourceView,
@@ -1031,7 +1224,28 @@ fn append_asset(
     cache: Option<&ProjectAssemblyArtifactCache>,
     reports: &mut Vec<ProjectAssemblyProducerReport>,
 ) -> Result<(), GameProjectCompilerError> {
+    append_asset_with_context(
+        &mut render_asset_cook::CookContext::new(source),
+        path,
+        source,
+        input,
+        cache,
+        reports,
+    )
+}
+
+fn append_asset_with_context(
+    render_cook_context: &mut render_asset_cook::CookContext<'_>,
+    path: &str,
+    source: &CompilerSourceView,
+    input: &mut RuntimePackageBuildInput,
+    cache: Option<&ProjectAssemblyArtifactCache>,
+    reports: &mut Vec<ProjectAssemblyProducerReport>,
+) -> Result<(), GameProjectCompilerError> {
     let document = parse_json(path, source.bytes(path).unwrap())?;
+    if document["schemaVersion"] == "model-import.v1" {
+        return Ok(());
+    }
     let asset_id = document
         .get("assetId")
         .and_then(serde_json::Value::as_str)
@@ -1042,6 +1256,12 @@ fn append_asset(
         .and_then(serde_json::Value::as_str)
         .unwrap_or("asset")
         .strip_suffix("-asset.v1")
+        .or_else(|| {
+            document["schemaVersion"]
+                .as_str()
+                .unwrap_or("")
+                .strip_suffix("-asset.v2")
+        })
         .unwrap_or("asset")
         .to_string();
     let source_path = document
@@ -1066,7 +1286,81 @@ fn append_asset(
         .and_then(serde_json::Value::as_str)
         .unwrap_or(&asset_id)
         .to_string();
-    if asset_type == "audio" {
+    if document.get("renderData").is_some()
+        || matches!(
+            document["schemaVersion"].as_str(),
+            Some("mesh-asset.v2" | "material-asset.v2")
+        )
+    {
+        render_asset_cook::cook(
+            path,
+            &document,
+            render_cook_context,
+            &mut asset,
+            cache,
+            reports,
+        )?;
+    } else if asset_type == "vegetation3d" {
+        let vegetation: engine_runtime::terrain3d::VegetationAsset3D =
+            serde_json::from_value(document.clone())
+                .map_err(|e| assembly_error("vegetation3d.invalid", format!("{path}: {e}")))?;
+        vegetation
+            .validate()
+            .map_err(|e| assembly_error("vegetation3d.invalid", format!("{path}: {e}")))?;
+        let bytes = serde_json::to_vec(&vegetation)
+            .map_err(|e| assembly_error("vegetation3d.invalid", format!("{path}: {e}")))?;
+        let dependency_error = |message| {
+            assembly_error(
+                "vegetation3d.dependency_invalid",
+                format!("{path}: {message}"),
+            )
+        };
+        let index = render_cook_context.index().map_err(&dependency_error)?;
+        for cluster in vegetation.clusters {
+            for reference in cluster
+                .mesh_levels()
+                .map(|(_, mesh)| mesh)
+                .chain(std::iter::once(&cluster.material))
+            {
+                let engine_runtime::render_contract::RenderAssetResolution::Resolved(record) =
+                    reference
+                        .resolve(Some(index))
+                        .map_err(|e| dependency_error(e.to_string()))?
+                else {
+                    unreachable!()
+                };
+                if reference.reference.guid.as_deref() != Some(record.asset_guid.as_str()) {
+                    return Err(dependency_error(format!(
+                        "{} has wrong type/GUID",
+                        reference.reference.id
+                    )));
+                }
+                asset.dependencies.push(record.asset_guid.clone());
+            }
+        }
+        asset.dependencies.sort();
+        asset.dependencies.dedup();
+        asset.hash = Some(engine_runtime::canonical_digest::sha256_prefixed(&bytes));
+        asset.runtime_payload = Some(bytes);
+    } else if asset_type == "navigation3d" {
+        navigation_cook::cook(path, &document, &mut asset, cache, reports)?;
+    } else if asset_type == "collision3d" {
+        let shape: engine_runtime::physics_3d::CollisionShape3D =
+            serde_json::from_value(document["shape"].clone())
+                .map_err(|e| assembly_error("collision.invalid", format!("{path}: {e}")))?;
+        let cooked = engine_runtime::physics_3d::CookedCollision3D {
+            schema_version: "collision3d.v1".into(),
+            shape,
+        };
+        cooked
+            .validate()
+            .map_err(|e| assembly_error("collision.invalid", format!("{path}: {e}")))?;
+        let bytes = serde_json::to_vec(&cooked).expect("validated collision");
+        asset.hash = Some(engine_runtime::canonical_digest::sha256_prefixed(&bytes));
+        asset.runtime_payload = Some(bytes);
+    } else if asset_type == "environment" {
+        environment_cook::cook(path, &document, source, &mut asset, cache, reports)?;
+    } else if asset_type == "audio" {
         if document.get("sourceImage").is_some() {
             return Err(assembly_error(
                 "audio_source_image_unsupported",
@@ -1155,6 +1449,20 @@ fn append_asset(
         let bytes = serde_json::to_vec(&data).map_err(|e| invalid(e.to_string()))?;
         asset.hash = Some(format!("sha256:{:x}", Sha256::digest(&bytes)));
         asset.runtime_payload = Some(bytes);
+    } else if asset_type == "graphics2d" {
+        let invalid = |message: String| {
+            assembly_error("aui_graphics.asset_invalid", format!("{path}: {message}"))
+        };
+        let graphics: project_runtime_sdk::aui_draw2d::Graphics2DAsset =
+            serde_json::from_value(serde_json::json!({
+                "schemaVersion": document["schemaVersion"], "assetId": document["assetId"],
+                "assetGuid": document["assetGuid"], "graphics": document["graphics"]
+            }))
+            .map_err(|e| invalid(e.to_string()))?;
+        graphics.validate().map_err(|e| invalid(e.to_string()))?;
+        let bytes = serde_json::to_vec(&graphics).map_err(|e| invalid(e.to_string()))?;
+        asset.hash = Some(format!("sha256:{:x}", Sha256::digest(&bytes)));
+        asset.runtime_payload = Some(bytes);
     } else if asset_type != "texture" {
         asset.runtime_payload = source.bytes(path).map(<[u8]>::to_vec);
         asset.hash = source
@@ -1189,9 +1497,20 @@ fn cached_texture(
     cache: Option<&ProjectAssemblyArtifactCache>,
     reports: &mut Vec<ProjectAssemblyProducerReport>,
 ) -> Result<RuntimePackageSourceTexture, GameProjectCompilerError> {
+    if let Some(value) = importer.and_then(|i| i.get("gpuCompression")) {
+        if !matches!(value.as_str(), Some("none" | "bc3")) {
+            return Err(assembly_error(
+                "texture_compression_unsupported",
+                format!("{source_path}: gpuCompression must be none or bc3"),
+            ));
+        }
+    }
     use crate::ProjectAssemblyArtifactCacheStatus;
     use engine_runtime::canonical_digest::sha256_prefixed;
-    const RECIPE: &str = "texture-png.v1";
+    // The recipe separates the previous numeric-JSON cache from the compact
+    // metadata/raw-pixel representation. Runtime cooked outputs are unchanged.
+    const RECIPE: &str = "texture-png.bc3-cache.v3";
+    let started = std::time::Instant::now();
     let dependency = sha256_prefixed(
         &serde_json::to_vec(&(asset_id, sha256_prefixed(bytes), importer)).unwrap(),
     );
@@ -1199,20 +1518,43 @@ fn cached_texture(
     let mut report = ProjectAssemblyProducerReport::uncached("texture-cook", 0);
     report.producer_recipe_version = RECIPE.into();
     report.recipe_key = Some(key.clone());
-    let started = std::time::Instant::now();
+    report.recipe_duration_ms = started.elapsed().as_millis() as u64;
     if let Some(cache) = cache {
-        let lookup =
-            cache.lookup_json::<(CookedTextureAsset, Vec<u8>)>("texture-cook", &key, RECIPE);
+        let lookup_started = std::time::Instant::now();
+        let lookup = cache.lookup_bytes("texture-cook", &key, RECIPE);
+        report.lookup_duration_ms = lookup_started.elapsed().as_millis() as u64;
         report.cache_status = lookup.status;
         report.miss_reason = lookup.reason;
-        report.artifact_path = lookup.artifact_path.map(|path| path.display().to_string());
-        if let (Some((metadata, rgba8)), Some(envelope)) = (lookup.artifact, lookup.envelope) {
-            let output = sha256_prefixed(&serde_json::to_vec(&(&metadata, &rgba8)).unwrap());
-            if envelope.dependency_digest == dependency && envelope.output_digest == output {
+        report.artifact_path = lookup
+            .artifact_path
+            .as_ref()
+            .map(|path| path.display().to_string());
+        if let (Some(_payload), Some(envelope)) = (lookup.artifact, lookup.envelope) {
+            let validate_started = std::time::Instant::now();
+            let output = envelope.payload_digest.clone();
+            let decoded = lookup.artifact_path.as_ref().and_then(|path| {
+                RuntimePackageTexturePixels::from_immutable_cache_file(
+                    &path.join("payload.bin"),
+                    &output,
+                )
+                .ok()
+                .and_then(decode_texture_cache)
+            });
+            report.validate_duration_ms = validate_started.elapsed().as_millis() as u64;
+            if let Some(texture) = decoded.filter(|texture| {
+                envelope.dependency_digest == dependency
+                    && envelope.output_digest == output
+                    && texture.metadata.asset_id == asset_id
+            }) {
                 report.output_digest = Some(output);
+                report
+                    .substages
+                    .push(crate::ProjectAssemblyProducerSubstageReport::skipped(
+                        "decode-and-encode",
+                    ));
                 report.duration_ms = started.elapsed().as_millis() as u64;
                 reports.push(report);
-                return Ok(RuntimePackageSourceTexture { metadata, rgba8 });
+                return Ok(texture);
             }
             cache
                 .quarantine("texture-cook", &key)
@@ -1221,23 +1563,94 @@ fn cached_texture(
             report.miss_reason = Some("dependency_or_output_digest_mismatch".into());
         }
     }
-    let texture = cook_texture(asset_id, source_path, bytes, importer).ok_or_else(|| {
+    let produce_started = std::time::Instant::now();
+    let mut texture = cook_texture(asset_id, source_path, bytes, importer).ok_or_else(|| {
         assembly_error(
             "texture_decode_failed",
             format!("Cannot decode {source_path}"),
         )
     })?;
-    let payload = (&texture.metadata, &texture.rgba8);
-    let output = sha256_prefixed(&serde_json::to_vec(&payload).unwrap());
+    let payload = encode_texture_cache(&texture);
+    let output = sha256_prefixed(&payload);
+    report.produce_duration_ms = produce_started.elapsed().as_millis() as u64;
+    report
+        .substages
+        .push(crate::ProjectAssemblyProducerSubstageReport::completed(
+            "decode-and-encode",
+            report.produce_duration_ms,
+        ));
     report.output_digest = Some(output.clone());
     if let Some(cache) = cache {
-        cache
-            .publish_json("texture-cook", RECIPE, &key, &dependency, &output, &payload)
+        let publish_started = std::time::Instant::now();
+        let published = cache
+            .publish_bytes("texture-cook", RECIPE, &key, &dependency, &output, &payload)
             .map_err(|error| assembly_error("texture_cache_publish_failed", error.to_string()))?;
+        report.cache_status = match published.status {
+            crate::ProjectAssemblyArtifactPublishStatus::Produced => {
+                ProjectAssemblyArtifactCacheStatus::Produced
+            }
+            crate::ProjectAssemblyArtifactPublishStatus::PublishRaceReused => {
+                ProjectAssemblyArtifactCacheStatus::PublishRaceReused
+            }
+        };
+        report.artifact_path = Some(published.artifact_path.display().to_string());
+        // Keep the existing immutable cache as the backing for prepared pixels.
+        // The package writer still sees the exact same byte slice; preparing a
+        // dataset larger than the process budget no longer retains all Vecs.
+        let backing = RuntimePackageTexturePixels::from_immutable_cache_file(
+            &published.artifact_path.join("payload.bin"),
+            &output,
+        )
+        .map_err(|error| assembly_error("texture_cache_invalid", error.to_string()))?;
+        texture = decode_texture_cache(backing).ok_or_else(|| {
+            assembly_error(
+                "texture_cache_invalid",
+                "Published texture metadata or byte length is invalid",
+            )
+        })?;
+        report.publish_duration_ms = publish_started.elapsed().as_millis() as u64;
     }
     report.duration_ms = started.elapsed().as_millis() as u64;
     reports.push(report);
     Ok(texture)
+}
+
+// Small typed metadata followed by exact RGBA bytes. The existing cache envelope
+// authenticates the entire encoded payload before this decoder is called.
+fn encode_texture_cache(texture: &RuntimePackageSourceTexture) -> Vec<u8> {
+    let metadata = serde_json::to_vec(&texture.metadata).unwrap();
+    let mut bytes = Vec::with_capacity(8 + metadata.len() + texture.rgba8.len());
+    bytes.extend_from_slice(&(metadata.len() as u64).to_le_bytes());
+    bytes.extend_from_slice(&metadata);
+    bytes.extend_from_slice(&texture.rgba8);
+    bytes
+}
+
+fn decode_texture_cache(bytes: RuntimePackageTexturePixels) -> Option<RuntimePackageSourceTexture> {
+    let length = usize::try_from(u64::from_le_bytes(bytes.get(..8)?.try_into().ok()?)).ok()?;
+    let end = 8usize.checked_add(length)?;
+    let metadata: CookedTextureAsset = serde_json::from_slice(bytes.get(8..end)?).ok()?;
+    let rgba8 = bytes.get(end..)?;
+    if metadata.schema_version != engine_runtime::runtime_package::COOKED_TEXTURE_SCHEMA_VERSION
+        || metadata.width == 0
+        || metadata.height == 0
+    {
+        return None;
+    }
+    let expected = engine_runtime::runtime_texture::texture_mip_byte_len(
+        &metadata.format,
+        metadata.width,
+        metadata.height,
+        metadata.mip_count,
+    )?;
+    if expected != metadata.byte_length || expected != rgba8.len() {
+        return None;
+    }
+    let end_of_pixels = bytes.len();
+    Some(RuntimePackageSourceTexture {
+        metadata,
+        rgba8: bytes.into_range(end..end_of_pixels)?,
+    })
 }
 
 fn cook_texture(
@@ -1299,7 +1712,22 @@ fn cook_texture(
             .unwrap_or("linearClamp")
             .to_string(),
     };
-    Some(RuntimePackageSourceTexture { metadata, rgba8 })
+    let texture = RuntimePackageSourceTexture {
+        metadata,
+        rgba8: rgba8.into(),
+    };
+    match importer
+        .get("gpuCompression")
+        .and_then(serde_json::Value::as_str)
+        .unwrap_or("none")
+    {
+        "none" => Some(texture),
+        "bc3" => {
+            let srgb = texture.metadata.color_space == "srgb";
+            texture_cook::bc3(texture, srgb).ok()
+        }
+        _ => None,
+    }
 }
 
 fn parse_json(path: &str, bytes: &[u8]) -> Result<serde_json::Value, GameProjectCompilerError> {
@@ -1307,17 +1735,34 @@ fn parse_json(path: &str, bytes: &[u8]) -> Result<serde_json::Value, GameProject
         .map_err(|error| assembly_error("source_json_invalid", format!("{path}: {error}")))
 }
 
-fn cook_aui_document(
+pub(crate) fn cook_aui_document(
     path: &str,
     source: serde_json::Value,
 ) -> Result<(String, serde_json::Value), GameProjectCompilerError> {
-    if let Ok(mut document) = serde_json::from_value::<AuiDocument>(source.clone()) {
-        document.schema_version = AUI_DOCUMENT_SCHEMA_VERSION.to_string();
+    if source.get("nodes").is_some()
+        || source.get("document_id").is_some()
+        || source.get("canvases").is_some()
+    {
+        let mut document = serde_json::from_value::<AuiDocument>(source.clone())
+            .map_err(|error| assembly_error("aui_document_invalid", format!("{path}: {error}")))?;
+        engine_runtime::aui_layout_schema::normalize_source_version(&mut document).map_err(
+            |error| assembly_error("aui_schema_unsupported", format!("{path}: {error}")),
+        )?;
+        let errors = engine_runtime::aui_layout_schema::validate(&document);
+        if !errors.is_empty() {
+            return Err(assembly_error(
+                "aui_layout_invalid",
+                format!("{path}: {}: {}", errors[0].code, errors[0].message),
+            ));
+        }
         let id = document.document_id.clone();
         let value = serde_json::to_value(document)
             .map_err(|error| assembly_error("aui_document_cook_failed", error.to_string()))?;
         return Ok((id, value));
     }
+    engine_runtime::aui_layout_schema::validate_legacy_source(&source).map_err(|error| {
+        assembly_error("aui_legacy_layout_unsupported", format!("{path}: {error}"))
+    })?;
     let document_id = source
         .get("documentId")
         .and_then(serde_json::Value::as_str)
@@ -1483,6 +1928,139 @@ fn assembly_error(code: &'static str, message: impl Into<String>) -> GameProject
 }
 
 #[cfg(test)]
+mod texture_cost_tests {
+    use super::*;
+
+    #[test]
+    #[cfg(windows)]
+    fn cached_texture_holds_immutable_file_backing_until_last_clone() {
+        let root = std::env::temp_dir().join(format!("371-texture-backing-{}", std::process::id()));
+        let cache = ProjectAssemblyArtifactCache::open(&root).unwrap();
+        let mut png = Vec::new();
+        {
+            let mut encoder = png::Encoder::new(&mut png, 2, 2);
+            encoder.set_color(png::ColorType::Rgba);
+            encoder.set_depth(png::BitDepth::Eight);
+            encoder
+                .write_header()
+                .unwrap()
+                .write_image_data(&[1, 2, 3, 255, 4, 5, 6, 255, 7, 8, 9, 255, 10, 11, 12, 255])
+                .unwrap();
+        }
+        let mut reports = Vec::new();
+        let cold = cached_texture(
+            "texture",
+            "texture.png",
+            &png,
+            None,
+            Some(&cache),
+            &mut reports,
+        )
+        .unwrap();
+        let payload =
+            std::path::Path::new(reports[0].artifact_path.as_ref().unwrap()).join("payload.bin");
+        assert!(std::fs::OpenOptions::new().write(true).open(&payload).is_err(), "cached decoded pixels must retain a read-only file lease, not one owned Vec per texture");
+        let clone = cold.clone();
+        drop(cold);
+        assert!(std::fs::OpenOptions::new()
+            .write(true)
+            .open(&payload)
+            .is_err());
+        drop(clone);
+        assert!(std::fs::OpenOptions::new()
+            .write(true)
+            .open(&payload)
+            .is_ok());
+        std::fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn warm_texture_cache_does_not_expand_pixels_into_json_numbers() {
+        let root = std::env::temp_dir().join(format!("371-texture-cost-{}", std::process::id()));
+        let cache = ProjectAssemblyArtifactCache::open(&root).unwrap();
+        let pixels: Vec<_> = (0..256 * 256 * 4).map(|i| (i % 256) as u8).collect();
+        let mut png = Vec::new();
+        {
+            let mut encoder = png::Encoder::new(&mut png, 256, 256);
+            encoder.set_color(png::ColorType::Rgba);
+            encoder.set_depth(png::BitDepth::Eight);
+            encoder
+                .write_header()
+                .unwrap()
+                .write_image_data(&pixels)
+                .unwrap();
+        }
+        let mut cold_reports = Vec::new();
+        let cold = cached_texture(
+            "texture",
+            "texture.png",
+            &png,
+            None,
+            Some(&cache),
+            &mut cold_reports,
+        )
+        .unwrap();
+        let mut warm_reports = Vec::new();
+        let started = std::time::Instant::now();
+        let warm = cached_texture(
+            "texture",
+            "texture.png",
+            &png,
+            None,
+            Some(&cache),
+            &mut warm_reports,
+        )
+        .unwrap();
+        assert_eq!(cold.rgba8, warm.rgba8);
+        assert_eq!(warm.rgba8, pixels);
+        assert_eq!(cold_reports[0].output_digest, warm_reports[0].output_digest);
+        assert_eq!(
+            warm_reports[0].cache_status,
+            crate::ProjectAssemblyArtifactCacheStatus::Hit
+        );
+        let artifact = std::path::Path::new(warm_reports[0].artifact_path.as_ref().unwrap());
+        let stored: u64 = std::fs::read_dir(artifact)
+            .unwrap()
+            .map(|p| p.unwrap().metadata().unwrap().len())
+            .sum();
+        eprintln!(
+            "texture-cost: raw={} stored={} warm_ms={:.3}",
+            pixels.len(),
+            stored,
+            started.elapsed().as_secs_f64() * 1000.
+        );
+        assert!(stored <= pixels.len() as u64 + 4096, "cache hit must not parse and re-encode a JSON number per pixel byte; raw={}, stored={stored}", pixels.len());
+        // Corruption still invalidates the existing envelope and causes a real
+        // producer rebuild; compact storage must not weaken content integrity.
+        drop(cold);
+        drop(warm);
+        std::fs::write(artifact.join("payload.bin"), b"truncated").unwrap();
+        let mut repaired_reports = Vec::new();
+        let repaired = cached_texture(
+            "texture",
+            "texture.png",
+            &png,
+            None,
+            Some(&cache),
+            &mut repaired_reports,
+        )
+        .unwrap();
+        assert_eq!(repaired.rgba8, pixels);
+        assert_eq!(
+            repaired_reports[0].cache_status,
+            crate::ProjectAssemblyArtifactCacheStatus::Produced
+        );
+        assert!(repaired_reports[0]
+            .miss_reason
+            .as_deref()
+            .unwrap()
+            .contains("digest_mismatch"));
+        drop(repaired);
+        std::fs::remove_dir_all(root).unwrap();
+    }
+}
+
+#[cfg(test)]
 mod particle_resource_tests {
     use super::*;
     #[test]
@@ -1631,6 +2209,155 @@ mod audio_tests {
 }
 
 #[cfg(test)]
+mod aui_graphics_tests {
+    use super::*;
+    use engine_runtime::aui::{AuiCanvas, AuiDocument, AuiNode, AuiNodeKind, AuiRect};
+    use engine_runtime::runtime_package_builder::{
+        RuntimePackageBuildRequest, RuntimePackageBuildStatus, RuntimePackageBuilder,
+        RuntimePackageSourceJson,
+    };
+    use project_runtime_sdk::aui_draw2d::*;
+    #[test]
+    fn aui_graphics_asset_assembly_package_load_guid_and_corrupt_payload_contract() {
+        let mut draw = Draw2D::new();
+        draw.fill(
+            Path2D::circle([20., 20.], 15.).unwrap(),
+            [1.; 4],
+            FillRule::EvenOdd,
+        )
+        .unwrap();
+        let asset = Graphics2DAsset {
+            schema_version: GRAPHICS_ASSET_SCHEMA.into(),
+            asset_id: "ring".into(),
+            asset_guid: "guid-ring".into(),
+            graphics: draw.finish(),
+        };
+        let mut authored = serde_json::to_value(&asset).unwrap();
+        authored["displayName"] = serde_json::json!("Ring");
+        let mut snapshot = CompilerSourceView {
+            files: BTreeMap::from([(
+                "Assets/ring.asset".into(),
+                serde_json::to_vec(&authored).unwrap(),
+            )]),
+        };
+        let mut input = RuntimePackageBuildInput::new(RuntimeProjectInfo::explicit_empty(
+            "graphics-test",
+            "Graphics",
+            "1",
+        ));
+        input.input_mappings.push(RuntimePackageSourceJson { id: "input.none".into(), document: serde_json::json!({"schema_version":"input-mapping.v2","asset_id":"input.none","actions":[],"contexts":[],"bindings":[]}) });
+        append_asset(
+            "Assets/ring.asset",
+            &snapshot,
+            &mut input,
+            None,
+            &mut Vec::new(),
+        )
+        .unwrap();
+        assert_eq!(input.assets[0].name, "Ring");
+        assert_eq!(
+            serde_json::from_slice::<Graphics2DAsset>(
+                input.assets[0].runtime_payload.as_ref().unwrap()
+            )
+            .unwrap(),
+            asset
+        );
+        input.scenes.push(serde_json::from_value(serde_json::json!({"schemaVersion":engine_runtime::runtime_package::RUNTIME_SCENE_SCHEMA_VERSION,"id":"main","name":"Main","gravity":0.,"background":"#000000","skyColor":"#000000","entities":[]})).unwrap());
+        let doc = AuiDocument::new(
+            "graphics-ui",
+            vec![AuiCanvas::screen_overlay("main", 100., 100., "root")],
+            vec![AuiNode::new(
+                "root",
+                AuiNodeKind::Panel,
+                AuiRect::stretch_full(),
+            )],
+        );
+        input.aui_documents.push(RuntimePackageSourceJson {
+            id: "graphics-ui".into(),
+            document: serde_json::to_value(doc).unwrap(),
+        });
+        input.aui_manifest = Some(engine_runtime::runtime_package::RuntimeAuiManifest {
+            schema_version: engine_runtime::runtime_package::RUNTIME_AUI_MANIFEST_SCHEMA_VERSION
+                .into(),
+            documents: vec![engine_runtime::runtime_package::RuntimeAuiManifestEntry {
+                document_id: "graphics-ui".into(),
+                path: "aui/documents/graphics-ui.aui.json".into(),
+                canvas_count: 1,
+                node_count: 1,
+                binding_count: 0,
+                action_count: 0,
+                asset_refs: Vec::new(),
+            }],
+        });
+        let root = std::env::temp_dir().join(format!(
+            "aife-365-graphics-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        let request = RuntimePackageBuildRequest::dev_desktop(root.join("package"), "main");
+        let report = RuntimePackageBuilder::build(&request, &input);
+        assert_eq!(
+            report.status,
+            RuntimePackageBuildStatus::Success,
+            "{report:?}"
+        );
+        // Only the built package is present on disk; the authored asset lives in memory.
+        let loaded = engine_runtime::runtime_package::load_runtime_package(&request.output_dir);
+        assert!(loaded.diagnostics.is_ok(), "{:?}", loaded.diagnostics);
+        let package = loaded.value.unwrap();
+        let registry = &package.aui_documents.documents_by_id["graphics-ui"].graphics_assets;
+        assert_eq!(registry.resolve("ring", "guid-ring").unwrap(), &asset);
+        assert!(registry.resolve("ring", "wrong-guid").is_err());
+        let cooked = package
+            .runtime_asset_index
+            .cooked_asset(
+                &package
+                    .assets
+                    .runtime_asset_index
+                    .iter()
+                    .find(|r| r.asset_id == "ring")
+                    .unwrap()
+                    .cooked_asset_id,
+            )
+            .unwrap();
+        let path = request.output_dir.join(cooked.path.as_ref().unwrap());
+        std::fs::write(&path, b"{}").unwrap();
+        let corrupt = engine_runtime::runtime_package::load_runtime_package(&request.output_dir);
+        assert!(corrupt.value.is_none());
+        assert!(
+            corrupt
+                .diagnostics
+                .issues
+                .iter()
+                .any(|d| d.code == "aui_graphics.asset_invalid"),
+            "{:?}",
+            corrupt.diagnostics
+        );
+        authored["graphics"]["version"] = serde_json::json!(99);
+        snapshot.files.insert(
+            "Assets/ring.asset".into(),
+            serde_json::to_vec(&authored).unwrap(),
+        );
+        let error = append_asset(
+            "Assets/ring.asset",
+            &snapshot,
+            &mut input,
+            None,
+            &mut Vec::new(),
+        )
+        .unwrap_err();
+        assert!(
+            error.code().ends_with("aui_graphics.asset_invalid"),
+            "{error:?}"
+        );
+        std::fs::remove_dir_all(root).unwrap();
+    }
+}
+
+#[cfg(test)]
 mod legacy_aui_tests {
     use super::*;
     use engine_runtime::aui::AuiComputedRect;
@@ -1687,6 +2414,36 @@ mod legacy_aui_tests {
             Some("#ffcc00")
         );
         assert_eq!(node.style.as_ref().unwrap().font_size, Some(28.0));
+    }
+
+    #[test]
+    fn c2_aui_neutral_cook_preserves_version_and_fails_closed() {
+        let mut node = AuiNode::new(
+            "root",
+            AuiNodeKind::Panel,
+            AuiRect::fixed_position(0.0, 0.0, 100.0, 100.0),
+        );
+        node.layout = Some(engine_runtime::aui_layout_schema::LayoutSpec::default());
+        let mut doc = AuiDocument::new(
+            "c2",
+            vec![AuiCanvas::screen_overlay("main", 100.0, 100.0, "root")],
+            vec![node],
+        );
+        doc.schema_version = "aui-document.v3".into();
+        let value = serde_json::to_value(&doc).unwrap();
+        let (_, cooked) = cook_aui_document("c2.json", value.clone()).unwrap();
+        assert_eq!(value, cooked);
+        let mut invalid = value.clone();
+        invalid["schema_version"] = serde_json::json!("aui-document.v999");
+        assert!(cook_aui_document("future.json", invalid).is_err());
+        let mut invalid = value;
+        invalid["nodes"][0]["layout"]["typo"] = serde_json::json!(true);
+        assert!(cook_aui_document("invalid.json", invalid).is_err());
+        assert!(cook_aui_document(
+            "legacy.json",
+            serde_json::json!({"documentId":"c2","root":{"layout":{"mode":"row"}}})
+        )
+        .is_err());
     }
 
     #[test]

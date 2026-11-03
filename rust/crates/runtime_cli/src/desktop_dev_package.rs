@@ -63,13 +63,39 @@ pub fn validate_desktop_dev_manifest(
     let manifest_path = root.join("package-manifest.json");
     if manifest.schema_version != DESKTOP_PACKAGE_MANIFEST_SCHEMA_VERSION
         || manifest.target != "windows"
-        || manifest.profile != "dev"
+        || !matches!(manifest.profile.as_str(), "dev" | "release")
     {
         return Err(diagnostic(
             "desktop_dev_manifest_invalid",
             &manifest_path,
-            "Desktop package manifest must target windows/dev.",
+            "Desktop package manifest must target windows/dev or windows/release.",
         ));
+    }
+    if manifest.profile == "release" {
+        let report_path = checked_path(root, "reports/player-artifact-build-report.json")?;
+        let report: serde_json::Value =
+            serde_json::from_slice(&fs::read(&report_path).map_err(|e| {
+                diagnostic("desktop_release_build_invalid", &report_path, e.to_string())
+            })?)
+            .map_err(|e| {
+                diagnostic("desktop_release_build_invalid", &report_path, e.to_string())
+            })?;
+        if report["buildProfile"] != "release"
+            || report["status"] != "success"
+            || report["executableHash"].as_str() != manifest.player_artifact_hash.as_deref()
+            || serde_json::from_value::<ProjectRuntimeModuleDescriptor>(
+                report["actualDescriptor"].clone(),
+            )
+            .ok()
+            .as_ref()
+                != manifest.player_module_descriptor.as_ref()
+        {
+            return Err(diagnostic(
+                "desktop_release_build_invalid",
+                &report_path,
+                "Release delivery requires matching successful Release composition evidence.",
+            ));
+        }
     }
     let required = [
         (

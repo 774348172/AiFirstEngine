@@ -1,0 +1,464 @@
+Runtime affected-domain terminal suite (216 tests)
+   Compiling engine_runtime v0.1.0 (G:\gameEngin\rust\crates\engine_runtime)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1m 16s
+     Running unittests src\lib.rs (target\debug\deps\engine_runtime-6d58144c016b3c24.exe)
+
+running 216 tests
+test engine_host_loop::tests::engine_host_loop_pause_does_not_advance_runtime ... ok
+test engine_host_loop::tests::engine_host_loop_headless_advances_runtime ... ok
+test engine_host_loop::tests::project_runtime_session_host_action_mutation_is_visible_to_same_frame_fixed_update ... ok
+test engine_host_loop::tests::engine_host_loop_passes_unscaled_delta_to_runtime_time ... ok
+test engine_host_loop::tests::immediate_aui_action_dispatch_does_not_advance_runtime ... ok
+test engine_host_loop::tests::project_runtime_session_host_faulted_instance_rejects_future_reentry ... ok
+test engine_host_loop::tests::engine_host_loop_exported_game_produces_renderer_feature_frame ... ok
+test engine_host_loop::tests::engine_host_loop_submits_render_frame_to_render_thread ... ok
+test engine_host_loop::tests::project_runtime_session_host_editor_step_calls_action_and_fixed_once ... ok
+test engine_host_loop::tests::engine_host_loop_step_advances_exactly_one_runtime_frame ... ok
+test engine_host_loop::tests::project_runtime_session_host_multiple_actions_preserve_vector_order ... ok
+test engine_host_loop::tests::project_runtime_session_host_fixed_update_runs_before_project_logic_fixed_update ... ok
+test engine_host_loop::tests::animator2d_schedule_large_delta_is_bounded_to_one_formal_fixed_tick ... ok
+test engine_host_loop::tests::project_runtime_session_host_fixed_mutation_is_visible_to_project_rule ... ok
+test engine_host_loop::tests::engine_host_loop_can_submit_to_dedicated_render_worker ... ok
+test engine_host_loop::tests::animator2d_schedule_host_pause_step_and_two_fixed_ticks ... ok
+test engine_host_loop::tests::animator2d_schedule_host_replacement_does_not_retain_instance_memory ... ok
+test engine_host_loop::tests::project_runtime_session_host_non_advancing_frame_discards_without_queue ... ok
+test engine_host_loop::tests::project_runtime_session_host_terminal_fault_skips_later_phases ... ok
+test engine_host_loop::tests::project_runtime_session_host_one_click_dispatches_once_and_empty_frame_does_not_replay ... ok
+test engine_host_loop::tests::project_runtime_session_host_summary_excludes_raw_payload ... ok
+test engine_host_loop::tests::project_runtime_session_host_rejected_and_unhandled_actions_do_not_replay ... ok
+test engine_host_loop::tests::project_runtime_session_host_off_summary_trace_report_boundaries ... ok
+test engine_host_loop::tests::scene_camera_2d_updates_game_view_projection_from_hydrated_component ... ok
+test engine_rhi::tests::backend_report_is_json_serializable ... ok
+test frame_loop::tests::empty_project_logic_plan_preserves_existing_frame_output ... ok
+test frame_loop::tests::animator2d_projection_sprite_change_is_consumed_by_existing_render_extract ... ok
+test frame_loop::tests::fixed_update_uses_fixed_delta_time ... ok
+test frame_loop::tests::fixed_tick_produces_stable_frame_hash ... ok
+test frame_loop::tests::frame_loop_advances_runtime_time_once_per_frame ... ok
+test frame_loop::tests::animator2d_schedule_same_tick_intent_runs_before_render_extract ... ok
+test frame_loop::tests::fixed_catch_up_presents_once ... ok
+test frame_loop::tests::frame_loop_runs_physics2d_after_project_logic_before_render_extract ... ok
+test frame_loop::tests::frame_loop_physics2d_trace_is_recorded ... ok
+test frame_loop::tests::physics2d_foundation_c_min_end_to_end_overlap_after_transform_write ... ok
+test frame_loop::tests::audio_source_frame_collects_once_and_handles_aui_without_fixed_tick ... ok
+test frame_loop::tests::frame_loop_physics2d_does_not_write_back_transform_in_c_min ... ok
+test frame_loop::tests::physics2d_foundation_c_min_query_api_supports_project_rule_usage ... ok
+test frame_loop::tests::frame_loop_physics2d_pair_report_reflects_transform_write ... ok
+test frame_loop::tests::physics2d_foundation_c_min_no_project_semantic_terms_in_trace ... ok
+test frame_loop::tests::render_extract_maps_mesh_asset_ref_to_mesh_ref ... ok
+test frame_loop::tests::runtime_frame_applies_render_commands_to_scene_state ... ok
+test frame_loop::tests::runtime_frame_accepts_none_action_snapshot ... ok
+test frame_loop::tests::runtime_frame_consumes_dirty_records_once ... ok
+test frame_loop::tests::runtime_trace_records_frame_phases ... ok
+test frame_loop::tests::runtime_frame_exposes_action_snapshot_to_project_logic ... ok
+test headless_rhi_backend::tests::headless_backend_counts_sprite_texture_binding ... ok
+test frame_loop::tests::runtime_frame_hash_is_stable_for_same_input ... ok
+test headless_rhi_backend::tests::headless_backend_counts_clear_draw_submit_present ... ok
+test headless_rhi_backend::tests::same_input_produces_same_target_hash ... ok
+test frame_loop::tests::runtime_frame_runs_logic_before_render_extract ... ok
+test particle_effect::tests::particle_effect_child_emission_is_bounded_and_resolves_names ... ok
+test particle_effect::tests::particle_effect_motion_has_exactly_one_owner ... ok
+test particle_effect::tests::particle_effect_rejects_invalid_render_and_collision_contracts ... ok
+test particle_effect::tests::particle_effect_rejects_duplicate_identity_and_unsafe_names ... ok
+test particle_effect::tests::particle_effect_minimal_defaults_and_roundtrip ... ok
+test particle_effect::tests::particle_effect_rejects_nonfinite_ranges_and_budget_overflow ... ok
+test particle_effect::tests::particle_effect_full_description_preserves_authored_render_and_motion_data ... ok
+test particle_effect::tests::particle_effect_curves_have_normalized_ordered_finite_keys ... ok
+test particle_effect::tests::particle_effect_rejects_unknown_fields_types_and_units ... ok
+test engine_host_loop::tests::project_runtime_session_observation_pause_step_and_clear_follow_lifecycle ... ok
+test engine_host_loop::tests::project_runtime_session_observation_is_not_published_after_terminal_mutation_fault ... ok
+test engine_host_loop::tests::project_runtime_session_observation_publishes_only_post_commit_final_state ... ok
+test particle_gpu::tests::particle_gpu_capacity_recycling_delay_burst_loop_and_rate ... ok
+test particle_gpu::tests::particle_gpu_existing_backend_owns_simulation_and_removal ... ok
+test particle_gpu::tests::particle_gpu_catchup_pause_clear_and_seeded_replay_keep_buffers ... ok
+test particle_gpu::tests::particle_gpu_author_code_layout_and_motion_have_red_capable_readback ... ok
+test particle_render::tests::particle_render_existing_ui_composition_remains_above_world ... ok
+test particle_render::tests::particle_render_flipbook_and_texture_vertical_orientation ... ok
+test particle_gpu::tests::particle_gpu_collision_events_are_bounded_and_consumed_next_step ... ok
+test particle_gpu::tests::particle_gpu_collision_overflow_is_recycled_before_events ... ok
+test particle_render::tests::particle_render_invalid_resources_fail_before_simulation_and_headless_is_unsupported ... ok
+test particle_gpu::tests::particle_gpu_custom_position_ownership_and_stop_emitting ... ok
+test particle_gpu::tests::particle_gpu_loop_rate_retains_fractional_cycle_emissions ... ok
+test particle_gpu::tests::particle_gpu_rejects_unsupported_layout_and_invalid_steps ... ok
+test particle_render::tests::particle_render_mesh_is_real_uploaded_geometry_and_rotates ... ok
+test project_runtime_module::tests::project_runtime_session_bind_receipt_exposes_identity_and_status ... ok
+test project_runtime_module::tests::project_runtime_session_duplicate_factory_fails ... ok
+test project_runtime_module::tests::project_runtime_session_empty_id_fails ... ok
+test particle_render::tests::particle_render_real_graph_dispatch_and_indirect_pixels ... ok
+test project_runtime_module::tests::project_runtime_session_explicit_no_op_session_binds ... ok
+test project_runtime_module::tests::project_runtime_session_factory_error_fails ... ok
+test particle_render::tests::particle_render_multiple_views_keep_ordered_uniforms_without_resimulation ... ok
+test project_runtime_native_adapter::animator_intent_tests::animator2d_sdk_json_intents_reach_existing_session_commit_in_order ... ok
+test project_runtime_native_adapter::animator_intent_tests::audio_source_sdk_json_intents_capture_identity_and_commit_in_order ... ok
+test project_runtime_native_adapter::particle_intent_tests::particle_native_wire_controls_commit_once_with_captured_generation ... ok
+test project_runtime_native_adapter::tests::native_call_status_maps_all_sdk_statuses ... ok
+test project_runtime_native_adapter::tests::native_callback_failure_keeps_abi_status_diagnostic ... ok
+test project_runtime_native_adapter::tests::native_failed_field_keeps_original_code_location_and_prior_write ... ok
+test project_runtime_native_adapter::tests::project_runtime_native_adapter_accepts_absent_optional_handlers_and_rejects_mismatch ... ok
+test project_runtime_module::tests::project_runtime_session_missing_factory_fails ... ok
+test project_runtime_native_adapter::tests::project_runtime_native_adapter_rejects_contract_digest_mismatch ... ok
+test project_runtime_session::audio_source_tests::audio_source_failed_mutation_batch_does_not_leak_a_play_command ... ok
+test project_runtime_session::audio_source_tests::audio_source_noop_rejected_and_faulted_outputs_never_commit_commands ... ok
+test project_runtime_session::audio_source_tests::audio_source_preparation_rejects_missing_disabled_and_untyped_targets ... ok
+test project_runtime_session::audio_source_tests::audio_source_prepared_command_keeps_original_runtime_generation ... ok
+test project_runtime_session::tests::animator2d_intent_batch_preserves_order_and_commits_atomically ... ok
+test project_runtime_session::tests::animator2d_intent_is_not_exposed_when_world_mutation_preflight_fails ... ok
+test project_runtime_session::tests::project_runtime_mutation_invalid_component_replacement_leaves_world_unchanged ... ok
+test project_runtime_session::tests::project_runtime_mutation_invalid_field_write_leaves_world_unchanged ... ok
+test project_runtime_session::tests::project_runtime_mutation_missing_transform_leaves_world_unchanged ... ok
+test project_runtime_session::tests::project_runtime_mutation_mixed_valid_invalid_batch_commits_nothing ... ok
+test project_runtime_session::tests::project_runtime_mutation_prepared_batch_preserves_operation_order ... ok
+test project_runtime_session::tests::project_runtime_mutation_rejected_output_drops_batch ... ok
+test project_runtime_session::tests::project_runtime_mutation_report_separates_staged_committed_rejected_counts ... ok
+test project_runtime_session::tests::project_runtime_mutation_structural_preflight_failure_does_not_activate_instances ... ok
+test project_runtime_session::tests::project_runtime_mutation_successful_batch_commits_writes_once ... ok
+test project_runtime_session::tests::project_runtime_session_observation_missing_extra_and_type_mismatch_fail_closed ... ok
+test project_runtime_session::tests::project_runtime_session_observation_panic_fails_closed_without_snapshot ... ok
+test render_asset_production::tests::render_asset_particle_texture_usage_uses_texture_producer ... ok
+test rhi_command_plan::tests::clear_graph_compiles_to_clear_submit_present ... ok
+test rhi_command_plan::tests::command_plan_is_json_serializable ... ok
+test rhi_command_plan::tests::draw_mesh_basic_preserves_typed_payload ... ok
+test rhi_command_plan::tests::draw_sprite_basic_preserves_typed_payload ... ok
+test rhi_command_plan::tests::draw_sprite_textured_preserves_binding_payload ... ok
+test rhi_command_plan::tests::draw_test_geometry_compiles_to_draw ... ok
+test rhi_command_plan::tests::draw_ui_composition_preserves_stage_payload ... ok
+test rhi_command_plan::tests::draw_ui_overlay_compiles_to_ui_overlay_draw ... ok
+test rhi_command_plan::tests::missing_target_stops_after_begin_frame_with_error ... ok
+test runtime_asset_loader::tests::audio_loader_rejects_metadata_only_and_json_payloads ... ok
+test runtime_asset_loader::tests::audio_loader_shares_pcm_and_releases_only_after_last_handle ... ok
+test runtime_asset_loader::tests::bundle_must_be_mounted_before_load ... ok
+test runtime_asset_loader::tests::cyclic_dependency_is_diagnostic ... ok
+test runtime_asset_loader::tests::dependency_bundle_must_be_mounted_too ... ok
+test runtime_asset_loader::tests::load_prefers_guid_when_id_is_stale ... ok
+test runtime_asset_loader::tests::load_reads_cooked_asset_file_from_package_dir ... ok
+test runtime_asset_loader::tests::loads_dependency_chain_after_mount ... ok
+test runtime_asset_loader::tests::missing_dependency_is_diagnostic ... ok
+test runtime_asset_loader::tests::patch_index_applies_to_next_load_without_mutating_old_handle ... ok
+test runtime_asset_loader::tests::release_rejects_stale_generation ... ok
+test runtime_asset_loader::tests::releasing_root_handle_releases_loaded_dependency_cache ... ok
+test runtime_entity_hydration::tests::animator2d_hydration_requires_renderer_and_commits_without_advancing_state ... ok
+test runtime_entity_hydration::tests::audio_source_hydrates_once_without_playback_state_and_rejects_duplicates ... ok
+test runtime_entity_hydration::tests::prepare_rejects_duplicate_before_world_mutation ... ok
+test runtime_entity_hydration::tests::prepare_rejects_missing_entity_ref_and_invalid_collider ... ok
+test runtime_entity_hydration::tests::prepare_rejects_missing_parent_and_cycle ... ok
+test runtime_entity_hydration::tests::prepared_commit_hydrates_parent_and_entity_ref ... ok
+test runtime_instance_loader::tests::existing_world_collision_does_not_replace_entity_or_register_instance ... ok
+test runtime_instance_loader::tests::missing_prefab_asset_reports_diagnostic ... ok
+test runtime_instance_loader::tests::missing_sprite_asset_stops_hydration_with_diagnostic ... ok
+test runtime_instance_loader::tests::prefab_command_position_is_applied_before_projection_and_preserves_prefab_shape ... ok
+test runtime_instance_loader::tests::prefab_instance_under_parent_creates_unique_entities ... ok
+test runtime_instance_loader::tests::prefab_preflight_errors_do_not_activate_or_leak ... ok
+test runtime_instance_loader::tests::render_extract_sees_renderable_after_scene_instance ... ok
+test runtime_instance_loader::tests::runtime_report_defaults_off_and_debug_map_requires_trace ... ok
+test runtime_instance_loader::tests::scene_instance_creates_entities_and_remaps_entity_refs ... ok
+test runtime_instance_loader::tests::scene_instance_hydrates_engine_collider2d_as_typed_component ... ok
+test runtime_instance_loader::tests::scene_instance_hydrates_sprite_renderer2d_and_render_extract_projects_sprite ... ok
+test runtime_instance_loader::tests::scene_preflight_errors_leave_world_instances_and_handles_unchanged ... ok
+test runtime_instance_loader::tests::unload_scene_and_despawn_prefab_release_entities_and_handles ... ok
+test project_runtime_module::tests::project_runtime_session_two_binds_create_distinct_sessions ... ok
+test runtime_package_builder::tests::audio_package_rejects_full_asset_ref_mismatch_and_fake_payload ... ok
+test particle_render::tests::particle_render_perspective_projection_preserves_depth_size ... ok
+test runtime_package_builder::tests::animator2d_package_round_trip_covers_manifest_digest_and_registry_payload ... ok
+test particle_render::tests::particle_render_scene_depth_occludes_particles_without_covering_background ... ok
+test runtime_package_builder::tests::audio_package_scene_prefab_share_pcm_and_release_instance_assets ... ok
+test project_runtime_native_adapter::tests::project_runtime_native_adapter_fake_table_roundtrip ... ok
+test runtime_package_builder::tests::runtime_package_builder_reports_missing_asset_ref ... ok
+test runtime_package_builder::tests::project_observation_contract_is_cooked_into_manifest_and_changes_assembly_digest ... ok
+test runtime_package_builder::tests::runtime_package_builder_converts_authoring_prefab_to_runtime_prefab ... ok
+test particle_render::tests::particle_render_gpu_depth_sort_and_alpha_additive_have_red_oracle ... ok
+test runtime_package_builder::tests::runtime_package_builder_owns_generic_asset_payload_bytes ... ok
+test runtime_package_builder::tests::runtime_package_builder_writes_and_loads_cooked_font_atlas ... ok
+test particle_render::tests::particle_render_recycled_child_slot_does_not_join_previous_trail ... ok
+test runtime_package_builder::tests::runtime_package_digest_changes_for_effective_payload_but_not_recipe_only_request_fields ... ok
+test runtime_package_builder::tests::runtime_package_digest_normalizes_top_level_source_order_and_preserves_payload_tree ... ok
+test runtime_package_builder::tests::runtime_package_builder_writes_and_loads_cooked_font_bundle_v2 ... ok
+test runtime_package_builder::tests::runtime_package_path_rejects_unsafe_generated_ids_and_case_collisions ... ok
+test runtime_package_builder::tests::runtime_package_builder_writes_cooked_texture_payload_and_index ... ok
+test runtime_package_builder::tests::runtime_package_publish_guard_is_single_writer_and_returns_busy_without_waiting ... ok
+test runtime_package_builder::tests::runtime_package_builder_writes_loadable_minimal_scene_package ... ok
+test runtime_package_builder::tests::runtime_package_target_contract_accepts_android_and_rejects_unknown_targets ... ok
+test runtime_package_builder::tests::runtime_package_builder_writes_manifest_diff_report ... ok
+test runtime_particles::tests::particle_lifecycle_component_and_package_reference_fail_closed ... ok
+test runtime_package_builder::tests::runtime_package_path_loader_rejects_manifest_traversal_before_reading ... ok
+test runtime_package_builder::tests::runtime_package_builder_writes_prefab_input_schema_and_aui_files ... ok
+test particle_render::tests::particle_render_camera_billboards_local_world_and_y_direction ... ok
+test runtime_package_builder::tests::font_preview_play_export_parity_uses_identical_cooked_bundle_digest ... ok
+test runtime_particles::tests::particle_lifecycle_control_is_idempotent_and_paused_restart_preserves_pause ... ok
+test runtime_particles::tests::particle_lifecycle_failed_and_noop_handlers_never_submit_and_generation_is_captured ... ok
+test particle_gpu::tests::particle_gpu_shapes_curves_gravity_drag_noise_rotation_execute ... ok
+test runtime_particles::tests::particle_lifecycle_host_consumes_fixed_and_immediate_aui_controls_once ... ok
+test runtime_package_builder::tests::runtime_package_staging_replaces_final_and_removes_stale_payloads ... ok
+test runtime_renderer::tests::empty_scene_generates_clear_and_present_graph ... ok
+test runtime_renderer::tests::headless_end_to_end_outputs_backend_report ... ok
+test runtime_renderer::tests::missing_mesh_falls_back_to_test_geometry ... ok
+test runtime_renderer::tests::runtime_renderer_batches_only_adjacent_images_with_same_texture ... ok
+test runtime_renderer::tests::runtime_renderer_does_not_panic_with_sprite_draw_item ... ok
+test runtime_renderer::tests::runtime_renderer_executes_mesh_through_engine_rhi_backend ... ok
+test runtime_renderer::tests::runtime_renderer_executes_sprite_through_engine_rhi_backend ... ok
+test runtime_particles::tests::particle_lifecycle_host_projects_package_and_unload_without_project_commands ... ok
+test runtime_renderer::tests::runtime_renderer_inserts_aui_overlay_pass_before_present ... ok
+test runtime_renderer::tests::runtime_renderer_reports_missing_aui_image_texture_without_solid_fallback ... ok
+test runtime_renderer::tests::runtime_renderer_orders_multi_stage_aui_composition_around_world ... ok
+test runtime_renderer::tests::scene_with_mesh_generates_draw_pass ... ok
+test runtime_renderer::tests::runtime_renderer_without_aui_overlay_keeps_existing_passes ... ok
+test runtime_renderer::tests::scene_with_sprite_uses_prepared_texture_binding_when_supplied ... ok
+test runtime_renderer::tests::scene_with_sprite_generates_sprite_draw_pass ... ok
+test runtime_renderer::tests::sprite_layer_mismatch_is_reported ... ok
+test runtime_renderer::tests::sprite_missing_ref_is_reported_without_test_geometry_fallback ... ok
+test runtime_renderer::tests::sprite_vertices_keep_valid_identity_projection_from_scene_camera ... ok
+test runtime_renderer::tests::sprite_vertices_use_scene_view_orthographic_projection ... ok
+test runtime_renderer::tests::surface_target_does_not_emit_viewport_texture_descriptor ... ok
+test runtime_renderer::tests::ui_projection_font_batches_v2_glyphs_by_stable_mode_and_page ... ok
+test runtime_renderer::tests::ui_projection_image_requires_textured_quad_with_clip_adjusted_uv ... ok
+test runtime_renderer::tests::viewport_texture_target_outputs_descriptor ... ok
+test runtime_particles::tests::particle_lifecycle_parameters_validate_names_types_ranges_without_changing_last_value ... ok
+test runtime_package_builder::tests::runtime_package_publish_faults_restore_last_good_final ... ok
+test runtime_particles::tests::particle_lifecycle_replacement_owner_never_reuses_gpu_instance_identity ... ok
+test runtime_particles::tests::particle_lifecycle_retires_removed_disabled_and_recreated_entities_and_releases_package ... ok
+test runtime_particles::tests::particle_lifecycle_package_mesh_material_texture_reaches_real_pixels ... ok
+test runtime_particles::tests::particle_lifecycle_real_gpu_parameter_stages_apply_to_spawn_and_update ... ok
+test particle_render::tests::particle_render_trail_records_curve_once_per_step_and_expires ... ok
+test runtime_particles::tests::particle_lifecycle_real_gpu_control_pause_clear_and_inflight_retirement ... ok
+test particle_gpu::tests::particle_gpu_sphere_kill_death_and_programmable_child_requests ... ok
+test particle_gpu::tests::particle_gpu_step_uniforms_are_not_overwritten_before_submission ... ok
+
+test result: ok. 216 passed; 0 failed; 0 ignored; 0 measured; 448 filtered out; finished in 3.34s
+
+
+
+Shared-texture first failure (before repair)
+   Compiling engine_runtime v0.1.0 (G:\gameEngin\rust\crates\engine_runtime)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 46.58s
+     Running unittests src\lib.rs (target\debug\deps\engine_runtime-6d58144c016b3c24.exe)
+
+running 1 test
+
+thread 'runtime_particles::tests::particle_lifecycle_package_mesh_material_texture_reaches_real_pixels' (9044) panicked at crates\engine_runtime\src\runtime_particles_tests.rs:723:59:
+retiring particles must retain a subsequently registered Sprite texture: "SpriteTextured command references texture handle RenderResourceHandle { kind: Texture, index: 16906573690585755676, generation: 1 }, but RealWgpuBackend has no registered GPU texture."
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test runtime_particles::tests::particle_lifecycle_package_mesh_material_texture_reaches_real_pixels ... FAILED
+
+failures:
+
+failures:
+    runtime_particles::tests::particle_lifecycle_package_mesh_material_texture_reaches_real_pixels
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 663 filtered out; finished in 0.50s
+
+error: test failed, to rerun pass `-p engine_runtime --lib`
+
+
+Retirement + ordinary texture terminal suite (15 tests; 11 overlap)
+   Compiling engine_runtime v0.1.0 (G:\gameEngin\rust\crates\engine_runtime)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 13.40s
+     Running unittests src\lib.rs (target\debug\deps\engine_runtime-6d58144c016b3c24.exe)
+
+running 15 tests
+test runtime_particles::tests::particle_lifecycle_component_and_package_reference_fail_closed ... ok
+test runtime_particles::tests::particle_lifecycle_replacement_owner_never_reuses_gpu_instance_identity ... ok
+test runtime_particles::tests::particle_lifecycle_parameters_validate_names_types_ranges_without_changing_last_value ... ok
+test runtime_particles::tests::particle_lifecycle_host_projects_package_and_unload_without_project_commands ... ok
+test runtime_particles::tests::particle_lifecycle_host_consumes_fixed_and_immediate_aui_controls_once ... ok
+test runtime_particles::tests::particle_lifecycle_retires_removed_disabled_and_recreated_entities_and_releases_package ... ok
+test runtime_particles::tests::particle_lifecycle_failed_and_noop_handlers_never_submit_and_generation_is_captured ... ok
+test runtime_particles::tests::particle_lifecycle_control_is_idempotent_and_paused_restart_preserves_pause ... ok
+343 GPU: AdapterInfo { name: "NVIDIA GeForce RTX 3070", vendor: 4318, device: 9352, device_type: DiscreteGpu, driver: "NVIDIA", driver_info: "591.86", backend: Vulkan }
+343 GPU: AdapterInfo { name: "NVIDIA GeForce RTX 3070", vendor: 4318, device: 9352, device_type: DiscreteGpu, driver: "NVIDIA", driver_info: "591.86", backend: Vulkan }
+343 GPU: AdapterInfo { name: "NVIDIA GeForce RTX 3070", vendor: 4318, device: 9352, device_type: DiscreteGpu, driver: "NVIDIA", driver_info: "591.86", backend: Vulkan }
+343 GPU: AdapterInfo { name: "NVIDIA GeForce RTX 3070", vendor: 4318, device: 9352, device_type: DiscreteGpu, driver: "NVIDIA", driver_info: "591.86", backend: Vulkan }
+343 GPU: AdapterInfo { name: "NVIDIA GeForce RTX 3070", vendor: 4318, device: 9352, device_type: DiscreteGpu, driver: "NVIDIA", driver_info: "591.86", backend: Vulkan }
+343 GPU: AdapterInfo { name: "NVIDIA GeForce RTX 3070", vendor: 4318, device: 9352, device_type: DiscreteGpu, driver: "NVIDIA", driver_info: "591.86", backend: Vulkan }
+343 GPU: AdapterInfo { name: "NVIDIA GeForce RTX 3070", vendor: 4318, device: 9352, device_type: DiscreteGpu, driver: "NVIDIA", driver_info: "591.86", backend: Vulkan }
+test wgpu_backend::real::tests::real_wgpu_textured_ui_blends_rgba_texture_alpha ... ok
+test wgpu_backend::real::tests::real_wgpu_textured_sprite_samples_registered_rgba8_texture ... ok
+test wgpu_backend::real::tests::real_wgpu_rejects_missing_texture_before_rendering_surface ... ok
+test wgpu_backend::real::tests::real_wgpu_cooked_texture_preserves_srgb_format ... ok
+test runtime_particles::tests::particle_lifecycle_real_gpu_parameter_stages_apply_to_spawn_and_update ... ok
+test runtime_particles::tests::particle_lifecycle_package_mesh_material_texture_reaches_real_pixels ... ok
+test runtime_particles::tests::particle_lifecycle_real_gpu_control_pause_clear_and_inflight_retirement ... ok
+
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 649 filtered out; finished in 0.96s
+
+
+
+Corrected submission-without-wait retirement test (1 overlapping test)
+   Compiling engine_runtime v0.1.0 (G:\gameEngin\rust\crates\engine_runtime)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 54.59s
+     Running unittests src\lib.rs (target\debug\deps\engine_runtime-6d58144c016b3c24.exe)
+
+running 1 test
+test runtime_particles::tests::particle_lifecycle_real_gpu_control_pause_clear_and_inflight_retirement ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 663 filtered out; finished in 0.53s
+
+
+
+Compiler particle terminal suite (16 unit + 1 integration)
+   Compiling engine_runtime v0.1.0 (G:\gameEngin\rust\crates\engine_runtime)
+   Compiling project_game_sdk v0.1.0 (G:\gameEngin\rust\crates\project_game_sdk)
+warning: variant `IrInterpreter` is never constructed
+  --> crates\engine_runtime\src\project_logic.rs:19:5
+   |
+17 | pub(crate) enum RuleExecutorHint {
+   |                 ---------------- variant in this enum
+18 |     RustAot,
+19 |     IrInterpreter,
+   |     ^^^^^^^^^^^^^
+   |
+   = note: `RuleExecutorHint` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: associated function `validation_only_ir_interpreter` is never used
+  --> crates\engine_runtime\src\project_logic.rs:38:19
+   |
+29 | impl RuleCall {
+   | ------------- associated function in this implementation
+...
+38 |     pub(crate) fn validation_only_ir_interpreter(rule_id: impl Into<String>) -> Self {
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: method `remove_sprite_renderer2d` is never used
+   --> crates\engine_runtime\src\world.rs:486:19
+    |
+152 | impl World {
+    | ---------- method in this implementation
+...
+486 |     pub(crate) fn remove_sprite_renderer2d(&mut self, id: &EntityId) -> Option<SpriteRenderer2D> {
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^
+
+   Compiling runtime_player_winit v0.1.0 (G:\gameEngin\rust\crates\runtime_player_winit)
+   Compiling runtime_cli v0.1.0 (G:\gameEngin\rust\crates\runtime_cli)
+   Compiling project_authoring_execution v0.1.0 (G:\gameEngin\rust\crates\project_authoring_execution)
+warning: `engine_runtime` (lib) generated 3 warnings
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2m 42s
+     Running unittests src\lib.rs (target\debug\deps\project_authoring_execution-8a1297de62e56984.exe)
+
+running 16 tests
+test particle_effect_cook::tests::particle_effect_cook_detects_duplicate_ids_and_guids ... ok
+test particle_effect_cook::tests::particle_effect_cook_maps_generated_field_errors_to_description ... ok
+test particle_effect_cook::tests::particle_effect_cook_rejects_schema_errors_with_source_location ... ok
+test neutral_assembler::particle_resource_tests::particle_resource_author_metadata_cooks_real_typed_bytes_and_dependencies ... ok
+test particle_effect_cook::tests::particle_effect_cook_reports_author_syntax_line_not_generated_line ... ok
+test particle_effect_cook::tests::particle_effect_cook_rejects_path_escape_missing_source_and_invalid_utf8 ... ok
+test particle_effect_cook::tests::particle_effect_cook_reports_author_type_failure_and_wrong_entry_signature ... ok
+test particle_effect_cook::tests::particle_effect_cook_defaults_are_valid_without_author_code ... ok
+test particle_effect_cook::tests::particle_effect_cook_generates_parameter_input_and_state_types_without_duplicate_author_types ... ok
+test particle_effect_cook::tests::particle_effect_cook_resolves_guid_dependencies_and_rejects_bad_references ... ok
+test particle_effect_cook::tests::particle_effect_cook_rejects_project_entry_binding_and_mutable_global ... ok
+test particle_effect_cook::tests::particle_effect_cook_preserves_data_and_generates_real_wgsl_parameter_contract ... ok
+test particle_effect_cook::tests::particle_effect_cook_package_owns_exact_program_bytes_without_author_tree ... ok
+test particle_effect_cook::tests::particle_effect_cook_tracks_local_invalidation_for_code_defaults_and_resource_bytes ... ok
+test particle_effect_cook::tests::particle_effect_cook_gpu_consumer_executes_packaged_author_program ... ok
+test particle_effect_cook::tests::particle_effect_cook_is_consumed_by_the_existing_assembler ... ok
+
+test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 76 filtered out; finished in 3.84s
+
+     Running tests\desktop_export_owner.rs (target\debug\deps\desktop_export_owner-9d66c58db751c8b4.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.00s
+
+     Running tests\game_project_compiler_interface.rs (target\debug\deps\game_project_compiler_interface-e882c516a80eb4cc.exe)
+
+running 1 test
+test particle_effect_check_and_prepare_share_snapshot_program_validation ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 21 filtered out; finished in 2.95s
+
+
+
+Public Project Game SDK (1 test)
+   Compiling project_game_sdk v0.1.0 (G:\gameEngin\rust\crates\project_game_sdk)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 12.43s
+     Running unittests src\lib.rs (target\debug\deps\project_game_sdk-9ae888730a419080.exe)
+
+running 1 test
+test particle_tests::particle_writer_preserves_independent_controls_typed_values_and_generation ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 11 filtered out; finished in 0.00s
+
+
+
+Existing Provider playtest/observe consumer (1 test)
+   Compiling engine_runtime v0.1.0 (G:\gameEngin\rust\crates\engine_runtime)
+   Compiling project_authoring_execution v0.1.0 (G:\gameEngin\rust\crates\project_authoring_execution)
+warning: variant `IrInterpreter` is never constructed
+  --> crates\engine_runtime\src\project_logic.rs:19:5
+   |
+17 | pub(crate) enum RuleExecutorHint {
+   |                 ---------------- variant in this enum
+18 |     RustAot,
+19 |     IrInterpreter,
+   |     ^^^^^^^^^^^^^
+   |
+   = note: `RuleExecutorHint` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: associated function `validation_only_ir_interpreter` is never used
+  --> crates\engine_runtime\src\project_logic.rs:38:19
+   |
+29 | impl RuleCall {
+   | ------------- associated function in this implementation
+...
+38 |     pub(crate) fn validation_only_ir_interpreter(rule_id: impl Into<String>) -> Self {
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: method `remove_sprite_renderer2d` is never used
+   --> crates\engine_runtime\src\world.rs:486:19
+    |
+152 | impl World {
+    | ---------- method in this implementation
+...
+486 |     pub(crate) fn remove_sprite_renderer2d(&mut self, id: &EntityId) -> Option<SpriteRenderer2D> {
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^
+
+   Compiling runtime_player_winit v0.1.0 (G:\gameEngin\rust\crates\runtime_player_winit)
+   Compiling runtime_cli v0.1.0 (G:\gameEngin\rust\crates\runtime_cli)
+warning: `engine_runtime` (lib) generated 3 warnings
+   Compiling engine_tool_provider v0.1.0 (G:\gameEngin\rust\crates\engine_tool_provider)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1m 22s
+     Running tests\headless_execution_owner.rs (target\debug\deps\headless_execution_owner-2530a4662680f522.exe)
+
+running 1 test
+test switch_puzzle_semantic_outcome_uses_its_own_bool_contract has been running for over 60 seconds
+test switch_puzzle_semantic_outcome_uses_its_own_bool_contract ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 100.98s
+
+
+
+Windows real-window consumer final check
+    Checking engine_runtime v0.1.0 (G:\gameEngin\rust\crates\engine_runtime)
+warning: variant `IrInterpreter` is never constructed
+  --> crates\engine_runtime\src\project_logic.rs:19:5
+   |
+17 | pub(crate) enum RuleExecutorHint {
+   |                 ---------------- variant in this enum
+18 |     RustAot,
+19 |     IrInterpreter,
+   |     ^^^^^^^^^^^^^
+   |
+   = note: `RuleExecutorHint` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: associated function `validation_only_ir_interpreter` is never used
+  --> crates\engine_runtime\src\project_logic.rs:38:19
+   |
+29 | impl RuleCall {
+   | ------------- associated function in this implementation
+...
+38 |     pub(crate) fn validation_only_ir_interpreter(rule_id: impl Into<String>) -> Self {
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: method `remove_sprite_renderer2d` is never used
+   --> crates\engine_runtime\src\world.rs:486:19
+    |
+152 | impl World {
+    | ---------- method in this implementation
+...
+486 |     pub(crate) fn remove_sprite_renderer2d(&mut self, id: &EntityId) -> Option<SpriteRenderer2D> {
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: `engine_runtime` (lib) generated 3 warnings
+    Checking runtime_player_winit v0.1.0 (G:\gameEngin\rust\crates\runtime_player_winit)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 12.78s

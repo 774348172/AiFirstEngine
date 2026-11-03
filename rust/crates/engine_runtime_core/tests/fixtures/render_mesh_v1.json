@@ -1,0 +1,95 @@
+{
+  "schemaVersion": "render-contract.v1",
+  "data": {
+    "kind": "mesh",
+    "payload": {
+      "vertexBytes": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        128,
+        63,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        128,
+        63,
+        0,
+        0,
+        0,
+        0
+      ],
+      "indexBytes": [
+        0,
+        0,
+        1,
+        0,
+        2,
+        0
+      ],
+      "vertexStride": 12,
+      "attributes": [
+        {
+          "semantic": "position",
+          "format": "float32x3",
+          "offset": 0
+        }
+      ],
+      "vertexCount": 3,
+      "indexCount": 3,
+      "indexFormat": "uint16",
+      "topology": "triangleList",
+      "submeshes": [
+        {
+          "firstIndex": 0,
+          "indexCount": 3,
+          "materialSlot": "surface"
+        }
+      ],
+      "bounds": {
+        "min": [
+          0,
+          0,
+          0
+        ],
+        "max": [
+          1,
+          1,
+          0
+        ],
+        "sphereCenter": [
+          0.5,
+          0.5,
+          0
+        ],
+        "sphereRadius": 1
+      },
+      "coordinateConvention": "world3dRightHandedYUpMetersCameraNegativeZ",
+      "materialSlots": [
+        "surface"
+      ]
+    }
+  }
+}

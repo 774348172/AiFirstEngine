@@ -53,10 +53,45 @@ struct WorkerInput {
     run_id: String,
     runtime_package: PathBuf,
     scenario: PlaytestScenario,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    unpaced: bool,
+}
+
+/// Private process receipt, not a Tool or RuntimePackage schema. The job and
+/// engine run have different owners; neither identity may be rewritten.
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct WorkerResultBinding {
+    job_run_id: String,
+    runtime_run_id: String,
+    request_digest: String,
+    report_digest: String,
+    worker_process_id: u32,
+}
+
+struct VerifiedPlayerReport {
+    job_run_id: String,
+    player: NativeWindowHostReport,
 }
 
 pub fn run_bounded_semantic_playtest(
     request: SemanticPlaytestProcessRequest,
+) -> Result<SemanticPlaytestProcessReport, String> {
+    run_bounded_semantic_playtest_with_pacing(request, false)
+}
+
+/// Explicit functional-trajectory execution using the existing Player's
+/// Immediate/uncapped presentation. Fixed simulation ticks and all timeout,
+/// ownership, artifact and capture checks remain identical. Not wall-time qualification.
+pub fn run_bounded_semantic_playtest_unpaced(
+    request: SemanticPlaytestProcessRequest,
+) -> Result<SemanticPlaytestProcessReport, String> {
+    run_bounded_semantic_playtest_with_pacing(request, true)
+}
+
+fn run_bounded_semantic_playtest_with_pacing(
+    request: SemanticPlaytestProcessRequest,
+    unpaced: bool,
 ) -> Result<SemanticPlaytestProcessReport, String> {
     if !cfg!(windows) {
         return Err(
@@ -99,14 +134,12 @@ pub fn run_bounded_semantic_playtest(
         run_id: run_id.clone(),
         runtime_package: package.clone(),
         scenario: request.scenario.clone(),
+        unpaced,
     };
     let input_path = output.join("request.json");
     let player_report_path = output.join("player.json");
-    fs::write(
-        &input_path,
-        serde_json::to_vec(&worker_input).map_err(|error| error.to_string())?,
-    )
-    .map_err(|error| error.to_string())?;
+    let request_bytes = serde_json::to_vec(&worker_input).map_err(|error| error.to_string())?;
+    fs::write(&input_path, &request_bytes).map_err(|error| error.to_string())?;
     let process = run_bounded_child_process(BoundedChildProcessRequest {
         executable: executable.clone(),
         args: vec![
@@ -121,12 +154,13 @@ pub fn run_bounded_semantic_playtest(
         stderr_capture_limit_bytes: 16 * 1024,
         priority: BoundedChildProcessPriority::Normal,
     });
-    let mut report = summarize_process(
-        run_id,
-        process,
-        read_player_report(&player_report_path),
-        &request.scenario,
+    let player = read_bound_player_report(
+        &player_report_path,
+        &run_id,
+        &request_bytes,
+        process.process_id,
     );
+    let mut report = summarize_process(run_id, process, player, &request.scenario);
     report.scenario_digest = engine_runtime::canonical_digest::sha256_prefixed(&encoded);
     report.player_digest = player_digest.clone();
     report.package_digest = package_digest.clone();
@@ -159,7 +193,7 @@ pub fn run_bounded_semantic_playtest(
 fn summarize_process(
     run_id: String,
     process: BoundedChildProcessResult,
-    player: Result<NativeWindowHostReport, String>,
+    player: Result<VerifiedPlayerReport, String>,
     scenario: &PlaytestScenario,
 ) -> SemanticPlaytestProcessReport {
     let mut diagnostics = Vec::new();
@@ -169,15 +203,19 @@ fn summarize_process(
         visual: OutcomeStatus::NotChecked,
         delivery: OutcomeStatus::NotChecked,
     };
+    let mut job_matches = false;
     let player = match player {
-        Ok(player) => Some(player),
+        Ok(verified) => {
+            job_matches = verified.job_run_id == run_id;
+            Some(verified.player)
+        }
         Err(error) => {
             diagnostics.push(format!("playtest.report_missing_or_invalid: {error}"));
             None
         }
     };
     if let Some(player) = &player {
-        if player.run_id == run_id && process.exit_code == Some(player.exit_code) {
+        if job_matches && process.exit_code == Some(player.exit_code) {
             if let Some(semantic) = &player.semantic_playtest {
                 if semantic.scenario_id == scenario.scenario_id {
                     outcome = semantic.outcome.clone();
@@ -376,6 +414,25 @@ fn validate_capture_evidence(
         {
             return Err("playtest.capture_identity_invalid".into());
         }
+        let spatial_required = scenario
+            .assertions
+            .iter()
+            .any(|a| a.path.starts_with("engine.spatial/"))
+            || scenario
+                .spatial_observation
+                .as_ref()
+                .is_some_and(|r| !r.entities.is_empty());
+        if spatial_required
+            && capture.spatial.as_ref().is_none_or(|s| {
+                s.schema_version != "spatial-observation.v1"
+                    || !s.matches_projection
+                    || s.frame_stage != engine_runtime::render_geometry::SpatialFrameStage::Captured
+                    || s.committed_frame != capture.presentation_frame
+                    || s.view.is_none()
+            })
+        {
+            return Err("playtest.capture_spatial_frame_mismatch".into());
+        }
         let path = Path::new(&capture.path)
             .canonicalize()
             .map_err(|e| format!("playtest.capture_missing: {e}"))?;
@@ -397,9 +454,99 @@ fn validate_capture_evidence(
     Ok(())
 }
 
-fn read_player_report(path: &Path) -> Result<NativeWindowHostReport, String> {
-    serde_json::from_slice(&read_limited(path, MAX_PLAYER_REPORT_BYTES)?)
-        .map_err(|error| error.to_string())
+fn write_bound_player_report(
+    path: &Path,
+    job_run_id: &str,
+    request_bytes: &[u8],
+    report: &NativeWindowHostReport,
+) -> Result<(), String> {
+    let bytes = serde_json::to_vec(report).map_err(|error| error.to_string())?;
+    let binding = WorkerResultBinding {
+        job_run_id: job_run_id.into(),
+        runtime_run_id: report.run_id.clone(),
+        request_digest: engine_runtime::canonical_digest::sha256_prefixed(request_bytes),
+        report_digest: engine_runtime::canonical_digest::sha256_prefixed(&bytes),
+        worker_process_id: std::process::id(),
+    };
+    fs::write(path, bytes).map_err(|error| error.to_string())?;
+    // Publish the receipt last. A crash or timeout with only a report is not a
+    // verified result, even when an older worker exits successfully.
+    fs::write(
+        path.with_extension("binding.json"),
+        serde_json::to_vec(&binding).map_err(|error| error.to_string())?,
+    )
+    .map_err(|error| error.to_string())
+}
+
+fn verify_player_binding(
+    report_bytes: &[u8],
+    binding_bytes: &[u8],
+    job_run_id: &str,
+    request_bytes: &[u8],
+    owned_process_id: Option<u32>,
+) -> Result<VerifiedPlayerReport, String> {
+    let binding: WorkerResultBinding = serde_json::from_slice(binding_bytes)
+        .map_err(|error| format!("playtest.worker_binding_invalid: {error}"))?;
+    if binding.job_run_id != job_run_id
+        || binding.request_digest
+            != engine_runtime::canonical_digest::sha256_prefixed(request_bytes)
+        || binding.report_digest != engine_runtime::canonical_digest::sha256_prefixed(report_bytes)
+        || Some(binding.worker_process_id) != owned_process_id
+        || binding.worker_process_id == 0
+        || binding.runtime_run_id.is_empty()
+    {
+        return Err("playtest.worker_binding_mismatch".into());
+    }
+    let player: NativeWindowHostReport =
+        serde_json::from_slice(report_bytes).map_err(|error| error.to_string())?;
+    if binding.runtime_run_id != player.run_id {
+        return Err("playtest.worker_runtime_identity_mismatch".into());
+    }
+    Ok(VerifiedPlayerReport {
+        job_run_id: binding.job_run_id,
+        player,
+    })
+}
+
+fn read_bound_player_report(
+    path: &Path,
+    job_run_id: &str,
+    request_bytes: &[u8],
+    owned_process_id: Option<u32>,
+) -> Result<VerifiedPlayerReport, String> {
+    let binding = read_limited(&path.with_extension("binding.json"), 4096)
+        .map_err(|error| format!("playtest.worker_binding_missing: {error}"))?;
+    verify_player_binding(
+        &read_limited(path, MAX_PLAYER_REPORT_BYTES)?,
+        &binding,
+        job_run_id,
+        request_bytes,
+        owned_process_id,
+    )
+}
+
+fn semantic_player_request(
+    runtime_package: &Path,
+    target: PlaytestTarget,
+    game_view_target: Option<engine_runtime::game_view_presentation::GameViewTargetSpec>,
+) -> NativePlayerWindowRunRequest {
+    let mut request = match target {
+        PlaytestTarget::WindowsHeadless => {
+            NativePlayerWindowRunRequest::headless_surface_gate(runtime_package)
+        }
+        PlaytestTarget::WindowsWindowed => NativePlayerWindowRunRequest::windowed(runtime_package),
+    };
+    if let Some(target) = game_view_target {
+        request = request.with_game_view_target(target);
+    }
+    request
+}
+
+fn apply_semantic_pacing(request: &mut NativePlayerWindowRunRequest, unpaced: bool) {
+    if unpaced {
+        request.config.target_fps = 0;
+        request.config.present_mode = "Immediate".into();
+    }
 }
 
 pub(crate) fn run_worker(
@@ -409,33 +556,26 @@ pub(crate) fn run_worker(
     if args.len() != 3 {
         return Err("playtest.worker_arguments_invalid".into());
     }
-    let input: WorkerInput = serde_json::from_slice(&read_limited(
-        Path::new(&args[1]),
-        MAX_PLAYTEST_SCENARIO_BYTES + 32 * 1024,
-    )?)
-    .map_err(|error| error.to_string())?;
+    let request_bytes = read_limited(Path::new(&args[1]), MAX_PLAYTEST_SCENARIO_BYTES + 32 * 1024)?;
+    let input: WorkerInput =
+        serde_json::from_slice(&request_bytes).map_err(|error| error.to_string())?;
     let exe_dir = std::env::current_exe()
         .map_err(|e| e.to_string())?
         .parent()
         .ok_or("playtest.executable_parent_missing")?
         .to_path_buf();
-    let mut report = if crate::requires_engine_dll(&exe_dir, &input.runtime_package) {
-        let mut request = match input.scenario.target {
-            PlaytestTarget::WindowsHeadless => {
-                NativePlayerWindowRunRequest::headless_surface_gate(&input.runtime_package)
-            }
-            PlaytestTarget::WindowsWindowed => {
-                NativePlayerWindowRunRequest::windowed(&input.runtime_package)
-            }
-        };
-        if let Some(target) =
-            engine_runtime::runtime_package::load_runtime_package(&input.runtime_package)
-                .value
-                .and_then(|runtime| runtime.manifest.project.game_view_target)
-        {
-            request = request.with_game_view_target(target);
-        }
-        request.frame_limit = input.scenario.max_presentation_frames;
+    let game_view_target =
+        engine_runtime::runtime_package::load_runtime_package(&input.runtime_package)
+            .value
+            .and_then(|runtime| runtime.manifest.project.game_view_target);
+    let mut request = semantic_player_request(
+        &input.runtime_package,
+        input.scenario.target,
+        game_view_target,
+    );
+    apply_semantic_pacing(&mut request, input.unpaced);
+    request.frame_limit = input.scenario.max_presentation_frames;
+    let report = if crate::requires_engine_dll(&exe_dir, &input.runtime_package) {
         crate::execute_packaged_request(
             &exe_dir,
             runtime_player_winit::engine_dll_execution::EngineRuntimeExecutionRequest {
@@ -464,14 +604,12 @@ pub(crate) fn run_worker(
         })
     } else {
         match input.scenario.target {
-            PlaytestTarget::WindowsHeadless => run_headless_semantic_playtest_with_linked_modules(
-                NativePlayerWindowRunRequest::headless_surface_gate(input.runtime_package),
-                linked,
-                input.scenario,
-            ),
+            PlaytestTarget::WindowsHeadless => {
+                run_headless_semantic_playtest_with_linked_modules(request, linked, input.scenario)
+            }
             PlaytestTarget::WindowsWindowed => {
                 runtime_player_winit::run_windowed_semantic_playtest_with_linked_modules(
-                    NativePlayerWindowRunRequest::windowed(input.runtime_package),
+                    request,
                     Arc::clone(linked),
                     input.scenario,
                     Path::new(&args[2])
@@ -482,12 +620,7 @@ pub(crate) fn run_worker(
             }
         }
     };
-    report.run_id = input.run_id;
-    fs::write(
-        &args[2],
-        serde_json::to_vec(&report).map_err(|error| error.to_string())?,
-    )
-    .map_err(|error| error.to_string())?;
+    write_bound_player_report(Path::new(&args[2]), &input.run_id, &request_bytes, &report)?;
     Ok(report.exit_code)
 }
 
@@ -530,6 +663,324 @@ pub(crate) fn run_cli(args: &[String]) -> Result<i32, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn worker_binding_keeps_runtime_identity_and_rejects_swapped_partial_or_stale_results() {
+        let mut player = NativeWindowHostReport::base(
+            &NativePlayerWindowRunRequest::headless_surface_gate("not-loaded"),
+        );
+        player.run_id = "original-runtime".into();
+        let bytes = serde_json::to_vec(&player).unwrap();
+        let input = b"exact owned request";
+        let binding = serde_json::json!({
+            "jobRunId":"job", "runtimeRunId":"original-runtime",
+            "requestDigest":engine_runtime::canonical_digest::sha256_prefixed(input),
+            "reportDigest":engine_runtime::canonical_digest::sha256_prefixed(&bytes),
+            "workerProcessId":42
+        });
+        let encoded = serde_json::to_vec(&binding).unwrap();
+        let verified = verify_player_binding(&bytes, &encoded, "job", input, Some(42)).unwrap();
+        assert_eq!(verified.job_run_id, "job");
+        assert_eq!(verified.player.run_id, "original-runtime");
+        assert_ne!(verified.job_run_id, verified.player.run_id);
+        for field in [
+            "jobRunId",
+            "runtimeRunId",
+            "requestDigest",
+            "reportDigest",
+            "workerProcessId",
+        ] {
+            let mut stale = binding.clone();
+            stale[field] = if field == "workerProcessId" {
+                serde_json::json!(43)
+            } else {
+                serde_json::json!("stale")
+            };
+            assert!(
+                verify_player_binding(
+                    &bytes,
+                    &serde_json::to_vec(&stale).unwrap(),
+                    "job",
+                    input,
+                    Some(42)
+                )
+                .is_err(),
+                "must reject {field}"
+            );
+        }
+        let mut changed = bytes.clone();
+        changed.push(b' '); // Still valid JSON; binding must seal the exact bytes.
+        assert!(verify_player_binding(&changed, &encoded, "job", input, Some(42)).is_err());
+        assert!(
+            verify_player_binding(&bytes, &encoded, "job", b"other request", Some(42)).is_err()
+        );
+        assert!(verify_player_binding(&bytes, &encoded, "job", input, None).is_err());
+        assert!(verify_player_binding(&bytes, b"", "job", input, Some(42)).is_err());
+        let mut extended = binding;
+        extended["fallback"] = serde_json::json!(true);
+        assert!(verify_player_binding(
+            &bytes,
+            &serde_json::to_vec(&extended).unwrap(),
+            "job",
+            input,
+            Some(42)
+        )
+        .is_err());
+    }
+
+    /// Local composition diagnostic: consume an existing delivery through the
+    /// production DLL loader, with the original scenario and bounded process owner.
+    #[cfg(windows)]
+    #[test]
+    #[ignore = "requires an existing project-linked delivery and real Windows GPU"]
+    fn existing_delivery_unpaced_semantic_cycle() {
+        let delivery = PathBuf::from(std::env::var_os("S2D_K1_DELIVERY").expect("delivery"));
+        let output = PathBuf::from(std::env::var_os("S2D_K1_OUTPUT").expect("fresh output"));
+        let scenario_path = PathBuf::from(std::env::var_os("S2D_K1_SCENARIO").expect("scenario"));
+        let request_bytes = fs::read(&scenario_path).unwrap();
+        let scenario: PlaytestScenario = serde_json::from_slice(&request_bytes).unwrap();
+        let package = delivery.join("data/runtime_package");
+        let player_path = output.join("player.json");
+        let run_id = "371-k1-existing-delivery-unpaced".to_string();
+        if std::env::var("S2D_K1_CHILD").as_deref() == Ok("1") {
+            let target = engine_runtime::runtime_package::load_runtime_package(&package)
+                .value
+                .unwrap()
+                .manifest
+                .project
+                .game_view_target;
+            let mut request = semantic_player_request(&package, scenario.target, target);
+            request.frame_limit = scenario.max_presentation_frames;
+            // Async streaming diagnostics can retain normal presentation pacing
+            // while using the same bounded, filtered Trace consumer.
+            apply_semantic_pacing(
+                &mut request,
+                std::env::var("S2D_K1_PACED").as_deref() != Ok("1"),
+            );
+            // Explicit diagnostics reuse the real delivery and semantic clock.
+            // One or two requested GPU samples keep Trace bounded and include
+            // the final project observation without full-frame history.
+            if let Ok(frame) = std::env::var("S2D_K1_TRACE_FRAME") {
+                let frame: u64 = frame.parse().expect("trace frame");
+                let count: u64 = std::env::var("S2D_K1_TRACE_COUNT")
+                    .map(|v| v.parse().expect("trace count"))
+                    .unwrap_or(1);
+                assert!((1..=2).contains(&count));
+                assert!((1..=request.frame_limit).contains(&frame));
+                assert!(frame <= request.frame_limit - (count - 1));
+                request = request
+                    .with_frame_performance_sample(frame - 1, count)
+                    .with_measurement_policy(
+                        runtime_player_winit::measurement::MeasurementPolicy {
+                            level: runtime_player_winit::measurement::MeasurementLevel::Trace,
+                            first_frame: Some(frame),
+                            end_frame: Some(frame + count),
+                            ..Default::default()
+                        },
+                    );
+            } else if std::env::var("S2D_K1_MEASURE").as_deref() == Ok("1") {
+                // Keep historical tiny diagnostics explicit; 720 frames uses
+                // the 371-A quick-feedback window, never formal qualification.
+                let warmup = if scenario.max_presentation_frames == 720 {
+                    120
+                } else {
+                    4
+                };
+                assert!((warmup + 2..=warmup + 600).contains(&scenario.max_presentation_frames));
+                request = request
+                    .with_frame_performance_sample(
+                        warmup,
+                        scenario.max_presentation_frames - warmup,
+                    )
+                    .with_measurement_policy(
+                        runtime_player_winit::measurement::MeasurementPolicy {
+                            level: runtime_player_winit::measurement::MeasurementLevel::Summary,
+                            ..Default::default()
+                        },
+                    );
+            }
+            let execution =
+                runtime_player_winit::engine_dll_execution::EngineRuntimeExecutionRequest {
+                    request,
+                    scenario: Some(scenario),
+                    report_path: output.join("engine-player.json"),
+                    capture_directory: Some(output.clone()),
+                };
+            let report = if let Some(dll) = std::env::var_os("S2D_K1_DIAGNOSTIC_DLL") {
+                // Explicit source-diagnostic consumer: keep the original delivery
+                // authenticated; never rewrite its manifest or replace its DLL.
+                crate::validate_desktop_dev_package(&delivery).unwrap();
+                crate::engine_dll_loader::execute(Path::new(&dll), &execution)
+            } else {
+                crate::execute_packaged_request(&delivery, execution)
+            }
+            .expect("existing production DLL composition");
+            write_bound_player_report(&player_path, &run_id, &request_bytes, &report).unwrap();
+            return;
+        }
+        assert!(scenario.timeout_ms <= MAX_PLAYTEST_TIMEOUT_MS);
+        fs::create_dir(&output).expect("fresh output");
+        let before_package = runtime_package_digest(&package).unwrap();
+        let before_dll = file_digest(&delivery.join("engine_runtime.dll")).unwrap();
+        let before_player = file_digest(&delivery.join("Game.exe")).unwrap();
+        let diagnostic_dll = std::env::var_os("S2D_K1_DIAGNOSTIC_DLL").map(PathBuf::from);
+        let diagnostic_hash = diagnostic_dll.as_deref().map(|p| file_digest(p).unwrap());
+        fs::write(
+            output.join("consumer-identity.json"),
+            serde_json::to_vec_pretty(&serde_json::json!({
+                "diagnosticEngineDll": diagnostic_dll,
+                "diagnosticEngineSha256": diagnostic_hash,
+                "deliveryEngineSha256": before_dll,
+                "normalPacing": std::env::var("S2D_K1_PACED").as_deref() == Ok("1"),
+                "scope": "explicit diagnostic override is not original delivery qualification",
+            }))
+            .unwrap(),
+        )
+        .unwrap();
+        let process = run_bounded_child_process(BoundedChildProcessRequest {
+            executable: std::env::current_exe().unwrap(),
+            args: vec![
+                "semantic_playtest::tests::existing_delivery_unpaced_semantic_cycle".into(),
+                "--exact".into(),
+                "--ignored".into(),
+                "--nocapture".into(),
+                "--test-threads=1".into(),
+            ],
+            current_dir: output.clone(),
+            environment: vec![("S2D_K1_CHILD".into(), "1".into())],
+            timeout: Duration::from_millis(scenario.timeout_ms),
+            stdout_capture_limit_bytes: 16 * 1024,
+            stderr_capture_limit_bytes: 16 * 1024,
+            priority: BoundedChildProcessPriority::Normal,
+        });
+        let player =
+            read_bound_player_report(&player_path, &run_id, &request_bytes, process.process_id);
+        let mut report = summarize_process(run_id, process, player, &scenario);
+        report.scenario_digest = engine_runtime::canonical_digest::sha256_prefixed(
+            &serde_json::to_vec(&scenario).unwrap(),
+        );
+        report.package_digest = before_package.clone();
+        report.player_digest = before_player.clone();
+        if let Err(error) = validate_capture_evidence(&report, &scenario, &output) {
+            report.outcome.visual = OutcomeStatus::Failed;
+            report.diagnostics.push(error);
+        }
+        report.overall = report.outcome.overall(&scenario, false);
+        fs::write(
+            output.join("result.json"),
+            serde_json::to_vec_pretty(&report).unwrap(),
+        )
+        .unwrap();
+        assert_eq!(runtime_package_digest(&package).unwrap(), before_package);
+        assert_eq!(
+            file_digest(&delivery.join("engine_runtime.dll")).unwrap(),
+            before_dll
+        );
+        assert_eq!(
+            file_digest(&delivery.join("Game.exe")).unwrap(),
+            before_player
+        );
+        assert_eq!(report.overall, OutcomeStatus::Passed, "{report:?}");
+        assert_eq!(
+            diagnostic_dll.as_deref().map(|p| file_digest(p).unwrap()),
+            diagnostic_hash
+        );
+        let semantic = report
+            .player
+            .as_ref()
+            .unwrap()
+            .semantic_playtest
+            .as_ref()
+            .unwrap();
+        assert_eq!(semantic.simulation_ticks, scenario.max_simulation_ticks);
+        assert_eq!(report.process.exit_code, Some(0));
+        assert!(report.process.owned_process_cleanup_confirmed());
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn semantic_bounded_execution_checks_four_hour_limit_before_io() {
+        let scenario: PlaytestScenario = serde_json::from_value(serde_json::json!({
+            "schemaVersion":"playtest-scenario.v2", "scenarioId":"bounded-world-k2",
+            "initialSceneId":"main", "target":"windows-windowed",
+            "maxSimulationTicks":48000, "maxPresentationFrames":50000, "timeoutMs":14400000
+        }))
+        .unwrap();
+        scenario.validate(None).unwrap();
+        let missing = std::env::temp_dir().join(format!(
+            "semantic-budget-missing-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        let expected_io_error = missing.canonicalize().unwrap_err().to_string();
+        let request = SemanticPlaytestProcessRequest {
+            player_executable: missing.clone(),
+            runtime_package: missing.join("package"),
+            scenario,
+            output_dir: missing.join("output"),
+        };
+        assert_eq!(
+            run_bounded_semantic_playtest(request.clone()).unwrap_err(),
+            expected_io_error,
+            "valid finite budget must reach the existing executable boundary"
+        );
+        for invalid in [0, MAX_PLAYTEST_TIMEOUT_MS + 1] {
+            let mut rejected = request.clone();
+            rejected.scenario.timeout_ms = invalid;
+            assert_eq!(
+                run_bounded_semantic_playtest(rejected).unwrap_err(),
+                "playtest.timeout_invalid"
+            );
+        }
+        assert!(!missing.exists());
+    }
+
+    #[test]
+    fn semantic_player_request_applies_project_game_view_target_for_all_execution_paths() {
+        let target =
+            engine_runtime::game_view_presentation::GameViewTargetSpec::portrait_720x1280();
+        for mode in [
+            PlaytestTarget::WindowsHeadless,
+            PlaytestTarget::WindowsWindowed,
+        ] {
+            let request = semantic_player_request(Path::new("runtime-package"), mode, Some(target));
+            assert_eq!(request.game_view_target, target);
+            assert_eq!(request.config.width, 720);
+            assert_eq!(request.config.height, 1280);
+            assert_eq!(request.config.target_fps, 60);
+            assert_eq!(request.config.present_mode, "Fifo");
+            let mut unpaced = request.clone();
+            apply_semantic_pacing(&mut unpaced, true);
+            assert_eq!(unpaced.config.target_fps, 0);
+            assert_eq!(unpaced.config.present_mode, "Immediate");
+            assert_eq!(unpaced.game_view_target, target);
+        }
+    }
+
+    #[test]
+    fn semantic_unpaced_worker_transport_is_explicit_and_defaults_to_original_pacing() {
+        let legacy = serde_json::json!({"runId":"pacing","runtimePackage":"package","scenario":{
+            "schemaVersion":"playtest-scenario.v2","scenarioId":"pacing","initialSceneId":"main","target":"windows-windowed",
+            "maxSimulationTicks":7201,"maxPresentationFrames":7201,"timeoutMs":120000
+        }});
+        let decoded: WorkerInput = serde_json::from_value(legacy.clone()).unwrap();
+        assert!(!decoded.unpaced);
+        assert!(serde_json::to_value(&decoded)
+            .unwrap()
+            .get("unpaced")
+            .is_none());
+        let mut explicit = legacy.clone();
+        explicit["unpaced"] = serde_json::json!(true);
+        let decoded: WorkerInput = serde_json::from_value(explicit).unwrap();
+        assert!(decoded.unpaced);
+        assert_eq!(decoded.scenario.timeout_ms, 120_000);
+        let mut unknown = legacy;
+        unknown["pacingFallback"] = serde_json::json!(true);
+        assert!(serde_json::from_value::<WorkerInput>(unknown).is_err());
+    }
 
     #[test]
     fn semantic_process_summary_rejects_unconfirmed_cleanup_and_inconsistent_success() {
@@ -576,8 +1027,13 @@ mod tests {
             session_id: "session".into(),
             contract_digest: None,
             simulation_ticks: 1,
+            presented_frame: None,
+            submitted_frame: None,
             fixed_delta_seconds: 1.0 / 60.0,
             injected_transition_count: 0,
+            aui: None,
+            spatial: None,
+            aui_events: Vec::new(),
             assertions: Vec::new(),
             captures: Default::default(),
             capture_evidence: Vec::new(),
@@ -589,10 +1045,27 @@ mod tests {
             ),
             overall: OutcomeStatus::Passed,
         });
-        let summarize = |p, r| summarize_process("run".into(), p, Ok(r), &scenario);
+        let summarize = |p, r| {
+            summarize_process(
+                "run".into(),
+                p,
+                Ok(VerifiedPlayerReport {
+                    job_run_id: "run".into(),
+                    player: r,
+                }),
+                &scenario,
+            )
+        };
         assert_eq!(
             summarize(process.clone(), player.clone()).overall,
             OutcomeStatus::Passed
+        );
+        let mut original_runtime = player.clone();
+        original_runtime.run_id = "original-engine-runtime".into();
+        assert_eq!(
+            summarize(process.clone(), original_runtime).overall,
+            OutcomeStatus::Passed,
+            "job identity must not overwrite the original runtime identity"
         );
         let mut unconfirmed = process.clone();
         unconfirmed.ownership.process_group_release_completed = false;
@@ -600,10 +1073,17 @@ mod tests {
             summarize(unconfirmed, player.clone()).overall,
             OutcomeStatus::Failed
         );
-        let mut stale = player.clone();
-        stale.run_id = "other-run".into();
         assert_eq!(
-            summarize(process.clone(), stale).overall,
+            summarize_process(
+                "run".into(),
+                process.clone(),
+                Ok(VerifiedPlayerReport {
+                    job_run_id: "stale-job".into(),
+                    player: player.clone()
+                }),
+                &scenario,
+            )
+            .overall,
             OutcomeStatus::Failed
         );
         let mut stale = player.clone();
@@ -662,6 +1142,7 @@ mod tests {
                 width: 1,
                 height: 1,
                 byte_size: fs::metadata(&path).unwrap().len(),
+                spatial: None,
             });
         let mut report = report;
         report.player = Some(player);

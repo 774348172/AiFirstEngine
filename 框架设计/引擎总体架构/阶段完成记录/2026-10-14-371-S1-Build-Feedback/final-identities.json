@@ -1,0 +1,60 @@
+{
+  "sources": [
+    {
+      "path": "rust/crates/project_authoring_execution/src/project_player_artifact.rs",
+      "sha256": "e32c621b2a1ccad158b2a5479b281f0637b5bcad0e063ead682273b745d0b0bf"
+    },
+    {
+      "path": "rust/crates/project_authoring_execution/src/project_player_artifact/incremental.rs",
+      "sha256": "619db125fc193ae8efcf4fee5ad48ffe0407e492fe54e77e7bf3cf8ff8b2e412"
+    },
+    {
+      "path": "rust/crates/project_authoring_execution/src/game_project_compiler.rs",
+      "sha256": "460c1f2e61845caa7bf0a27ce4addc35aa51526c1064e67db0cc06af47ae1037"
+    },
+    {
+      "path": "rust/crates/project_authoring_execution/tests/platform_3d_release_lifecycle.rs",
+      "sha256": "52d961362cfe0e0b7e20554407628ccd1352bfd207af9b0a930567cd06c6707a"
+    },
+    {
+      "path": "rust/crates/project_authoring_execution/src/project_player_artifact/engine_player.rs",
+      "sha256": "b03a941821c7f717ec21058a55920307a07a49f902dd5a5ba4a09216ac035b79"
+    }
+  ],
+  "sourceFreezeUnchanged": true,
+  "harness": "F:\\gameEngin-371-cost-20261012\\cargo-target\\release\\deps\\platform_3d_release_lifecycle-9314f43195f67512.exe",
+  "harnessSha256": "450c9d0a8ea87a8fa4731ad67d909da4e2f346e9ca09710a2e7c93965dce7fd2",
+  "packages": [
+    {
+      "role": "first",
+      "manifestDigest": "sha256:5520ec243c9fe09e3bf702b777f5e6b956a15102cab268c47afc15e11ed3a41f",
+      "package": "F:\\gameEngin-371-runtime-budget-20261012\\bm03\\Build/MeasurementCost-25268\\release",
+      "playerProcesses": 0,
+      "qualification": "build preparation only",
+      "playerArtifactBuildReportPath": "\\\\?\\F:\\gameEngin-371-cost-20261012\\native-build\\a-81b7c082f411bd8f03b7f5ca\\project-runtime-player-build-report.json"
+    },
+    {
+      "role": "warm-alias",
+      "manifestDigest": "sha256:58fa23289acb3d40871e8a658df6b40b44caf8beaf67fe3e78636c83e606d1fe",
+      "package": "F:\\gameEngin-371-runtime-budget-20261012\\bm03\\Build/MeasurementCost-19788\\release",
+      "playerProcesses": 0,
+      "qualification": "build preparation only",
+      "playerArtifactBuildReportPath": "\\\\?\\F:\\gameEngin-371-cost-20261012\\native-build\\a-81b7c082f411bd8f03b7f5ca\\project-runtime-player-build-report.json"
+    },
+    {
+      "role": "one-material",
+      "manifestDigest": "sha256:b78ba8a796f5767e62b1434dafcbcfb7b6419b82a2396413baa041eb60e18ea7",
+      "package": "F:\\gameEngin-371-runtime-budget-20261012\\bm03\\Build/MeasurementCost-19976\\release",
+      "playerProcesses": 0,
+      "qualification": "build preparation only",
+      "playerArtifactBuildReportPath": "\\\\?\\F:\\gameEngin-371-cost-20261012\\native-build\\a-81b7c082f411bd8f03b7f5ca\\project-runtime-player-build-report.json"
+    }
+  ],
+  "projectMaterialRestored": {
+    "path": "F:\\gameEngin-371-runtime-budget-20261012\\bm03\\Assets\\material-000.json",
+    "restored": true,
+    "sha256": "0d2711c6781ef4a29d8fb67e3be25370951437c389bc95e1a03ac006e8996bd1"
+  },
+  "qualification": "build preparation only; playerProcesses means gameplay measurement processes; descriptor child processes are retained in native receipts",
+  "workspace": "dirty untracked source; not clean-commit or installed qualification"
+}

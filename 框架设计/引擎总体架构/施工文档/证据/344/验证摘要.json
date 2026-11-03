@@ -1,0 +1,44 @@
+{
+  "paused410vs420Identical": true,
+  "nativeReports": {
+    "main": {
+      "exitCode": 0,
+      "framesCompleted": 1020,
+      "window": {
+        "created": true,
+        "width": 1280,
+        "height": 720,
+        "closeRequested": false
+      },
+      "fontAssetId": "font-stack-house-ui",
+      "unsupportedGlyphCount": 0,
+      "clippedGlyphCount": 0,
+      "semanticPlaytest": {
+        "technical": "passed",
+        "gameplay": "passed",
+        "visual": "passed",
+        "delivery": "not-checked"
+      }
+    },
+    "failure": {
+      "exitCode": 0,
+      "framesCompleted": 380,
+      "window": {
+        "created": true,
+        "width": 1280,
+        "height": 720,
+        "closeRequested": false
+      },
+      "fontAssetId": "font-stack-house-ui",
+      "unsupportedGlyphCount": 0,
+      "clippedGlyphCount": 0,
+      "semanticPlaytest": {
+        "technical": "passed",
+        "gameplay": "passed",
+        "visual": "passed",
+        "delivery": "not-checked"
+      }
+    }
+  },
+  "copiedFilesUnchangedAfterRun": 130
+}

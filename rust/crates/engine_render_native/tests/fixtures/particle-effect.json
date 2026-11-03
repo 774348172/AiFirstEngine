@@ -1,0 +1,28 @@
+{
+  "schemaVersion": "particle-effect.v1",
+  "assetId": "test-effect",
+  "assetGuid": "guid-test-effect",
+  "seed": 42,
+  "bounds": { "center": [0, 0, 0], "halfExtents": [10, 10, 10] },
+  "budget": { "maxParticles": 128, "maxEventsPerStep": 16, "offscreen": "simulate" },
+  "parameters": [
+    { "name": "speed", "default": { "type": "float", "value": 2 }, "unit": "metersPerSecond", "stage": "update", "range": [0, 10] }
+  ],
+  "emitters": [
+    {
+      "name": "main",
+      "capacity": 64,
+      "space": "world",
+      "durationSeconds": 2,
+      "bursts": [{ "timeSeconds": 0, "count": 32 }],
+      "lifetimeSeconds": [1, 2],
+      "shape": { "kind": "point" },
+      "velocityMin": [-1, 1, -1],
+      "velocityMax": [1, 2, 1],
+      "color": [1, 0.5, 0.1, 1],
+      "sizeMeters": [0.1, 0.1],
+      "updates": [{ "kind": "gravity", "acceleration": [0, -9.8, 0] }, { "kind": "integrate" }],
+      "draw": { "geometry": { "kind": "billboard3d" }, "blend": "additive", "sort": "none" }
+    }
+  ]
+}

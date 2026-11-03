@@ -1,0 +1,24 @@
+   Compiling engine_runtime v0.1.0 (G:\gameEngin\rust\crates\engine_runtime)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 36.07s
+     Running unittests src\lib.rs (target\debug\deps\engine_runtime-f2e49a160a17050d.exe)
+
+running 1 test
+test aui_present_cache::tests::aui_animation_binding_changes_remain_base_while_temporarily_overridden ... FAILED
+
+failures:
+
+---- aui_present_cache::tests::aui_animation_binding_changes_remain_base_while_temporarily_overridden stdout ----
+
+thread 'aui_present_cache::tests::aui_animation_binding_changes_remain_base_while_temporarily_overridden' (16500) panicked at crates\engine_runtime\src\aui_present_cache.rs:1515:9:
+assertion `left == right` failed
+  left: 0.8
+ right: 0.5
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    aui_present_cache::tests::aui_animation_binding_changes_remain_base_while_temporarily_overridden
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 773 filtered out; finished in 0.01s
+
+error: test failed, to rerun pass `-p engine_runtime --lib`

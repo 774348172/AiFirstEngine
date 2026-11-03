@@ -1,0 +1,176 @@
+{
+  "source": [
+    {
+      "sha256": "AB760D74A0764DF86608C76DB4D94D67C94C4BF272FD274DE22A286DFCAD7B93",
+      "path": "rust\\crates\\engine_runtime\\src\\particle_effect\\program.rs"
+    },
+    {
+      "sha256": "1D9C06FCBF6A5A59E5032C45C1C457B6E2C67A1108E476E27D66E1D15FD2EF95",
+      "path": "rust\\crates\\engine_runtime\\src\\engine_host_loop.rs"
+    },
+    {
+      "sha256": "8BB3363EF6A82D2700E23B2ECBD2E76B954CEC67CBC97F21EA4BC380C2E6C110",
+      "path": "rust\\crates\\engine_tool_provider\\src\\semantic.rs"
+    },
+    {
+      "sha256": "BC1CB73AB40AE4656638A1BEFB3B719DC3F212218717F1B0DE980959602D0373",
+      "path": "rust\\crates\\project_authoring_execution\\src\\particle_effect_cook\\tests.rs"
+    },
+    {
+      "sha256": "FD04C2DD32B75557876084BF03FF7D4FE66302950EA8F83243EE52FBD45A1414",
+      "path": "rust\\crates\\engine_tool_provider\\tests\\headless_execution_owner.rs"
+    },
+    {
+      "sha256": "FEE6073500BF0E3AA83FD41DCE26E2A414562C2EEFE26CB2D6A39590B20A20DD",
+      "path": "samples\\particle_effects_project\\.gitignore"
+    },
+    {
+      "sha256": "305A6E6B8917C44C8F4B3CE5A122D3A49A80F72855EC9A1248209F5F2098DF8D",
+      "path": "samples\\particle_effects_project\\project.aife.json"
+    },
+    {
+      "sha256": "91DA79983ADCABB88309482CC69192E7A27DE39AB172FC929ECF0D1D6EBE4F63",
+      "path": "samples\\particle_effects_project\\README.md"
+    },
+    {
+      "sha256": "3187498D69C7C4D02C7E78C9FD4E3009EEBC5BCC267C265FADB94E4DFC76C719",
+      "path": "samples\\particle_effects_project\\.aife\\authoring\\authority.lock"
+    },
+    {
+      "sha256": "397A8D286D4B04F235634BD5DEC78A0B2B94A38793CB5705A627A6A436A13CDA",
+      "path": "samples\\particle_effects_project\\Assets\\debris-material.asset"
+    },
+    {
+      "sha256": "E5FAD83DFD06DFBA035BAF41C2AB38AADBB96D0F0E0CBC14A252CB0AF3ADB872",
+      "path": "samples\\particle_effects_project\\Assets\\debris.asset"
+    },
+    {
+      "sha256": "A6CAFD9467FACB760E10B951D23760738F9FFD7E062DE509EE2A4ED73B0F43BF",
+      "path": "samples\\particle_effects_project\\Assets\\explosion.particle-effect.json"
+    },
+    {
+      "sha256": "0B0ABF6CA4FF053A642FF36B593CDEF35C00B44EBE96AE90805BCA4928F10C67",
+      "path": "samples\\particle_effects_project\\Assets\\tex-glow.asset"
+    },
+    {
+      "sha256": "FA75637D01300F8D2C6B866B4D0A1AEE50B9A79E0DAF832588AD0277B7AF595C",
+      "path": "samples\\particle_effects_project\\Assets\\tex-smoke.asset"
+    },
+    {
+      "sha256": "101DB04E4EC3F481D7402A750FBFA8A9031BBF5D1B0078E2D38A194E2EDD34DE",
+      "path": "samples\\particle_effects_project\\Assets\\tex-stage.asset"
+    },
+    {
+      "sha256": "44381C19AEBE29D428BBC6D39D3DEBC0A56963A1FA40307F2237FA41FCDA036D",
+      "path": "samples\\particle_effects_project\\Assets\\vortex.particle-effect.json"
+    },
+    {
+      "sha256": "356DDB02564106B6D81840DFE91E3ABFBAFA0E4C30772B1A269282A0203E4CBE",
+      "path": "samples\\particle_effects_project\\Assets\\vortex.particle.wgsl"
+    },
+    {
+      "sha256": "0726025C5CBDEF9C918D13E6A03E6B77CE8883382B4D6B498D651998A3813901",
+      "path": "samples\\particle_effects_project\\Assets\\Images\\glow.png"
+    },
+    {
+      "sha256": "D19AF0B5A1A553025AEFF9FB762C9DBFF94A5ADE2C7103DD156DE92AB7F96D25",
+      "path": "samples\\particle_effects_project\\Assets\\Images\\smoke.png"
+    },
+    {
+      "sha256": "88B8D2C582CE55D3CADB058B62A804410E96BCBE607497524BB9555995636B05",
+      "path": "samples\\particle_effects_project\\Assets\\Images\\stage.png"
+    },
+    {
+      "sha256": "DD555681EA4BF64612C77DC510D60648E3EFF1E10E746EDC5825F7285B1E4536",
+      "path": "samples\\particle_effects_project\\AUI\\controls.aui.json"
+    },
+    {
+      "sha256": "9D7B6219BCE14FAFC1B33EF57CDFE76278108C401D4106B13196DE18DD234343",
+      "path": "samples\\particle_effects_project\\BuildProfiles\\windows.dev.json"
+    },
+    {
+      "sha256": "5444B3AEBD443BD1444814B9C58DD3716A3D010FD9B4EC13DE5D187657390E33",
+      "path": "samples\\particle_effects_project\\Input\\input.default.json"
+    },
+    {
+      "sha256": "815C4BE7556F9F7A505BA7C49835087569A347AC576571A4B11830E554250C11",
+      "path": "samples\\particle_effects_project\\Observations\\project.observations.json"
+    },
+    {
+      "sha256": "4553D1FA2753E02C22D1F73329D89DF90945DC1FD324934B5282F9E3DF3C008F",
+      "path": "samples\\particle_effects_project\\Rules\\particles.rule.json"
+    },
+    {
+      "sha256": "345CB8279F21FA41DCAA6E78AB6CF764CC23D495BF56A2B72813628788D43167",
+      "path": "samples\\particle_effects_project\\Rules\\rule-manifest.json"
+    },
+    {
+      "sha256": "3B245AB6254F632C17C2A6BB8E09517633994121B850E6CFC412824049AF3E76",
+      "path": "samples\\particle_effects_project\\RuntimeModule\\Cargo.lock"
+    },
+    {
+      "sha256": "1D1EA082897D05C0D5F1F0204A4D6A3252DE6034A73C6162E447017EEE309039",
+      "path": "samples\\particle_effects_project\\RuntimeModule\\Cargo.toml"
+    },
+    {
+      "sha256": "CE61BCD0776CCB82EDBDE2B0BCB27953D4CBB38B601787661A0CC4C55441B966",
+      "path": "samples\\particle_effects_project\\RuntimeModule\\src\\lib.rs"
+    },
+    {
+      "sha256": "08FAB07C0B4BA40E3B755686D8E8354A7DF8E46303086976CDB553ADB1F255E8",
+      "path": "samples\\particle_effects_project\\Scenes\\Main.scene.json"
+    },
+    {
+      "sha256": "349F7241AB91B59B737AF6E91E8788C83F380E6ABA5BC2A9F6072A5BEAE09DF9",
+      "path": "samples\\particle_effects_project\\Settings\\project_settings.json"
+    },
+    {
+      "sha256": "8C5DF43F07DBE4EE81FB83796F5E7BFF7102FD2173A26A9DD05306012E22BC54",
+      "path": "samples\\particle_effects_project\\Tests\\explosion-stability.scenario.json"
+    },
+    {
+      "sha256": "097B8351843F912B600FD39BB68ACDB88AD36A94B2D0271364C730C9416EE6CC",
+      "path": "samples\\particle_effects_project\\Tests\\explosion-world-space.scenario.json"
+    },
+    {
+      "sha256": "B829606A3999209D908032A0410FCDB6BC3A440023E4B6C7628AB5CDBEF7AD58",
+      "path": "samples\\particle_effects_project\\Tests\\explosion.scenario.json"
+    },
+    {
+      "sha256": "04363015746AC372FCF75C35929CE672685B8706D3B47CBE344397548BCF66CA",
+      "path": "samples\\particle_effects_project\\Tests\\vortex-continuity.scenario.json"
+    },
+    {
+      "sha256": "8659593CC0104AE8AC75239825BA63C6152E80E5FA5A46E4B26F2099BDB7FF08",
+      "path": "samples\\particle_effects_project\\Tests\\vortex-stability.scenario.json"
+    },
+    {
+      "sha256": "1D9446D982BD3ADD49C6B4568F23F5BC03E774E28D57F31F2FD583B6D5E1DF55",
+      "path": "samples\\particle_effects_project\\Tests\\vortex.scenario.json"
+    },
+    {
+      "sha256": "B02BCF4E12B447327EA54EAE535A0625FBE3C98AB4B36D59594BC8A89C2A3F9F",
+      "path": "samples\\particle_effects_project\\Tools\\generate-textures.ps1"
+    }
+  ],
+  "worktree": "dirty_worktree_not_exact_commit_qualification",
+  "baseHead": "acaffa8cb95bbb54d093bbf45835a59315c82da5",
+  "checkedUtc": "2026-09-14T22:46:45.8852841Z",
+  "finalDelivery": "sha256:280ed3c3749668e8480ba4d34d3a3c16f5ba648834aec629f87967feea9d694a",
+  "finalPackage": "sha256:d63467f09b7183b1717ef059feafb301b5759a94d9e2e5a79174674adaa6f082",
+  "ownedProcesses": [],
+  "nativeAndSemanticUseSamePackage": true,
+  "sourceFileCount": 38,
+  "finalFilesUnchanged": true,
+  "provider": {
+    "sha256": "3E0E662BA7BB46282E11DF6FBF9C74C6A278B7CD5E57A7787D92A9865E33EA5A",
+    "path": "G:/gameEngin/rust/target/debug/ai_engine_tool_provider_mcp.exe",
+    "installed": false
+  },
+  "tests": [
+    "cooker-green.log",
+    "provider-playtest-regression.log",
+    "camera-depth-green.log",
+    "project-tests-qualified.log"
+  ]
+}

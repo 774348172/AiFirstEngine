@@ -1,0 +1,125 @@
+{
+  "schemaVersion": "windowed-player-run-report.v1",
+  "runId": "windowed-player-native_player_productization_v1",
+  "mode": "windowed",
+  "projectPath": "G:\\a323-opt\\player\\data\\runtime_package",
+  "runtimePackagePath": "G:\\a323-opt\\player\\data\\runtime_package",
+  "scenarioId": "native_player_productization_v1",
+  "status": {
+    "request": "ok",
+    "package": "ok",
+    "asset": "ok",
+    "scene": "ok",
+    "world": "ok",
+    "logic": "ok",
+    "input": "ok",
+    "physics": "ok",
+    "projection": "ok",
+    "render": "ok",
+    "rdg": "ok",
+    "rhi": "ok",
+    "surface": "ok",
+    "present": "presented"
+  },
+  "counters": {
+    "framesRequested": 720,
+    "framesCompleted": 720,
+    "entityCount": 37,
+    "archetypeCount": 7,
+    "hydratedEntityCount": 37,
+    "hydrationLoadedAssetCount": 34,
+    "hydrationDirtyRecordCount": 84,
+    "renderProxyCount": 33,
+    "runtimeTraceEventCount": 7200
+  },
+  "packageSummary": {
+    "projectName": "Complex Shooter Sample",
+    "projectVersion": "0.1.0",
+    "activeSceneId": "scene-main",
+    "sceneCount": 1,
+    "declaredAssetCount": 17,
+    "runtimeAssetRecordCount": 17,
+    "cookedAssetCount": 17,
+    "ruleMode": "rust-aot",
+    "contentHash": "sha256:b1e2887ea51d63363beb92296af92f324f7b3d6ee60ba5262ade33706140a2db"
+  },
+  "assetLoadSummary": {
+    "requestedAssetCount": 17,
+    "readyHandleCount": 17,
+    "decodedCacheCount": 17,
+    "diagnosticCount": 17
+  },
+  "gpuBindingSummary": {
+    "requestedHandleCount": 10,
+    "prepareRequestCount": 10,
+    "preparedAssetCount": 10,
+    "renderResourceRequestCount": 10,
+    "residentResourceCount": 10,
+    "diagnosticCount": 7
+  },
+  "rendererSummary": {
+    "drawItemCount": 33,
+    "rhiCommandCount": 37,
+    "rhiDrawCommandCount": 33,
+    "graphPassCount": 35
+  },
+  "screenshotSummary": {
+    "requested": false,
+    "status": "not_requested",
+    "path": null,
+    "width": 1280,
+    "height": 720,
+    "byteSize": null
+  },
+  "framePerformanceSummary": {
+    "warmupFrames": 120,
+    "requestedSampleFrames": 600,
+    "observedSampleFrames": 600,
+    "meanCpuFrameMs": 5.839748166666667,
+    "p95CpuFrameMs": 15.4538,
+    "p99CpuFrameMs": 16.1188,
+    "update": {
+      "observedSampleFrames": 600,
+      "meanMs": 3.1341931666666665,
+      "p95Ms": 4.6374,
+      "p99Ms": 5.3437
+    },
+    "renderSubmit": {
+      "observedSampleFrames": 600,
+      "meanMs": 0.9494416666666666,
+      "p95Ms": 1.4082,
+      "p99Ms": 1.5871
+    },
+    "presentWait": {
+      "observedSampleFrames": 600,
+      "meanMs": 1.7508585,
+      "p95Ms": 10.3006,
+      "p99Ms": 11.6568
+    }
+  },
+  "projectRuntimeBindReceipt": {
+    "schemaVersion": "project-runtime-bind-receipt.v2",
+    "projectId": "project-complex-shooter-sample",
+    "moduleId": "sample.complex-shooter.runtime",
+    "interfaceVersion": "project-runtime-module.v2",
+    "aotContentDigest": "sha256:dbe958ce111689bf07284b1dbe42c68117bae7605fa72ada07865118ab138144",
+    "registeredRuleCount": 5,
+    "requiredRuleCount": 5,
+    "producerId": "sample.complex-shooter.runtime.ui_state",
+    "sessionId": "complex-shooter.runtime-session",
+    "sessionStatus": "ready",
+    "defaultInputMappingId": "input.default",
+    "status": "passed"
+  },
+  "exitCode": 0,
+  "exitReason": "completed",
+  "diagnostics": [
+    {
+      "severity": "info",
+      "code": "native_host.graphics.backend_selected",
+      "layer": "surface",
+      "message": "Vulkan",
+      "path": null
+    }
+  ]
+}

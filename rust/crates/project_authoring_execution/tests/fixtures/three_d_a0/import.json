@@ -1,0 +1,10 @@
+{
+  "schemaVersion":"model-import.v1","assetId":"model","assetGuid":"guid-model","displayName":"Model",
+  "source":"Models/scene.gltf","scene":0,
+  "coordinates":{"upAxis":"y","handedness":"right","metersPerUnit":1},
+  "outputs":[
+    {"key":"mesh-stable-1","assetId":"imported.mesh","assetGuid":"guid-imported-mesh","kind":"mesh","sourceLocator":"/meshes/0","sourceFingerprint":"sha256:1111111111111111111111111111111111111111111111111111111111111111","materialSlots":[{"key":"slot-stable-1","name":"surface","sourceLocator":"/meshes/0/primitives/0"}]},
+    {"key":"prefab-stable-1","assetId":"imported.prefab","assetGuid":"guid-imported-prefab","kind":"prefab","sourceLocator":"/scenes/0","sourceFingerprint":"sha256:2222222222222222222222222222222222222222222222222222222222222222","materialSlots":[]}
+  ],
+  "nodes":[{"key":"node-stable-1","entityId":"imported.root","sourceLocator":"/nodes/0","sourceFingerprint":"sha256:3333333333333333333333333333333333333333333333333333333333333333"}]
+}

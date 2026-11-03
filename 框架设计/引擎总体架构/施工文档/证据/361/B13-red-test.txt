@@ -1,0 +1,8 @@
+crates\engine_runtime\src\project_logic.rs:19:5: warning: variant `IrInterpreter` is never constructed
+crates\engine_runtime\src\project_logic.rs:38:19: warning: associated function `validation_only_ir_interpreter` is never used
+crates\engine_runtime\src\world.rs:529:19: warning: method `remove_sprite_renderer2d` is never used
+warning: `engine_runtime` (lib) generated 3 warnings
+   Compiling engine_runtime v0.1.0 (G:\gameEngin\rust\crates\engine_runtime)
+crates\engine_runtime\tests\aui_layout_c2_paragraph.rs:951:17: error[E0599]: no method named `current_layout` found for struct `engine_runtime::aui::AuiC2Runtime` in the current scope: method not found in `engine_runtime::aui::AuiC2Runtime`
+crates\engine_runtime\tests\aui_layout_c2_paragraph.rs:968:17: error[E0599]: no method named `current_layout` found for struct `engine_runtime::aui::AuiC2Runtime` in the current scope: method not found in `engine_runtime::aui::AuiC2Runtime`
+error: could not compile `engine_runtime` (test "aui_layout_c2_paragraph") due to 2 previous errors

@@ -1,0 +1,28 @@
+cwd: G:/gameEngin/rust
+command: cargo test -p engine_runtime --test aui_retained_layout --locked --message-format short -- retained_text_updates_size_and_sibling_position_without_reloading_source
+Source state: B9 product implementation, B10 expected geometry_nodes=2 assertion, before B10 implementation.
+exit: 1
+
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 27.08s
+     Running tests\aui_retained_layout.rs (target\debug\deps\aui_retained_layout-cf73f325c6147d66.exe)
+
+running 1 test
+test retained_text_updates_size_and_sibling_position_without_reloading_source ... FAILED
+
+failures:
+
+---- retained_text_updates_size_and_sibling_position_without_reloading_source stdout ----
+
+thread 'retained_text_updates_size_and_sibling_position_without_reloading_source' (29040) panicked at crates\engine_runtime\tests\aui_retained_layout.rs:122:5:
+assertion `left == right` failed
+  left: 3
+ right: 2
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    retained_text_updates_size_and_sibling_position_without_reloading_source
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 8 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `-p engine_runtime --test aui_retained_layout`

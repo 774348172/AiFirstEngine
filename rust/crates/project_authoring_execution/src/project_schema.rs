@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 
 pub const LEGACY_PROJECT_MANIFEST_SCHEMA_VERSION: &str = "aife-project.v1";
 pub const PROJECT_MANIFEST_SCHEMA_VERSION: &str = "aife-project.v2";
+pub const SPATIAL_PROJECT_MANIFEST_SCHEMA_VERSION: &str = "aife-project.v3";
 pub const PROJECT_RUNTIME_MODULE_INTERFACE_VERSION: &str = "project-runtime-module.v2";
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

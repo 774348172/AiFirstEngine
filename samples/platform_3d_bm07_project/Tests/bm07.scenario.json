@@ -1,0 +1,193 @@
+{
+  "schemaVersion": "playtest-scenario.v2",
+  "scenarioId": "bm07.full-nav-population.functional",
+  "initialSceneId": "main",
+  "target": "windows-windowed",
+  "maxSimulationTicks": 1200,
+  "maxPresentationFrames": 1200,
+  "timeoutMs": 120000,
+  "inputs": [],
+  "assertions": [
+    {
+      "assertionId": "300-actualAgents",
+      "fromSimulationTick": 300,
+      "throughSimulationTick": 300,
+      "path": "bm07.actualAgents",
+      "equals": 1000
+    },
+    {
+      "assertionId": "300-actualMotorStates",
+      "fromSimulationTick": 300,
+      "throughSimulationTick": 300,
+      "path": "bm07.actualMotorStates",
+      "equals": 1000
+    },
+    {
+      "assertionId": "300-requestMixExact",
+      "fromSimulationTick": 300,
+      "throughSimulationTick": 300,
+      "path": "bm07.requestMixExact",
+      "equals": true
+    },
+    {
+      "assertionId": "300-noUnexpectedResults",
+      "fromSimulationTick": 300,
+      "throughSimulationTick": 300,
+      "path": "bm07.noUnexpectedResults",
+      "equals": true
+    },
+    {
+      "assertionId": "600-actualAgents",
+      "fromSimulationTick": 600,
+      "throughSimulationTick": 600,
+      "path": "bm07.actualAgents",
+      "equals": 1000
+    },
+    {
+      "assertionId": "600-actualMotorStates",
+      "fromSimulationTick": 600,
+      "throughSimulationTick": 600,
+      "path": "bm07.actualMotorStates",
+      "equals": 1000
+    },
+    {
+      "assertionId": "600-requestMixExact",
+      "fromSimulationTick": 600,
+      "throughSimulationTick": 600,
+      "path": "bm07.requestMixExact",
+      "equals": true
+    },
+    {
+      "assertionId": "600-noUnexpectedResults",
+      "fromSimulationTick": 600,
+      "throughSimulationTick": 600,
+      "path": "bm07.noUnexpectedResults",
+      "equals": true
+    },
+    {
+      "assertionId": "900-actualAgents",
+      "fromSimulationTick": 900,
+      "throughSimulationTick": 900,
+      "path": "bm07.actualAgents",
+      "equals": 1000
+    },
+    {
+      "assertionId": "900-actualMotorStates",
+      "fromSimulationTick": 900,
+      "throughSimulationTick": 900,
+      "path": "bm07.actualMotorStates",
+      "equals": 1000
+    },
+    {
+      "assertionId": "900-requestMixExact",
+      "fromSimulationTick": 900,
+      "throughSimulationTick": 900,
+      "path": "bm07.requestMixExact",
+      "equals": true
+    },
+    {
+      "assertionId": "900-noUnexpectedResults",
+      "fromSimulationTick": 900,
+      "throughSimulationTick": 900,
+      "path": "bm07.noUnexpectedResults",
+      "equals": true
+    },
+    {
+      "assertionId": "1200-actualAgents",
+      "fromSimulationTick": 1200,
+      "throughSimulationTick": 1200,
+      "path": "bm07.actualAgents",
+      "equals": 1000
+    },
+    {
+      "assertionId": "1200-actualMotorStates",
+      "fromSimulationTick": 1200,
+      "throughSimulationTick": 1200,
+      "path": "bm07.actualMotorStates",
+      "equals": 1000
+    },
+    {
+      "assertionId": "1200-requestMixExact",
+      "fromSimulationTick": 1200,
+      "throughSimulationTick": 1200,
+      "path": "bm07.requestMixExact",
+      "equals": true
+    },
+    {
+      "assertionId": "1200-noUnexpectedResults",
+      "fromSimulationTick": 1200,
+      "throughSimulationTick": 1200,
+      "path": "bm07.noUnexpectedResults",
+      "equals": true
+    },
+    {
+      "assertionId": "1200-issuedReachable",
+      "fromSimulationTick": 1200,
+      "throughSimulationTick": 1200,
+      "path": "bm07.issuedReachable",
+      "equals": 2800
+    },
+    {
+      "assertionId": "1200-issuedUnreachable",
+      "fromSimulationTick": 1200,
+      "throughSimulationTick": 1200,
+      "path": "bm07.issuedUnreachable",
+      "equals": 800
+    },
+    {
+      "assertionId": "1200-issuedNotResident",
+      "fromSimulationTick": 1200,
+      "throughSimulationTick": 1200,
+      "path": "bm07.issuedNotResident",
+      "equals": 400
+    },
+    {
+      "assertionId": "1200-requestOutcomesMet",
+      "fromSimulationTick": 1200,
+      "throughSimulationTick": 1200,
+      "path": "bm07.requestOutcomesMet",
+      "equals": true
+    },
+    {
+      "assertionId": "1200-opposingCrossingsObserved",
+      "fromSimulationTick": 1200,
+      "throughSimulationTick": 1200,
+      "path": "bm07.opposingCrossingsObserved",
+      "equals": true
+    },
+    {
+      "assertionId": "1200-movedObstacles",
+      "fromSimulationTick": 1200,
+      "throughSimulationTick": 1200,
+      "path": "bm07.movedObstacles",
+      "equals": 50
+    },
+    {
+      "assertionId": "1200-unloadedTileGone",
+      "fromSimulationTick": 1200,
+      "throughSimulationTick": 1200,
+      "path": "bm07.unloadedTileGone",
+      "equals": true
+    }
+  ],
+  "captures": [
+    {
+      "captureId": "bm07-300",
+      "presentationFrame": 300,
+      "required": true,
+      "subjectiveReview": false
+    },
+    {
+      "captureId": "bm07-600",
+      "presentationFrame": 600,
+      "required": true,
+      "subjectiveReview": false
+    },
+    {
+      "captureId": "bm07-1200",
+      "presentationFrame": 1200,
+      "required": true,
+      "subjectiveReview": false
+    }
+  ]
+}

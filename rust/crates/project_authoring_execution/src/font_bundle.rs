@@ -6,7 +6,7 @@ use engine_runtime::canonical_digest::sha256_prefixed;
 use engine_runtime::font_bundle::{
     font_bundle_digest, CookedFontBundleAsset, CookedFontBundleGlyph, CookedFontBundleKerning,
     CookedFontBundlePage, FontBundleRenderMode, FontBundleStyle, RuntimePackageSourceFontBundle,
-    RuntimePackageSourceFontFace, COOKED_FONT_BUNDLE_SCHEMA_VERSION,
+    COOKED_FONT_BUNDLE_SCHEMA_VERSION,
 };
 #[cfg(test)]
 use std::collections::BTreeSet;
@@ -117,20 +117,20 @@ impl ProjectFontBundleBuilder {
                 font_family_id: cook
                     .resolutions
                     .iter()
-                    .find(|resolution| resolution.codepoint == variant.codepoint)
+                    .find(|resolution| resolution.font_face_id == variant.font_face_id)
                     .map(|resolution| resolution.font_family_id.clone())
                     .unwrap_or_default(),
                 font_face_id: variant.font_face_id.clone(),
                 style: cook
                     .resolutions
                     .iter()
-                    .find(|resolution| resolution.codepoint == variant.codepoint)
+                    .find(|resolution| resolution.font_face_id == variant.font_face_id)
                     .map(|resolution| bundle_style(resolution.style))
                     .unwrap_or(FontBundleStyle::Normal),
                 weight: cook
                     .resolutions
                     .iter()
-                    .find(|resolution| resolution.codepoint == variant.codepoint)
+                    .find(|resolution| resolution.font_face_id == variant.font_face_id)
                     .map(|resolution| resolution.weight)
                     .unwrap_or(400),
                 glyph_id: variant.glyph_id,
@@ -141,6 +141,7 @@ impl ProjectFontBundleBuilder {
                 pixel_rect: [placement.0, placement.1, variant.width, variant.height],
                 bearing_x: variant.bearing_x,
                 bearing_y: variant.bearing_y,
+                plane_bounds_per_em_millionths: None,
                 advance_per_em_millionths: variant.advance_per_em_millionths,
             });
         }
@@ -209,20 +210,20 @@ impl ProjectFontBundleBuilder {
                 font_family_id: cook
                     .resolutions
                     .iter()
-                    .find(|resolution| resolution.codepoint == variant.codepoint)
+                    .find(|resolution| resolution.font_face_id == variant.font_face_id)
                     .map(|resolution| resolution.font_family_id.clone())
                     .unwrap_or_default(),
                 font_face_id: variant.font_face_id.clone(),
                 style: cook
                     .resolutions
                     .iter()
-                    .find(|resolution| resolution.codepoint == variant.codepoint)
+                    .find(|resolution| resolution.font_face_id == variant.font_face_id)
                     .map(|resolution| bundle_style(resolution.style))
                     .unwrap_or(FontBundleStyle::Normal),
                 weight: cook
                     .resolutions
                     .iter()
-                    .find(|resolution| resolution.codepoint == variant.codepoint)
+                    .find(|resolution| resolution.font_face_id == variant.font_face_id)
                     .map(|resolution| resolution.weight)
                     .unwrap_or(400),
                 glyph_id: variant.glyph_id,
@@ -233,6 +234,7 @@ impl ProjectFontBundleBuilder {
                 pixel_rect: [placement.0, placement.1, variant.width, variant.height],
                 bearing_x: variant.bearing_x,
                 bearing_y: variant.bearing_y,
+                plane_bounds_per_em_millionths: Some(variant.plane_bounds_per_em_millionths),
                 advance_per_em_millionths: variant.advance_per_em_millionths,
             });
         }
@@ -276,22 +278,28 @@ impl ProjectFontBundleBuilder {
                     adjustment_per_em_millionths: adjustment.adjustment_per_em_millionths,
                 })
                 .collect(),
+            shaping_recipe: (!cook.font_face_sources.is_empty())
+                .then(|| engine_runtime::text_shaping::SHAPING_RECIPE.to_string()),
+            font_faces: cook
+                .font_face_sources
+                .iter()
+                .enumerate()
+                .map(
+                    |(index, face)| engine_runtime::font_bundle::RuntimeFontFaceDescriptor {
+                        font_face_id: face.font_face_id.clone(),
+                        face_index: face.face_index,
+                        source_digest: face.source_digest.clone(),
+                        payload_path: format!("fonts/{}/face-{index}.bin", profile.asset_id),
+                    },
+                )
+                .collect(),
             bundle_digest: String::new(),
         };
         metadata.bundle_digest = font_bundle_digest(&metadata);
         Ok(RuntimePackageSourceFontBundle {
             metadata,
             page_payloads,
-            font_face_sources: cook
-                .source_bytes
-                .iter()
-                .map(|(face_id, bytes)| RuntimePackageSourceFontFace {
-                    font_face_id: face_id.clone(),
-                    face_index: 0,
-                    source_digest: sha256_prefixed(bytes),
-                    bytes: bytes.clone(),
-                })
-                .collect(),
+            font_face_sources: cook.font_face_sources.clone(),
         })
     }
 }
@@ -481,7 +489,7 @@ mod tests {
             hinted_variants: variants,
             msdf_variants: Vec::new(),
             kerning_adjustments: Vec::new(),
-            source_bytes: std::collections::BTreeMap::new(),
+            font_face_sources: Vec::new(),
             primary_atlas: RuntimePackageSourceFontAtlas {
                 metadata: CookedFontAtlasAsset {
                     schema_version: COOKED_FONT_ATLAS_SCHEMA_VERSION.to_string(),

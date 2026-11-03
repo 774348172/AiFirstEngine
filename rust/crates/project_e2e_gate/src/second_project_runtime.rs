@@ -197,10 +197,7 @@ pub fn run_second_project_runtime_report(
     let frame = host.tick_with_runtime_context(
         EngineFrameInput::new(EngineHostMode::EditorPlay).with_aui_interaction(interaction),
         &mut world,
-        RuntimeFrameContext {
-            package: &package,
-            instance_loader: hydrator.instance_loader_mut(),
-        },
+        RuntimeFrameContext::new(&package, hydrator.instance_loader_mut()),
     );
     report.session_frame_report = frame.project_runtime_session_report.clone();
     report.evidence.observation_published = matches!(

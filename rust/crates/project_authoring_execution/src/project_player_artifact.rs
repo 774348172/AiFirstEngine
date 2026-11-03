@@ -18,24 +18,82 @@ use std::time::Duration;
 
 mod engine_player;
 mod incremental;
+pub(crate) use incremental::cargo_target_directory;
 
 pub const PROJECT_PLAYER_ARTIFACT_SCHEMA_VERSION: &str = "project-player-artifact.v1";
 pub const PROJECT_RUNTIME_PLAYER_ARTIFACT_BUILD_REQUEST_SCHEMA_VERSION: &str =
-    "project-runtime-player-artifact-build-request.v1";
+    "project-runtime-player-artifact-build-request.v2";
 pub const PROJECT_RUNTIME_PLAYER_ARTIFACT_BUILD_REPORT_SCHEMA_VERSION: &str =
-    "project-runtime-player-artifact-build-report.v1";
+    "project-runtime-player-artifact-build-report.v2";
 
 const DEFAULT_BUILD_TIMEOUT_MS: u64 = 300_000;
+
+fn effective_build_timeout_ms(requested: u64) -> u64 {
+    requested.max(1)
+}
 const DEFAULT_CAPTURE_LIMIT_BYTES: usize = 1024 * 1024;
 const fn default_compile_tests() -> bool {
     true
 }
-const ENGINE_PLAYER_RUNTIME_CRATES: [&str; 8] = [
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ProjectRuntimePlayerArtifactBuildProfile {
+    #[default]
+    Dev,
+    Release,
+}
+
+impl ProjectRuntimePlayerArtifactBuildProfile {
+    fn cargo_output_dir(self) -> &'static str {
+        match self {
+            Self::Dev => "debug",
+            Self::Release => "release",
+        }
+    }
+
+    fn cargo_incremental(self) -> &'static str {
+        match self {
+            Self::Dev => "1",
+            Self::Release => "0",
+        }
+    }
+
+    fn identity(self) -> &'static str {
+        match self {
+            Self::Dev => "dev",
+            Self::Release => "release",
+        }
+    }
+}
+
+fn project_module_build_args(
+    profile: ProjectRuntimePlayerArtifactBuildProfile,
+) -> Vec<&'static str> {
+    let mut args = vec!["build"];
+    if profile == ProjectRuntimePlayerArtifactBuildProfile::Release {
+        args.push("--release");
+    }
+    args.extend([
+        "--manifest-path",
+        "Cargo.toml",
+        "--locked",
+        "--offline",
+        "--message-format=json",
+    ]);
+    args
+}
+const ENGINE_PLAYER_RUNTIME_CRATES: [&str; 13] = [
     "project_game_sdk",
     "project_runtime_sdk",
     "project_runtime_abi",
     "engine_input",
     "engine_runtime",
+    "engine_runtime_core",
+    "engine_render_native",
+    "engine_render_resources",
+    "engine_content",
+    "engine_text",
     "engine_runtime_host",
     "runtime_cli",
     "runtime_player_winit",
@@ -63,12 +121,14 @@ pub struct ProjectRuntimePlayerArtifactBuildRequest {
     pub cargo_executable: Option<PathBuf>,
     pub step_timeout_ms: u64,
     pub capture_limit_bytes: usize,
+    #[serde(default)]
+    pub build_profile: ProjectRuntimePlayerArtifactBuildProfile,
     #[serde(default = "default_compile_tests")]
     pub compile_tests: bool,
     #[serde(skip)]
     pub prepared_runtime_glue: Option<crate::PreparedRuntimeGlue>,
     #[serde(skip)]
-    pub(crate) prepared_source: Option<crate::CompilerSourceView>,
+    pub(crate) prepared_source: Option<std::sync::Arc<crate::CompilerSourceView>>,
 }
 
 impl ProjectRuntimePlayerArtifactBuildRequest {
@@ -87,6 +147,7 @@ impl ProjectRuntimePlayerArtifactBuildRequest {
             cargo_executable: None,
             step_timeout_ms: DEFAULT_BUILD_TIMEOUT_MS,
             capture_limit_bytes: DEFAULT_CAPTURE_LIMIT_BYTES,
+            build_profile: ProjectRuntimePlayerArtifactBuildProfile::Dev,
             compile_tests: true,
             prepared_runtime_glue: None,
             prepared_source: None,
@@ -100,6 +161,11 @@ impl ProjectRuntimePlayerArtifactBuildRequest {
 
     pub fn with_compile_tests(mut self, enabled: bool) -> Self {
         self.compile_tests = enabled;
+        self
+    }
+
+    pub fn with_build_profile(mut self, profile: ProjectRuntimePlayerArtifactBuildProfile) -> Self {
+        self.build_profile = profile;
         self
     }
 
@@ -142,6 +208,7 @@ pub struct ProjectRuntimePlayerArtifactBuildReport {
     pub project_root: String,
     pub engine_sdk_root: String,
     pub build_root: String,
+    pub build_profile: ProjectRuntimePlayerArtifactBuildProfile,
     pub artifact_root: Option<String>,
     pub source_digest: Option<String>,
     pub engine_sdk_digest: Option<String>,
@@ -162,6 +229,10 @@ pub struct ProjectRuntimePlayerArtifactBuildReport {
     pub engine_player_identity: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub engine_player_cache_status: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub engine_player_cache_miss_reason: Option<String>,
+    #[serde(default, skip_serializing_if = "std::collections::BTreeMap::is_empty")]
+    pub build_input_fingerprints: std::collections::BTreeMap<String, String>,
     #[serde(default)]
     pub cargo_fresh_artifacts: usize,
     #[serde(default)]
@@ -326,6 +397,7 @@ fn build_project_rust_report(
         project_root: request.project_root.display().to_string(),
         engine_sdk_root: request.engine_sdk_root.display().to_string(),
         build_root: request.build_root.display().to_string(),
+        build_profile: request.build_profile,
         artifact_root: None,
         source_digest: None,
         engine_sdk_digest: None,
@@ -338,6 +410,8 @@ fn build_project_rust_report(
         compile_workspace: None,
         engine_player_identity: None,
         engine_player_cache_status: None,
+        engine_player_cache_miss_reason: None,
+        build_input_fingerprints: Default::default(),
         cargo_fresh_artifacts: 0,
         cargo_rebuilt_artifacts: 0,
         host_manifest_path: None,
@@ -505,6 +579,24 @@ fn build_project_rust_inner(
             "gnu"
         }
     );
+    if request.build_profile == ProjectRuntimePlayerArtifactBuildProfile::Release
+        && [
+            "RUSTFLAGS",
+            "CARGO_ENCODED_RUSTFLAGS",
+            "CARGO_BUILD_RUSTFLAGS",
+        ]
+        .iter()
+        .any(|key| std::env::var_os(key).is_some_and(|value| !value.is_empty()))
+    {
+        return Err(ProjectPlayerArtifactError::new("project_runtime.release_flags_unsupported", "Release qualification requires the frozen compiler flags; ambient Rust flags are unsupported."));
+    }
+    let cargo = incremental::resolve_cargo(
+        request.cargo_executable.as_deref(),
+        std::env::var_os("CARGO").as_deref(),
+        std::env::var_os("PATH").as_deref(),
+        channel,
+        &source.sdk_root,
+    )?;
     let environment_identity: std::collections::BTreeMap<_, _> = std::env::vars()
         .filter(|(name, _)| {
             name.starts_with("CARGO_")
@@ -512,10 +604,37 @@ fn build_project_rust_inner(
                 || matches!(name.as_str(), "PATH" | "LIB" | "INCLUDE" | "CC" | "CXX")
         })
         .collect();
+    let environment_identity = incremental::effective_environment_identity(
+        &environment_identity,
+        channel,
+        &host_target,
+        request.build_profile,
+    );
+    report.build_input_fingerprints = environment_identity
+        .iter()
+        .map(|(name, value)| {
+            (
+                format!("environment.{name}"),
+                sha256_prefixed(value.as_bytes()),
+            )
+        })
+        .chain([
+            (
+                "cargo".into(),
+                sha256_prefixed(cargo.to_string_lossy().as_bytes()),
+            ),
+            ("toolchain".into(), sha256_prefixed(channel.as_bytes())),
+            ("target".into(), sha256_prefixed(host_target.as_bytes())),
+            (
+                "profile".into(),
+                sha256_prefixed(request.build_profile.identity().as_bytes()),
+            ),
+        ])
+        .collect();
     let compatibility_key = incremental::compatibility_key(
         &project_root,
         &source,
-        &request.cargo_executable,
+        &Some(cargo.clone()),
         channel,
         &host_target,
         &environment_identity,
@@ -524,7 +643,7 @@ fn build_project_rust_inner(
     report.compile_workspace = Some(workspace.root.display().to_string());
     let artifact_key = sha256_prefixed(
         format!(
-            "{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}",
+            "{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}",
             source.manifest.project_id,
             source_digest,
             engine_sdk_digest,
@@ -532,6 +651,7 @@ fn build_project_rust_inner(
             source.runtime_player_winit_root.display(),
             request.expected_module.interface_version,
             request.expected_module.aot_content_digest,
+            request.build_profile.identity(),
             source.normalized_manifest_digest,
             source.normalized_dependency_digest,
             source.trusted_lock_digest,
@@ -544,7 +664,11 @@ fn build_project_rust_inner(
         .as_bytes(),
     );
     let artifact_key = sha256_prefixed(
-        format!("fixed-engine-player.v1|{artifact_key}|{compatibility_key}").as_bytes(),
+        format!(
+            "fixed-engine-player.v2:{}|{artifact_key}|{compatibility_key}",
+            request.build_profile.identity()
+        )
+        .as_bytes(),
     );
     let artifact_key_hex = artifact_key.trim_start_matches("sha256:");
     let artifact_root = build_root.join(format!("a-{}", &artifact_key_hex[..24]));
@@ -652,36 +776,20 @@ fn build_project_rust_inner(
     workspace.sync(&staging_root)?;
     let compile_root = &workspace.root;
 
-    let cargo = request
-        .cargo_executable
-        .clone()
-        .or_else(|| std::env::var_os("CARGO").map(PathBuf::from))
-        .unwrap_or_else(|| PathBuf::from("cargo"));
-    let timeout_ms = request.step_timeout_ms.max(1).min(600_000);
+    let timeout_ms = effective_build_timeout_ms(request.step_timeout_ms);
     let capture_limit = request.capture_limit_bytes.max(1).min(1024 * 1024);
     let target_root = compile_root.join("target");
-    let environment = vec![
-        (
-            OsString::from("CARGO_TARGET_DIR"),
-            target_root.clone().into_os_string(),
-        ),
-        (OsString::from("CARGO_NET_OFFLINE"), OsString::from("true")),
-        (OsString::from("CARGO_INCREMENTAL"), OsString::from("1")),
-        (OsString::from("RUSTUP_AUTO_INSTALL"), OsString::from("0")),
-        (OsString::from("RUSTUP_TOOLCHAIN"), OsString::from(channel)),
-        (
-            OsString::from("CARGO_BUILD_TARGET"),
-            OsString::from(&host_target),
-        ),
-        (
-            OsString::from("CARGO_PROFILE_DEV_DEBUG"),
-            OsString::from("0"),
-        ),
-        (
-            OsString::from("AIFE_PROJECT_RUNTIME_AOT_DIGEST"),
-            OsString::from(&request.expected_module.aot_content_digest),
-        ),
-    ];
+    let mut environment = incremental::child_build_environment(
+        &target_root,
+        channel,
+        &host_target,
+        request.build_profile,
+    );
+    environment.push((
+        OsString::from("AIFE_PROJECT_RUNTIME_AOT_DIGEST"),
+        OsString::from(&request.expected_module.aot_content_digest),
+    ));
+
     run_required_cargo_step(
         report,
         "validate_project_runtime_format",
@@ -737,18 +845,11 @@ fn build_project_rust_inner(
         timeout_ms,
         capture_limit,
     )?;
-    run_required_cargo_step(
+    run_required_cargo_step_slice(
         report,
         "build_project_runtime_module",
         &cargo,
-        [
-            "build",
-            "--manifest-path",
-            "Cargo.toml",
-            "--locked",
-            "--offline",
-            "--message-format=json",
-        ],
+        &project_module_build_args(request.build_profile),
         &module_root,
         &environment,
         timeout_ms,
@@ -765,6 +866,7 @@ fn build_project_rust_inner(
         channel,
         &host_target,
         &environment_identity,
+        request.build_profile,
         timeout_ms,
         capture_limit,
     )?;
@@ -773,6 +875,7 @@ fn build_project_rust_inner(
         &host_target,
         &staging_root,
         &module_library,
+        request.build_profile,
     )?;
     let (staged_artifact, describe_process) = inspect_with_process(
         staged_executable.clone(),
@@ -883,6 +986,7 @@ fn ensure_project_runtime_module_dll(
     host_target: &str,
     staging_root: &Path,
     module_library: &str,
+    build_profile: ProjectRuntimePlayerArtifactBuildProfile,
 ) -> Result<(), ProjectPlayerArtifactError> {
     let name = module_library;
     let file_name = if cfg!(windows) {
@@ -890,15 +994,19 @@ fn ensure_project_runtime_module_dll(
     } else {
         format!("lib{name}.so")
     };
+    let output_dir = build_profile.cargo_output_dir();
     let candidates = [
-        target_root.join(host_target).join("debug").join(&file_name),
         target_root
             .join(host_target)
-            .join("debug")
+            .join(output_dir)
+            .join(&file_name),
+        target_root
+            .join(host_target)
+            .join(output_dir)
             .join("deps")
             .join(&file_name),
-        target_root.join("debug").join(&file_name),
-        target_root.join("debug").join("deps").join(&file_name),
+        target_root.join(output_dir).join(&file_name),
+        target_root.join(output_dir).join("deps").join(&file_name),
     ];
     let source = candidates
         .iter()
@@ -958,6 +1066,28 @@ fn run_required_cargo_step<const N: usize>(
     stage: &str,
     cargo: &Path,
     args: [&str; N],
+    current_dir: &Path,
+    environment: &[(OsString, OsString)],
+    timeout_ms: u64,
+    capture_limit: usize,
+) -> Result<(), ProjectPlayerArtifactError> {
+    run_required_cargo_step_slice(
+        report,
+        stage,
+        cargo,
+        &args,
+        current_dir,
+        environment,
+        timeout_ms,
+        capture_limit,
+    )
+}
+
+fn run_required_cargo_step_slice(
+    report: &mut ProjectRuntimePlayerArtifactBuildReport,
+    stage: &str,
+    cargo: &Path,
+    args: &[&str],
     current_dir: &Path,
     environment: &[(OsString, OsString)],
     timeout_ms: u64,
@@ -1116,6 +1246,11 @@ fn engine_sdk_source_digest(sdk_root: &Path) -> Result<String, ProjectPlayerArti
         let crate_root = crates_root.join(crate_name);
         collect_engine_sdk_sources(&crate_root, &crate_root, &mut files)?;
     }
+    #[cfg(feature = "spine")]
+    {
+        let root = crates_root.join("engine_spine_runtime");
+        collect_engine_sdk_sources(&root, &root, &mut files)?;
+    }
     files.sort();
     if files.is_empty() {
         return Err(ProjectPlayerArtifactError::new(
@@ -1187,7 +1322,12 @@ fn collect_engine_sdk_sources(
         } else if path
             .extension()
             .and_then(OsStr::to_str)
-            .is_some_and(|extension| matches!(extension, "rs" | "toml" | "json" | "wgsl"))
+            .is_some_and(|extension| {
+                matches!(extension, "rs" | "toml" | "json" | "wgsl")
+                    || (cfg!(feature = "spine")
+                        && crates_root.file_name() == Some(OsStr::new("engine_spine_runtime"))
+                        && matches!(extension, "cpp" | "cc" | "c" | "h" | "hpp"))
+            })
         {
             files.push(path);
         }
@@ -1418,6 +1558,70 @@ impl std::error::Error for ProjectPlayerArtifactError {}
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn retained_compiler_source_is_shared_across_player_build_requests() {
+        for size in [16, 1024, 65536, 1048576] {
+            let view = crate::CompilerSourceView {
+                files: std::collections::BTreeMap::from([
+                    ("Assets/mesh.asset".into(), vec![b'x'; size]),
+                    (
+                        "RuntimeModule/src/lib.rs".into(),
+                        b"original module".to_vec(),
+                    ),
+                ]),
+            };
+            let mut request = ProjectRuntimePlayerArtifactBuildRequest::new(
+                "unused-project",
+                "unused-sdk",
+                RuntimeProjectModuleRef::explicit_empty(),
+            );
+            request.prepared_source = Some(view.into());
+            let next = request.clone();
+            for path in ["Assets/mesh.asset", "RuntimeModule/src/lib.rs"] {
+                let old = request
+                    .prepared_source
+                    .as_ref()
+                    .unwrap()
+                    .bytes(path)
+                    .unwrap();
+                let new = next.prepared_source.as_ref().unwrap().bytes(path).unwrap();
+                assert_eq!(
+                    old.as_ptr(),
+                    new.as_ptr(),
+                    "cloning a build request copied frozen source backing at {size}: {path}"
+                );
+                assert_eq!(old, new);
+            }
+            drop(request);
+            assert_eq!(
+                next.prepared_source
+                    .as_ref()
+                    .unwrap()
+                    .bytes("Assets/mesh.asset")
+                    .unwrap()
+                    .len(),
+                size
+            );
+            assert_eq!(
+                next.prepared_source
+                    .as_ref()
+                    .unwrap()
+                    .bytes("RuntimeModule/src/lib.rs"),
+                Some(b"original module".as_slice())
+            );
+        }
+    }
+
+    #[test]
+    fn explicit_native_build_budget_is_not_silently_shortened() {
+        assert_eq!(effective_build_timeout_ms(1_200_000), 1_200_000);
+        assert_eq!(
+            effective_build_timeout_ms(DEFAULT_BUILD_TIMEOUT_MS),
+            300_000
+        );
+        assert_eq!(effective_build_timeout_ms(0), 1);
+    }
     use std::time::{SystemTime, UNIX_EPOCH};
 
     #[cfg(windows)]
@@ -1446,6 +1650,8 @@ mod tests {
     fn project_player_artifact_cache_identity_tracks_engine_sdk_sources() {
         let root = temp_root("project-runtime-player-sdk-digest");
         let sdk = root.join("sdk");
+        #[cfg(feature = "spine")]
+        fs::create_dir_all(sdk.join("crates/engine_spine_runtime/src")).unwrap();
         for crate_name in ENGINE_PLAYER_RUNTIME_CRATES {
             fs::create_dir_all(sdk.join("crates").join(crate_name).join("src")).unwrap();
             fs::write(
@@ -1476,6 +1682,44 @@ mod tests {
         let after = engine_sdk_source_digest(&sdk).unwrap();
 
         assert_ne!(before, after);
+        for relative in [
+            "crates/project_runtime_sdk/src/spatial.rs",
+            "crates/engine_runtime/src/project_runtime_session/structural.rs",
+            "crates/engine_runtime_core/src/render_geometry/build_inputs.rs",
+            "crates/engine_render_native/src/wgpu_backend/real/geometry.rs",
+            "crates/engine_content/src/canonical_digest.rs",
+            "crates/engine_render_resources/src/render_resource.rs",
+            "crates/engine_text/src/font_bundle.rs",
+        ] {
+            let path = sdk.join(relative);
+            fs::create_dir_all(path.parent().unwrap()).unwrap();
+            fs::write(&path, b"pub fn spatial_revision() {}\n").unwrap();
+            let added = engine_sdk_source_digest(&sdk).unwrap();
+            fs::write(&path, b"pub fn spatial_revision_changed() {}\n").unwrap();
+            assert_ne!(
+                added,
+                engine_sdk_source_digest(&sdk).unwrap(),
+                "nested production source must invalidate Host cache: {relative}"
+            );
+        }
+        #[cfg(feature = "spine")]
+        for relative in [
+            "crates/engine_spine_runtime/src/import.rs",
+            "crates/engine_spine_runtime/build.rs",
+            "crates/engine_spine_runtime/vendor/spine-cpp/src/spine/AnimationState.cpp",
+            "crates/engine_spine_runtime/vendor/spine-cpp/include/spine/Skeleton.h",
+        ] {
+            let path = sdk.join(relative);
+            fs::create_dir_all(path.parent().unwrap()).unwrap();
+            fs::write(&path, b"first").unwrap();
+            let before = engine_sdk_source_digest(&sdk).unwrap();
+            fs::write(&path, b"second").unwrap();
+            assert_ne!(
+                before,
+                engine_sdk_source_digest(&sdk).unwrap(),
+                "backend build input: {relative}"
+            );
+        }
         let _ = fs::remove_dir_all(root);
     }
 
@@ -1609,5 +1853,25 @@ mod tests {
             PathBuf::from("C:/Temp"),
         );
         assert_eq!(explicit, PathBuf::from("G:/run-owned/player-artifacts"));
+    }
+
+    #[test]
+    fn project_module_release_profile_is_explicit_and_dev_remains_default() {
+        let request = ProjectRuntimePlayerArtifactBuildRequest::new(
+            "project",
+            "sdk",
+            RuntimeProjectModuleRef::explicit_empty(),
+        );
+        assert_eq!(
+            request.build_profile,
+            ProjectRuntimePlayerArtifactBuildProfile::Dev
+        );
+        assert!(!project_module_build_args(request.build_profile).contains(&"--release"));
+        let release = request.with_build_profile(ProjectRuntimePlayerArtifactBuildProfile::Release);
+        assert!(project_module_build_args(release.build_profile).contains(&"--release"));
+        assert_eq!(
+            serde_json::to_value(&release).unwrap()["buildProfile"],
+            "release"
+        );
     }
 }

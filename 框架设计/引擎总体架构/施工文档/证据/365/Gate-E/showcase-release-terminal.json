@@ -1,0 +1,102 @@
+{
+  "schemaVersion": "release-package-report.v1",
+  "status": "success",
+  "reportLevel": "trace",
+  "projectId": "aui-presentation-showcase-365",
+  "profile": "release",
+  "target": "windows",
+  "architecture": "x86_64",
+  "displayName": "AUI Presentation Showcase",
+  "displayVersion": "1.0.0",
+  "entrypoint": "AuiPresentation365.exe",
+  "runtimePackage": "data/runtime_package",
+  "reportPath": "G:/gameEngin/samples/aui_presentation_showcase_project\\.aife/reports/release-package/latest.json",
+  "outputDir": "G:/gameEngin/samples/aui_presentation_showcase_project\\Build\\Windows\\x86_64\\release\\AuiPresentation365",
+  "manifestPath": "G:/gameEngin/samples/aui_presentation_showcase_project\\Build\\Windows\\x86_64\\release\\AuiPresentation365\\package-manifest.json",
+  "runtimeContentHash": "sha256:ca7161faa35f34f1d263a82cb12800022887102a7fa89433a41c15a3a1bc3500",
+  "releasePayloadHash": "sha256:68939178550efbff0faec5fd2c2c9398111cd2f2b90a01c33d02cbffd515682b",
+  "payloadFileCount": 22,
+  "resourceReadback": {
+    "productName": "AUI Presentation Showcase",
+    "companyName": "AI First Engine Studio",
+    "fileDescription": "AUI presentation showcase",
+    "productVersion": "1.0.0",
+    "fileVersion": "1.0.0.0",
+    "copyright": "Copyright AI First Engine Studio",
+    "originalFilename": "AuiPresentation365.exe",
+    "fixedFileVersion": [
+      1,
+      0,
+      0,
+      0
+    ],
+    "fixedProductVersion": [
+      1,
+      0,
+      0,
+      0
+    ],
+    "iconSizes": [
+      16,
+      32,
+      48,
+      64,
+      128,
+      256
+    ],
+    "manifestPresent": true
+  },
+  "application": {
+    "displayName": "AUI Presentation Showcase",
+    "executableName": "AuiPresentation365",
+    "companyName": "AI First Engine Studio",
+    "displayVersion": "1.0.0"
+  },
+  "runtime": {
+    "relativePath": "data/runtime_package",
+    "contentHash": "sha256:ca7161faa35f34f1d263a82cb12800022887102a7fa89433a41c15a3a1bc3500",
+    "formalLoadPassed": true
+  },
+  "entrypointEvidence": {
+    "relativePath": "AuiPresentation365.exe",
+    "exists": true,
+    "roleVerified": true
+  },
+  "resource": {
+    "stampReadbackVerified": true,
+    "iconSizes": [
+      16,
+      32,
+      48,
+      64,
+      128,
+      256
+    ]
+  },
+  "layout": {
+    "kind": "portable-directory-v1",
+    "portable": true,
+    "includeReports": false,
+    "payloadFileCount": 22
+  },
+  "payloadHash": {
+    "algorithm": "sha256",
+    "value": "sha256:68939178550efbff0faec5fd2c2c9398111cd2f2b90a01c33d02cbffd515682b",
+    "verified": true
+  },
+  "verification": {
+    "manifestValid": true,
+    "inventoryValid": true,
+    "runtimeLoadPassed": true,
+    "resourceReadbackPassed": true,
+    "publishValidated": true,
+    "explicitProcessStatus": "passed",
+    "explicitProcessPassed": true,
+    "processExitCode": 0,
+    "childPlayerExitCode": 0,
+    "childFramesCompleted": 3,
+    "processReportPath": "G:/gameEngin/samples/aui_presentation_showcase_project\\.aife/reports/release-package\\process-verification.json"
+  },
+  "diagnostics": [],
+  "nextAction": "Release package is ready at the published output directory."
+}

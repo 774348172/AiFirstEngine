@@ -1,0 +1,21 @@
+{
+  "schemaVersion": "aife-project.v2",
+  "projectId": "project-switch-puzzle-sample",
+  "projectName": "Switch Puzzle Sample",
+  "engineVersion": "0.1.0",
+  "createdAt": "2026-07-11T00:00:00Z",
+  "lastOpenedAt": null,
+  "defaultScene": "Scenes/Main.scene.json",
+  "assetRoot": "Assets",
+  "settingsVersion": "aife-project-settings.v1",
+  "observationContract": "Observations/project.observations.json",
+  "runtimeModule": {
+    "sourceKind": "projectRust",
+    "moduleId": "sample.switch-puzzle.runtime",
+    "interfaceVersion": "project-runtime-module.v2",
+    "cargoManifest": "RuntimeModule/Cargo.toml",
+    "cargoPackage": "switch_puzzle_project_runtime",
+    "playerBinary": "switch_puzzle_player",
+    "projectGameSdk": "project-game-sdk.v1"
+  }
+}

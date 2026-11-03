@@ -31,6 +31,24 @@ mod verification_policy_tests {
     use super::*;
 
     #[test]
+    fn player_verification_timeout_does_not_shorten_native_build_budget() {
+        for player_timeout in [1, 30_000, 600_000] {
+            let mut request = DesktopExportRequest::windows_dev("owned-test-project")
+                .with_player_timeout_ms(player_timeout);
+            request.profile = "release".into();
+            let artifact =
+                request.project_artifact_build_request(RuntimeProjectModuleRef::explicit_empty());
+            assert_eq!(artifact.step_timeout_ms, 300_000u64.max(player_timeout));
+            assert_eq!(request.player_timeout_ms, player_timeout);
+            assert_eq!(
+                artifact.build_profile,
+                crate::ProjectRuntimePlayerArtifactBuildProfile::Release
+            );
+            assert!(artifact.compile_tests);
+        }
+    }
+
+    #[test]
     fn default_verification_survives_deserialization_and_can_be_disabled_internally() {
         let request = DesktopExportRequest::windows_dev("nonexistent-test-project");
         assert!(request.verify_player);
@@ -196,6 +214,32 @@ impl DesktopExportRequest {
         self
     }
 
+    fn project_artifact_build_request(
+        &self,
+        expected_module: RuntimeProjectModuleRef,
+    ) -> crate::ProjectRuntimePlayerArtifactBuildRequest {
+        let mut build = crate::ProjectRuntimePlayerArtifactBuildRequest::new(
+            &self.project_root,
+            crate::default_engine_sdk_root(),
+            expected_module,
+        );
+        // A short Player verification limit must not shorten the artifact
+        // owner's compilation budget. Preserve existing explicit long export
+        // timeouts; the low-level builder still accepts its own exact budget.
+        build.step_timeout_ms = build.step_timeout_ms.max(self.player_timeout_ms);
+        build = build
+            .with_compile_tests(self.verify_player)
+            .with_build_profile(if self.profile == "release" {
+                crate::ProjectRuntimePlayerArtifactBuildProfile::Release
+            } else {
+                crate::ProjectRuntimePlayerArtifactBuildProfile::Dev
+            });
+        if let Some(build_root) = &self.player_artifact_build_root {
+            build = build.with_build_root(build_root);
+        }
+        build
+    }
+
     #[doc(hidden)]
     pub fn with_project_relative_output(mut self, output: crate::ProjectRelativePath) -> Self {
         self.output_root = self.project_root.join(output.as_path());
@@ -336,7 +380,7 @@ impl DesktopExportPipeline {
             request,
             Some(prepared.runtime_package_build_input()),
             prepared.generated_runtime_glue(),
-            Some(prepared.source()),
+            Some(prepared.retained_source()),
         )
     }
 
@@ -346,7 +390,7 @@ impl DesktopExportPipeline {
             &engine_runtime::runtime_package_builder::RuntimePackageBuildInput,
         >,
         prepared_runtime_glue: Option<&crate::PreparedRuntimeGlue>,
-        prepared_source: Option<&crate::CompilerSourceView>,
+        prepared_source: Option<&std::sync::Arc<crate::CompilerSourceView>>,
     ) -> DesktopExportReport {
         let package_dir = request.package_dir();
         let data_dir = package_dir.join("data");
@@ -465,7 +509,11 @@ impl DesktopExportPipeline {
                     &desktop_report_path,
                 );
             };
-            (runtime_input.clone(), active_scene_id, request.frame_limit)
+            (
+                std::borrow::Cow::Borrowed(runtime_input),
+                active_scene_id,
+                request.frame_limit,
+            )
         } else {
             let assembly_request =
                 ProjectRuntimePackageAssemblyRequest::new(&request.project_root)
@@ -519,11 +567,82 @@ impl DesktopExportPipeline {
                 .as_ref()
                 .map(|profile| profile.frame_limit)
                 .unwrap_or(request.frame_limit);
-            (runtime_input, active_scene_id, frame_limit)
+            (
+                std::borrow::Cow::Owned(runtime_input),
+                active_scene_id,
+                frame_limit,
+            )
         };
-        let package_request =
+        let mut package_request =
             RuntimePackageBuildRequest::dev_desktop(&runtime_package_dir, active_scene_id);
+        if request.profile == "release" {
+            package_request.target = "windows-release".into();
+            package_request.mode = "release".into();
+            package_request.include_debug_readable_json = false;
+        }
         let runtime_report = RuntimePackageBuilder::build(&package_request, &runtime_input);
+        diagnostics.extend(runtime_report.diagnostics.iter().map(|diagnostic| {
+            use engine_runtime::runtime_package_builder::RuntimePackageDiagnosticSeverity;
+            DesktopExportDiagnostic {
+                severity: match diagnostic.severity {
+                    RuntimePackageDiagnosticSeverity::Info => DesktopExportDiagnosticSeverity::Info,
+                    RuntimePackageDiagnosticSeverity::Warning => {
+                        DesktopExportDiagnosticSeverity::Warning
+                    }
+                    RuntimePackageDiagnosticSeverity::Error => {
+                        DesktopExportDiagnosticSeverity::Error
+                    }
+                },
+                code: diagnostic.code.clone(),
+                message: diagnostic.message.clone(),
+                path: diagnostic.path.clone(),
+                suggestion: diagnostic.suggestion.clone(),
+            }
+        }));
+        if runtime_report.status != RuntimePackageBuildStatus::Success {
+            // Validation can fail before the package is published. Keep failure
+            // evidence outside its transactional payload, and do not build a Player.
+            let failure_report_path = reports_dir.join("build-runtime-package-report.json");
+            let failure_report_ref =
+                match write_export_json(&request, &failure_report_path, &runtime_report) {
+                    Ok(()) => failure_report_path.display().to_string(),
+                    Err(error) => {
+                        diagnostics.push(
+                            DesktopExportDiagnostic::error(
+                                "RuntimePackageReportWriteFailed",
+                                format!("Failed to save runtime package failure report: {error}"),
+                            )
+                            .with_path(failure_report_path.display().to_string()),
+                        );
+                        String::new()
+                    }
+                };
+            return write_final_report(
+                &request,
+                DesktopExportReport {
+                    schema_version: DESKTOP_EXPORT_REPORT_SCHEMA_VERSION.to_string(),
+                    status: DesktopExportStatus::Failed,
+                    target: request.target.as_str().to_string(),
+                    profile: request.profile.clone(),
+                    project_root: request.project_root.display().to_string(),
+                    package_dir: package_dir.display().to_string(),
+                    runtime_package_dir: runtime_package_dir.display().to_string(),
+                    package_manifest_path: package_manifest_path.display().to_string(),
+                    runtime_package_report_path: failure_report_ref,
+                    player_report_path: player_report_path.display().to_string(),
+                    player_executable: None,
+                    player_executable_status: "not_checked".to_string(),
+                    player_artifact_build_report_path: None,
+                    player_artifact_hash: None,
+                    player_module_descriptor: None,
+                    runtime_package_status: runtime_report.status,
+                    player_exit_code: None,
+                    player_exit_reason: "not_started".to_string(),
+                    diagnostics,
+                },
+                &desktop_report_path,
+            );
+        }
 
         let staged_player = stage_player_executable(
             &request,
@@ -724,7 +843,7 @@ fn stage_player_executable(
     package_dir: &Path,
     expected_module: &RuntimeProjectModuleRef,
     prepared_runtime_glue: Option<&crate::PreparedRuntimeGlue>,
-    prepared_source: Option<&crate::CompilerSourceView>,
+    prepared_source: Option<&std::sync::Arc<crate::CompilerSourceView>>,
     diagnostics: &mut Vec<DesktopExportDiagnostic>,
 ) -> Option<StagedProjectPlayer> {
     let project_manifest = match prepared_source {
@@ -735,19 +854,30 @@ fn stage_player_executable(
             .ok()
             .and_then(|bytes| serde_json::from_slice(&bytes).ok()),
     };
+    if !matches!(request.profile.as_str(), "dev" | "release") {
+        diagnostics.push(DesktopExportDiagnostic::error(
+            "BuildProfileUnsupported",
+            "Expected dev or release.",
+        ));
+        return None;
+    }
+    if request.profile == "release"
+        && !project_manifest.as_ref().is_some_and(|manifest| {
+            manifest.runtime_module.resolved_source_kind()
+                == crate::ProjectRuntimeSourceKind::ProjectRust
+        })
+    {
+        diagnostics.push(DesktopExportDiagnostic::error(
+            "ReleaseCompositionRequired",
+            "Release requires a Compiler-built ProjectRust Host/Engine/ProjectModule composition.",
+        ));
+        return None;
+    }
     let artifact = if project_manifest.as_ref().is_some_and(|manifest| {
         manifest.runtime_module.resolved_source_kind()
             == crate::ProjectRuntimeSourceKind::ProjectRust
     }) {
-        let mut build_request = crate::ProjectRuntimePlayerArtifactBuildRequest::new(
-            &request.project_root,
-            crate::default_engine_sdk_root(),
-            expected_module.clone(),
-        );
-        build_request = build_request.with_compile_tests(request.verify_player);
-        if let Some(build_root) = &request.player_artifact_build_root {
-            build_request = build_request.with_build_root(build_root);
-        }
+        let mut build_request = request.project_artifact_build_request(expected_module.clone());
         if let Some(glue) = prepared_runtime_glue {
             build_request = build_request.with_prepared_runtime_glue(glue.clone());
         }
@@ -762,7 +892,7 @@ fn stage_player_executable(
             }
             return None;
         }
-        let Some(artifact) = build.artifact else {
+        let Some(artifact) = build.artifact.clone() else {
             diagnostics.push(
                 DesktopExportDiagnostic::error(
                     "PlayerArtifactMissingAfterBuild",
@@ -772,6 +902,30 @@ fn stage_player_executable(
             );
             return None;
         };
+        if build.build_profile
+            != (if request.profile == "release" {
+                crate::ProjectRuntimePlayerArtifactBuildProfile::Release
+            } else {
+                crate::ProjectRuntimePlayerArtifactBuildProfile::Dev
+            })
+        {
+            diagnostics.push(DesktopExportDiagnostic::error(
+                "BuildProfileMismatch",
+                "Player build profile differs from delivery profile.",
+            ));
+            return None;
+        }
+        if let Err(error) = write_export_json(
+            request,
+            &package_dir.join("reports/player-artifact-build-report.json"),
+            &build,
+        ) {
+            diagnostics.push(DesktopExportDiagnostic::error(
+                "BuildReportCopyFailed",
+                error.to_string(),
+            ));
+            return None;
+        }
         artifact
     } else {
         let Some(source) = &request.player_executable else {

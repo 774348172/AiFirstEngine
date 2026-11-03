@@ -1,0 +1,106 @@
+{
+  "schemaVersion": "254-r2-fc0-baseline-red-test-report.v1",
+  "gate": "R2-FC0",
+  "recordedAt": "2026-07-22T15:00:24.7101650+08:00",
+  "status": "completed_expected_red",
+  "authorizationBoundary": {
+    "implementedFc1": false,
+    "productionCandidateOperationStarted": false,
+    "candidateIdCreated": false,
+    "activationIdCreated": false,
+    "attemptIdCreated": false,
+    "realCodexStarted": false,
+    "evaluationStarted": false
+  },
+  "source": {
+    "outerRoot": "H:\\gameEngin-worktrees\\254-r2-fc0-6ec4f62",
+    "branch": "codex/254-r2-fresh-candidate",
+    "baselineCommit": "6ec4f620beb6971e564eefd97ccba3b82c9f8ae2",
+    "baselineTree": "23bb9082a8fd4e3d656e3ce6f41c813ef9ceeb52",
+    "outerCleanBefore": true,
+    "outerStagedCleanBefore": true,
+    "gitlink": {
+      "path": "AiFirstEngine",
+      "mode": "160000",
+      "oid": "e332e0ba6d5c1b7772de57ef69804eebe28ea415",
+      "nestedRoot": "H:\\gameEngin-worktrees\\254-r2-fc0-6ec4f62\\AiFirstEngine",
+      "nestedHead": "e332e0ba6d5c1b7772de57ef69804eebe28ea415",
+      "nestedCleanBefore": true,
+      "nestedCleanAfter": true
+    }
+  },
+  "isolation": {
+    "cargoTargetDir": "H:\\gameEngin-target\\254-r2-fc0-6ec4f62",
+    "tempRoot": "H:\\gameEngin-temp\\254-r2-fc0-6ec4f62",
+    "evidenceRoot": "H:\\gameEngin-evidence\\254-r2-fc0-6ec4f62",
+    "allRootsFreshBefore": true,
+    "rootsMutuallyDistinct": true,
+    "rootsOutsideSource": true
+  },
+  "baseline": {
+    "legacyFreezerFailClosed": {
+      "command": "cargo test -p editor_host --test gateway_process legacy_candidate_freeze_preflight_mode_is_not_a_current_entry -- --nocapture",
+      "exitCode": 0,
+      "passed": 1,
+      "failed": 0
+    },
+    "publicGoalModuleSchema": {
+      "command": "cargo test -p ai_tool_gateway --test r2_goal_modules_public_schema -- --nocapture",
+      "exitCode": 0,
+      "passed": 3,
+      "failed": 0
+    }
+  },
+  "redTests": {
+    "files": [
+      {
+        "path": "rust/crates/editor_host/tests/gateway_process.rs",
+        "sha256": "0a8a38be80bbf0264c695d28d76e020c4174cf61f8db8109b14ebea2157aea07"
+      },
+      {
+        "path": "rust/crates/ai_tool_gateway/tests/r2_goal_modules_public_schema.rs",
+        "sha256": "bc765ca845a21f66660bff5aaa2b1bfe0d3f89f2d638da33593a3fbdde1c0fa3"
+      }
+    ],
+    "ownerCommand": {
+      "command": "cargo test -p editor_host --test gateway_process production_candidate -- --nocapture",
+      "exitCode": 101,
+      "passed": 0,
+      "failed": 3,
+      "expectedRed": true,
+      "commonFirstDiagnostic": "editor_host.unknown_argument: --production-candidate-request",
+      "failureOwner": "missing production-owned editor_host argument entry",
+      "unexpectedBaselineFailure": false
+    },
+    "schemaCommand": {
+      "command": "cargo test -p ai_tool_gateway --test r2_goal_modules_public_schema -- --nocapture",
+      "exitCode": 0,
+      "passed": 4,
+      "failed": 0
+    },
+    "postRedLegacyFailClosed": {
+      "command": "cargo test -p editor_host --test gateway_process legacy_candidate_freeze_preflight_mode_is_not_a_current_entry -- --nocapture",
+      "exitCode": 0,
+      "passed": 1,
+      "failed": 0
+    },
+    "coveredContracts": [
+      "strict declarative request decode",
+      "unknown recipe field rejection",
+      "activation evaluation and attempt field rejection",
+      "absolute request and result paths",
+      "duplicate argument rejection",
+      "fresh result path",
+      "resource root non-overlap",
+      "owner invocation count equals one",
+      "module invocation count equals one",
+      "retry count equals zero",
+      "sealed and failed terminal dispositions",
+      "failed disposition has no candidate identity",
+      "legacy candidate freezer remains fail-closed"
+    ]
+  },
+  "nextAuthorizedAction": "none_in_fc0",
+  "nextConstructionGate": "R2-FC1",
+  "stopReason": "R2-FC0 scope completed; production owner implementation is intentionally absent."
+}

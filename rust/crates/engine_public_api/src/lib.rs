@@ -39,12 +39,18 @@ pub extern "C" fn aife_engine_api_info_v1() -> EngineApiInfo {
 
 #[unsafe(no_mangle)]
 pub extern "C" fn aife_engine_runtime_start_v1() -> EngineApiResult {
-    EngineApiResult { status: ENGINE_OK, detail_code: 0 }
+    EngineApiResult {
+        status: ENGINE_OK,
+        detail_code: 0,
+    }
 }
 
 #[unsafe(no_mangle)]
 pub extern "C" fn aife_engine_runtime_stop_v1() -> EngineApiResult {
-    EngineApiResult { status: ENGINE_OK, detail_code: 0 }
+    EngineApiResult {
+        status: ENGINE_OK,
+        detail_code: 0,
+    }
 }
 
 pub fn compatible_with(required_major: u32, required_minor: u32) -> bool {
@@ -60,7 +66,10 @@ mod tests {
     fn public_api_has_stable_version_and_layout() {
         let info = aife_engine_api_info_v1();
         assert_eq!(info.api_major, ENGINE_API_MAJOR);
-        assert_eq!(info.struct_size as usize, std::mem::size_of::<EngineApiInfo>());
+        assert_eq!(
+            info.struct_size as usize,
+            std::mem::size_of::<EngineApiInfo>()
+        );
         assert_eq!(aife_engine_runtime_start_v1().status, ENGINE_OK);
         assert_eq!(aife_engine_runtime_stop_v1().status, ENGINE_OK);
         assert!(compatible_with(1, 0));

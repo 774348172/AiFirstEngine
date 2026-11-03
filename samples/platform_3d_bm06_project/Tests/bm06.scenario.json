@@ -1,0 +1,256 @@
+{
+  "schemaVersion": "playtest-scenario.v2",
+  "scenarioId": "bm06.full-body-population.functional",
+  "initialSceneId": "main",
+  "target": "windows-windowed",
+  "maxSimulationTicks": 1200,
+  "maxPresentationFrames": 1200,
+  "timeoutMs": 120000,
+  "inputs": [],
+  "assertions": [
+    {
+      "assertionId": "61-motors-step",
+      "fromSimulationTick": 61,
+      "throughSimulationTick": 61,
+      "path": "bm06.motors.stepCount",
+      "equals": 2
+    },
+    {
+      "assertionId": "120-actualDynamicBodies",
+      "fromSimulationTick": 120,
+      "throughSimulationTick": 120,
+      "path": "bm06.actualDynamicBodies",
+      "equals": 1000
+    },
+    {
+      "assertionId": "120-actualMotorStates",
+      "fromSimulationTick": 120,
+      "throughSimulationTick": 120,
+      "path": "bm06.actualMotorStates",
+      "equals": 2
+    },
+    {
+      "assertionId": "120-raycastsPerTick",
+      "fromSimulationTick": 120,
+      "throughSimulationTick": 120,
+      "path": "bm06.raycastsPerTick",
+      "equals": 200
+    },
+    {
+      "assertionId": "120-sweepsPerTick",
+      "fromSimulationTick": 120,
+      "throughSimulationTick": 120,
+      "path": "bm06.sweepsPerTick",
+      "equals": 50
+    },
+    {
+      "assertionId": "120-queryBatchHasHit",
+      "fromSimulationTick": 120,
+      "throughSimulationTick": 120,
+      "path": "bm06.queryBatchHasHit",
+      "equals": true
+    },
+    {
+      "assertionId": "120-querySnapshotIsPriorTick",
+      "fromSimulationTick": 120,
+      "throughSimulationTick": 120,
+      "path": "bm06.querySnapshotIsPriorTick",
+      "equals": true
+    },
+    {
+      "assertionId": "241-motors-slope",
+      "fromSimulationTick": 241,
+      "throughSimulationTick": 241,
+      "path": "bm06.motors.slopeCount",
+      "equals": 2
+    },
+    {
+      "assertionId": "360-actualDynamicBodies",
+      "fromSimulationTick": 360,
+      "throughSimulationTick": 360,
+      "path": "bm06.actualDynamicBodies",
+      "equals": 1000
+    },
+    {
+      "assertionId": "360-actualMotorStates",
+      "fromSimulationTick": 360,
+      "throughSimulationTick": 360,
+      "path": "bm06.actualMotorStates",
+      "equals": 2
+    },
+    {
+      "assertionId": "361-motors-steep",
+      "fromSimulationTick": 361,
+      "throughSimulationTick": 361,
+      "path": "bm06.motors.steepCount",
+      "equals": 2
+    },
+    {
+      "assertionId": "481-motors-ceiling",
+      "fromSimulationTick": 481,
+      "throughSimulationTick": 481,
+      "path": "bm06.motors.ceilingCount",
+      "equals": 2
+    },
+    {
+      "assertionId": "600-actualDynamicBodies",
+      "fromSimulationTick": 600,
+      "throughSimulationTick": 600,
+      "path": "bm06.actualDynamicBodies",
+      "equals": 1000
+    },
+    {
+      "assertionId": "600-actualMotorStates",
+      "fromSimulationTick": 600,
+      "throughSimulationTick": 600,
+      "path": "bm06.actualMotorStates",
+      "equals": 2
+    },
+    {
+      "assertionId": "600-raycastsPerTick",
+      "fromSimulationTick": 600,
+      "throughSimulationTick": 600,
+      "path": "bm06.raycastsPerTick",
+      "equals": 200
+    },
+    {
+      "assertionId": "600-sweepsPerTick",
+      "fromSimulationTick": 600,
+      "throughSimulationTick": 600,
+      "path": "bm06.sweepsPerTick",
+      "equals": 50
+    },
+    {
+      "assertionId": "600-queryBatchHasHit",
+      "fromSimulationTick": 600,
+      "throughSimulationTick": 600,
+      "path": "bm06.queryBatchHasHit",
+      "equals": true
+    },
+    {
+      "assertionId": "600-querySnapshotIsPriorTick",
+      "fromSimulationTick": 600,
+      "throughSimulationTick": 600,
+      "path": "bm06.querySnapshotIsPriorTick",
+      "equals": true
+    },
+    {
+      "assertionId": "601-motors-platform",
+      "fromSimulationTick": 601,
+      "throughSimulationTick": 601,
+      "path": "bm06.motors.platformCount",
+      "equals": 2
+    },
+    {
+      "assertionId": "602-motors-teleport",
+      "fromSimulationTick": 602,
+      "throughSimulationTick": 602,
+      "path": "bm06.motors.teleportCount",
+      "equals": 2
+    },
+    {
+      "assertionId": "900-actualDynamicBodies",
+      "fromSimulationTick": 900,
+      "throughSimulationTick": 900,
+      "path": "bm06.actualDynamicBodies",
+      "equals": 1000
+    },
+    {
+      "assertionId": "900-actualMotorStates",
+      "fromSimulationTick": 900,
+      "throughSimulationTick": 900,
+      "path": "bm06.actualMotorStates",
+      "equals": 2
+    },
+    {
+      "assertionId": "900-driven-awake",
+      "fromSimulationTick": 900,
+      "throughSimulationTick": 900,
+      "path": "bm06.drivenAwakeTargetMet",
+      "equals": true
+    },
+    {
+      "assertionId": "901-motors-crossCell",
+      "fromSimulationTick": 901,
+      "throughSimulationTick": 901,
+      "path": "bm06.motors.crossCellCount",
+      "equals": 2
+    },
+    {
+      "assertionId": "1081-motors-returnCell",
+      "fromSimulationTick": 1081,
+      "throughSimulationTick": 1081,
+      "path": "bm06.motors.returnCellCount",
+      "equals": 2
+    },
+    {
+      "assertionId": "1200-actualDynamicBodies",
+      "fromSimulationTick": 1200,
+      "throughSimulationTick": 1200,
+      "path": "bm06.actualDynamicBodies",
+      "equals": 1000
+    },
+    {
+      "assertionId": "1200-actualMotorStates",
+      "fromSimulationTick": 1200,
+      "throughSimulationTick": 1200,
+      "path": "bm06.actualMotorStates",
+      "equals": 2
+    },
+    {
+      "assertionId": "1200-driven-awake",
+      "fromSimulationTick": 1200,
+      "throughSimulationTick": 1200,
+      "path": "bm06.drivenAwakeTargetMet",
+      "equals": true
+    },
+    {
+      "assertionId": "1200-raycastsPerTick",
+      "fromSimulationTick": 1200,
+      "throughSimulationTick": 1200,
+      "path": "bm06.raycastsPerTick",
+      "equals": 200
+    },
+    {
+      "assertionId": "1200-sweepsPerTick",
+      "fromSimulationTick": 1200,
+      "throughSimulationTick": 1200,
+      "path": "bm06.sweepsPerTick",
+      "equals": 50
+    },
+    {
+      "assertionId": "1200-queryBatchHasHit",
+      "fromSimulationTick": 1200,
+      "throughSimulationTick": 1200,
+      "path": "bm06.queryBatchHasHit",
+      "equals": true
+    },
+    {
+      "assertionId": "1200-querySnapshotIsPriorTick",
+      "fromSimulationTick": 1200,
+      "throughSimulationTick": 1200,
+      "path": "bm06.querySnapshotIsPriorTick",
+      "equals": true
+    }
+  ],
+  "captures": [
+    {
+      "captureId": "bm06-120",
+      "presentationFrame": 120,
+      "required": true,
+      "subjectiveReview": false
+    },
+    {
+      "captureId": "bm06-600",
+      "presentationFrame": 600,
+      "required": true,
+      "subjectiveReview": false
+    },
+    {
+      "captureId": "bm06-1200",
+      "presentationFrame": 1200,
+      "required": true,
+      "subjectiveReview": false
+    }
+  ]
+}

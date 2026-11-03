@@ -1,0 +1,4 @@
+
+thread 'main' (13072) panicked at C:\Users\zenghaoran\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\editpe-0.2.3\src\resource.rs:1489:38:
+range end index 831 out of range for slice of length 808
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace

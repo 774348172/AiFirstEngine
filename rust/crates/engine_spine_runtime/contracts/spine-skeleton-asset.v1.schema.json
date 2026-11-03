@@ -1,0 +1,18 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"urn:aife:spine-skeleton-asset:v1",
+  "type":"object",
+  "additionalProperties":false,
+  "required":["schemaVersion","assetId","skeletonSource","atlasSource","pages","format","exportVersion","pixelsPerUnit"],
+  "properties":{
+    "schemaVersion":{"const":"spine-skeleton-asset.v1"},
+    "assetId":{"type":"string","minLength":1,"maxLength":128,"pattern":"^[A-Za-z0-9_.-]+$"},
+    "skeletonSource":{"$ref":"#/$defs/source"},
+    "atlasSource":{"$ref":"#/$defs/source"},
+    "pages":{"type":"object","minProperties":1,"maxProperties":8,"additionalProperties":{"type":"object","additionalProperties":false,"required":["assetId"],"properties":{"assetId":{"type":"string","minLength":1,"maxLength":128,"pattern":"^[A-Za-z0-9_.-]+$"}}}},
+    "format":{"const":"json"},
+    "exportVersion":{"type":"string","pattern":"^4\\.2(\\.[0-9]+)?$"},
+    "pixelsPerUnit":{"type":"number","exclusiveMinimum":0,"maximum":1000000}
+  },
+  "$defs":{"source":{"type":"string","minLength":1,"maxLength":256,"pattern":"^(?!/)(?!.*\\\\)(?!.*:)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"}}
+}

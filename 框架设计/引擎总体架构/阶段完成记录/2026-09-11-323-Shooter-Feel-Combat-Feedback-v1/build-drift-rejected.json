@@ -1,0 +1,40 @@
+{
+  "id": 2,
+  "jsonrpc": "2.0",
+  "result": {
+    "content": [
+      {
+        "text": "{\"callId\":\"mcp-call-2\",\"diagnostics\":[{\"code\":\"game_project_compiler.execution_project_drifted\",\"message\":\"The live project no longer matches the prepared snapshot revision.\",\"nextAction\":\"Discard the prepared artifact, refresh, and restart the operation from prepare.\"}],\"evidenceRefs\":[],\"operationId\":\"engine-op-323-short-1\",\"output\":null,\"projectRevision\":\"sha256:d7065e5f4144678d417f454676c155d54a48dfb1ad9b286ed37c3b6103df40f2\",\"receiptRef\":null,\"recommendedLocalTransitions\":[{\"category\":\"inspect_latest_revision\",\"reason\":\"The project revision changed after the operation input was prepared.\",\"toolName\":\"engine_project_inspect\"}],\"replayed\":false,\"retryability\":\"retry_after_inspect\",\"schemaVersion\":\"engine-tool-result.v2\",\"status\":\"rejected_by_engine\",\"toolName\":\"engine_project_build\"}",
+        "type": "text"
+      }
+    ],
+    "isError": true,
+    "structuredContent": {
+      "callId": "mcp-call-2",
+      "diagnostics": [
+        {
+          "code": "game_project_compiler.execution_project_drifted",
+          "message": "The live project no longer matches the prepared snapshot revision.",
+          "nextAction": "Discard the prepared artifact, refresh, and restart the operation from prepare."
+        }
+      ],
+      "evidenceRefs": [],
+      "operationId": "engine-op-323-short-1",
+      "output": null,
+      "projectRevision": "sha256:d7065e5f4144678d417f454676c155d54a48dfb1ad9b286ed37c3b6103df40f2",
+      "receiptRef": null,
+      "recommendedLocalTransitions": [
+        {
+          "category": "inspect_latest_revision",
+          "reason": "The project revision changed after the operation input was prepared.",
+          "toolName": "engine_project_inspect"
+        }
+      ],
+      "replayed": false,
+      "retryability": "retry_after_inspect",
+      "schemaVersion": "engine-tool-result.v2",
+      "status": "rejected_by_engine",
+      "toolName": "engine_project_build"
+    }
+  }
+}

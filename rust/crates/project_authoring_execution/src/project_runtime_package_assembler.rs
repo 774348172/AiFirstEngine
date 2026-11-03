@@ -128,12 +128,20 @@ impl BuildProfile {
             ));
             return issues;
         }
-        if !matches!(self.target.as_str(), "windows" | "android") {
+        if !matches!(self.target.as_str(), "windows" | "android" | "web") {
             issues.push(BuildProfileValidationIssue::new(
                 "release_identity_invalid",
                 "target",
                 format!("Unsupported build target {}.", self.target),
-                "Set target to windows or android.",
+                "Set target to windows, android or web.",
+            ));
+        }
+        if self.target == "web" && self.schema_version != BUILD_PROFILE_SCHEMA_VERSION_V1 {
+            issues.push(BuildProfileValidationIssue::new(
+                "web_profile_unsupported",
+                "schemaVersion",
+                "Web v1 supports the dev static export profile only.",
+                "Use build-profile.v1, profile=dev, target=web.",
             ));
         }
         if self.runtime_package_mode != "debug-readable" {
@@ -178,6 +186,30 @@ impl BuildProfile {
                     "build-profile.v1 only supports a dev profile without release fields.",
                     "Use profile=dev or migrate to build-profile.v2.",
                 ));
+            }
+            return issues;
+        }
+        // Optimized Compiler qualification delivery precedes S5 shipping metadata/signing.
+        // Preserve portable-directory-v1 validation for its existing consumer.
+        if self
+            .release
+            .as_ref()
+            .is_some_and(|release| release.layout == "compiler-delivery-v1")
+        {
+            let architecture = if self.target == "android" {
+                "arm64-v8a"
+            } else {
+                "x86_64"
+            };
+            if self.profile != "release"
+                || self.architecture.as_deref() != Some(architecture)
+                || self
+                    .release
+                    .as_ref()
+                    .is_none_or(|release| !release.include_reports || release.include_debug_symbols)
+                || self.application.is_some()
+            {
+                issues.push(BuildProfileValidationIssue::new("release_identity_invalid", "release", "Compiler delivery requires release, the target architecture, reports, no symbols and no shipping application metadata.", "Use the compiler-delivery-v1 qualification profile; shipping metadata remains a separate consumer."));
             }
             return issues;
         }
@@ -299,6 +331,7 @@ fn is_windows_reserved_device_name(value: &str) -> bool {
 pub struct ProjectRuntimePackageAssemblyResult {
     pub status: ProjectRuntimePackageAssemblyStatus,
     pub build_input: Option<RuntimePackageBuildInput>,
+    pub prepared_runtime_glue: Option<crate::PreparedRuntimeGlue>,
     pub active_scene_id: Option<String>,
     pub build_profile: Option<BuildProfile>,
     pub report: ProjectRuntimePackageAssemblyReport,
@@ -513,6 +546,7 @@ fn assemble_from_snapshot(
     }
     .map_err(compiler_diagnostic)?;
     let input = prepared.runtime_package_build_input().clone();
+    let prepared_runtime_glue = prepared.generated_runtime_glue().cloned();
     let active_scene_id = input.scenes.first().map(|scene| scene.id.clone());
     let build_profile = read_build_profile(&lease, request.build_profile_path.as_deref());
     let prefab_bake_report = prefab_bake_report(&request.project_root, lease.snapshot(), &input);
@@ -546,6 +580,7 @@ fn assemble_from_snapshot(
     Ok(ProjectRuntimePackageAssemblyResult {
         status: ProjectRuntimePackageAssemblyStatus::Success,
         build_input: Some(input),
+        prepared_runtime_glue,
         active_scene_id,
         build_profile,
         report,
@@ -557,12 +592,52 @@ fn target_profile(path: Option<&Path>) -> TargetProfile {
         .and_then(Path::file_name)
         .and_then(|value| value.to_str())
         .unwrap_or("windows.dev.json");
-    if value.contains("android") {
+    if value == "web.dev.json" {
+        TargetProfile::WebDev
+    } else if value == "android.release.json" {
+        TargetProfile::AndroidRelease
+    } else if value.contains("android") {
         TargetProfile::AndroidDev
     } else if value.contains("release") {
         TargetProfile::WindowsRelease
     } else {
         TargetProfile::WindowsDev
+    }
+}
+
+#[cfg(test)]
+mod web_profile_tests {
+    use super::*;
+
+    #[test]
+    fn web_profile_selects_the_web_target_and_rejects_shipping_profiles() {
+        let mut profile: BuildProfile = serde_json::from_value(serde_json::json!({
+            "schemaVersion":"build-profile.v1", "profile":"dev", "target":"web",
+            "runtimePackageMode":"debug-readable", "frameLimit":1,
+            "headlessSurfaceGate":false, "realWindowSmoke":"disabled"
+        }))
+        .unwrap();
+        assert!(profile.validation_issues().is_empty());
+        assert_eq!(
+            target_profile(Some(Path::new("BuildProfiles/web.dev.json"))),
+            TargetProfile::WebDev
+        );
+        assert_eq!(TargetProfile::WebDev.as_str(), "web-dev");
+        profile.profile = "release".into();
+        assert!(profile
+            .validation_issues()
+            .iter()
+            .any(|issue| issue.code == "build_profile_v1_invalid"));
+        profile.schema_version = BUILD_PROFILE_SCHEMA_VERSION.into();
+        assert!(profile
+            .validation_issues()
+            .iter()
+            .any(|issue| issue.code == "web_profile_unsupported"));
+        assert_eq!(target_profile(None), TargetProfile::WindowsDev);
+        assert_eq!(
+            target_profile(Some(Path::new("android.release.json"))),
+            TargetProfile::AndroidRelease
+        );
     }
 }
 
@@ -617,6 +692,7 @@ fn failed_result(
     ProjectRuntimePackageAssemblyResult {
         status: ProjectRuntimePackageAssemblyStatus::Failed,
         build_input: None,
+        prepared_runtime_glue: None,
         active_scene_id: None,
         build_profile: None,
         report: ProjectRuntimePackageAssemblyReport {

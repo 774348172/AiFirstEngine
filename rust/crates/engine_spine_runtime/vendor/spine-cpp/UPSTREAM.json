@@ -1,0 +1,1130 @@
+{
+  "repository": "https://github.com/EsotericSoftware/spine-runtimes.git",
+  "commit": "e7dc1435fa4a0083ab431f1b28e083c14a1f5c68",
+  "formatVersion": "4.2",
+  "sourceModification": "engine-local-property-id-lookup-index-and-node-storage; original files entries remain upstream identities",
+  "files": [
+    {
+      "path": "LICENSE",
+      "upstreamPath": "LICENSE",
+      "gitBlob": "517ff9fbf9225923c6f37b18a864255989dd7f3b",
+      "sha256": "b9d50158f6c23a704d123fd0200cc00633a693ccf9b0aacb15e5d5b9cf6c0d58",
+      "bytes": 1469
+    },
+    {
+      "path": "include/spine/Animation.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/Animation.h",
+      "gitBlob": "7c9355c35fca9875a7d09742ec7f7d6102f28c3c",
+      "sha256": "c33e4ad8dcdc0ff6e944234902f9d186c86c9dd1afa5ee12a65e6e4411bc7f30",
+      "bytes": 3890
+    },
+    {
+      "path": "include/spine/AnimationState.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/AnimationState.h",
+      "gitBlob": "501e7226aa4ae3d4b0bedf6b131fbe535679717b",
+      "sha256": "63734fa7a967366010ae7b175ad805e9fc5768fdb55e79671da75b600222f844",
+      "bytes": 20641
+    },
+    {
+      "path": "include/spine/AnimationStateData.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/AnimationStateData.h",
+      "gitBlob": "a315e7695061bf164423db9f669f35cf8d4e74c7",
+      "sha256": "b87532e74f010f2772c493af1dd37abb991f6547dfaa893ab8832811a394bb64",
+      "bytes": 3438
+    },
+    {
+      "path": "include/spine/Atlas.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/Atlas.h",
+      "gitBlob": "f6c7931da170b6215f132ab07cfd43fb57c72bd3",
+      "sha256": "dfc8b8d59368c7bfc643b67265ba2243e73263f161346230b7f0b18f731af8eb",
+      "bytes": 4462
+    },
+    {
+      "path": "include/spine/AtlasAttachmentLoader.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/AtlasAttachmentLoader.h",
+      "gitBlob": "85111674855a3d8d2afa747753b5e04b079c4f86",
+      "sha256": "0866b225a0a1d4583cb452a1cde0872d38079a4730b0c7a6248fbbfb12222ace",
+      "bytes": 3058
+    },
+    {
+      "path": "include/spine/Attachment.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/Attachment.h",
+      "gitBlob": "ae72b18af42e0ed7e8f8de1c5dd1d664405f34f8",
+      "sha256": "d84314fb6860a4be51088eb446debf98501cdbd6bf8b1b544442359ad4e31242",
+      "bytes": 2225
+    },
+    {
+      "path": "include/spine/AttachmentLoader.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/AttachmentLoader.h",
+      "gitBlob": "9f02302fdb09658f1dc975dc9c81c3e8e39888b9",
+      "sha256": "8dbd1b4c3bf38da5b29472450518c5a1ae157b2eed8d098ee699b18cb87c3eb2",
+      "bytes": 3139
+    },
+    {
+      "path": "include/spine/AttachmentTimeline.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/AttachmentTimeline.h",
+      "gitBlob": "a42280fa5eb804ea2e43a99bdf0a3ef382337c40",
+      "sha256": "6c5c22ed899c697e746368e73ba27c25bceb62c1e655795d572648f29b7c1217",
+      "bytes": 2876
+    },
+    {
+      "path": "include/spine/AttachmentType.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/AttachmentType.h",
+      "gitBlob": "8b1a7ed25ed4bc67905339fd5aacc56836862739",
+      "sha256": "9b4451ba100c8cc95d298de5598e6bb802c5413d4836d1ca8a67cbdfea9c8e8f",
+      "bytes": 2030
+    },
+    {
+      "path": "include/spine/BlendMode.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/BlendMode.h",
+      "gitBlob": "f34e95b1429a81abc21b8d07b647e9d98d26b6f2",
+      "sha256": "41346e98ea25fe02e1ec7248b47528c3bfa32d7a345e6c3304d5f9a38162fe09",
+      "bytes": 1917
+    },
+    {
+      "path": "include/spine/BlockAllocator.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/BlockAllocator.h",
+      "gitBlob": "749a69cbd1f25dce7fe9003da8585ffbbf113a12",
+      "sha256": "2e24a9958a81ba35d2d36dcd8a9ad105fef7c9251f78605684746cc36135216e",
+      "bytes": 4162
+    },
+    {
+      "path": "include/spine/Bone.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/Bone.h",
+      "gitBlob": "845fc58df46390c8d5d3a2e762c19deb65053ae1",
+      "sha256": "c68cb512ee010b5bce4f0b7acf425946d91fee7b1f91d69f6db5e3ebb8341033",
+      "bytes": 7401
+    },
+    {
+      "path": "include/spine/BoneData.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/BoneData.h",
+      "gitBlob": "eb53487dd7a7b81a682e9e06939d25811809dfc1",
+      "sha256": "6189a6d254e2d7b0d638d1c2fda0d338b6cb5f66d67a3075587593d48d7bccda",
+      "bytes": 3886
+    },
+    {
+      "path": "include/spine/BoundingBoxAttachment.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/BoundingBoxAttachment.h",
+      "gitBlob": "b57d796c21f1dbf0aa78f34f313ea442e65f63d7",
+      "sha256": "c8c72e00cba13151d30c833f0faacf45fef3fcf6291b22a420a5a444aae0d233",
+      "bytes": 2216
+    },
+    {
+      "path": "include/spine/ClippingAttachment.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/ClippingAttachment.h",
+      "gitBlob": "7969ea8594036003d011353b5720f675c031a35c",
+      "sha256": "987ad95324d5995a6e46ea3574071d803f067f0d60609874476ee17dcb728ef8",
+      "bytes": 2316
+    },
+    {
+      "path": "include/spine/Color.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/Color.h",
+      "gitBlob": "9a8cdeb09c647296686150cbb9a470e4755a7e54",
+      "sha256": "94ff04ffc551da9af82cf6915e8ff2dbe9d997ee65f8450438721c516f311200",
+      "bytes": 3125
+    },
+    {
+      "path": "include/spine/ColorTimeline.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/ColorTimeline.h",
+      "gitBlob": "3760b1bf00adce6af06786408723f880aa7c5c38",
+      "sha256": "b77e040fe8b7c7deaad97af14457d47e5b51b3870f5f4cfbf40818100d5d434d",
+      "bytes": 5798
+    },
+    {
+      "path": "include/spine/ConstraintData.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/ConstraintData.h",
+      "gitBlob": "ab51f3298c701f5c372da524a74a46c2c6035123",
+      "sha256": "0da232c6038f27c379bb262cad901caa811d33d45acfd12e98c0438436a1d46c",
+      "bytes": 2525
+    },
+    {
+      "path": "include/spine/ContainerUtil.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/ContainerUtil.h",
+      "gitBlob": "410e2eb01f56e4516f233b1f5aac9bb36668259e",
+      "sha256": "c2948c1484c98a3b026191b01fe44b696481d3e9a8e829f0c959d389c655a58a",
+      "bytes": 4090
+    },
+    {
+      "path": "include/spine/CurveTimeline.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/CurveTimeline.h",
+      "gitBlob": "7eaac0effc8eb18795b4b2e4f4818e18e0d696ec",
+      "sha256": "2207fc299b3d5a046763db4c9f8db07f5f28a4ec10a023bf1c7b4ab5e41ed9fa",
+      "bytes": 3852
+    },
+    {
+      "path": "include/spine/Debug.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/Debug.h",
+      "gitBlob": "914afa55e090a17eae29560c135947475090527a",
+      "sha256": "735abc4b4b4aa63c4da8b79dd2d552a899e77f51eb82e46012b85aec68853c08",
+      "bytes": 4714
+    },
+    {
+      "path": "include/spine/DeformTimeline.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/DeformTimeline.h",
+      "gitBlob": "4209d2077099ba410c8fdc155b76d87cd25a87a8",
+      "sha256": "a3998d9b7c2433539a10c69317d470cde6e2b7ccbaac875f466018c27b56f766",
+      "bytes": 2981
+    },
+    {
+      "path": "include/spine/DrawOrderTimeline.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/DrawOrderTimeline.h",
+      "gitBlob": "7d2ab5544e3d7dc3efdc07c64b294c37e3f8f9d6",
+      "sha256": "36dbf45248f0e193df3e73e37bbf48170ea9c49dd18315ecf8a288cbb35665b7",
+      "bytes": 2483
+    },
+    {
+      "path": "include/spine/Event.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/Event.h",
+      "gitBlob": "b838a48bdfd45df28513bd84093d24d1cd1d8a53",
+      "sha256": "70128b70b7928d96e671c337ca3fe0ce0a7cce0f46f066bf14a7a38b2c962e21",
+      "bytes": 2689
+    },
+    {
+      "path": "include/spine/EventData.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/EventData.h",
+      "gitBlob": "fa351608f68d7fd025bf4b262b1c2be4f493323a",
+      "sha256": "8378073587a61cd067d95a96427d6b41d169b3df194d9888e7b76e8617fc37b8",
+      "bytes": 2785
+    },
+    {
+      "path": "include/spine/EventTimeline.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/EventTimeline.h",
+      "gitBlob": "bd05a49ddfb6f15ec00cdc5cee861dc37e437f82",
+      "sha256": "9ae65f2167ddea750ec85ce715b74359e3bcaed3e5515a986811c4c64ed032de",
+      "bytes": 2381
+    },
+    {
+      "path": "include/spine/Extension.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/Extension.h",
+      "gitBlob": "babb397386f8a5ebbbbd6408819b531cde9dd90e",
+      "sha256": "571ff3af6a99189bb54c51acc30f34f200f9f06917c973ba0f7f47f3a2c87154",
+      "bytes": 4367
+    },
+    {
+      "path": "include/spine/HasRendererObject.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/HasRendererObject.h",
+      "gitBlob": "db49a48aea2cf51b2543c1a3296cf9c8da91d36a",
+      "sha256": "2446982280a18f1c9188c9c43b79095a1e074a7f44cb4f5d9266ccba08caa6c4",
+      "bytes": 2491
+    },
+    {
+      "path": "include/spine/HashMap.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/HashMap.h",
+      "gitBlob": "45c54b8773781a128612278354180d65847d4c60",
+      "sha256": "3727d19d58a5cceb4ea7c1f08ae380b517a8327de6e131ee7876ca8906e19750",
+      "bytes": 4610
+    },
+    {
+      "path": "include/spine/IkConstraint.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/IkConstraint.h",
+      "gitBlob": "077f4f0b873716a935ed79d1148290482693a4ea",
+      "sha256": "5893efca844d6f2c86b97278a213b1b514ab7e86b9497acaf75c547ac256b0b6",
+      "bytes": 3561
+    },
+    {
+      "path": "include/spine/IkConstraintData.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/IkConstraintData.h",
+      "gitBlob": "2d953d4c4c7d6aa20751582969cff14d0cdb79c9",
+      "sha256": "bd4813aeecf81b2f41bd3b27c73cb61a8715193441a4523d86f80e21a7e66345",
+      "bytes": 3036
+    },
+    {
+      "path": "include/spine/IkConstraintTimeline.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/IkConstraintTimeline.h",
+      "gitBlob": "11dcf2e9a2ad6580f24b3502dae91a10e875bf24",
+      "sha256": "e749711921ae3901b05f020bab1d2ef2c226f8a1e670a0474da4ae3731a7464e",
+      "bytes": 2828
+    },
+    {
+      "path": "include/spine/Inherit.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/Inherit.h",
+      "gitBlob": "fcc3a74d8da32eb9e01d64b97ec1a79cd67b1336",
+      "sha256": "6a1db81197229435687cbd79a358b1745500c0a83e5273087436c710fcc5211c",
+      "bytes": 1972
+    },
+    {
+      "path": "include/spine/InheritTimeline.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/InheritTimeline.h",
+      "gitBlob": "6c79eedc6f76f13cca37cdce3e70ce865c37345d",
+      "sha256": "4616718fe57e7c04b9060894529e4d9863254b50c2f7d71611b7507fac7648f9",
+      "bytes": 2603
+    },
+    {
+      "path": "include/spine/Json.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/Json.h",
+      "gitBlob": "03809a1298231934a010977a3fe04d5437ebe235",
+      "sha256": "2db96436123a7a102393d1eeabf67656d87c7be3f2475bd22e81871c8c5ac529",
+      "bytes": 4725
+    },
+    {
+      "path": "include/spine/LinkedMesh.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/LinkedMesh.h",
+      "gitBlob": "bd71970bbfedd4fbf3c78dedc4858d5ba63cd818",
+      "sha256": "c86419f0a70e52fa1ff397878d237ad0c6280fc3b70a112e93414ca5fc3e9d8a",
+      "bytes": 2431
+    },
+    {
+      "path": "include/spine/Log.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/Log.h",
+      "gitBlob": "ce66f44fcd845d8f2a04c956a2d45cd36e4fa6b0",
+      "sha256": "bed821699235227d66706022113a8f96cc4a76afdf369514246d6390fea88870",
+      "bytes": 2403
+    },
+    {
+      "path": "include/spine/MathUtil.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/MathUtil.h",
+      "gitBlob": "fb6d24b59a1c63231a28e3ec374bfd8e60a42e15",
+      "sha256": "097582a874d8348da8bca29f7ed30645cf90e6268cd892a58b274d41290b3cde",
+      "bytes": 4269
+    },
+    {
+      "path": "include/spine/MeshAttachment.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/MeshAttachment.h",
+      "gitBlob": "a553766c91d5143b103b9437540cfd3b5da54480",
+      "sha256": "65efe7f5c13af9a5ece43065d62ac05021d3294e5fd7b9c7cd82a1e4aab832c3",
+      "bytes": 3651
+    },
+    {
+      "path": "include/spine/MixBlend.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/MixBlend.h",
+      "gitBlob": "3aa0faf898decf7f25f078d14d82e2e322ed9e4c",
+      "sha256": "9641b2f22cebbc69624378c82c5bacda7c334b238d09f74b7eeea4a5cac61105",
+      "bytes": 2059
+    },
+    {
+      "path": "include/spine/MixDirection.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/MixDirection.h",
+      "gitBlob": "dbb12870c39c7d338b16c24db14c989a14b0e7f1",
+      "sha256": "e98197088211b5d9918a7e8cd932cdfa8973a681ad3283dd7ddc48eae06dede4",
+      "bytes": 2126
+    },
+    {
+      "path": "include/spine/PathAttachment.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/PathAttachment.h",
+      "gitBlob": "e13784950fb3cd7883557b692dc152cf76d27681",
+      "sha256": "93399155b7280608e9b0b97a6228a8e6c1433668dba9fb0a7f1d5649dff0f77f",
+      "bytes": 2461
+    },
+    {
+      "path": "include/spine/PathConstraint.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/PathConstraint.h",
+      "gitBlob": "924b35483bd26b8eae83c92bfd3e152d4ad7993b",
+      "sha256": "dce915ff0dd993033c512a8777bb94e40c2ce49cf07a8a68da0c5393636cbc70",
+      "bytes": 3771
+    },
+    {
+      "path": "include/spine/PathConstraintData.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/PathConstraintData.h",
+      "gitBlob": "b018ad3a6fdbd0ea8fcb49d773783f1037a773b6",
+      "sha256": "61e3c5ef56ba6128300ddd31f45e1f96939745513c2fb9c206c1e6250746064b",
+      "bytes": 3402
+    },
+    {
+      "path": "include/spine/PathConstraintMixTimeline.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/PathConstraintMixTimeline.h",
+      "gitBlob": "72c189bd5479828a9d42b56e96c2dcced517622f",
+      "sha256": "ddedf6d0dcae7b73fa5decee158603394cffbdc94c059c105a6a6fb09c25fe47",
+      "bytes": 2734
+    },
+    {
+      "path": "include/spine/PathConstraintPositionTimeline.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/PathConstraintPositionTimeline.h",
+      "gitBlob": "73e4842d7da221ed37a598de7799b7f4c82b43b5",
+      "sha256": "9709bbbe67c0098cb2610718e47df07ee38db93feb53c3436e93596e4dc5264e",
+      "bytes": 2577
+    },
+    {
+      "path": "include/spine/PathConstraintSpacingTimeline.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/PathConstraintSpacingTimeline.h",
+      "gitBlob": "6d7bee3b4c7e635bbea6f2b61a1ae815c9123477",
+      "sha256": "54419c2a192dd90421f201600ca29daac5d05c29cc61ce119c74425c08d9bbb8",
+      "bytes": 2525
+    },
+    {
+      "path": "include/spine/Physics.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/Physics.h",
+      "gitBlob": "e7b9f7a10ece2adddf8847afd516f4d4032a8cbb",
+      "sha256": "7b105b889f8e6e24972938f61ad2726c1e29669c617fe0d8b2da1bd4e5cc1a7c",
+      "bytes": 2233
+    },
+    {
+      "path": "include/spine/PhysicsConstraint.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/PhysicsConstraint.h",
+      "gitBlob": "b63060ee7223fb1449da31f6c9b3b279be263be5",
+      "sha256": "67f41125358c95244435cb45fbfe82e885349f0c439c42ea894b1d2f81ab942e",
+      "bytes": 5301
+    },
+    {
+      "path": "include/spine/PhysicsConstraintData.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/PhysicsConstraintData.h",
+      "gitBlob": "32aa3cc8fc8a376594c9bf37a9c7c45bf40c7cac",
+      "sha256": "797db8ade79de4952ade70d72221cb5758165af0aa057898bddafbcbc936a918",
+      "bytes": 4231
+    },
+    {
+      "path": "include/spine/PhysicsConstraintTimeline.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/PhysicsConstraintTimeline.h",
+      "gitBlob": "e119378d7d7b7b02f48402e9d753707484fd6a30",
+      "sha256": "8772aa8971bd372582d4b4161bc903455a248723ebde400262896d7dab3f731c",
+      "bytes": 9940
+    },
+    {
+      "path": "include/spine/PointAttachment.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/PointAttachment.h",
+      "gitBlob": "45f47cffe6eee629d8e33397b4c24a9702d9dd62",
+      "sha256": "5ec5b7defb0a9f41826ef8e351adf331cc3f209ebe4cf3cb7bf717c81d621501",
+      "bytes": 2835
+    },
+    {
+      "path": "include/spine/Pool.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/Pool.h",
+      "gitBlob": "2f2b43a133b271dcd17f66cfc338155f5151fad1",
+      "sha256": "b5eb243881688569588d2d88728961ff9645c17780c6fbfca6490455f1ca9e3f",
+      "bytes": 2467
+    },
+    {
+      "path": "include/spine/PositionMode.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/PositionMode.h",
+      "gitBlob": "ee5b4b06c4f077c9371a9c984b98831b377519be",
+      "sha256": "7cee8b397e587ccaa1d8118d2a4fbda936ce961f27fbcfc56966a7da5eb62172",
+      "bytes": 1891
+    },
+    {
+      "path": "include/spine/Property.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/Property.h",
+      "gitBlob": "69fa24f6f81cf507203b1b06994c8da9c2383d9a",
+      "sha256": "73f0de42195594f0bcd5bc74e68d37825d1de5724861b7d36ca6ba09ed8d242d",
+      "bytes": 2928
+    },
+    {
+      "path": "include/spine/RTTI.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/RTTI.h",
+      "gitBlob": "18d6371cac1d7d89c1022aac63b592d09da3a433",
+      "sha256": "909652a716cdefa4db76158dec5073a9838bffc68560b0c2138f97dc6502a260",
+      "bytes": 2603
+    },
+    {
+      "path": "include/spine/RegionAttachment.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/RegionAttachment.h",
+      "gitBlob": "3d288851cac012f8bec6d0ad911687614df36ce8",
+      "sha256": "52986dd59334305d96baef9cb246c9efa8ec6ab44a891e8fea4eef619ad566eb",
+      "bytes": 4048
+    },
+    {
+      "path": "include/spine/RotateMode.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/RotateMode.h",
+      "gitBlob": "fd3e373334f79b1db9125a56e034e4eea1c6cdef",
+      "sha256": "d6744647884d321c3678a8430872ca2321c731bd0231d469bea405bf5e9995f8",
+      "bytes": 1904
+    },
+    {
+      "path": "include/spine/RotateTimeline.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/RotateTimeline.h",
+      "gitBlob": "89b8621f90742396b7c66b989dfaa7a2f8621c7c",
+      "sha256": "6c3a08d3f7bb96cf7109fd3813d7d580c3efe7ba9445af195a71e7bc34beac3a",
+      "bytes": 2403
+    },
+    {
+      "path": "include/spine/ScaleTimeline.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/ScaleTimeline.h",
+      "gitBlob": "ef9f3ac7b298e2968c7a6d22a3999e5e11b01b50",
+      "sha256": "c34fa2a7539e286c63802748e331e2e6826867d26c82b6b2633d1926c19d7569",
+      "bytes": 3489
+    },
+    {
+      "path": "include/spine/Sequence.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/Sequence.h",
+      "gitBlob": "8bf0fd710fa429f9829cc22b5bc9d5585d00aab7",
+      "sha256": "d20c51a31611aa138a62305e4735548e94c24c6db3bddb1cb8597f92830c2db3",
+      "bytes": 2920
+    },
+    {
+      "path": "include/spine/SequenceTimeline.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/SequenceTimeline.h",
+      "gitBlob": "7dd2ae377977ff44557e05ba8cac904159c3e451",
+      "sha256": "e86fbd16ff94b4bcfcb4efcf198ed245d1c0d18e80d19099dc7f87d0745d86d0",
+      "bytes": 2722
+    },
+    {
+      "path": "include/spine/ShearTimeline.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/ShearTimeline.h",
+      "gitBlob": "6717743dfa722234f983a3412416a31e372d0abb",
+      "sha256": "a08a181c24b69287fbb1426e7e0c830325fd302da103e7f53edcf8aba9c1ea04",
+      "bytes": 3489
+    },
+    {
+      "path": "include/spine/Skeleton.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/Skeleton.h",
+      "gitBlob": "82304d6a9d9de8942e4b750dc62f0ebae7d5d3e1",
+      "sha256": "3bbd64e7f53d2431e25018aa967b4fbf844ef3abc7977b095e6553cb9263fc8b",
+      "bytes": 8715
+    },
+    {
+      "path": "include/spine/SkeletonBinary.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/SkeletonBinary.h",
+      "gitBlob": "cd74070f0316d8005e3ba6c4acf0370324dd2905",
+      "sha256": "7e7277a4079a0c62a922e01829a3f1532d985adc9e31c89b828bffb2cc45e1bd",
+      "bytes": 5767
+    },
+    {
+      "path": "include/spine/SkeletonBounds.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/SkeletonBounds.h",
+      "gitBlob": "00c5942ad4bdccdc37c00673d53949250095ee16",
+      "sha256": "6bea705e86be298e2da13ac7486b2e7ae2cef1ca3aa25ae8f0bfed0acba76cfe",
+      "bytes": 5078
+    },
+    {
+      "path": "include/spine/SkeletonClipping.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/SkeletonClipping.h",
+      "gitBlob": "52b868a8698697967ee78ee3861532671e07de7b",
+      "sha256": "9bd1ae95d354dc98c7299f089b120bfb8c03a9b602830b3d2e2ac8d968d2e8a1",
+      "bytes": 3369
+    },
+    {
+      "path": "include/spine/SkeletonData.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/SkeletonData.h",
+      "gitBlob": "71afa1499d36e952251da8cd86e1caf162a330ef",
+      "sha256": "b13110f37e3feab1281d5be42724c6ba04befdda511b9e487812dbb97c6956ee",
+      "bytes": 5592
+    },
+    {
+      "path": "include/spine/SkeletonJson.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/SkeletonJson.h",
+      "gitBlob": "73ac5a0712f681c2f59850313d7a9f30f3c08ca5",
+      "sha256": "1c670db09bcc8f5a5ddbe207f87efe872a04dea871b0028ed538a189d15964db",
+      "bytes": 3753
+    },
+    {
+      "path": "include/spine/SkeletonRenderer.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/SkeletonRenderer.h",
+      "gitBlob": "7da2b62b4a0d32de8210f5e24eadc0db239744fc",
+      "sha256": "3e92234202c1c70a6586a8fc1d75e0e61fcc0e2f2609be7789332a488a60e07e",
+      "bytes": 2638
+    },
+    {
+      "path": "include/spine/Skin.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/Skin.h",
+      "gitBlob": "9b2383c7c7690e6cc8dd20af4bfcef626d12c045",
+      "sha256": "9db74bbfd4d54d75854d9e0e4e48c8e9f20c8559060137342d5aa0a5fd602c91",
+      "bytes": 5736
+    },
+    {
+      "path": "include/spine/Slot.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/Slot.h",
+      "gitBlob": "1c828ed4493f4ff0ce6ff49d28507230d5079ca3",
+      "sha256": "c906b63f37ba303f50e873fbf1ef715571d79e580bf3ad420514965e0ab2e610",
+      "bytes": 3452
+    },
+    {
+      "path": "include/spine/SlotData.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/SlotData.h",
+      "gitBlob": "8e16ea9d0c8d1ab86851cad7dcd59576c8ec7759",
+      "sha256": "3834faecfee4cd969468ac9f3300bd46f11c5e0c9c1e62764f90ad2442337e89",
+      "bytes": 3394
+    },
+    {
+      "path": "include/spine/SpacingMode.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/SpacingMode.h",
+      "gitBlob": "84a311ba887d3a04bc624a8a7bbaab78edec5837",
+      "sha256": "ea07e558e1065c3c655067878b7082f88d138bc049490eef717dc6d11395163a",
+      "bytes": 1935
+    },
+    {
+      "path": "include/spine/SpineObject.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/SpineObject.h",
+      "gitBlob": "dc893695aeab2e42bdd6d21997533ad5c5773afc",
+      "sha256": "ea5015c388e64fa54f6c8fff6a86df15a496b817399b030a6a6ceb9c4d1e88f6",
+      "bytes": 2203
+    },
+    {
+      "path": "include/spine/SpineString.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/SpineString.h",
+      "gitBlob": "3f77431d69e609cef7c5647444f67642cb63a325",
+      "sha256": "c2b72dd417df4437d12f9cb53a5efdbf5a7a1cb8f2c4fe8faa05dcefe1c00244",
+      "bytes": 7229
+    },
+    {
+      "path": "include/spine/TextureLoader.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/TextureLoader.h",
+      "gitBlob": "60f86afb9828ce63f556d9dae7b7f46bd9c11118",
+      "sha256": "fc04a5e7c933766638adb1de3cf7eaefed68fc8ac08312515c34cb750b1bd15a",
+      "bytes": 2120
+    },
+    {
+      "path": "include/spine/TextureRegion.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/TextureRegion.h",
+      "gitBlob": "1082c5de2dc0e478ded824a0bcbc120e3ec31673",
+      "sha256": "7b58d64577a0ec4f12bb86de9e6f85ee3c0dcff3eeffcb514f5655a98bd52bbe",
+      "bytes": 2216
+    },
+    {
+      "path": "include/spine/Timeline.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/Timeline.h",
+      "gitBlob": "c9ded4b641e209c5fd551803cc1aec5e7cacc354",
+      "sha256": "35c8049931e130b7977e7df331ad66ae5fbc5d6cabdf9a5719a2ccf881a89b17",
+      "bytes": 4071
+    },
+    {
+      "path": "include/spine/TransformConstraint.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/TransformConstraint.h",
+      "gitBlob": "cc859029237311a55a34d12f556684154214c459",
+      "sha256": "e83e87439233c3c3730fe45c804273bdcd6dea5c4be89f7bd31ae38c3f05f3e7",
+      "bytes": 3114
+    },
+    {
+      "path": "include/spine/TransformConstraintData.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/TransformConstraintData.h",
+      "gitBlob": "9446bf8a383942febc462fd0431b237cfdf14446",
+      "sha256": "8f3880cd566eac5c8b54f87d4902e85826d2abe45cd36cf813ee99d98e9f0218",
+      "bytes": 3621
+    },
+    {
+      "path": "include/spine/TransformConstraintTimeline.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/TransformConstraintTimeline.h",
+      "gitBlob": "514c6d3a9e462cd71e7c03a269c4474819f7bff0",
+      "sha256": "bb834766841bd06d7bc286fba2d886579c92d1b2f83f9d81a01be26d11450298",
+      "bytes": 2856
+    },
+    {
+      "path": "include/spine/TranslateTimeline.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/TranslateTimeline.h",
+      "gitBlob": "77dbf7e7c2efd835d7844b7dac632ae365d3437e",
+      "sha256": "7f156094159dfe114d1f7cbb831b285ef34d391a675428b8c82b48729e376fd8",
+      "bytes": 3592
+    },
+    {
+      "path": "include/spine/Triangulator.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/Triangulator.h",
+      "gitBlob": "801167d86b199b606bb90d6dfe1b7117f991a0f9",
+      "sha256": "0cd810ba8e2d57589a87eb5776c04c82acda6b583bedf9c9282bb950d20d6b2a",
+      "bytes": 2662
+    },
+    {
+      "path": "include/spine/Updatable.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/Updatable.h",
+      "gitBlob": "dc5b4d37567753c33ac7ea53e26f8b1fb071cc86",
+      "sha256": "f87977b9dd42b4a165a0a2b74c13d2721aebac3d25626ab9e0961346bc281de5",
+      "bytes": 2125
+    },
+    {
+      "path": "include/spine/Vector.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/Vector.h",
+      "gitBlob": "8ad9196e3ece7108fd6a55b738ed2564c7437611",
+      "sha256": "3774dc6e04311accad6736f3d59cef8a1ae9681cdc805fb30961bdf79584d67d",
+      "bytes": 6200
+    },
+    {
+      "path": "include/spine/Version.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/Version.h",
+      "gitBlob": "eaa56558bbbe43a8df509f8d87bd304721490b71",
+      "sha256": "e55e727bd90b424f9088f90604a54725412f38177e461dadcd9401c99480cc4b",
+      "bytes": 1857
+    },
+    {
+      "path": "include/spine/VertexAttachment.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/VertexAttachment.h",
+      "gitBlob": "e4957a9f1cee3fb328930dbf8629ffaca5261df1",
+      "sha256": "454416f0f87be6b05f5775bbd35e2099c3204f59ede7ddafb72519a25985f268",
+      "bytes": 3784
+    },
+    {
+      "path": "include/spine/Vertices.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/Vertices.h",
+      "gitBlob": "070d823c796d889c439adaab8a1b423bb0bda958",
+      "sha256": "8ffc96bce2ec87f65c118435a3d52517d568283d2f38e24a89f7797e21fcb114",
+      "bytes": 1941
+    },
+    {
+      "path": "include/spine/dll.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/dll.h",
+      "gitBlob": "2681a5381599773eb98c3ba6727dff05916363bc",
+      "sha256": "a804dd995c6feca802f7bbeb8212aa868c3d28bfcf3b21f5752b5061942f8e41",
+      "bytes": 2064
+    },
+    {
+      "path": "include/spine/spine.h",
+      "upstreamPath": "spine-cpp/spine-cpp/include/spine/spine.h",
+      "gitBlob": "ab3e5414ee554d42e1f2577fd58dbdbedd18a52b",
+      "sha256": "82ccc0fc3e4cba191111f4d282b2ba0ad79d4a869fa8e9a58a89895c42a7c21e",
+      "bytes": 4421
+    },
+    {
+      "path": "src/spine/Animation.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/Animation.cpp",
+      "gitBlob": "21fafac6f6b9a5bf9601747e8796915ce1d2b8a7",
+      "sha256": "9932c9e313212f40b7ba446283b5ee3a46202e3fc8fd38526bf0c9356aeeaa96",
+      "bytes": 3775
+    },
+    {
+      "path": "src/spine/AnimationState.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/AnimationState.cpp",
+      "gitBlob": "7920e948f3a3fc13ddbb96abc71812ab9b8b59ce",
+      "sha256": "b5f9c4837143a3ff0f86d95c264ee60921a5785d135babb38c9d43bfb26f2954",
+      "bytes": 35803
+    },
+    {
+      "path": "src/spine/AnimationStateData.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/AnimationStateData.cpp",
+      "gitBlob": "9ba25ca694aba822fe29b5065ab704be90962402",
+      "sha256": "55a7fe6ad940117b5cb4d42b8bc5a6134c132a6de0e1fd7a5ba10b017416e47a",
+      "bytes": 3215
+    },
+    {
+      "path": "src/spine/Atlas.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/Atlas.cpp",
+      "gitBlob": "9258fa0c92a4d37f825ea7a9df1ae2d230762544",
+      "sha256": "27692343c53295bb2fbfce6dadbcae73ba4664b5f0214b24f129777326609074",
+      "bytes": 11130
+    },
+    {
+      "path": "src/spine/AtlasAttachmentLoader.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/AtlasAttachmentLoader.cpp",
+      "gitBlob": "ff3b009c386d7f8cedb25d07fcf94b0cf3c16c9b",
+      "sha256": "1448e18049f7887d77274500c9820b2b1f2138b5699f916bd1261998f80f67c5",
+      "bytes": 4397
+    },
+    {
+      "path": "src/spine/Attachment.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/Attachment.cpp",
+      "gitBlob": "e46122a0f30fb196969c753cadd0a020e1b50f47",
+      "sha256": "50acddea2537f0d9bc2afdbd5208064d889e84ec0af24c8daddba79ecfbd1c3f",
+      "bytes": 2160
+    },
+    {
+      "path": "src/spine/AttachmentLoader.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/AttachmentLoader.cpp",
+      "gitBlob": "87f1007ebdfe5c4ce1a049a4c1403a75457b5b40",
+      "sha256": "333ae6e7c4cf9aa6d9be9fe54a989ca9fe4b1d71fe4a76f641cf38a61f6ff020",
+      "bytes": 2129
+    },
+    {
+      "path": "src/spine/AttachmentTimeline.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/AttachmentTimeline.cpp",
+      "gitBlob": "f439cd3ee5337751c5ed94566311f82360eba56d",
+      "sha256": "29baf484812ff3c6d9a575cf745b4fa27775b3fb160753a2d1b898b47c840c4b",
+      "bytes": 3809
+    },
+    {
+      "path": "src/spine/Bone.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/Bone.cpp",
+      "gitBlob": "9a78078d2fafd5235dbf1227adda40e464f814ed",
+      "sha256": "26160b7a5dd782dab61caf22f67b7818d3d9d41256de68daff807e22cfb2f8e2",
+      "bytes": 14820
+    },
+    {
+      "path": "src/spine/BoneData.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/BoneData.cpp",
+      "gitBlob": "31ab264ef2d314943710c843255594b4f36cb5e0",
+      "sha256": "10202913fc43e56d19b1fd76a910242a60139152c6d6b3938644c3ac0132afb6",
+      "bytes": 3996
+    },
+    {
+      "path": "src/spine/BoundingBoxAttachment.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/BoundingBoxAttachment.cpp",
+      "gitBlob": "5ede2c56bc8b9298f0b0289b48c4d112aeedfe7e",
+      "sha256": "d04a5a020fe8a54ce9ed2ad8a15e4a77cfaaee3397e1a250a6cf4dc369cf7183",
+      "bytes": 2153
+    },
+    {
+      "path": "src/spine/ClippingAttachment.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/ClippingAttachment.cpp",
+      "gitBlob": "90f5c141bc78de6ac38e2242889d400504099038",
+      "sha256": "3b9306fad44d46a9026a4ebb8b24933d241f66e2c3e273506a364d388c3c4a41",
+      "bytes": 2349
+    },
+    {
+      "path": "src/spine/ColorTimeline.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/ColorTimeline.cpp",
+      "gitBlob": "6eacd3ecd938b9c2fb73a3feb68051c9f7f60484",
+      "sha256": "40a2aa622b39d960b04c89f8fc71036acea3b6f0ef7230fa1f247ea8f428783b",
+      "bytes": 17723
+    },
+    {
+      "path": "src/spine/ConstraintData.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/ConstraintData.cpp",
+      "gitBlob": "1be0b2ddc7631dd9217232fec2a514dec110cc36",
+      "sha256": "eaaae9784b3831596e058759f377a99d0a3028df0d2f2cb13430531d02773340",
+      "bytes": 2272
+    },
+    {
+      "path": "src/spine/CurveTimeline.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/CurveTimeline.cpp",
+      "gitBlob": "530dabd091a2a44fde5dc711cf2f31db700cfbc2",
+      "sha256": "28aba0867de2d52d38b303e4feca0f36595c18519be01f074a2a935bc5472d44",
+      "bytes": 8224
+    },
+    {
+      "path": "src/spine/DeformTimeline.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/DeformTimeline.cpp",
+      "gitBlob": "d7d5aa15909d85cb4f70f7a2a34223920aace904",
+      "sha256": "e1b4d94c761eca495b7018f97cdc989459156a4a4a726d8c5afa1676bd518746",
+      "bytes": 11539
+    },
+    {
+      "path": "src/spine/DrawOrderTimeline.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/DrawOrderTimeline.cpp",
+      "gitBlob": "2708d25d8958ca59f5a116c1895fa04dabc3d98f",
+      "sha256": "d3fdccd60e42333c9a2a496257dfb7bc6301323054f22d2998552900a5412fa6",
+      "bytes": 3705
+    },
+    {
+      "path": "src/spine/Event.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/Event.cpp",
+      "gitBlob": "3086184d5f8105d73c5573f963b0f9bcdb80ecbf",
+      "sha256": "fdaa51170b75401734213727e1411c1f8b19e5ed41ce0f8caacd58cc68e2d466",
+      "bytes": 2827
+    },
+    {
+      "path": "src/spine/EventData.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/EventData.cpp",
+      "gitBlob": "df7204112a0718c269fff8cfac59ae766fc655e2",
+      "sha256": "aa182e9c6129b5ca05a735abc40f13134945cd8b0815b132bcf3effedfbd1c5a",
+      "bytes": 3115
+    },
+    {
+      "path": "src/spine/EventTimeline.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/EventTimeline.cpp",
+      "gitBlob": "aa5986f3bc1bc15814b6d33e1819de3098a95d32",
+      "sha256": "d380c33ff6852d97809c66de6b088ed40dfbd95c13c5be5fd13577c3fcc939b1",
+      "bytes": 3461
+    },
+    {
+      "path": "src/spine/Extension.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/Extension.cpp",
+      "gitBlob": "4f47e066a28032e5cd51a7e19bd6e32975006b61",
+      "sha256": "40c4e97f6d052153267684642eea0cfb486580f3412e35743d36e878311309c1",
+      "bytes": 3553
+    },
+    {
+      "path": "src/spine/IkConstraint.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/IkConstraint.cpp",
+      "gitBlob": "84609013c5ef585e3213e3d04e7335570feaffbe",
+      "sha256": "20288b3450cda6c8266abcc5a98928c7a45ae7f19de068c66e8bce72dfaba651",
+      "bytes": 10911
+    },
+    {
+      "path": "src/spine/IkConstraintData.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/IkConstraintData.cpp",
+      "gitBlob": "5f232ac6932c25b40d2e446f2e9d0736fc9d004e",
+      "sha256": "6f80fd732f88b36cab77a7f166ac9afd3405f73c2f729202c823e9825be12b2a",
+      "bytes": 3160
+    },
+    {
+      "path": "src/spine/IkConstraintTimeline.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/IkConstraintTimeline.cpp",
+      "gitBlob": "8e757f7fc0288a5121a4b047740b9b2256942031",
+      "sha256": "ea761a6441586b91d9826178e798900f91b27451b9bd5f1af9ecbacc93dc8078",
+      "bytes": 6132
+    },
+    {
+      "path": "src/spine/InheritTimeline.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/InheritTimeline.cpp",
+      "gitBlob": "d8da9e8270424c1c0c4b417798530663bcde6eb2",
+      "sha256": "b3e149a53c4295f2b066460896cffb116312ec7a9983669a2010a64ff80e006a",
+      "bytes": 3118
+    },
+    {
+      "path": "src/spine/Json.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/Json.cpp",
+      "gitBlob": "89d1cc9d591aa7cdfabfff76efa37fefb3c06093",
+      "sha256": "0a269f5a87a6fb36371a354390340056c5be29c99a7fa15d2a4c37529e64d44d",
+      "bytes": 12481
+    },
+    {
+      "path": "src/spine/LinkedMesh.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/LinkedMesh.cpp",
+      "gitBlob": "db10ceddedf4651c0c7c037dcd5e5ff0d53a2fd1",
+      "sha256": "70aa12fa360ed268f68684333684ea7e87883338dc39be8c1e519f672a212b37",
+      "bytes": 2454
+    },
+    {
+      "path": "src/spine/Log.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/Log.cpp",
+      "gitBlob": "063141e839d52218a44725a5248f264007cebf66",
+      "sha256": "fba78e9d854609a449e9320a6c7d37302cc18334311b06fecc5eb61315712022",
+      "bytes": 4510
+    },
+    {
+      "path": "src/spine/MathUtil.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/MathUtil.cpp",
+      "gitBlob": "44f48fa9ea58f6b305ba368cb7643b3c817a884c",
+      "sha256": "32755ef4a7ba0405d87ac6c8ac04165d0cd868900bb2fb17bd1e5d8b2109cfda",
+      "bytes": 4245
+    },
+    {
+      "path": "src/spine/MeshAttachment.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/MeshAttachment.cpp",
+      "gitBlob": "e40bc6e286493695f72f459b21508e1c8f5a4b6e",
+      "sha256": "95fc366be8cb5cc2b85849d99bbbe5376aea4ca4c08c4c17ac0bd50ba9ce1263",
+      "bytes": 7617
+    },
+    {
+      "path": "src/spine/PathAttachment.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/PathAttachment.cpp",
+      "gitBlob": "5a5670f84b8fefc2b8fea448d49d2e8ed948c01d",
+      "sha256": "15c95d301678790c105473e1629367a56682c7c2588be93a0f47759f798d881a",
+      "bytes": 2601
+    },
+    {
+      "path": "src/spine/PathConstraint.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/PathConstraint.cpp",
+      "gitBlob": "fb8683e7ada1821aaf85362f15a5fd7d7640b9e6",
+      "sha256": "940e0c06342bf5eecbb8f837a4208e36411a1495367ee778d4c3c7023aeb037d",
+      "bytes": 17022
+    },
+    {
+      "path": "src/spine/PathConstraintData.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/PathConstraintData.cpp",
+      "gitBlob": "6d13223bc9780b5c7419c6262353f3507a6f9571",
+      "sha256": "6852b581970cd24dc8c513e16190f004ae67405acbf24bc04c260c0a01fd32bc",
+      "bytes": 3902
+    },
+    {
+      "path": "src/spine/PathConstraintMixTimeline.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/PathConstraintMixTimeline.cpp",
+      "gitBlob": "9d4969c6fce3e831d513022b72d23d7d75aef1a6",
+      "sha256": "b1d9c5467c913a0219dba83093959176949a48079e36e69a142c206b775d586b",
+      "bytes": 4933
+    },
+    {
+      "path": "src/spine/PathConstraintPositionTimeline.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/PathConstraintPositionTimeline.cpp",
+      "gitBlob": "25ab8d4168b9242993b3188cba71113fa2a39f5b",
+      "sha256": "83e2bb051168f490ce1774843d1f13e66dcf2789efda779d5754f5f54d8d00e5",
+      "bytes": 3045
+    },
+    {
+      "path": "src/spine/PathConstraintSpacingTimeline.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/PathConstraintSpacingTimeline.cpp",
+      "gitBlob": "e1921dd2d29cc216d35e69f15c5bea4f2860803e",
+      "sha256": "9107a744fc770cf2c2f9f4c659131ac4dbf5515ccdba4c181c2a849924da4016",
+      "bytes": 2985
+    },
+    {
+      "path": "src/spine/PhysicsConstraint.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/PhysicsConstraint.cpp",
+      "gitBlob": "adf9d8f63239d737125b1d5b51d3b1fd74ddfa0e",
+      "sha256": "7c4ead8dcca5b7acf42fcd2ce4cd545b31969a5a715a221f2d4c1e07dde905cc",
+      "bytes": 11845
+    },
+    {
+      "path": "src/spine/PhysicsConstraintData.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/PhysicsConstraintData.cpp",
+      "gitBlob": "2c88a8d6a9c4982e26118c5a8ced3cd18013f8d3",
+      "sha256": "102629cf3a04f19775fd9200adfdd376b7fde34c7bd047fe95c0be2a9015e983",
+      "bytes": 5742
+    },
+    {
+      "path": "src/spine/PhysicsConstraintTimeline.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/PhysicsConstraintTimeline.cpp",
+      "gitBlob": "4671e3ffdef5fa10ed1b6ea068bd04cdc2fdd5b0",
+      "sha256": "0f117ce75698b023b0e9dceb573b5e6ccfa483f18860e665fa6565bd769ee386",
+      "bytes": 4804
+    },
+    {
+      "path": "src/spine/PointAttachment.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/PointAttachment.cpp",
+      "gitBlob": "611f3aff9713603bd03ad767ac29f28a68f5436e",
+      "sha256": "d383f3da298c906abe5417e62559d4efdfcd9e8969ab8939faa666622878a867",
+      "bytes": 2976
+    },
+    {
+      "path": "src/spine/RTTI.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/RTTI.cpp",
+      "gitBlob": "04c3160cbc4899644a87503f7bed8169a2702842",
+      "sha256": "1982bb6e4a7eb109ff15c0abd4d5cb4096bbf35083bf669804f73076178b75e3",
+      "bytes": 2358
+    },
+    {
+      "path": "src/spine/RegionAttachment.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/RegionAttachment.cpp",
+      "gitBlob": "65e1423e5423ee8ed1b77887294b2db43e58bd22",
+      "sha256": "723a4ea8b3dd12098552b3e472a182bd1033895d3eca6be3595e469d51fba7e7",
+      "bytes": 7928
+    },
+    {
+      "path": "src/spine/RotateTimeline.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/RotateTimeline.cpp",
+      "gitBlob": "4c53f3010500229f24b772adbb74dae5ef9099e2",
+      "sha256": "73321c49e916c2841c6381e21b4b896876169575d515abc8aae1c96b5305fea3",
+      "bytes": 2672
+    },
+    {
+      "path": "src/spine/ScaleTimeline.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/ScaleTimeline.cpp",
+      "gitBlob": "f2fe50ca16d9111cfb8a9c1c20aac6dcb371e285",
+      "sha256": "0ee4602e8ac703509c7dfe519d2d971e466f07a9d9b3b7591b313d1f8737895c",
+      "bytes": 7179
+    },
+    {
+      "path": "src/spine/Sequence.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/Sequence.cpp",
+      "gitBlob": "f690dcecc33e20525b882ca20499d2e50d087def",
+      "sha256": "b0e6186d61b3a5baa4f7c5923a22d1c533b63a1c16ce8e547e82b5531717374f",
+      "bytes": 3510
+    },
+    {
+      "path": "src/spine/SequenceTimeline.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/SequenceTimeline.cpp",
+      "gitBlob": "f00bd8201f80280abf75cc5750c51b197a4e3032",
+      "sha256": "8cdbeb3e89a63b4126a6060d4ebd7fc5d41c9af52865eeb19c54a98f868db36d",
+      "bytes": 5270
+    },
+    {
+      "path": "src/spine/ShearTimeline.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/ShearTimeline.cpp",
+      "gitBlob": "027f70c652f176078a532a8200a6501b50a70b88",
+      "sha256": "7c6643288811da241865e3d304738f459914b4c06940f37b9f02513a9fbfd43c",
+      "bytes": 5956
+    },
+    {
+      "path": "src/spine/Skeleton.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/Skeleton.cpp",
+      "gitBlob": "84292a918ab8e1af77b0d3291ae606fc1dc97b26",
+      "sha256": "a9e9f472597a51097a075f829e2bbab1364aded12b1f2bfae1a8026e04c5e7ba",
+      "bytes": 23325
+    },
+    {
+      "path": "src/spine/SkeletonBinary.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/SkeletonBinary.cpp",
+      "gitBlob": "a82ada141fc1686c875c6b0cb5d5e14d59586698",
+      "sha256": "b05583f14f74f0e451c0d7a22f66742197a754518f41bfab790cedf8877c70e8",
+      "bytes": 54346
+    },
+    {
+      "path": "src/spine/SkeletonBounds.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/SkeletonBounds.cpp",
+      "gitBlob": "5681af487aff4a063b253ad0ea3722618f404e49",
+      "sha256": "6ae24772d3e192aa55d0769856c029a550b52f855833bae57d5bf702fc03881c",
+      "bytes": 7463
+    },
+    {
+      "path": "src/spine/SkeletonClipping.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/SkeletonClipping.cpp",
+      "gitBlob": "fbe09ed01997d0311831fd7c5137bd168462aa77",
+      "sha256": "5e1dc1fb6e8307622d287e45c21870eda4a4876f9328e63de460bda01f1dc120",
+      "bytes": 12818
+    },
+    {
+      "path": "src/spine/SkeletonData.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/SkeletonData.cpp",
+      "gitBlob": "e3b35f0cee58eaaac9a6201469ef0e1b2dd3d11d",
+      "sha256": "834c2eae2e5415b15c91ca2136aa62326ec39f2d640d2ef1d867dbcf3e224b87",
+      "bytes": 6612
+    },
+    {
+      "path": "src/spine/SkeletonJson.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/SkeletonJson.cpp",
+      "gitBlob": "7dc5d34e5cdc116fe79c79b727d7dae49f2c4da2",
+      "sha256": "06246f097ebcf58859d5ce955ae4bc7f2bfe6b81701370d6b0c8962bf6f1b24c",
+      "bytes": 66549
+    },
+    {
+      "path": "src/spine/SkeletonRenderer.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/SkeletonRenderer.cpp",
+      "gitBlob": "3617753a731365e60689511daf2a00f63ecb37d9",
+      "sha256": "d13c9a39a254786242cf300b44448b42783667c02e819e9fde0abb601ffa9fd1",
+      "bytes": 9523
+    },
+    {
+      "path": "src/spine/Skin.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/Skin.cpp",
+      "gitBlob": "582b26abe0738a6185770cd757ccdc3e39f2eaab",
+      "sha256": "99395fd9757596462497f70b13f3af36c6114fbebdd158370079e830db59f0b1",
+      "bytes": 7022
+    },
+    {
+      "path": "src/spine/Slot.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/Slot.cpp",
+      "gitBlob": "a0079f01c40eaf2ae64d6b10f345af0fa0e206ba",
+      "sha256": "2c9e26eae99e9f5141e35a5461e2a6957c90009fd2181bc6525c30b37c3bd800",
+      "bytes": 3741
+    },
+    {
+      "path": "src/spine/SlotData.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/SlotData.cpp",
+      "gitBlob": "bc9694a28fd06b311fc50aaba11dab758a0b6a20",
+      "sha256": "33d58993641744c14ed9de7a048921a2a05d01ae8ce8d612c7350862aa31756d",
+      "bytes": 3045
+    },
+    {
+      "path": "src/spine/SpineObject.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/SpineObject.cpp",
+      "gitBlob": "d71bf6e10cd29cde113796c8af00de9e0b1cbb94",
+      "sha256": "451863b8c55964bac831209abfaace7deda7b1af54aa82f8d1ae4ed3e261ed2d",
+      "bytes": 2533
+    },
+    {
+      "path": "src/spine/TextureLoader.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/TextureLoader.cpp",
+      "gitBlob": "4dd2a5f345540a5ae9d727e7e0b1c54eb5216a5a",
+      "sha256": "3f5a84c13e9b715e9fe4131b17cffc7162fc4ae5372ca67d22ca4a9cecc79cf5",
+      "bytes": 1851
+    },
+    {
+      "path": "src/spine/Timeline.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/Timeline.cpp",
+      "gitBlob": "b8624c0a3b5875b645cb9166ae70d00c8d230b03",
+      "sha256": "e2c8e7d6ce5978e41fbf3d9f591108e8eb430bd4f32964aeacd71bb672b0437c",
+      "bytes": 2686
+    },
+    {
+      "path": "src/spine/TransformConstraint.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/TransformConstraint.cpp",
+      "gitBlob": "49ee366c45b4297b3f82057e06e56c9093c3aad8",
+      "sha256": "be4e5a7ed2c119787e6f5ff408624d37fe06a0b9160298577ff5bb788e606d48",
+      "bytes": 11322
+    },
+    {
+      "path": "src/spine/TransformConstraintData.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/TransformConstraintData.cpp",
+      "gitBlob": "38a674e4895c629626b352c99d827a59f2bc7a4f",
+      "sha256": "999474cd4644c1325d1322971fac56069c8d21363b384a8384cd3edf39d53ab3",
+      "bytes": 4951
+    },
+    {
+      "path": "src/spine/TransformConstraintTimeline.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/TransformConstraintTimeline.cpp",
+      "gitBlob": "6e41e2ef34a9508fa10d6b64d7746df30c105631",
+      "sha256": "554aefd068a4a93be304a1534df2b136ef8e0b0a2119178a5d635d7d2ece3709",
+      "bytes": 6789
+    },
+    {
+      "path": "src/spine/TranslateTimeline.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/TranslateTimeline.cpp",
+      "gitBlob": "129979553ef1c6b533cd4909eec35d0b9b7e5d59",
+      "sha256": "998bc6bd64a02569ef305b20da8ea107208f1b2ec38ebc949b6498700748dec6",
+      "bytes": 5890
+    },
+    {
+      "path": "src/spine/Triangulator.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/Triangulator.cpp",
+      "gitBlob": "336c6f5227c8258ec71bfd8ea65e9309bf1117f2",
+      "sha256": "b4a141b570727c410380025db7840ae4e2e82182eaa45050711989ba06b893a4",
+      "bytes": 9775
+    },
+    {
+      "path": "src/spine/Updatable.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/Updatable.cpp",
+      "gitBlob": "8e874a272029fdd8a34f11a4488cbb6c242c9680",
+      "sha256": "40bf4d3392bd897434a432cc97dcfa59f124658ca6f87cad401049561815a5eb",
+      "bytes": 1844
+    },
+    {
+      "path": "src/spine/VertexAttachment.cpp",
+      "upstreamPath": "spine-cpp/spine-cpp/src/spine/VertexAttachment.cpp",
+      "gitBlob": "a84f9a7f4fb2637515e84b0396238b04f8f0e228",
+      "sha256": "860e6bb29eaf03303ff972cc4d6f1054817b4d56ac0167c876a6daad031f5aa0",
+      "bytes": 5739
+    }
+  ],
+  "localPatches": [
+    {
+      "path": "include/spine/HashMap.h",
+      "reason": "same-version PropertyId full-key index with stable map-owned list nodes and per-map standard raw storage pool; logical remove/clear and list order preserved",
+      "upstreamMaterializedSha256": "3727d19d58a5cceb4ea7c1f08ae380b517a8327de6e131ee7876ca8906e19750",
+      "localMaterializedSha256": "40016a54f07ec51472d4a5bfe524addb947534c9e53a4453928d8acce1599367",
+      "localLfSha256": "7b14a5526f29635c5ec88e76a0c8b63b6fe3843036243aaf26d7c26dffccc4ef"
+    }
+  ]
+}

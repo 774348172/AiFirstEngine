@@ -162,7 +162,10 @@ impl EmbeddedAuthoringProjectContext {
                     "Repair project.aife.json and retry.",
                 )
             })?;
-        if manifest.schema_version != PROJECT_MANIFEST_SCHEMA_VERSION {
+        if !matches!(
+            manifest.schema_version.as_str(),
+            PROJECT_MANIFEST_SCHEMA_VERSION | "aife-project.v3"
+        ) {
             return Err(ContextError::new(
                 "authoring_context.manifest_schema_unsupported",
                 format!(
@@ -171,7 +174,7 @@ impl EmbeddedAuthoringProjectContext {
                 ),
                 DiagnosticStage::Open,
                 Some(manifest_path.display().to_string()),
-                format!("Migrate the manifest to {PROJECT_MANIFEST_SCHEMA_VERSION}."),
+                "Use aife-project.v2 for existing projects or v3 for spatial contracts.",
             ));
         }
         validate_project_id(&manifest.project_id, &manifest_path, DiagnosticStage::Open)?;
@@ -496,7 +499,10 @@ fn validate_current_manifest(
             )]
         }
     };
-    if manifest.schema_version != PROJECT_MANIFEST_SCHEMA_VERSION {
+    if !matches!(
+        manifest.schema_version.as_str(),
+        PROJECT_MANIFEST_SCHEMA_VERSION | "aife-project.v3"
+    ) {
         return vec![diagnostic(
             "authoring_context.manifest_schema_unsupported",
             format!(
@@ -504,7 +510,7 @@ fn validate_current_manifest(
                 manifest.schema_version
             ),
             &manifest_path,
-            format!("Migrate the manifest to {PROJECT_MANIFEST_SCHEMA_VERSION}."),
+            "Use aife-project.v2 for existing projects or v3 for spatial contracts.",
         )];
     }
     if let Err(error) = validate_project_id(

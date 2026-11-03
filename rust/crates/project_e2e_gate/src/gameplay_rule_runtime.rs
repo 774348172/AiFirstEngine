@@ -216,10 +216,7 @@ pub fn run_complex_shooter_gameplay_rule_runtime_report(
                 .with_action_snapshot(snapshot)
                 .with_input_trace_summary(input_trace),
             &mut world,
-            RuntimeFrameContext {
-                package: &package,
-                instance_loader: hydrator.instance_loader_mut(),
-            },
+            RuntimeFrameContext::new(&package, hydrator.instance_loader_mut()),
         );
         traces.push(output.runtime_trace);
     }

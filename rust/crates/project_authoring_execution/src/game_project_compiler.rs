@@ -2,6 +2,7 @@ use authoring_project_context::{
     ProjectQualification, ProjectSnapshot, ProjectSnapshotLease, SnapshotRetentionPolicy,
     PROJECT_SNAPSHOT_SCHEMA_VERSION,
 };
+use engine_runtime::canonical_digest::sha256_prefixed;
 use engine_runtime::runtime_package_builder::RuntimePackageBuildInput;
 use runtime_cli::{
     verify_exported_player_process, ExportedPlayerProcessVerificationReport,
@@ -13,7 +14,7 @@ use std::collections::BTreeMap;
 use std::fmt;
 use std::path::{Path, PathBuf};
 
-mod check;
+pub(crate) mod check;
 pub use check::{CheckDiagnostic, SourceLocation};
 mod playtest;
 pub use playtest::{PreparedPlaytestScenario, ProjectPlaytestReport};
@@ -23,6 +24,8 @@ const PROJECT_MANIFEST_PATH: &str = "project.aife.json";
 const DEFAULT_WINDOWS_DEV_PROFILE_PATH: &str = "BuildProfiles/windows.dev.json";
 const DEFAULT_WINDOWS_RELEASE_PROFILE_PATH: &str = "BuildProfiles/windows.release.json";
 const DEFAULT_ANDROID_DEV_PROFILE_PATH: &str = "BuildProfiles/android.dev.json";
+const DEFAULT_ANDROID_RELEASE_PROFILE_PATH: &str = "BuildProfiles/android.release.json";
+const DEFAULT_WEB_DEV_PROFILE_PATH: &str = "BuildProfiles/web.dev.json";
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -70,7 +73,9 @@ pub(crate) struct CompilerSourceView {
 }
 
 impl CompilerSourceView {
-    fn from_snapshot(snapshot: &ProjectSnapshot) -> Result<Self, GameProjectCompilerError> {
+    pub(crate) fn from_snapshot(
+        snapshot: &ProjectSnapshot,
+    ) -> Result<Self, GameProjectCompilerError> {
         validate_lease_owned_sources(snapshot)?;
         let files = snapshot
             .files
@@ -120,6 +125,8 @@ pub enum TargetProfile {
     WindowsDev,
     WindowsRelease,
     AndroidDev,
+    AndroidRelease,
+    WebDev,
 }
 
 impl TargetProfile {
@@ -128,6 +135,8 @@ impl TargetProfile {
             Self::WindowsDev => "windows-dev",
             Self::WindowsRelease => "windows-release",
             Self::AndroidDev => "android-dev",
+            Self::AndroidRelease => "android-release",
+            Self::WebDev => "web-dev",
         }
     }
 
@@ -136,6 +145,8 @@ impl TargetProfile {
             Self::WindowsDev => DEFAULT_WINDOWS_DEV_PROFILE_PATH,
             Self::WindowsRelease => DEFAULT_WINDOWS_RELEASE_PROFILE_PATH,
             Self::AndroidDev => DEFAULT_ANDROID_DEV_PROFILE_PATH,
+            Self::AndroidRelease => DEFAULT_ANDROID_RELEASE_PROFILE_PATH,
+            Self::WebDev => DEFAULT_WEB_DEV_PROFILE_PATH,
         }
     }
 
@@ -144,6 +155,8 @@ impl TargetProfile {
             Self::WindowsDev => ("windows", "dev"),
             Self::WindowsRelease => ("windows", "release"),
             Self::AndroidDev => ("android", "dev"),
+            Self::AndroidRelease => ("android", "release"),
+            Self::WebDev => ("web", "dev"),
         }
     }
 }
@@ -350,7 +363,8 @@ impl ProjectArtifactLineage {
 
 #[derive(Debug, Clone)]
 pub struct PreparedRuntimePackage {
-    source: CompilerSourceView,
+    // The frozen source is immutable; export requests retain this same backing.
+    source: std::sync::Arc<CompilerSourceView>,
     lineage: ProjectArtifactLineage,
     preparation_identity: String,
     source_file_count: usize,
@@ -358,11 +372,16 @@ pub struct PreparedRuntimePackage {
     runtime_package_build_input: RuntimePackageBuildInput,
     assembly_digest: String,
     producer_reports: Vec<crate::ProjectAssemblyProducerReport>,
+    preparation_stages: Vec<crate::ProjectAssemblyProducerSubstageReport>,
     generated_runtime_glue: Option<crate::PreparedRuntimeGlue>,
 }
 
 impl PreparedRuntimePackage {
     pub(crate) fn source(&self) -> &CompilerSourceView {
+        &self.source
+    }
+
+    pub(crate) fn retained_source(&self) -> &std::sync::Arc<CompilerSourceView> {
         &self.source
     }
 
@@ -373,6 +392,7 @@ impl PreparedRuntimePackage {
             "sourceIdentity": self.lineage.source_identity,
             "targetProfile": self.lineage.target_profile,
             "producerCount": self.producer_reports.len(),
+            "stages": self.preparation_stages,
             "reusedCount": self.producer_reports.iter().filter(|r| r.cache_status == Status::Hit).count(),
             "producedCount": self.producer_reports.iter().filter(|r| r.cache_status != Status::Hit).count(),
             "missReasons": self.producer_reports.iter().filter_map(|r| r.miss_reason.as_deref()).collect::<std::collections::BTreeSet<_>>(),
@@ -516,16 +536,19 @@ impl DeliveryRef {
 #[derive(Debug, Clone, PartialEq)]
 pub struct BuildDeliveryReport {
     delivery: DeliveryRef,
-    desktop_export: crate::DesktopExportReport,
+    desktop_export: Option<crate::DesktopExportReport>,
+    android_export: Option<crate::android_export::AndroidDevExportReport>,
 }
 
 impl BuildDeliveryReport {
     pub fn delivery(&self) -> &DeliveryRef {
         &self.delivery
     }
-
-    pub fn desktop_export(&self) -> &crate::DesktopExportReport {
-        &self.desktop_export
+    pub fn desktop_export(&self) -> Option<&crate::DesktopExportReport> {
+        self.desktop_export.as_ref()
+    }
+    pub fn android_export(&self) -> Option<&crate::android_export::AndroidDevExportReport> {
+        self.android_export.as_ref()
     }
 }
 
@@ -654,7 +677,7 @@ impl CheckProfile {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CheckReport {
     pub schema_version: &'static str,
@@ -664,8 +687,13 @@ pub struct CheckReport {
     target_profile: TargetProfile,
     source_file_count: usize,
     pub diagnostics: Vec<CheckDiagnostic>,
+    pub aui_inspection: crate::AuiProjectInspectionReport,
+    pub spatial_inspection: crate::three_d_contract::SpatialProjectInspection,
+    pub spine_inspection: crate::SpineProjectInspection,
     pub rust_check: String,
     pub checked_scope: Vec<String>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub model_imports: Vec<crate::ModelImportDecodeReport>,
 }
 
 impl CheckReport {
@@ -714,7 +742,12 @@ impl GameProjectCompiler {
             error.stage = GameProjectCompilerStage::Check;
             error
         })?;
-        if profile.target_profile != TargetProfile::WindowsDev || !cfg!(windows) {
+        if !cfg!(windows)
+            && matches!(
+                profile.target_profile,
+                TargetProfile::WindowsDev | TargetProfile::WindowsRelease
+            )
+        {
             return Err(check::error(
                 "check_target_unsupported",
                 "Check is qualified only for Windows Dev on Windows.",
@@ -727,24 +760,102 @@ impl GameProjectCompiler {
             profile.target_profile,
             GameProjectCompilerStage::Check,
         )?;
+        let aui_inspection = crate::inspect_aui_project_snapshot(snapshot);
+        let model_imports = crate::model_import::check_sources(&source_view)
+            .map_err(crate::model_import::compiler_error)?;
+        // Instance targets and overrides require the same actual Prefab expansion
+        // as prepare. Do not turn an unresolved source placeholder into a check pass.
+        if source_view
+            .paths()
+            .filter(|p| p.starts_with("Scenes/"))
+            .any(|p| {
+                source_view.bytes(p).is_some_and(|b| {
+                    b.windows(b"engine.prefab_instance".len())
+                        .any(|w| w == b"engine.prefab_instance")
+                })
+            })
+        {
+            crate::neutral_assembler::assemble(
+                &source_view,
+                None,
+                profile.target_profile.as_str(),
+            )?;
+        }
+        if let Some(first_error) = aui_inspection
+            .diagnostics
+            .iter()
+            .find(|diagnostic| diagnostic.severity == "error")
+        {
+            return Err(check::error(
+                "aui_invalid",
+                format!("{}: {}", first_error.code, first_error.message),
+                Some(SourceLocation {
+                    source_path: first_error.source_path.clone(),
+                    field_path: first_error
+                        .node_id
+                        .as_ref()
+                        .map(|node_id| format!("/nodes/{node_id}")),
+                    line: None,
+                    column: None,
+                    generated: false,
+                }),
+            ));
+        }
         crate::particle_effect_cook::cook(&source_view).map_err(|mut failure| {
             failure.stage = GameProjectCompilerStage::Check;
             failure
         })?;
-        let (diagnostics, rust_check) = check::check_rust(&source_view, &manifest, &profile)?;
+        let (mut diagnostics, rust_check) = check::check_rust(&source_view, &manifest, &profile)?;
+        if manifest.schema_version == crate::SPATIAL_PROJECT_MANIFEST_SCHEMA_VERSION {
+            diagnostics.push(CheckDiagnostic {
+                code: "game_project_compiler.three_d.generated_static".into(),
+                severity: "info".into(),
+                message: "Spatial sources use the ordinary Compiler and RuntimePackage chain. Source validation and model decoding are checked; runtime behavior, presentation and target qualification require their own execution evidence.".into(),
+                location: Some(SourceLocation { source_path: PROJECT_MANIFEST_PATH.into(), field_path: Some("/schemaVersion".into()), line: None, column: None, generated: false }),
+                next_action: "Build the selected target and verify its retained delivery; check alone does not qualify execution.".into(),
+            });
+        }
+        diagnostics.extend(
+            aui_inspection
+                .diagnostics
+                .iter()
+                .filter(|diagnostic| diagnostic.severity != "error")
+                .map(|diagnostic| CheckDiagnostic {
+                    code: diagnostic.code.clone(),
+                    severity: diagnostic.severity.to_string(),
+                    message: diagnostic.message.clone(),
+                    location: Some(SourceLocation {
+                        source_path: diagnostic.source_path.clone(),
+                        field_path: diagnostic
+                            .node_id
+                            .as_ref()
+                            .map(|node_id| format!("/nodes/{node_id}")),
+                        line: None,
+                        column: None,
+                        generated: false,
+                    }),
+                    next_action: diagnostic.next_action.clone(),
+                }),
+        );
         Ok(CheckReport {
+            model_imports,
             schema_version: "game-project-check.v1",
             project_identity: snapshot.portable_project_identity.clone(),
             revision_id: snapshot.revision.revision_id.clone(),
             target_profile: profile.target_profile,
             source_file_count: source_view.len(),
             diagnostics,
+            aui_inspection,
+            spatial_inspection: crate::three_d_contract::inspect_spatial_project_snapshot(snapshot),
+            spine_inspection: crate::inspect_spine_project_snapshot(snapshot),
             rust_check,
             checked_scope: [
                 "manifest",
                 "build_profile",
                 "authoring_json",
+                "aui_schema_capabilities_and_migration",
                 "source_file_references",
+                "spatial_contracts_and_version_boundary",
                 "rust_library_and_generated_glue",
             ]
             .map(str::to_string)
@@ -757,7 +868,7 @@ impl GameProjectCompiler {
         lease: &ProjectSnapshotLease,
         target_profile: TargetProfile,
     ) -> Result<PreparedRuntimePackage, GameProjectCompilerError> {
-        self.prepare_inner(lease, target_profile, None)
+        self.prepare_inner(lease, target_profile, None, &|| false)
     }
 
     pub fn prepare_with_artifact_cache(
@@ -766,7 +877,19 @@ impl GameProjectCompiler {
         target_profile: TargetProfile,
         artifact_cache_root: &Path,
     ) -> Result<PreparedRuntimePackage, GameProjectCompilerError> {
-        self.prepare_inner(lease, target_profile, Some(artifact_cache_root))
+        self.prepare_inner(lease, target_profile, Some(artifact_cache_root), &|| false)
+    }
+
+    /// Cooperative cancellation at import work boundaries; no final package is
+    /// published by prepare, and a cancelled call never returns a prepared revision.
+    pub fn prepare_cancellable(
+        &self,
+        lease: &ProjectSnapshotLease,
+        target_profile: TargetProfile,
+        artifact_cache_root: Option<&Path>,
+        cancelled: &dyn Fn() -> bool,
+    ) -> Result<PreparedRuntimePackage, GameProjectCompilerError> {
+        self.prepare_inner(lease, target_profile, artifact_cache_root, cancelled)
     }
 
     fn prepare_inner(
@@ -774,11 +897,32 @@ impl GameProjectCompiler {
         lease: &ProjectSnapshotLease,
         target_profile: TargetProfile,
         artifact_cache_root: Option<&Path>,
+        cancelled: &dyn Fn() -> bool,
     ) -> Result<PreparedRuntimePackage, GameProjectCompilerError> {
         let snapshot = lease.snapshot();
         validate_snapshot_contract(snapshot, GameProjectCompilerStage::Prepare)?;
         self.ensure_binding(snapshot, GameProjectCompilerStage::Prepare)?;
+        let check_cancelled = || {
+            if cancelled() {
+                Err(compiler_error(
+                    "game_project_compiler.three_d.import_cancelled",
+                    "Preparation cancelled.",
+                    GameProjectCompilerStage::Prepare,
+                    "Retry using a fresh snapshot when ready.",
+                ))
+            } else {
+                Ok(())
+            }
+        };
+        check_cancelled()?;
+        let mut preparation_stages = Vec::new();
+        let mut stage_started = std::time::Instant::now();
         let source_view = CompilerSourceView::from_snapshot(snapshot)?;
+        preparation_stages.push(crate::ProjectAssemblyProducerSubstageReport::completed(
+            "source-identity-and-copy",
+            stage_started.elapsed().as_millis() as u64,
+        ));
+        stage_started = std::time::Instant::now();
         let manifest = check::validate_source(
             &source_view,
             snapshot,
@@ -793,6 +937,11 @@ impl GameProjectCompiler {
                 "Repair the AuthoringProjectContext diagnostics, refresh, and acquire a new snapshot lease.",
             ));
         }
+        preparation_stages.push(crate::ProjectAssemblyProducerSubstageReport::completed(
+            "source-validation",
+            stage_started.elapsed().as_millis() as u64,
+        ));
+        stage_started = std::time::Instant::now();
         let source_identity = source_identity(snapshot);
         let generated_runtime_glue = crate::generated_runtime_glue::generate_runtime_glue(
             &source_view,
@@ -800,34 +949,73 @@ impl GameProjectCompiler {
             target_profile,
         )
         .map_err(|error| {
-            compiler_error(
+            let mut failure = compiler_error(
                 error.code,
                 error.message,
                 GameProjectCompilerStage::Prepare,
                 error.next_action,
-            )
+            );
+            failure.source_location = error.source_location.map(|location| *location);
+            failure
         })?;
-        let (mut runtime_package_build_input, mut assembly_digest, producer_reports) =
-            crate::neutral_assembler::assemble(&source_view, artifact_cache_root)?;
+        preparation_stages.push(crate::ProjectAssemblyProducerSubstageReport::completed(
+            "runtime-glue",
+            stage_started.elapsed().as_millis() as u64,
+        ));
+        stage_started = std::time::Instant::now();
+        let (mut runtime_package_build_input, _, producer_reports) =
+            crate::neutral_assembler::assemble_cancellable(
+                &source_view,
+                artifact_cache_root,
+                &sha256_prefixed(
+                    &serde_json::to_vec(&(
+                        target_profile,
+                        source_view
+                            .bytes(target_profile.source_path())
+                            .map(sha256_prefixed),
+                    ))
+                    .expect("import target identity"),
+                ),
+                cancelled,
+            )
+            .map_err(|mut error| {
+                error.stage = GameProjectCompilerStage::Prepare;
+                error
+            })?;
+        preparation_stages.push(crate::ProjectAssemblyProducerSubstageReport::completed(
+            "assembly",
+            stage_started.elapsed().as_millis() as u64,
+        ));
+        stage_started = std::time::Instant::now();
+        check_cancelled()?;
+        apply_build_profile_game_view_target(
+            &source_view,
+            target_profile,
+            &mut runtime_package_build_input,
+        )?;
         if let Some(glue) = &generated_runtime_glue {
             runtime_package_build_input
                 .project
                 .runtime_module
                 .aot_content_digest
                 .clone_from(&glue.report().runtime_module_source_identity);
-            assembly_digest = runtime_package_build_input
-                .assembly_input_digest()
-                .map_err(|error| {
-                    compiler_error(
-                        "game_project_compiler.generated_runtime_identity_failed",
-                        error.to_string(),
-                        GameProjectCompilerStage::Prepare,
-                        "Repair the project RuntimeModule source and prepare it again.",
-                    )
-                })?
-                .0
-                .prefixed_value();
         }
+        let assembly_digest = runtime_package_build_input
+            .assembly_input_digest()
+            .map_err(|error| {
+                compiler_error(
+                    "game_project_compiler.runtime_package_identity_failed",
+                    error.to_string(),
+                    GameProjectCompilerStage::Prepare,
+                    "Repair the project source and prepare it again.",
+                )
+            })?
+            .0
+            .prefixed_value();
+        preparation_stages.push(crate::ProjectAssemblyProducerSubstageReport::completed(
+            "assembly-identity",
+            stage_started.elapsed().as_millis() as u64,
+        ));
         let lineage = ProjectArtifactLineage {
             project_identity: snapshot.portable_project_identity.clone(),
             opened_project_binding: snapshot.opened_project_binding.clone(),
@@ -846,11 +1034,12 @@ impl GameProjectCompiler {
             lineage,
             preparation_identity,
             source_file_count: source_view.len(),
-            source: source_view,
+            source: std::sync::Arc::new(source_view),
             runtime_package_identity: assembly_digest.clone(),
             runtime_package_build_input,
             assembly_digest,
             producer_reports,
+            preparation_stages,
             generated_runtime_glue,
         })
     }
@@ -861,13 +1050,11 @@ impl GameProjectCompiler {
         options: RunOptions,
     ) -> Result<RuntimeExecutionReport, GameProjectCompilerError> {
         self.ensure_lineage(&prepared.lineage, GameProjectCompilerStage::Run)?;
-        if options.mode != ExecutionMode::Headless {
-            return Err(compiler_error(
-                "game_project_compiler.run_mode_unsupported",
-                "The Headless Compiler run owner currently supports only headless mode.",
-                GameProjectCompilerStage::Run,
-                "Use mode=headless for the qualified No-Editor run path.",
-            ));
+        if matches!(
+            prepared.lineage.target_profile,
+            TargetProfile::AndroidDev | TargetProfile::AndroidRelease
+        ) {
+            return Err(compiler_error("game_project_compiler.android_device_pending", "Android execution requires a qualified device consumer; host Player execution is ineligible.", GameProjectCompilerStage::Run, "Build the Android delivery and qualify native/device execution separately."));
         }
         let timeout_ms = options.timeout_ms.max(1);
         let project_root = options.project_root.ok_or_else(|| {
@@ -879,7 +1066,7 @@ impl GameProjectCompiler {
         let player_build_root = options.player_artifact_build_root.ok_or_else(|| {
             execution_binding_missing(GameProjectCompilerStage::Run, "Player build root")
         })?;
-        let build = self.build(
+        let mut build = self.build(
             prepared,
             BuildRequest::for_project(
                 prepared.lineage.target_profile,
@@ -889,13 +1076,40 @@ impl GameProjectCompiler {
             )
             .with_frame_limit(options.frame_limit.max(1))
             .with_timeout_ms(timeout_ms)
-            .with_player_verification(options.verify_player),
+            .with_player_verification(
+                options.verify_player && options.mode == ExecutionMode::Headless,
+            ),
         )?;
+        let mut desktop_export = build.desktop_export.take().ok_or_else(|| {
+            compiler_error(
+                "game_project_compiler.desktop_delivery_missing",
+                "Desktop run requires desktop delivery.",
+                GameProjectCompilerStage::Run,
+                "Use a Windows target.",
+            )
+        })?;
+        if options.verify_player && options.mode == ExecutionMode::Windowed {
+            let verified = self
+                .verify(
+                    &build.delivery,
+                    VerifyRequest::new(options.mode, options.frame_limit, timeout_ms, false),
+                )
+                .map_err(|mut error| {
+                    error.stage = GameProjectCompilerStage::Run;
+                    error
+                })?;
+            desktop_export.player_exit_code = verified.process_verification.child_player_exit_code;
+            desktop_export.player_exit_reason = verified.process_verification.process_exit_reason;
+            build
+                .delivery
+                .evidence_refs
+                .push(verified.process_verification.child_report_path);
+        }
         Ok(RuntimeExecutionReport {
             lineage: prepared.lineage.clone(),
             preparation_identity: prepared.preparation_identity.clone(),
             delivery: build.delivery.clone(),
-            desktop_export: build.desktop_export,
+            desktop_export,
         })
     }
 
@@ -904,6 +1118,14 @@ impl GameProjectCompiler {
         prepared: &PreparedRuntimePackage,
         request: BuildRequest,
     ) -> Result<BuildDeliveryReport, GameProjectCompilerError> {
+        if request.target_profile == TargetProfile::WebDev {
+            return Err(compiler_error(
+                "game_project_compiler.web_export_required",
+                "Web projects use the Web static export owner.",
+                GameProjectCompilerStage::Build,
+                "Use export-web with the prepared Web profile.",
+            ));
+        }
         self.ensure_lineage(&prepared.lineage, GameProjectCompilerStage::Build)?;
         if prepared.lineage.target_profile != request.target_profile {
             return Err(compiler_error(
@@ -913,13 +1135,42 @@ impl GameProjectCompiler {
                 "Prepare the project again for the requested target profile.",
             ));
         }
-        if request.target_profile != TargetProfile::WindowsDev {
+        if matches!(
+            request.target_profile,
+            TargetProfile::AndroidDev | TargetProfile::AndroidRelease
+        ) {
+            return self.build_android(prepared, request);
+        }
+        if !cfg!(windows) {
             return Err(compiler_error(
                 "game_project_compiler.build_target_not_ready",
                 "Only the existing Windows Dev delivery owner is ready on the Headless Compiler.",
                 GameProjectCompilerStage::Build,
                 "Use targetProfile=windows-dev; other targets remain unavailable.",
             ));
+        }
+        if matches!(request.target_profile, TargetProfile::WindowsRelease) {
+            let profile: crate::BuildProfile = serde_json::from_slice(
+                prepared
+                    .source()
+                    .bytes(request.target_profile.source_path())
+                    .unwrap_or_default(),
+            )
+            .map_err(|e| {
+                compiler_error(
+                    "game_project_compiler.build_profile_invalid",
+                    e.to_string(),
+                    GameProjectCompilerStage::Build,
+                    "Use a valid leased Release profile.",
+                )
+            })?;
+            if profile
+                .release
+                .as_ref()
+                .is_none_or(|r| r.layout != "compiler-delivery-v1")
+            {
+                return Err(compiler_error("game_project_compiler.release_layout_pending", "This Compiler stage consumes optimized compiler-delivery-v1; shipping metadata/layout is not implemented by this consumer.", GameProjectCompilerStage::Build, "Use compiler-delivery-v1 for S1 qualification; retain shipping layout for its declared consumer."));
+            }
         }
         let project_root = request.project_root.as_deref().ok_or_else(|| {
             execution_binding_missing(GameProjectCompilerStage::Build, "project root")
@@ -940,20 +1191,35 @@ impl GameProjectCompiler {
             .with_player_artifact_build_root(player_build_root)
             .with_player_timeout_ms(request.timeout_ms)
             .with_player_verification(request.verify_player);
+        desktop_request.profile = request.target_profile.expected_values().1.into();
         desktop_request.frame_limit = request.frame_limit.max(1);
         let desktop_export =
             crate::DesktopExportPipeline::export_prepared(desktop_request, prepared);
         if desktop_export.status != crate::DesktopExportStatus::Success {
-            let detail = desktop_export
+            let diagnostic = desktop_export
                 .diagnostics
-                .first()
-                .map(|diagnostic| format!("{}: {}", diagnostic.code, diagnostic.message))
+                .iter()
+                .find(|diagnostic| {
+                    diagnostic.severity == crate::DesktopExportDiagnosticSeverity::Error
+                })
+                .or_else(|| desktop_export.diagnostics.first());
+            let detail = diagnostic
+                .map(|diagnostic| {
+                    let path = diagnostic
+                        .path
+                        .as_ref()
+                        .map(|path| format!(" [{path}]"))
+                        .unwrap_or_default();
+                    format!("{}{}: {}", diagnostic.code, path, diagnostic.message)
+                })
                 .unwrap_or_else(|| "desktop export failed without a diagnostic".to_string());
+            let next_action = diagnostic.and_then(|diagnostic| diagnostic.suggestion.as_deref())
+                .unwrap_or("Read the project-contained desktop export reports and repair the first failing stage.");
             return Err(compiler_error(
                 "game_project_compiler.desktop_export_failed",
                 detail,
                 GameProjectCompilerStage::Build,
-                "Read the project-contained desktop export reports and repair the first failing stage.",
+                next_action,
             ));
         }
         validate_live_project_binding(
@@ -1023,7 +1289,85 @@ impl GameProjectCompiler {
         };
         Ok(BuildDeliveryReport {
             delivery,
-            desktop_export,
+            desktop_export: Some(desktop_export),
+            android_export: None,
+        })
+    }
+
+    fn build_android(
+        &self,
+        prepared: &PreparedRuntimePackage,
+        request: BuildRequest,
+    ) -> Result<BuildDeliveryReport, GameProjectCompilerError> {
+        let project_root = request.project_root.as_deref().ok_or_else(|| {
+            execution_binding_missing(GameProjectCompilerStage::Build, "project root")
+        })?;
+        validate_live_project_binding(
+            project_root,
+            &prepared.lineage,
+            GameProjectCompilerStage::Build,
+        )?;
+        let output = request.project_relative_output.as_ref().ok_or_else(|| {
+            execution_binding_missing(GameProjectCompilerStage::Build, "safe output path")
+        })?;
+        let mut android_request = if request.target_profile == TargetProfile::AndroidRelease {
+            crate::android_export::AndroidDevExportRequest::release(project_root)
+        } else {
+            crate::android_export::AndroidDevExportRequest::dev(project_root)
+        };
+        android_request.output_dir = project_root
+            .join(output.as_path())
+            .join(request.target_profile.expected_values().1);
+        let report = crate::android_export::AndroidDevExportPipeline::export_prepared(
+            android_request,
+            prepared,
+        );
+        if report.status != crate::android_export::AndroidDevExportStatus::Success {
+            return Err(compiler_error(if report.status == crate::android_export::AndroidDevExportStatus::EnvironmentBlocked { "game_project_compiler.android_toolchain_blocked" } else { "game_project_compiler.android_export_failed" }, format!("{}; preflight={:?}", report.diagnostic.as_deref().unwrap_or("Android export failed"), report.preflight.checks), GameProjectCompilerStage::Build, "Resolve the reported Android toolchain/source condition. Native build and device qualification remain pending."));
+        }
+        let package_dir = PathBuf::from(&report.output_dir);
+        let manifest_path = package_dir.join("package-manifest.json");
+        let manifest =
+            crate::android_export::verify_android_package(&package_dir, request.target_profile)
+                .map_err(|message| {
+                    compiler_error(
+                        "game_project_compiler.android_delivery_invalid",
+                        message,
+                        GameProjectCompilerStage::Build,
+                        "Rebuild the Android delivery.",
+                    )
+                })?;
+        let manifest_digest =
+            runtime_cli::semantic_file_digest(&manifest_path).map_err(|message| {
+                compiler_error(
+                    "game_project_compiler.android_delivery_invalid",
+                    message,
+                    GameProjectCompilerStage::Build,
+                    "Rebuild the Android delivery.",
+                )
+            })?;
+        let artifact_identity = manifest.apk_sha256;
+        let delivery_identity = sha256_prefixed(
+            format!(
+                "{}|{}|{}",
+                prepared.preparation_identity, artifact_identity, manifest_digest
+            )
+            .as_bytes(),
+        );
+        let delivery = DeliveryRef {
+            lineage: prepared.lineage.clone(),
+            preparation_identity: prepared.preparation_identity.clone(),
+            delivery_identity,
+            package_dir,
+            artifact_identity,
+            runtime_package_digest: manifest.runtime_package_digest,
+            manifest_digest,
+            evidence_refs: vec![manifest_path.display().to_string()],
+        };
+        Ok(BuildDeliveryReport {
+            delivery,
+            desktop_export: None,
+            android_export: Some(report),
         })
     }
 
@@ -1034,6 +1378,29 @@ impl GameProjectCompiler {
     ) -> Result<DeliveryVerificationReport, GameProjectCompilerError> {
         self.ensure_lineage(&delivery.lineage, GameProjectCompilerStage::Verify)?;
         delivery.ensure_manifest_identity()?;
+        if matches!(
+            delivery.lineage.target_profile,
+            TargetProfile::AndroidDev | TargetProfile::AndroidRelease
+        ) {
+            crate::android_export::verify_android_package(
+                &delivery.package_dir,
+                delivery.lineage.target_profile,
+            )
+            .map_err(|message| {
+                compiler_error(
+                    "game_project_compiler.android_delivery_invalid",
+                    message,
+                    GameProjectCompilerStage::Verify,
+                    "Rebuild the Android delivery.",
+                )
+            })?;
+            return Err(compiler_error(
+                "game_project_compiler.android_device_pending",
+                "Android package integrity checked; real device execution is not qualified.",
+                GameProjectCompilerStage::Verify,
+                "Connect and qualify the Android device consumer; a host test cannot replace it.",
+            ));
+        }
         let mode = match request.mode {
             ExecutionMode::Headless => "headless",
             ExecutionMode::Windowed => "windowed",
@@ -1094,6 +1461,26 @@ impl GameProjectCompiler {
         }
         Err(binding_mismatch(stage))
     }
+}
+
+fn apply_build_profile_game_view_target(
+    source: &CompilerSourceView,
+    target_profile: TargetProfile,
+    input: &mut RuntimePackageBuildInput,
+) -> Result<(), GameProjectCompilerError> {
+    let Some(bytes) = source.bytes(target_profile.source_path()) else {
+        return Ok(());
+    };
+    let profile: crate::BuildProfile = serde_json::from_slice(bytes).map_err(|error| {
+        compiler_error(
+            "game_project_compiler.build_profile_invalid",
+            error.to_string(),
+            GameProjectCompilerStage::Prepare,
+            "Correct the selected BuildProfile and prepare a fresh snapshot.",
+        )
+    })?;
+    input.project.game_view_target = profile.game_view_target;
+    Ok(())
 }
 
 fn validate_snapshot_contract(
@@ -1331,6 +1718,40 @@ mod tests {
         let build = BuildRequest::new(TargetProfile::WindowsDev);
         assert!(build.verify_player);
         assert!(!build.with_player_verification(false).verify_player);
+    }
+
+    #[test]
+    fn prepare_applies_selected_build_profile_game_view_target_to_runtime_package() {
+        let source = CompilerSourceView {
+            files: BTreeMap::from([(
+                DEFAULT_WINDOWS_DEV_PROFILE_PATH.to_string(),
+                br#"{
+                    "schemaVersion":"build-profile.v1",
+                    "profile":"dev",
+                    "target":"windows",
+                    "runtimePackageMode":"debug-readable",
+                    "frameLimit":3,
+                    "headlessSurfaceGate":true,
+                    "realWindowSmoke":"optional",
+                    "gameViewTarget":{"extent":{"width":720,"height":1280},"scalePolicy":"contain"}
+                }"#
+                .to_vec(),
+            )]),
+        };
+        let mut input = RuntimePackageBuildInput::new(
+            engine_runtime::runtime_package::RuntimeProjectInfo::explicit_empty(
+                "profile-target",
+                "Profile Target",
+                "1",
+            ),
+        );
+
+        apply_build_profile_game_view_target(&source, TargetProfile::WindowsDev, &mut input)
+            .unwrap();
+
+        let target = input.project.game_view_target.unwrap();
+        assert_eq!(target.extent.width, 720);
+        assert_eq!(target.extent.height, 1280);
     }
 
     #[test]

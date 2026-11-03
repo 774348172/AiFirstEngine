@@ -1,0 +1,10 @@
+running 1 test
+test tests::aui_present_cache_retained_edits_bypass_snapshot_reuse_without_overwriting_bindings ... FAILED
+
+assertion `left == right` failed: dropping the superseded cache output must allow in-place COW layout update
+  left: 0x17ec11ea450
+ right: 0x17ec12c6280
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 74 filtered out
+
+The addresses are process-local red-state evidence only. The durable contract is equality after the scheduler releases its superseded cached output, not either numeric address.

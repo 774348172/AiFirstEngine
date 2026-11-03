@@ -1,0 +1,33 @@
+   Compiling engine_runtime v0.1.0 (G:\gameEngin\rust\crates\engine_runtime)
+    Finished `test` profile [unoptimized] target(s) in 58.25s
+     Running unittests src\lib.rs (target\debug\deps\engine_runtime-8d6e86943e999f7f.exe)
+
+running 25 tests
+test wgpu_backend::real::tests::b3_real_gpu_vertex_cache_is_bounded_and_retires_unused_sources ... ignored, requires a real local WGPU adapter
+test wgpu_backend::real::tests::e7_ui_vertex_variants_are_bounded ... ok
+test wgpu_backend::real::tests::real_wgpu_backend_uses_payload_vertices_instead_of_placeholder_quad ... ok
+test wgpu_backend::real::tests::font_texture_gl_multi_page_samples_nonzero_bitmap_and_msdf_pages ... ok
+test wgpu_backend::real::tests::direct_surface_content_rect_keeps_contain_gutters_clear ... ok
+test wgpu_backend::real::tests::e7_real_gpu_reuses_alternating_bounded_ui_streams_when_adapter_exists ... ok
+test wgpu_backend::real::tests::aui_text_msdf_pipeline_outputs_local_coverage_when_adapter_exists ... ok
+test wgpu_backend::real::tests::b18_real_gpu_updates_one_chunk_and_rejects_stale_or_external_lineage_when_adapter_exists ... ok
+test wgpu_backend::real::tests::font_generation_gpu_retirement_keeps_generations_until_explicit_retire ... ok
+test wgpu_backend::real::tests::real_wgpu_backend_can_reuse_shared_device_queue_for_viewport_texture ... ok
+test wgpu_backend::real::tests::e7_real_gpu_does_not_retain_large_alternating_streams_when_adapter_exists ... ok
+test wgpu_backend::real::tests::standalone_font_page_texture_policy_is_gl_only ... ok
+test wgpu_backend::tests::default_wgpu_backend_reports_unavailable_but_records_intent ... ok
+test wgpu_backend::tests::wgpu_backend_device_context_defaults_to_feature_disabled ... ok
+test wgpu_backend::real::tests::font_texture_array_registers_bitmap_and_msdf_layers_when_adapter_exists ... ok
+test wgpu_backend::real::tests::aui_text_bitmap_pipeline_outputs_local_coverage_when_adapter_exists ... ok
+test wgpu_backend::real::tests::real_wgpu_bgra_readback_is_converted_to_rgba ... ok
+test wgpu_backend::real::tests::real_wgpu_geometry_textures_reuse_and_release_only_owned_uploads ... ok
+test wgpu_backend::real::tests::real_wgpu_cooked_texture_preserves_srgb_format ... ok
+test wgpu_backend::real::tests::real_wgpu_rejects_missing_texture_before_rendering_surface ... ok
+test wgpu_backend::real::tests::real_wgpu_offscreen_backend_can_execute_basic_plan_when_adapter_exists ... ok
+test wgpu_backend::real::tests::real_wgpu_screenshot_readback_returns_rgba_bytes_when_adapter_exists ... ok
+test wgpu_backend::real::tests::real_wgpu_ui_composition_samples_registered_alpha_atlas ... ok
+test wgpu_backend::real::tests::real_wgpu_textured_sprite_samples_registered_rgba8_texture ... ok
+test wgpu_backend::real::tests::real_wgpu_textured_ui_blends_rgba_texture_alpha ... ok
+
+test result: ok. 24 passed; 0 failed; 1 ignored; 0 measured; 770 filtered out; finished in 1.79s
+

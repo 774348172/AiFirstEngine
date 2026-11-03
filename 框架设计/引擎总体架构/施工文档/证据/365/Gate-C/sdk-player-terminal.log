@@ -1,0 +1,182 @@
+   Compiling project_runtime_sdk v0.1.0 (G:\gameEngin\rust\crates\project_runtime_sdk)
+   Compiling engine_runtime v0.1.0 (G:\gameEngin\rust\crates\engine_runtime)
+   Compiling project_game_sdk v0.1.0 (G:\gameEngin\rust\crates\project_game_sdk)
+warning: variant `IrInterpreter` is never constructed
+  --> crates\engine_runtime\src\project_logic.rs:19:5
+   |
+17 | pub(crate) enum RuleExecutorHint {
+   |                 ---------------- variant in this enum
+18 |     RustAot,
+19 |     IrInterpreter,
+   |     ^^^^^^^^^^^^^
+   |
+   = note: `RuleExecutorHint` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: associated function `validation_only_ir_interpreter` is never used
+  --> crates\engine_runtime\src\project_logic.rs:38:19
+   |
+29 | impl RuleCall {
+   | ------------- associated function in this implementation
+...
+38 |     pub(crate) fn validation_only_ir_interpreter(rule_id: impl Into<String>) -> Self {
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: method `remove_sprite_renderer2d` is never used
+   --> crates\engine_runtime\src\world.rs:529:19
+    |
+160 | impl World {
+    | ---------- method in this implementation
+...
+529 |     pub(crate) fn remove_sprite_renderer2d(&mut self, id: &EntityId) -> Option<SpriteRenderer2D> {
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: `engine_runtime` (lib) generated 3 warnings
+   Compiling runtime_player_winit v0.1.0 (G:\gameEngin\rust\crates\runtime_player_winit)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1m 16s
+     Running unittests src\lib.rs (target\debug\deps\project_runtime_sdk-440c03751b99c37a.exe)
+
+running 53 tests
+test aui_animation::tests::clock_counts_frame_once_clamps_and_pauses_without_catchup ... ok
+test aui_animation::tests::fractional_speed_retains_submicroseconds_and_error_is_atomic ... ok
+test aui_animation::tests::interpolation_does_not_overflow_finite_endpoints ... ok
+test aui_animation::tests::looping_yoyo_and_overflow_have_checked_timing ... ok
+test aui_animation::tests::instant_parallel_writes_conflict_but_serial_order_is_defined ... ok
+test aui_animation::tests::mismatched_property_values_and_protocol_versions_are_rejected ... ok
+test aui_animation::tests::parallel_conflict_check_preserves_gaps_in_nested_sequences ... ok
+test aui_animation::tests::sequential_same_property_is_valid_parallel_overlap_is_not ... ok
+test aui_animation::tests::deep_empty_containers_and_leaf_count_are_bounded ... ok
+test aui_animation::tests::whole_cycle_overflow_and_zero_repeat_are_rejected ... ok
+test aui_draw2d::tests::degenerate_values_are_valid_but_negative_nonfinite_and_unbounded_arcs_are_not ... ok
+test aui_draw2d::tests::invalid_command_does_not_change_subpath_or_content ... ok
+test aui_draw2d::tests::shape_helpers_validate_dimensions_and_asset_contract ... ok
+test aui_draw2d::tests::deserialized_descriptions_require_state_and_version_validation ... ok
+test audio_source_wire_tests::audio_source_intents_preserve_wire_contract_and_reject_unknown_fields ... ok
+test aui_draw2d::tests::curves_multiple_subpaths_and_full_arc_round_trip ... ok
+test aui_animation::tests::generation_and_property_distinguish_parallel_targets_and_description_round_trips ... ok
+test aui_extension::tests::descriptor_and_mesh_limits_are_enforced ... ok
+test aui_draw2d::tests::builder_rejects_command_overflow_without_losing_valid_prefix ... ok
+test aui_extension::tests::typed_properties_and_callback_identity_are_enforced ... ok
+test aui_host::tests::query_wire_rejects_unknown_fields ... ok
+test aui_draw2d::tests::aggregate_command_and_item_budgets_cannot_be_bypassed ... ok
+test aui_presentation::tests::matrix_and_point_overflow_are_errors ... ok
+test aui_extension::tests::graphics_extension_v2_roundtrips_and_rejects_old_reader_and_invalid_refs ... ok
+test aui_presentation::tests::nested_parent_rotation_rotates_child_origin_once ... ok
+test aui_presentation::tests::pivot_rotation_and_mirror_round_trip ... ok
+test aui_presentation::tests::shear_precision_uses_largest_singular_value_and_dpi ... ok
+test aui_host::tests::stateful_stage_is_not_retried_and_read_size_is_bounded ... ok
+test aui_presentation::tests::small_uniform_scale_is_invertible_but_zero_and_ill_conditioned_are_not ... ok
+test aui_host::tests::structure_contract_rejects_operation_capacity_before_host_call ... ok
+test aui_wire::tests::active_round_trips_as_an_independent_bounded_property ... ok
+test aui_wire::tests::callback_buffer_geometry_uses_committed_host_while_properties_read_staged_values ... ok
+test aui_wire::tests::invalid_write_poison_cannot_be_ignored_by_callback ... ok
+test aui_wire::tests::last_setter_selects_notify_policy_without_extra_host_calls ... ok
+test aui_wire::tests::custom_property_writes_coalesce_in_the_same_bounded_batch ... ok
+test aui_wire::tests::malformed_versions_fields_duplicates_and_types_are_rejected ... ok
+test aui_wire::tests::ownership_transfer_is_bounded_typed_and_requires_an_atomic_controller_value ... ok
+test aui_wire::tests::slider_ref_is_typed_finite_and_preserves_notify_and_ownership ... ok
+test input_phase_tests::delivered_input_distinguishes_edges_held_and_unknown_without_changing_wire ... ok
+test lifecycle_wire_tests::focus_and_exit_preserve_typed_wire_intent ... ok
+test spatial::tests::spatial_wire_rejects_unknown_intent_fields_and_legacy_euler_payloads ... ok
+test spawn_position_tests::prefab_spawn_wire_preserves_requested_position_and_accepts_legacy_request ... ok
+test tests::caller_owned_buffer_retries_without_transferring_memory ... ok
+test tests::crate_has_no_engine_or_editor_dependency ... ok
+test tests::invalid_input_and_small_output_fail_closed ... ok
+test tests::facade_contains_panics_before_the_extern_boundary ... ok
+test tests::stateful_boundary_rejects_null_and_contains_panics ... ok
+test tests::stateful_capacity_floor_sizes_without_invoking_the_callback ... ok
+test aui_wire::tests::typed_writes_coalesce_without_per_setter_host_calls ... ok
+test tests::sdk_digest_is_stable_and_includes_wire_schema ... ok
+test aui_wire::tests::buffer_limit_poison_and_read_cache_are_bounded ... ok
+test aui_wire::tests::text_budget_counts_utf8_replacements_and_escaped_wire ... ok
+test aui_wire::tests::property_limit_and_decoder_limit_are_enforced ... ok
+
+test result: ok. 53 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
+
+     Running unittests src\lib.rs (target\debug\deps\runtime_player_winit-902efd2dee66236f.exe)
+
+running 81 tests
+test engine_dll_execution::tests::engine_dll_execution_rejects_unknown_envelope_fields ... ok
+test replay_input::tests::ordered_input_all_modifiers_buttons_and_cross_tick_transitions ... ok
+test replay_input::tests::ordered_wheel_and_unicode_text_share_raw_input_and_reject_invalid_values ... ok
+test engine_dll_execution::tests::engine_dll_execution_roundtrip_preserves_window_input_and_evidence_settings ... ok
+test replay_input::tests::ordered_input_raw_order_coordinates_and_legacy_order ... ok
+test replay_input::tests::ordered_input_rejects_bad_states_at_precise_event ... ok
+test semantic_outcome::tests::semantic_outcome_missing_required_capture_and_assertion_cannot_pass ... ok
+test semantic_outcome::tests::semantic_outcome_engine_paths_are_typed_and_cannot_be_project_spoofed ... ok
+test semantic_outcome::tests::ordered_input_v2_accepts_same_tick_mouse_and_key_edges ... ok
+test semantic_outcome::tests::semantic_outcome_nonpasses_remain_distinct_and_empty_is_not_passed ... ok
+test engine_dll_execution::tests::ordered_input_engine_dll_roundtrip_retains_versions_and_event_order ... ok
+test replay_input::tests::ordered_input_strict_fields_versions_and_limits ... ok
+test replay_input::tests::ordered_input_shared_mapping_holds_modifiers_and_mouse_until_release ... ok
+test semantic_outcome::tests::semantic_scenario_capture_clock_is_not_simulation_clock ... ok
+test semantic_outcome::tests::semantic_scenario_rejects_duplicate_ids_and_invalid_assertion_windows ... ok
+test semantic_outcome::tests::semantic_scenario_rejects_unknown_observation_path ... ok
+test semantic_outcome::tests::semantic_scenario_rejects_type_missing_contract_and_allowed_value_errors ... ok
+test semantic_outcome::tests::semantic_outcome_ordinary_3d_fixture_uses_current_schema ... ok
+test semantic_outcome::tests::semantic_scenario_roundtrip_and_typed_inclusive_samples ... ok
+test semantic_outcome::tests::semantic_outcome_spatial_requests_are_versioned_bounded_and_off_is_explicit ... ok
+test semantic_outcome::tests::semantic_scenario_rejects_input_order_bounds_and_invalid_key_transitions ... ok
+test semantic_playtest::tests::semantic_playtest_rejects_repeated_or_skipped_tick_evidence ... ok
+test session_exit_tests::orderly_exit_without_presenting_is_success_but_does_not_hide_errors ... ok
+test semantic_outcome::tests::semantic_scenario_rejects_limits_seed_unknown_fields_and_targets ... ok
+test tests::audio_device_failure_reaches_completion_diagnostics_even_when_reports_are_off ... ok
+test tests::audio_absent_project_does_not_prepare_a_device_or_emit_an_audio_report ... ok
+test tests::aui_feedback_player_pointer_down_updates_same_frame_overlay ... ok
+test semantic_playtest::tests::aui_snapshot_reports_resolved_nodes_and_bounded_output ... ok
+test tests::aui_present_cache_clean_hit_skips_extension_frame_scan_and_callback ... ok
+test semantic_playtest::tests::semantic_playtest_spatial_snapshot_never_relabels_an_old_world_frame ... ok
+test semantic_playtest::tests::semantic_playtest_zero_multi_step_input_dedup_and_deadline ... ok
+test tests::aui_present_cache_reference_canvas_ignores_viewport_identity_changes ... ok
+test semantic_playtest::tests::semantic_playtest_runtime_fault_and_observation_panic_preserve_failure ... ok
+test semantic_playtest::tests::semantic_playtest_contract_violation_limits_and_capture_never_fake_success ... ok
+test semantic_playtest::tests::ordered_input_semantic_host_mouse_hold_release_repeat_and_failure_count ... ok
+test semantic_playtest::tests::native_loop_preserves_rule_and_command_failures_through_later_successful_frames ... ok
+test tests::aui_present_cache_snapshot_failure_does_not_swallow_accepted_retained_updates ... ok
+test tests::aui_present_cache_reuses_clean_frame_and_rebuilds_changed_values ... ok
+test tests::aui_text_ime_events_are_consumed_and_reported_by_native_input_chain ... ok
+test tests::frame_deadline_waits_only_for_unused_frame_budget ... ok
+test tests::feature_disabled_windowed_screenshot_reports_unsupported ... ok
+test tests::frame_performance_reports_update_render_submit_and_present_wait ... ok
+test tests::frame_deadline_overrun_is_ready_without_wait_or_catch_up_debt ... ok
+test tests::gate_d_raw_frames_preserve_intervals_and_difference_owner_counters ... ok
+test tests::feature_disabled_windowed_reports_native_host_required ... ok
+test tests::headless_native_player_reports_missing_package ... ok
+test semantic_playtest::tests::semantic_playtest_actual_input_post_commit_repeatability_and_negative_expectation ... ok
+test tests::native_input_held_key_drives_axis_across_frames ... ok
+test tests::ime_candidate_rect_uses_shared_reference_to_window_mapping ... ok
+test tests::native_input_space_key_generates_fire_action ... ok
+test tests::native_input_focus_lost_releases_pressed_inputs ... ok
+test tests::native_mouse_leave_uses_last_cursor_position_and_deterministic_fallback ... ok
+test tests::native_input_mouse_pointer_button_and_wheel_are_resolved ... ok
+test tests::aui_present_cache_stops_oscillation_after_eight_rounds_without_final_publish ... ok
+test tests::native_window_viewport_input_preserves_real_window_metrics ... ok
+test tests::off_frame_capture_retains_no_history_and_does_not_read_counters ... ok
+test tests::native_window_host_report_serializes ... ok
+test tests::player_target_updates_initial_window_extent ... ok
+test tests::ordered_input_aui_dispatches_m4e_toggle_and_slider_values ... ok
+test tests::ordered_input_aui_filters_mouse_fire_and_dispatches_click_action ... ok
+test tests::player_window_keeps_requested_extent_when_work_area_can_contain_it ... ok
+test tests::portrait_player_window_fits_inside_work_area_without_changing_aspect ... ok
+test tests::primary_touch_mapping_preserves_physical_pixels_and_cancel_phase ... ok
+test tests::pointer_replay_reaches_real_input_resolver_and_old_keyboard_scripts_still_parse ... ok
+test tests::portrait_target_space_input_uses_shared_presentation_inverse ... ok
+test tests::screenshot_request_is_reported_without_running_real_window ... ok
+test tests::summary_keeps_bounded_failure_details_and_reads_old_reports ... ok
+test tests::headless_native_player_runs_package_one_frame ... ok
+test tests::summary_reports_rule_failure_and_off_still_marks_logic_error ... ok
+test tests::suspend_resume_recreates_surface_without_recreating_gameplay_session ... ok
+test tests::rgba_png_writer_outputs_png_file ... ok
+test tests::windowed_session_advances_past_first_frame_until_limit ... ok
+test tests::headless_player_reports_runtime_package_input_mapping ... ok
+test tests::summary_command_failure_preserves_entity_and_error_without_full_trace ... ok
+test tests::runtime_sprite_texture_collection_includes_scene_and_all_animator_frames ... ok
+test tests::runtime_player_project_runtime_session_headless_uses_shared_composition_and_reports_summary ... ok
+test tests::aui_present_cache_respects_binding_ownership_takeover_and_release ... ok
+test tests::aui_present_cache_rebuilds_for_viewport_resize_and_dpi_then_reuses ... ok
+test tests::aui_present_cache_reuses_c2_paragraphs_and_reshapes_changed_text ... ok
+test tests::aui_present_cache_retained_edits_bypass_snapshot_reuse_without_overwriting_bindings ... ok
+test tests::aui_present_cache_materializes_bounded_virtual_list_and_reconciles_recycled_slots ... ok
+
+test result: ok. 81 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.02s
+

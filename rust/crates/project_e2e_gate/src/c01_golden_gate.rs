@@ -1132,6 +1132,7 @@ fn run_external_export(
         },
         ExportedPlayerProcessVerificationOptions {
             input_script_path: Some(input_script_path),
+            measurement: None,
             runtime_report_level: Some("trace".to_string()),
             performance_warmup_frames: 0,
             performance_sample_frames: 0,
@@ -1173,6 +1174,7 @@ fn run_external_export(
         },
         ExportedPlayerProcessVerificationOptions {
             input_script_path: None,
+            measurement: None,
             runtime_report_level: Some("summary".to_string()),
             performance_warmup_frames: 120,
             performance_sample_frames: 600,

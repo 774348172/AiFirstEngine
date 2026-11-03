@@ -1,0 +1,4 @@
+interface:
+  display_name: "Game Engine Review Priority"
+  short_description: "Select engine work from current authority and evidence"
+  default_prompt: "Use $game-engine-review-priority to review the current engine baseline and recommend the next step."

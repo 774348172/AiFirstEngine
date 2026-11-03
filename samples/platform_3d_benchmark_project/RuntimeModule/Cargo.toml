@@ -1,0 +1,11 @@
+[package]
+name = "platform_3d_benchmark_project_runtime"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+project_game_sdk = { path = "../../../rust/crates/project_game_sdk" }

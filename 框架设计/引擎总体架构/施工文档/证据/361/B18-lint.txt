@@ -1,0 +1,9 @@
+361 B18 lint summary
+date: 2026-09-27
+
+PASS cargo clippy -p engine_runtime --lib --features real-wgpu --locked --message-format short
+PASS cargo clippy -p engine_runtime -p runtime_player_winit -p editor_core --lib --locked --message-format short
+PASS rustfmt --edition 2021 --check on render_graph.rs, rhi_command_plan.rs, runtime_renderer.rs, wgpu_backend.rs
+PASS git diff --check on the four source files and active 361 construction document
+
+Both Clippy commands exited 0. Existing repository warning-budget output remained; no B18-specific warning was introduced.

@@ -80,7 +80,7 @@ pub struct ProjectFontCookOutput {
     pub primary_atlas: RuntimePackageSourceFontAtlas,
     pub diagnostics: Vec<FontDiagnostic>,
     #[serde(skip_serializing)]
-    pub source_bytes: BTreeMap<String, Vec<u8>>,
+    pub font_face_sources: Vec<engine_runtime::font_bundle::RuntimePackageSourceFontFace>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -136,6 +136,7 @@ pub struct ProjectFontMsdfGlyphVariant {
     pub bearing_x: i32,
     pub bearing_y: i32,
     pub advance_per_em_millionths: i32,
+    pub plane_bounds_per_em_millionths: [i32; 4],
     pub rgba8: Vec<u8>,
 }
 
@@ -333,15 +334,118 @@ impl ProjectFontCookModule {
             "collect_metrics",
             elapsed_ms(metrics_started),
         ));
+        let mut font_face_sources = Vec::new();
+        for family in &family_order {
+            let mut entries: Vec<_> = families[family].faces.iter().collect();
+            entries.sort_by_key(|entry| {
+                (
+                    entry.style != FontStyle::Normal,
+                    entry.weight.abs_diff(400),
+                    entry.font_face.as_str(),
+                )
+            });
+            for entry in entries {
+                let face = &faces[&entry.font_face];
+                if font_face_sources.iter().any(
+                    |source: &engine_runtime::font_bundle::RuntimePackageSourceFontFace| {
+                        source.font_face_id == face.asset_id
+                    },
+                ) {
+                    continue;
+                }
+                let bytes = source_bytes[&face.source.asset_ref].clone();
+                font_face_sources.push(engine_runtime::font_bundle::RuntimePackageSourceFontFace {
+                    font_face_id: face.asset_id.clone(),
+                    face_index: face.source.face_index,
+                    source_digest: sha256_prefixed(&bytes),
+                    bytes,
+                });
+            }
+        }
+        let mut raster_resolutions = resolutions.clone();
+        // Each declared face must have atlas coverage when AUI selects its style/weight.
+        for source in &font_face_sources {
+            let asset = &faces[&source.font_face_id];
+            let parsed = ttf_parser::Face::parse(&source.bytes, source.face_index)
+                .map_err(|_| failure("FontAssetParseFailed", &source.font_face_id))?;
+            let family_index = family_order
+                .iter()
+                .position(|id| {
+                    families[id]
+                        .faces
+                        .iter()
+                        .any(|entry| entry.font_face == source.font_face_id)
+                })
+                .unwrap();
+            for codepoint in &collected.codepoints {
+                let Some(glyph_id) =
+                    char::from_u32(*codepoint).and_then(|ch| parsed.glyph_index(ch))
+                else {
+                    continue;
+                };
+                if raster_resolutions
+                    .iter()
+                    .any(|r| r.font_face_id == source.font_face_id && r.glyph_id == glyph_id.0)
+                {
+                    continue;
+                }
+                raster_resolutions.push(ProjectFontCodepointResolution {
+                    codepoint: *codepoint,
+                    font_stack_id: profile.font_stack.clone(),
+                    font_family_id: family_order[family_index].clone(),
+                    font_face_id: source.font_face_id.clone(),
+                    style: asset.declared.style,
+                    weight: asset.declared.weight,
+                    glyph_id: glyph_id.0,
+                    fallback_index: family_index as u16,
+                });
+            }
+        }
+        for primary in 0..font_face_sources.len() {
+            let mut sources = font_face_sources.iter().collect::<Vec<_>>();
+            let selected = sources.remove(primary);
+            sources.insert(0, selected);
+            for text in &collected.canonical_texts {
+                let runs =
+                    engine_runtime::text_shaping::shape_stack(&sources, text).ok_or_else(|| {
+                        failure(
+                            "FontShapingFailed",
+                            "Declared FontFace could not shape required text",
+                        )
+                    })?;
+                for run in runs {
+                    for item in run.items {
+                        if item.glyph_id == 0 {
+                            return Err(failure("RequiredShapedGlyphMissing", text));
+                        }
+                        if raster_resolutions.iter().any(|r| {
+                            r.font_face_id == run.face_id && u32::from(r.glyph_id) == item.glyph_id
+                        }) {
+                            continue;
+                        }
+                        let mut resolution = raster_resolutions
+                            .iter()
+                            .find(|r| r.font_face_id == run.face_id)
+                            .ok_or_else(|| failure("FontShapingFaceMissing", &run.face_id))?
+                            .clone();
+                        resolution.glyph_id = item.glyph_id as u16;
+                        resolution.codepoint = u32::MAX; // glyph-only atlas entry, no cmap alias
+                        raster_resolutions.push(resolution);
+                    }
+                }
+            }
+        }
+        expand_substitution_glyphs(&mut raster_resolutions, &faces, &source_bytes)?;
         let bitmap_started = Instant::now();
         let hinted_variants =
-            raster_hinted_variants(&profile, &resolutions, &faces, &source_bytes)?;
+            raster_hinted_variants(&profile, &raster_resolutions, &faces, &source_bytes)?;
         substages.push(ProjectAssemblyProducerSubstageReport::completed(
             "raster_bitmap",
             elapsed_ms(bitmap_started),
         ));
         let msdf_started = Instant::now();
-        let msdf_variants = raster_msdf_variants(&profile, &resolutions, &faces, &source_bytes)?;
+        let msdf_variants =
+            raster_msdf_variants(&profile, &raster_resolutions, &faces, &source_bytes)?;
         substages.push(ProjectAssemblyProducerSubstageReport::completed(
             "raster_msdf",
             elapsed_ms(msdf_started),
@@ -372,14 +476,14 @@ impl ProjectFontCookModule {
             dependency_digest,
             output_digest: String::new(),
             required_codepoints: collected.codepoints.into_iter().collect(),
-            resolutions,
+            resolutions: raster_resolutions,
             face_metrics,
             hinted_variants,
             msdf_variants,
             kerning_adjustments,
             primary_atlas,
             diagnostics,
-            source_bytes: source_bytes.clone(),
+            font_face_sources,
         };
         output.output_digest = output_digest(&output)?;
         Ok(TimedProjectFontCookOutput { output, substages })
@@ -838,7 +942,11 @@ fn raster_hinted_variants(
                     if image.data.len() != (image.placement.width * image.placement.height) as usize
                         || image.data.iter().all(|value| *value == 0)
                     {
-                        if char::from_u32(resolution.codepoint).is_some_and(char::is_whitespace) {
+                        if char::from_u32(resolution.codepoint).is_some_and(char::is_whitespace)
+                            || parsed
+                                .glyph_bounding_box(ttf_parser::GlyphId(resolution.glyph_id))
+                                .is_none()
+                        {
                             (1, 1, 0, 0, vec![0])
                         } else {
                             return Err(failure(
@@ -859,7 +967,11 @@ fn raster_hinted_variants(
                         )
                     }
                 }
-                None if char::from_u32(resolution.codepoint).is_some_and(char::is_whitespace) => {
+                None if char::from_u32(resolution.codepoint).is_some_and(char::is_whitespace)
+                    || parsed
+                        .glyph_bounding_box(ttf_parser::GlyphId(resolution.glyph_id))
+                        .is_none() =>
+                {
                     (1, 1, 0, 0, vec![0])
                 }
                 None => {
@@ -960,6 +1072,113 @@ fn collect_kerning(
     Ok(adjustments)
 }
 
+/// Cook substitution outputs reachable from the declared repertoire, including
+/// ligatures formed by dynamic strings. Context conditions may reduce this set;
+/// considering their referenced lookups conservatively prevents missing cells.
+fn expand_substitution_glyphs(
+    resolutions: &mut Vec<ProjectFontCodepointResolution>,
+    faces: &BTreeMap<String, FontFaceAsset>,
+    bytes: &BTreeMap<String, Vec<u8>>,
+) -> Result<(), ProjectFontCookFailure> {
+    use ttf_parser::gsub::{SingleSubstitution, SubstitutionSubtable};
+    let face_ids: BTreeSet<_> = resolutions.iter().map(|r| r.font_face_id.clone()).collect();
+    for face_id in face_ids {
+        let asset = &faces[&face_id];
+        let face =
+            ttf_parser::Face::parse(&bytes[&asset.source.asset_ref], asset.source.face_index)
+                .map_err(|_| failure("FontAssetParseFailed", &face_id))?;
+        let Some(gsub) = face.tables().gsub else {
+            continue;
+        };
+        let template = resolutions
+            .iter()
+            .find(|r| r.font_face_id == face_id)
+            .unwrap()
+            .clone();
+        let mut reachable: BTreeSet<u16> = resolutions
+            .iter()
+            .filter(|r| r.font_face_id == face_id)
+            .map(|r| r.glyph_id)
+            .collect();
+        loop {
+            let before = reachable.clone();
+            for lookup in gsub.lookups {
+                for sub in lookup.subtables.into_iter::<SubstitutionSubtable<'_>>() {
+                    for id in &before {
+                        let Some(index) = sub.coverage().get(ttf_parser::GlyphId(*id)) else {
+                            continue;
+                        };
+                        match sub {
+                            SubstitutionSubtable::Single(SingleSubstitution::Format1 {
+                                delta,
+                                ..
+                            }) => {
+                                reachable.insert(id.wrapping_add(delta as u16));
+                            }
+                            SubstitutionSubtable::Single(SingleSubstitution::Format2 {
+                                substitutes,
+                                ..
+                            }) => {
+                                if let Some(g) = substitutes.get(index) {
+                                    reachable.insert(g.0);
+                                }
+                            }
+                            SubstitutionSubtable::Multiple(table) => {
+                                if let Some(sequence) = table.sequences.get(index) {
+                                    reachable.extend(sequence.substitutes.into_iter().map(|g| g.0));
+                                }
+                            }
+                            SubstitutionSubtable::Alternate(table) => {
+                                if let Some(set) = table.alternate_sets.get(index) {
+                                    reachable.extend(set.alternates.into_iter().map(|g| g.0));
+                                }
+                            }
+                            SubstitutionSubtable::Ligature(table) => {
+                                if let Some(set) = table.ligature_sets.get(index) {
+                                    for ligature in set {
+                                        if ligature
+                                            .components
+                                            .into_iter()
+                                            .all(|g| before.contains(&g.0))
+                                        {
+                                            reachable.insert(ligature.glyph.0);
+                                        }
+                                    }
+                                }
+                            }
+                            SubstitutionSubtable::ReverseChainSingle(table) => {
+                                if let Some(g) = table.substitutes.get(index) {
+                                    reachable.insert(g.0);
+                                }
+                            }
+                            // Referenced substitutions are included by visiting all lookups.
+                            SubstitutionSubtable::Context(_)
+                            | SubstitutionSubtable::ChainContext(_) => {}
+                        }
+                    }
+                }
+            }
+            reachable.retain(|id| *id != 0 && *id < face.number_of_glyphs());
+            if reachable == before {
+                break;
+            }
+        }
+        for glyph_id in reachable {
+            if resolutions
+                .iter()
+                .any(|r| r.font_face_id == face_id && r.glyph_id == glyph_id)
+            {
+                continue;
+            }
+            let mut resolution = template.clone();
+            resolution.glyph_id = glyph_id;
+            resolution.codepoint = u32::MAX;
+            resolutions.push(resolution);
+        }
+    }
+    Ok(())
+}
+
 fn raster_msdf_variants(
     profile: &FontAtlasProfileAsset,
     resolutions: &[ProjectFontCodepointResolution],
@@ -982,16 +1201,8 @@ fn raster_msdf_variants(
         let units = face.units_per_em();
         let advance = face.glyph_hor_advance(glyph).unwrap_or_default();
         let Some(bbox) = face.glyph_bounding_box(glyph) else {
-            if char::from_u32(resolution.codepoint).is_some_and(|ch| ch.is_whitespace()) {
-                continue;
-            }
-            return Err(failure(
-                "MsdfRasterFailed",
-                &format!(
-                    "{} glyph {} has no outline",
-                    asset.asset_id, resolution.glyph_id
-                ),
-            ));
+            // Empty glyphs still carry shaping advances, but need no MSDF cell.
+            continue;
         };
         let mut shape = fdsm_ttf_parser::load_shape_from_face(&face, glyph).ok_or_else(|| {
             failure(
@@ -1015,18 +1226,7 @@ fn raster_msdf_variants(
             scale,
         ));
         shape.transform(&transform);
-        let colored = Shape::edge_coloring_simple(shape, 0.03, 0xA1FE_0261 ^ u64::from(glyph.0));
-        let prepared = colored.prepare();
-        let mut image: ImageBuffer<Rgb<f32>, Vec<f32>> = ImageBuffer::new(width, height);
-        generate_msdf(&prepared, range, &mut image);
-        correct_error_msdf(
-            &mut image,
-            &colored,
-            &prepared,
-            range,
-            &ErrorCorrectionConfig::default(),
-        );
-        correct_sign_msdf(&mut image, &prepared, FillRule::Nonzero);
+        let image = raster_msdf_image(shape, width, height, range, u64::from(glyph.0));
         if image.as_raw().iter().any(|value| !value.is_finite()) {
             return Err(failure(
                 "MsdfRasterFailed",
@@ -1060,6 +1260,13 @@ fn raster_msdf_variants(
             stride: width * 4,
             bearing_x: i32::from(bbox.x_min),
             bearing_y: i32::from(bbox.y_max),
+            plane_bounds_per_em_millionths: [
+                f64::from(bbox.x_min) - range / scale,
+                f64::from(bbox.y_min) + (f64::from(height) - range) / scale,
+                f64::from(width) / scale,
+                f64::from(height) / scale,
+            ]
+            .map(|v| (v / f64::from(units) * 1_000_000.0).round() as i32),
             advance_per_em_millionths: per_em(advance as i16, units),
             rgba8,
         });
@@ -1067,6 +1274,91 @@ fn raster_msdf_variants(
     variants.sort_by_key(|variant| (variant.font_face_id.clone(), variant.glyph_id));
     variants.dedup_by_key(|variant| (variant.font_face_id.clone(), variant.glyph_id));
     Ok(variants)
+}
+
+fn raster_msdf_image(
+    shape: Shape<fdsm::shape::Contour>,
+    width: u32,
+    height: u32,
+    range: f64,
+    seed: u64,
+) -> ImageBuffer<Rgb<f32>, Vec<f32>> {
+    let shape = union_msdf_outline(shape);
+    let colored = Shape::edge_coloring_simple(shape, 0.03, 0xA1FE_0261 ^ seed);
+    let prepared = colored.prepare();
+    let mut image = ImageBuffer::new(width, height);
+    generate_msdf(&prepared, range, &mut image);
+    correct_error_msdf(
+        &mut image,
+        &colored,
+        &prepared,
+        range,
+        &ErrorCorrectionConfig::default(),
+    );
+    correct_sign_msdf(&mut image, &prepared, FillRule::Nonzero);
+    image
+}
+
+/// fdsm measures all contour edges, including edges inside overlapping strokes.
+/// Resolve the font's NonZero fill before distance generation. Curves are flattened
+/// in atlas pixel space with a 0.01 px interpolation-error bound, not in font units.
+fn union_msdf_outline(shape: Shape<fdsm::shape::Contour>) -> Shape<fdsm::shape::Contour> {
+    use fdsm::{
+        bezier::{Order, Point, Segment},
+        shape::Contour,
+    };
+    use i_overlay::{core::fill_rule::FillRule as PolygonFillRule, float::simplify::SimplifyShape};
+    const MAX_ERROR: f64 = 0.01;
+    let paths: Vec<Vec<[f64; 2]>> = shape
+        .contours
+        .iter()
+        .map(|contour| {
+            contour
+                .segments
+                .iter()
+                .flat_map(|segment| {
+                    let degree: usize = match segment.order() {
+                        Order::Linear => 1,
+                        Order::Quadratic => 2,
+                        Order::Cubic => 3,
+                    };
+                    // Linear interpolation error <= max |B''| / (8 * subdivisions^2).
+                    let second_derivative = (0..degree.saturating_sub(1))
+                        .map(|i| {
+                            (segment.control_point(i + 2)
+                                - segment.control_point(i + 1)
+                                - (segment.control_point(i + 1) - segment.control_point(i)))
+                            .norm()
+                                * (degree * (degree - 1)) as f64
+                        })
+                        .fold(0.0, f64::max);
+                    let subdivisions = (second_derivative / (8.0 * MAX_ERROR))
+                        .sqrt()
+                        .ceil()
+                        .max(1.0) as usize;
+                    (0..subdivisions).map(move |i| {
+                        let p = segment.get(i as f64 / subdivisions as f64);
+                        [p.x, p.y]
+                    })
+                })
+                .collect()
+        })
+        .collect();
+    let contours = paths
+        .simplify_shape(PolygonFillRule::NonZero)
+        .into_iter()
+        .flatten()
+        .map(|path| Contour {
+            segments: (0..path.len())
+                .map(|i| {
+                    let a = path[i];
+                    let b = path[(i + 1) % path.len()];
+                    Segment::line(Point::new(a[0], a[1]), Point::new(b[0], b[1]))
+                })
+                .collect(),
+        })
+        .collect();
+    Shape { contours }
 }
 
 fn quantize_msdf(value: f32) -> u8 {
@@ -1195,6 +1487,7 @@ fn dependency_digest(
         "sourceHashes": source_hashes,
         "codepoints": codepoints,
         "kerningPairs": kerning_pairs,
+        "shapingTexts": texts.iter().collect::<BTreeSet<_>>(),
     }))
 }
 
@@ -1370,6 +1663,105 @@ mod tests {
     };
     use engine_runtime::font_bundle::FontBundleRenderMode;
 
+    #[test]
+    fn project_font_msdf_overlapping_strokes_have_no_internal_edge() {
+        use fdsm::{
+            bezier::{Point, Segment},
+            shape::Contour,
+        };
+        let rectangle = |x0, y0, x1, y1| {
+            let p = [
+                Point::new(x0, y0),
+                Point::new(x1, y0),
+                Point::new(x1, y1),
+                Point::new(x0, y1),
+            ];
+            Contour {
+                segments: (0..4)
+                    .map(|i| Segment::line(p[i], p[(i + 1) % 4]))
+                    .collect(),
+            }
+        };
+        let image = raster_msdf_image(
+            Shape {
+                contours: vec![rectangle(8., 28., 56., 36.), rectangle(28., 8., 36., 56.)],
+            },
+            64,
+            64,
+            8.,
+            1,
+        );
+        // The union's boundary is >3.5 pixels from these stroke intersections.
+        // A contour edge inside the filled union must not create a 0.5-distance seam.
+        for (x, y) in [(28, 31), (31, 28), (35, 31), (31, 35)] {
+            let mut rgb = image.get_pixel(x, y).0;
+            rgb.sort_by(f32::total_cmp);
+            assert!(rgb[1] > 0.9, "internal edge at {x},{y}: {rgb:?}");
+        }
+        let mut outside = image.get_pixel(5, 5).0;
+        outside.sort_by(f32::total_cmp);
+        assert!(outside[1] < 0.1);
+    }
+
+    #[test]
+    fn project_font_msdf_union_preserves_holes_and_curves() {
+        use fdsm::{
+            bezier::{Point, Segment},
+            shape::Contour,
+        };
+        let p = Point::new;
+        let outer = Contour {
+            segments: vec![
+                Segment::cubic(p(56., 32.), p(56., 45.255), p(45.255, 56.), p(32., 56.)),
+                Segment::cubic(p(32., 56.), p(18.745, 56.), p(8., 45.255), p(8., 32.)),
+                Segment::cubic(p(8., 32.), p(8., 18.745), p(18.745, 8.), p(32., 8.)),
+                Segment::cubic(p(32., 8.), p(45.255, 8.), p(56., 18.745), p(56., 32.)),
+            ],
+        };
+        let hole = [p(28., 28.), p(28., 36.), p(36., 36.), p(36., 28.)];
+        let shape = Shape {
+            contours: vec![
+                outer.clone(),
+                Contour {
+                    segments: (0..4)
+                        .map(|i| Segment::line(hole[i], hole[(i + 1) % 4]))
+                        .collect(),
+                },
+            ],
+        };
+        let union = union_msdf_outline(shape.clone());
+        assert_eq!(
+            union.contours.len(),
+            2,
+            "NonZero must retain the opposite-winding hole"
+        );
+        // Check actual approximation against the original cubic, independently of
+        // the subdivision-count formula used in production.
+        for curve in &outer.segments {
+            for i in 0..=200 {
+                let point = curve.get(i as f64 / 200.);
+                let distance = union
+                    .contours
+                    .iter()
+                    .flat_map(|c| &c.segments)
+                    .map(|line| {
+                        let edge = line.end() - line.start();
+                        let t =
+                            ((point - line.start()).dot(&edge) / edge.norm_squared()).clamp(0., 1.);
+                        (point - (line.start() + edge * t)).norm()
+                    })
+                    .fold(f64::INFINITY, f64::min);
+                assert!(distance <= 0.011, "curve drift {distance}");
+            }
+        }
+        let image = raster_msdf_image(shape, 64, 64, 8., 1);
+        for (x, y, filled) in [(32, 32, false), (48, 32, true), (2, 32, false)] {
+            let mut rgb = image.get_pixel(x, y).0;
+            rgb.sort_by(f32::total_cmp);
+            assert_eq!(rgb[1] > 0.5, filled, "hole/curve fill at {x},{y}: {rgb:?}");
+        }
+    }
+
     const SOURCE_ID: &str = "font-source-qualification";
     const FACE_ID: &str = "font-face-qualification";
     const FAMILY_ID: &str = "font-family-ui";
@@ -1431,7 +1823,8 @@ mod tests {
                 .unwrap()
                 .as_nanos()
         ));
-        let (_, _, first) = crate::neutral_assembler::assemble(&source, Some(&root)).unwrap();
+        let (_, _, first) =
+            crate::neutral_assembler::assemble(&source, Some(&root), "test").unwrap();
         assert_ne!(
             first[0].cache_status,
             ProjectAssemblyArtifactCacheStatus::Hit
@@ -1440,7 +1833,8 @@ mod tests {
             "RuntimeModule/src/unrelated.rs".into(),
             b"// modified Rust\n".to_vec(),
         );
-        let (_, _, second) = crate::neutral_assembler::assemble(&source, Some(&root)).unwrap();
+        let (_, _, second) =
+            crate::neutral_assembler::assemble(&source, Some(&root), "test").unwrap();
         assert_eq!(
             second[0].cache_status,
             ProjectAssemblyArtifactCacheStatus::Hit
@@ -1543,6 +1937,253 @@ mod tests {
     }
 
     #[test]
+    fn gate_b_cook_retains_collection_index_and_fallback_face_ids() {
+        let mut input = request("A中");
+        let ttc =
+            include_bytes!("../../../fixtures/fonts/qualification/AifeNotoSCQualification.ttc")
+                .to_vec();
+        input.assets.faces[0].source.face_index = 1;
+        input.assets.faces[0].source.source_sha256 = sha256_prefixed(&ttc);
+        input.source_bytes.insert(SOURCE_ID.into(), ttc);
+        let cff = include_bytes!(
+            "../../../fixtures/fonts/qualification/AifeQualificationCFF-Regular.otf"
+        )
+        .to_vec();
+        let mut primary = input.assets.faces[0].clone();
+        primary.asset_id = "latin-face".into();
+        primary.source.asset_ref = "latin-source".into();
+        primary.source.face_index = 0;
+        primary.source.source_sha256 = sha256_prefixed(&cff);
+        primary.declared.weight = ttf_parser::Face::parse(&cff, 0)
+            .unwrap()
+            .weight()
+            .to_number();
+        input.source_bytes.insert("latin-source".into(), cff);
+        input.assets.faces.push(primary);
+        let mut family = input.assets.families[0].clone();
+        family.asset_id = "latin-family".into();
+        family.faces[0].font_face = "latin-face".into();
+        input.assets.families.push(family);
+        input.assets.stacks[0]
+            .families
+            .insert(0, "latin-family".into());
+        input.assets.profiles[0].packing.page_width = 512;
+        input.assets.profiles[0].packing.page_height = 512;
+        let profile = input.assets.profiles[0].clone();
+        let output = ProjectFontCookModule::cook(input).unwrap();
+        let source = crate::ProjectFontBundleBuilder::build_bitmap_v2(&profile, &output).unwrap();
+        let bundle = engine_runtime::font_bundle::RuntimeFontBundleLoader::load(source).unwrap();
+        assert_eq!(bundle.font_face_sources[1].font_face_id, FACE_ID);
+        assert_eq!(bundle.font_face_sources[1].face_index, 1);
+        let runs = engine_runtime::text_shaping::shape_stack(
+            &bundle.font_face_sources.iter().collect::<Vec<_>>(),
+            "A中",
+        )
+        .unwrap();
+        assert_eq!(runs[0].face_id, "latin-face");
+        assert_eq!(runs[1].face_id, FACE_ID);
+        assert!(runs[1].fallback_used);
+        for run in &runs {
+            assert!(bundle
+                .metadata
+                .glyphs
+                .iter()
+                .any(|glyph| glyph.font_face_id == run.face_id
+                    && u32::from(glyph.glyph_id) == run.items[0].glyph_id));
+        }
+    }
+
+    #[test]
+    fn gate_b_real_cook_preserves_face_identity_and_shaped_atlas_coverage() {
+        use engine_runtime::text_shaping::shape_stack;
+        let text = "ffi a\u{301} Agpy中文，01";
+        let mut input = request(text);
+        let bytes = include_bytes!("../../../resources/editor/fonts/NotoSansSC-VF.ttf").to_vec();
+        input.assets.faces[0].source.source_sha256 = sha256_prefixed(&bytes);
+        let parsed = ttf_parser::Face::parse(&bytes, 0).unwrap();
+        input.assets.faces[0].declared.weight = parsed.weight().to_number();
+        input.source_bytes.insert(SOURCE_ID.into(), bytes);
+        let profile = &mut input.assets.profiles[0];
+        profile.raster.bitmap_pixel_sizes = vec![14, 18, 24, 32, 48, 64];
+        profile.packing.page_width = 1024;
+        profile.packing.page_height = 1024;
+        let profile = profile.clone();
+        let output = ProjectFontCookModule::cook(input).expect("real shaper cook");
+        assert_eq!(output.font_face_sources[0].font_face_id, FACE_ID);
+        assert_ne!(FACE_ID, SOURCE_ID);
+        let source = crate::ProjectFontBundleBuilder::build_bitmap_v2(&profile, &output).unwrap();
+        use engine_runtime::runtime_package::{
+            load_runtime_package, RuntimeProjectInfo, RuntimeScene, RUNTIME_SCENE_SCHEMA_VERSION,
+        };
+        use engine_runtime::runtime_package_builder::{
+            RuntimePackageBuildInput, RuntimePackageBuildRequest, RuntimePackageBuildStatus,
+            RuntimePackageBuilder,
+        };
+        let mut package_input = RuntimePackageBuildInput::new(RuntimeProjectInfo::explicit_empty(
+            "gate-b", "Gate B", "1",
+        ));
+        let mapping = engine_runtime::input_mapping::InputMappingAsset::gameplay_default();
+        package_input.input_mappings.push(RuntimePackageSourceJson {
+            id: mapping.asset_id.clone(),
+            document: serde_json::to_value(mapping).unwrap(),
+        });
+        package_input.scenes.push(RuntimeScene {
+            main_camera: None,
+            schema_version: RUNTIME_SCENE_SCHEMA_VERSION.into(),
+            id: "main".into(),
+            name: "Main".into(),
+            gravity: 0.,
+            background: "#000000".into(),
+            sky_color: "#000000".into(),
+            entities: Vec::new(),
+        });
+        package_input.font_bundles.push(source);
+        let root = std::env::temp_dir().join(format!(
+            "aife-gate-b-cook-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        let report = RuntimePackageBuilder::build(
+            &RuntimePackageBuildRequest::dev_desktop(&root, "main"),
+            &package_input,
+        );
+        assert_eq!(
+            report.status,
+            RuntimePackageBuildStatus::Success,
+            "{report:?}"
+        );
+        let package = load_runtime_package(&root)
+            .value
+            .expect("real cooked disk package");
+        let bundle = package.font_bundles.default_bundle().unwrap().clone();
+        std::fs::remove_dir_all(&root).unwrap();
+
+        let sources = bundle.font_face_sources.iter().collect::<Vec<_>>();
+        let runs = shape_stack(&sources, text).unwrap();
+        assert!(runs.iter().map(|r| r.items.len()).sum::<usize>() < text.chars().count());
+        for run in &runs {
+            for item in &run.items {
+                let cluster = &text[item.cluster_start as usize..item.cluster_end as usize];
+                if cluster.chars().all(char::is_whitespace) {
+                    continue;
+                }
+                for size in [14, 18, 24, 32, 48, 64] {
+                    assert!(bundle
+                        .metadata
+                        .glyphs
+                        .iter()
+                        .any(|g| g.font_face_id == run.face_id
+                            && u32::from(g.glyph_id) == item.glyph_id
+                            && g.pixel_size == size
+                            && g.render_mode
+                                == engine_runtime::font_bundle::FontBundleRenderMode::BitmapR8));
+                }
+                let msdf = bundle
+                    .metadata
+                    .glyphs
+                    .iter()
+                    .find(|g| {
+                        g.font_face_id == run.face_id
+                            && u32::from(g.glyph_id) == item.glyph_id
+                            && g.render_mode
+                                == engine_runtime::font_bundle::FontBundleRenderMode::MsdfRgba8
+                    })
+                    .unwrap();
+                let bounds = msdf.plane_bounds_per_em_millionths.unwrap();
+                assert!(bounds[2] > 0 && bounds[3] > 0);
+            }
+        }
+        use engine_runtime::aui::*;
+        let registry = engine_runtime::font_bundle::RuntimeFontBundleRegistry {
+            default_ui_font_bundle_id: Some(bundle.metadata.font_bundle_id.clone()),
+            bundles_by_id: BTreeMap::from([(bundle.metadata.font_bundle_id.clone(), bundle)])
+                .into(),
+            diagnostics: Vec::new(),
+        };
+        for size in [14., 18., 24., 32., 48., 64.] {
+            for policy in [AuiFontRasterPolicy::Bitmap, AuiFontRasterPolicy::Msdf] {
+                let overlay = AuiOverlayFrame {
+                    frame_index: 1,
+                    draw_items: std::sync::Arc::new(vec![std::sync::Arc::new(
+                        AuiOverlayDrawItem {
+                            presentation: None,
+                            item_id: "text".into(),
+                            canvas_id: "main".into(),
+                            composition_stage: AuiCompositionStage::ScreenOverlay,
+                            node_id: "button:label".into(),
+                            item_kind: AuiOverlayItemKind::Text,
+                            rect: AuiComputedRect {
+                                x: 0.,
+                                y: 0.,
+                                width: 2000.,
+                                height: 200.,
+                            },
+                            effective_clip_rect: None,
+                            effective_clips: Vec::new(),
+                            paint: None,
+                            color: Some("#fff".into()),
+                            asset_id: None,
+                            text: Some(text.into()),
+                            font_size: Some(size),
+                            font: Some(AuiFontStyle {
+                                font_bundle_id: Some(profile.asset_id.clone()),
+                                font_family_id: Some(FAMILY_ID.into()),
+                                style: AuiFontStyleKind::Normal,
+                                weight: 400,
+                                raster_policy: policy,
+                            }),
+                            mesh: None,
+                            sort_key: AuiOverlaySortKey {
+                                canvas_layer: 0,
+                                canvas_sorting_order: 0,
+                                tree_order: 0,
+                            },
+                        },
+                    )]),
+                    report: AuiRenderReport {
+                        draw_command_count: 1,
+                        text_count: 1,
+                        ..Default::default()
+                    },
+                    glyph_plan: None,
+                };
+                let plan = build_text_glyph_plan_from_bundles(&overlay, &registry).unwrap();
+                assert_eq!(plan.unsupported_glyph_count, 0, "{size} {policy:?}");
+                assert_eq!(plan.clipped_glyph_count, 0, "{size} {policy:?}");
+                assert_eq!(
+                    plan.rendered_glyph_count,
+                    runs.iter()
+                        .flat_map(|r| &r.items)
+                        .filter(|g| g.has_outline)
+                        .count()
+                );
+                let metrics = engine_runtime::text_shaping::layout_line(&runs, size, 200., true);
+                let first = &plan.quads[0];
+                let face = ttf_parser::Face::parse(
+                    &registry.default_bundle().unwrap().font_face_sources[0].bytes,
+                    0,
+                )
+                .unwrap();
+                let glyph_id = runs[0].items[0].glyph_id as u16;
+                let bound = face
+                    .glyph_bounding_box(ttf_parser::GlyphId(glyph_id))
+                    .unwrap();
+                // The first ink top must agree with the real outline metrics (hinting tolerance).
+                let expected_top = metrics.baseline
+                    - f32::from(bound.y_max) * size / f32::from(face.units_per_em());
+                if policy == AuiFontRasterPolicy::Bitmap {
+                    assert!((first.rect.y - expected_top).abs() <= 2.0);
+                } else {
+                    assert!(first.rect.y < expected_top);
+                } // MSDF includes explicit distance-field padding.
+            }
+        }
+    }
+
+    #[test]
     fn project_font_cook_collects_real_cjk_and_is_deterministic() {
         let first = ProjectFontCookModule::cook(request("A1?中")).expect("first cook");
         let second = ProjectFontCookModule::cook(request("A1?中")).expect("second cook");
@@ -1583,13 +2224,13 @@ mod tests {
     }
 
     #[test]
-    fn project_font_hot_reload_reuses_dependency_when_glyphs_and_pairs_are_unchanged() {
+    fn project_font_shaping_context_invalidates_dependency_even_with_same_pairs() {
         let first = ProjectFontCookModule::cook(request("A1A1A")).expect("first cook");
         let reordered = ProjectFontCookModule::cook(request("1A1A1")).expect("reordered cook");
         let added = ProjectFontCookModule::cook(request("A1A12")).expect("added glyph cook");
 
         assert_eq!(first.required_codepoints, reordered.required_codepoints);
-        assert_eq!(first.dependency_digest, reordered.dependency_digest);
+        assert_ne!(first.dependency_digest, reordered.dependency_digest);
         assert_ne!(first.dependency_digest, added.dependency_digest);
     }
 

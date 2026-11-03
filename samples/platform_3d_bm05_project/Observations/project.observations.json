@@ -1,0 +1,61 @@
+{
+  "schemaVersion": "project-observation-contract.v1",
+  "contractId": "bm05.full.actual-state",
+  "observations": [
+    {
+      "path": "bm05.tick",
+      "type": "integer",
+      "description": "Committed runtime state; actual character joint transforms and events"
+    },
+    {
+      "path": "bm05.actualActors",
+      "type": "integer",
+      "description": "Committed runtime state; actual character joint transforms and events"
+    },
+    {
+      "path": "bm05.actualJoints",
+      "type": "integer",
+      "description": "Committed runtime state; actual character joint transforms and events"
+    },
+    {
+      "path": "bm05.actorsWithEvents",
+      "type": "integer",
+      "description": "Committed runtime state; actual character joint transforms and events"
+    },
+    {
+      "path": "bm05.offscreenActors",
+      "type": "integer",
+      "description": "Committed runtime state; actual character joint transforms and events"
+    },
+    {
+      "path": "bm05.offscreenActorsWithNewEvents",
+      "type": "integer",
+      "description": "Committed runtime state; actual character joint transforms and events"
+    },
+    {
+      "path": "bm05.pausedPoseUnchanged",
+      "type": "bool",
+      "description": "Committed runtime state; actual character joint transforms and events"
+    },
+    {
+      "path": "bm05.pausedStepChangedPose",
+      "type": "bool",
+      "description": "Committed runtime state; actual character joint transforms and events"
+    },
+    {
+      "path": "bm05.actualRootMotionModes",
+      "type": "integer",
+      "description": "Committed runtime state; actual character joint transforms and events"
+    },
+    {
+      "path": "bm05.rootMotionActorsMoved",
+      "type": "integer",
+      "description": "Committed runtime state; actual character joint transforms and events"
+    },
+    {
+      "path": "bm05.motorActorsMoved",
+      "type": "integer",
+      "description": "Committed runtime state; actual character joint transforms and events"
+    }
+  ]
+}

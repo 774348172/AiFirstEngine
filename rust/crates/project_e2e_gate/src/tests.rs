@@ -1469,7 +1469,10 @@ fn aui_complex_controls_productization_report_covers_modal_focus_scroll_and_scen
     assert!(report.metrics.drag_scroll_offset_change_count > 0);
     assert_eq!(report.metrics.scroll_offset_applied_count, 2);
     assert!(report.metrics.scene_selectable_proxy_count > 0);
-    assert_eq!(report.metrics.deferred_flag_count, 2);
+    assert!(report.metrics.toggle_value_changed_action_count > 0);
+    assert!(report.metrics.slider_value_changed_action_count >= 2);
+    assert!(report.metrics.composed_activation_action_count > 0);
+    assert_eq!(report.metrics.deferred_flag_count, 1);
     assert!(output_root
         .join("reports")
         .join("complex-shooter-aui-complex-controls-productization-report.json")
@@ -1508,7 +1511,7 @@ fn aui_rectclip_scrollbar_navigation_productization_report_covers_215_gate() {
     assert!(report.metrics.keyboard_navigation_event_count > 0);
     assert!(report.metrics.focus_move_count > 0);
     assert!(report.metrics.focus_visible_scroll_count > 0);
-    assert_eq!(report.metrics.deferred_flag_count, 6);
+    assert_eq!(report.metrics.deferred_flag_count, 3);
     assert!(report
         .core_report
         .focused_node_after
@@ -1557,10 +1560,10 @@ fn aui_runtime_navigation_screenflow_textentry_productization_report_covers_216_
     assert!(report.metrics.ime_commit_count > 0);
     assert!(report.metrics.ime_cancel_count > 0);
     assert!(report.metrics.gameplay_input_filtered_count > 0);
-    assert_eq!(report.metrics.deferred_flag_count, 10);
+    assert_eq!(report.metrics.deferred_flag_count, 8);
     assert_eq!(
         report.core_report.ime_platform_coverage,
-        "schema_headless_and_winit_cmin"
+        engine_runtime::aui::AUI_IME_PLATFORM_COVERAGE
     );
     assert!(output_root
         .join("reports")

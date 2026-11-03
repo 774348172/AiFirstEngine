@@ -1,0 +1,26 @@
+{
+  "schemaVersion": "build-profile.v2",
+  "profile": "release",
+  "target": "windows",
+  "architecture": "x86_64",
+  "runtimePackageMode": "debug-readable",
+  "frameLimit": 3,
+  "headlessSurfaceGate": true,
+  "realWindowSmoke": "optional",
+  "application": {
+    "displayName": "Switch Puzzle",
+    "executableName": "SwitchPuzzle",
+    "companyName": "AI First Engine Studio",
+    "fileDescription": "Switch Puzzle",
+    "displayVersion": "1.0.0",
+    "windowsFileVersion": [1, 0, 0, 0],
+    "windowsProductVersion": [1, 0, 0, 0],
+    "copyright": "Copyright AI First Engine Studio",
+    "icon": { "assetId": "app-icon" }
+  },
+  "release": {
+    "layout": "portable-directory-v1",
+    "includeReports": false,
+    "includeDebugSymbols": false
+  }
+}

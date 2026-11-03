@@ -1,0 +1,14 @@
+361 B17 lint evidence
+Date: 2026-09-27
+
+Command:
+cargo clippy -p engine_runtime -p runtime_player_winit -p editor_core --lib --locked --message-format short
+
+Result: exit 0.
+
+The first engine-only Clippy run identified one B17 boolean-expression simplification in aui_drawing_cache.rs. It was corrected before the final three-crate run. Final warnings are pre-existing repository warnings outside the B17 change.
+
+Formatting and whitespace:
+- rustfmt --edition 2021 --check crates/engine_runtime/src/aui_drawing_cache.rs: exit 0
+- git diff --check on aui.rs, aui_drawing_cache.rs, runtime_renderer.rs and the active 361 construction document: exit 0
+- The whole large aui.rs/runtime_renderer.rs files retain pre-existing rustfmt deviations from earlier uncommitted work, so B17 did not mechanically reformat unrelated regions.

@@ -1,0 +1,5216 @@
+{
+  "revision": "371-target-v1",
+  "generatorRevision": "source-grid-v1",
+  "baseSeed": 57739793,
+  "rng": "xorshift32-13-17-5-u32",
+  "simulationHz": 60,
+  "dirtyPercent": [
+    0,
+    1,
+    10,
+    100
+  ],
+  "layout": {
+    "BM-02/BM-03": "row-major100x100PC/50x40Android-2m-grid-facing-camera",
+    "uniqueMeshPerturbation": "per-mesh(seed XOR index),integer/65536 displacement",
+    "texturePCSize": 2048,
+    "textureAndroidSize": 1024,
+    "finalTextureSemantics": [
+      "baseColor",
+      "normal",
+      "ORM"
+    ],
+    "foundationTextureSemantics": [
+      "baseColor"
+    ],
+    "normalORMStatus": "not_executed"
+  },
+  "tracks": {
+    "K1": {
+      "periodTicks": 7200,
+      "positionInterpolation": "linear",
+      "rotationInterpolation": "shortest-slerp",
+      "fovYDegrees": 60,
+      "near": 0.1,
+      "far": 2000,
+      "keys": [
+        {
+          "tick": 0,
+          "position": [
+            -120,
+            60,
+            120
+          ],
+          "target": [
+            0,
+            0,
+            0
+          ],
+          "rotationXyzw": [
+            -0.15622985705189127,
+            -0.37717223974228575,
+            -0.06471252563850328,
+            0.9105743365364629
+          ]
+        },
+        {
+          "tick": 1800,
+          "position": [
+            120,
+            60,
+            120
+          ],
+          "target": [
+            0,
+            0,
+            0
+          ],
+          "rotationXyzw": [
+            -0.15622985705189127,
+            0.37717223974228575,
+            0.06471252563850328,
+            0.9105743365364629
+          ]
+        },
+        {
+          "tick": 3600,
+          "position": [
+            120,
+            60,
+            -120
+          ],
+          "target": [
+            0,
+            0,
+            0
+          ],
+          "rotationXyzw": [
+            -0.06471252563850328,
+            0.9105743365364628,
+            0.1562298570518913,
+            0.3771722397422858
+          ]
+        },
+        {
+          "tick": 5400,
+          "position": [
+            -120,
+            60,
+            -120
+          ],
+          "target": [
+            0,
+            0,
+            0
+          ],
+          "rotationXyzw": [
+            -0.06471252563850328,
+            -0.9105743365364628,
+            -0.1562298570518913,
+            0.3771722397422858
+          ]
+        },
+        {
+          "tick": 7200,
+          "position": [
+            -120,
+            60,
+            120
+          ],
+          "target": [
+            0,
+            0,
+            0
+          ],
+          "rotationXyzw": [
+            -0.15622985705189127,
+            -0.37717223974228575,
+            -0.06471252563850328,
+            0.9105743365364629
+          ]
+        }
+      ]
+    },
+    "K3": {
+      "periodTicks": 7200,
+      "positionInterpolation": "linear",
+      "rotationInterpolation": "shortest-slerp",
+      "fovYDegrees": 60,
+      "near": 0.1,
+      "far": 2000,
+      "keys": [
+        {
+          "tick": 0,
+          "position": [
+            0,
+            4,
+            10
+          ],
+          "target": [
+            0,
+            1,
+            0
+          ],
+          "rotationXyzw": [
+            -0.1452131446854048,
+            0.0,
+            0.0,
+            0.989400395497483
+          ]
+        },
+        {
+          "tick": 1800,
+          "position": [
+            40,
+            6,
+            20
+          ],
+          "target": [
+            40,
+            1,
+            10
+          ],
+          "rotationXyzw": [
+            -0.2297529205473612,
+            0.0,
+            0.0,
+            0.9732489894677302
+          ]
+        },
+        {
+          "tick": 3600,
+          "position": [
+            60,
+            8,
+            -40
+          ],
+          "target": [
+            50,
+            1,
+            -40
+          ],
+          "rotationXyzw": [
+            -0.2125841477397595,
+            0.6743945285437599,
+            0.2125841477397595,
+            0.6743945285437599
+          ]
+        },
+        {
+          "tick": 5400,
+          "position": [
+            -40,
+            5,
+            -20
+          ],
+          "target": [
+            -30,
+            1,
+            -20
+          ],
+          "rotationXyzw": [
+            -0.13371921058204453,
+            -0.6943480198872284,
+            -0.13371921058204453,
+            0.6943480198872284
+          ]
+        },
+        {
+          "tick": 7200,
+          "position": [
+            0,
+            4,
+            10
+          ],
+          "target": [
+            0,
+            1,
+            0
+          ],
+          "rotationXyzw": [
+            -0.1452131446854048,
+            0.0,
+            0.0,
+            0.989400395497483
+          ]
+        }
+      ]
+    },
+    "K0": {
+      "position": [
+        0,
+        0,
+        150
+      ],
+      "rotationXyzw": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "orthographicVerticalExtent": 220,
+      "viewportPC": [
+        1920,
+        1080
+      ],
+      "far": 2000,
+      "near": 0.1
+    },
+    "K2-16": {
+      "cellMetres": 128,
+      "speedMetresPerSecond": 32,
+      "turnPauseTicks": 30,
+      "teleportTick": 7200,
+      "prefetchCellsAhead": 1,
+      "interpolation": "hold previous position until moveStartTick; then linear to arrival tick; shortest-slerp only during turn pause; teleport is discontinuous at its tick",
+      "keys": [
+        {
+          "tick": 0,
+          "cell": [
+            0,
+            0
+          ],
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 240,
+          "cell": [
+            1,
+            0
+          ],
+          "position": [
+            128,
+            0,
+            0
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 0,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 480,
+          "cell": [
+            2,
+            0
+          ],
+          "position": [
+            256,
+            0,
+            0
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 240,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 720,
+          "cell": [
+            3,
+            0
+          ],
+          "position": [
+            384,
+            0,
+            0
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 480,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 960,
+          "cell": [
+            4,
+            0
+          ],
+          "position": [
+            512,
+            0,
+            0
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 720,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 1200,
+          "cell": [
+            5,
+            0
+          ],
+          "position": [
+            640,
+            0,
+            0
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 960,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 1440,
+          "cell": [
+            6,
+            0
+          ],
+          "position": [
+            768,
+            0,
+            0
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 1200,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 1680,
+          "cell": [
+            7,
+            0
+          ],
+          "position": [
+            896,
+            0,
+            0
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 1440,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 1920,
+          "cell": [
+            8,
+            0
+          ],
+          "position": [
+            1024,
+            0,
+            0
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 1680,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 2160,
+          "cell": [
+            9,
+            0
+          ],
+          "position": [
+            1152,
+            0,
+            0
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 1920,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 2400,
+          "cell": [
+            10,
+            0
+          ],
+          "position": [
+            1280,
+            0,
+            0
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 2160,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 2640,
+          "cell": [
+            11,
+            0
+          ],
+          "position": [
+            1408,
+            0,
+            0
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 2400,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 5310,
+          "cell": [
+            0,
+            0
+          ],
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 2670,
+          "turnPauseTicks": 30,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            0.6957602276591133,
+            0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 5580,
+          "cell": [
+            1,
+            0
+          ],
+          "position": [
+            128,
+            0,
+            0
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 5340,
+          "turnPauseTicks": 30,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 5820,
+          "cell": [
+            2,
+            0
+          ],
+          "position": [
+            256,
+            0,
+            0
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 5580,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 6060,
+          "cell": [
+            3,
+            0
+          ],
+          "position": [
+            384,
+            0,
+            0
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 5820,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 7200,
+          "cell": [
+            15,
+            1
+          ],
+          "position": [
+            1920,
+            0,
+            128
+          ],
+          "operation": "teleport",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 7200,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12081312887005961,
+            -0.7240739884975609,
+            -0.1312996538765587,
+            0.6662442855032652
+          ]
+        },
+        {
+          "tick": 7440,
+          "cell": [
+            14,
+            1
+          ],
+          "position": [
+            1792,
+            0,
+            128
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 7200,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            0.6957602276591133,
+            0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 7680,
+          "cell": [
+            13,
+            1
+          ],
+          "position": [
+            1664,
+            0,
+            128
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 7440,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            0.6957602276591133,
+            0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 7920,
+          "cell": [
+            12,
+            1
+          ],
+          "position": [
+            1536,
+            0,
+            128
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 7680,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            0.6957602276591133,
+            0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 8160,
+          "cell": [
+            11,
+            1
+          ],
+          "position": [
+            1408,
+            0,
+            128
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 7920,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            0.6957602276591133,
+            0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 8400,
+          "cell": [
+            10,
+            1
+          ],
+          "position": [
+            1280,
+            0,
+            128
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 8160,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            0.6957602276591133,
+            0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 8640,
+          "cell": [
+            9,
+            1
+          ],
+          "position": [
+            1152,
+            0,
+            128
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 8400,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            0.6957602276591133,
+            0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 8880,
+          "cell": [
+            8,
+            1
+          ],
+          "position": [
+            1024,
+            0,
+            128
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 8640,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            0.6957602276591133,
+            0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 9120,
+          "cell": [
+            7,
+            1
+          ],
+          "position": [
+            896,
+            0,
+            128
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 8880,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            0.6957602276591133,
+            0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 9360,
+          "cell": [
+            6,
+            1
+          ],
+          "position": [
+            768,
+            0,
+            128
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 9120,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            0.6957602276591133,
+            0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 9600,
+          "cell": [
+            5,
+            1
+          ],
+          "position": [
+            640,
+            0,
+            128
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 9360,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            0.6957602276591133,
+            0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 9840,
+          "cell": [
+            4,
+            1
+          ],
+          "position": [
+            512,
+            0,
+            128
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 9600,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            0.6957602276591133,
+            0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 10080,
+          "cell": [
+            3,
+            1
+          ],
+          "position": [
+            384,
+            0,
+            128
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 9840,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            0.6957602276591133,
+            0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 10869,
+          "cell": [
+            0,
+            0
+          ],
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 10110,
+          "turnPauseTicks": 30,
+          "rotationXyzw": [
+            -0.1447457290982633,
+            0.5753277603838451,
+            0.10432681881131964,
+            0.7982246281067948
+          ]
+        },
+        {
+          "tick": 11139,
+          "cell": [
+            1,
+            0
+          ],
+          "position": [
+            128,
+            0,
+            0
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 10899,
+          "turnPauseTicks": 30,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 11379,
+          "cell": [
+            2,
+            0
+          ],
+          "position": [
+            256,
+            0,
+            0
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 11139,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 11619,
+          "cell": [
+            3,
+            0
+          ],
+          "position": [
+            384,
+            0,
+            0
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 11379,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 11988,
+          "cell": [
+            2,
+            1
+          ],
+          "position": [
+            256,
+            0,
+            128
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 11649,
+          "turnPauseTicks": 30,
+          "rotationXyzw": [
+            -0.06828021698541667,
+            0.9090545458933537,
+            0.16484302588797067,
+            0.37654272184594234
+          ]
+        },
+        {
+          "tick": 12258,
+          "cell": [
+            1,
+            1
+          ],
+          "position": [
+            128,
+            0,
+            128
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 12018,
+          "turnPauseTicks": 30,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            0.6957602276591133,
+            0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 12498,
+          "cell": [
+            0,
+            1
+          ],
+          "position": [
+            0,
+            0,
+            128
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 12258,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            0.6957602276591133,
+            0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 12768,
+          "cell": [
+            0,
+            2
+          ],
+          "position": [
+            0,
+            0,
+            256
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 12528,
+          "turnPauseTicks": 30,
+          "rotationXyzw": [
+            -1.0925368346819682e-17,
+            0.9839535501153102,
+            0.17842480549373663,
+            6.024977828291947e-17
+          ]
+        },
+        {
+          "tick": 13038,
+          "cell": [
+            1,
+            2
+          ],
+          "position": [
+            128,
+            0,
+            256
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 12798,
+          "turnPauseTicks": 30,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 13278,
+          "cell": [
+            2,
+            2
+          ],
+          "position": [
+            256,
+            0,
+            256
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 13038,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 13518,
+          "cell": [
+            3,
+            2
+          ],
+          "position": [
+            384,
+            0,
+            256
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 13278,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 13758,
+          "cell": [
+            4,
+            2
+          ],
+          "position": [
+            512,
+            0,
+            256
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 13518,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 13998,
+          "cell": [
+            5,
+            2
+          ],
+          "position": [
+            640,
+            0,
+            256
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 13758,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 14238,
+          "cell": [
+            6,
+            2
+          ],
+          "position": [
+            768,
+            0,
+            256
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 13998,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 14478,
+          "cell": [
+            7,
+            2
+          ],
+          "position": [
+            896,
+            0,
+            256
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 14238,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 14718,
+          "cell": [
+            8,
+            2
+          ],
+          "position": [
+            1024,
+            0,
+            256
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 14478,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 16727,
+          "cell": [
+            0,
+            0
+          ],
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 14748,
+          "turnPauseTicks": 30,
+          "rotationXyzw": [
+            -0.14063540196712976,
+            0.6055370282260301,
+            0.109804803761136,
+            0.7755575389561435
+          ]
+        },
+        {
+          "tick": 16997,
+          "cell": [
+            1,
+            0
+          ],
+          "position": [
+            128,
+            0,
+            0
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 16757,
+          "turnPauseTicks": 30,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 17237,
+          "cell": [
+            2,
+            0
+          ],
+          "position": [
+            256,
+            0,
+            0
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 16997,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 17477,
+          "cell": [
+            3,
+            0
+          ],
+          "position": [
+            384,
+            0,
+            0
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 17237,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 19025,
+          "cell": [
+            9,
+            2
+          ],
+          "position": [
+            1152,
+            0,
+            256
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 17507,
+          "turnPauseTicks": 30,
+          "rotationXyzw": [
+            -0.10432681881131961,
+            -0.798224628106795,
+            -0.14474572909826333,
+            0.575327760383845
+          ]
+        },
+        {
+          "tick": 19295,
+          "cell": [
+            10,
+            2
+          ],
+          "position": [
+            1280,
+            0,
+            256
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 19055,
+          "turnPauseTicks": 30,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 19535,
+          "cell": [
+            11,
+            2
+          ],
+          "position": [
+            1408,
+            0,
+            256
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 19295,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 19775,
+          "cell": [
+            12,
+            2
+          ],
+          "position": [
+            1536,
+            0,
+            256
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 19535,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 20015,
+          "cell": [
+            13,
+            2
+          ],
+          "position": [
+            1664,
+            0,
+            256
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 19775,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 20255,
+          "cell": [
+            14,
+            2
+          ],
+          "position": [
+            1792,
+            0,
+            256
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 20015,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 20495,
+          "cell": [
+            15,
+            2
+          ],
+          "position": [
+            1920,
+            0,
+            256
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 20255,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 20765,
+          "cell": [
+            15,
+            3
+          ],
+          "position": [
+            1920,
+            0,
+            384
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 20525,
+          "turnPauseTicks": 30,
+          "rotationXyzw": [
+            -1.0925368346819682e-17,
+            0.9839535501153102,
+            0.17842480549373663,
+            6.024977828291947e-17
+          ]
+        },
+        {
+          "tick": 21035,
+          "cell": [
+            14,
+            3
+          ],
+          "position": [
+            1792,
+            0,
+            384
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 20795,
+          "turnPauseTicks": 30,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            0.6957602276591133,
+            0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 21275,
+          "cell": [
+            13,
+            3
+          ],
+          "position": [
+            1664,
+            0,
+            384
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 21035,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            0.6957602276591133,
+            0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 21515,
+          "cell": [
+            12,
+            3
+          ],
+          "position": [
+            1536,
+            0,
+            384
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 21275,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            0.6957602276591133,
+            0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 21755,
+          "cell": [
+            11,
+            3
+          ],
+          "position": [
+            1408,
+            0,
+            384
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 21515,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            0.6957602276591133,
+            0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 24521,
+          "cell": [
+            0,
+            0
+          ],
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 21785,
+          "turnPauseTicks": 30,
+          "rotationXyzw": [
+            -0.1417953843163085,
+            0.5972535616485494,
+            0.10830272481368196,
+            0.7819544563992488
+          ]
+        },
+        {
+          "tick": 24791,
+          "cell": [
+            1,
+            0
+          ],
+          "position": [
+            128,
+            0,
+            0
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 24551,
+          "turnPauseTicks": 30,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 25031,
+          "cell": [
+            2,
+            0
+          ],
+          "position": [
+            256,
+            0,
+            0
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 24791,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 25271,
+          "cell": [
+            3,
+            0
+          ],
+          "position": [
+            384,
+            0,
+            0
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 25031,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 27129,
+          "cell": [
+            10,
+            3
+          ],
+          "position": [
+            1280,
+            0,
+            384
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 25301,
+          "turnPauseTicks": 30,
+          "rotationXyzw": [
+            -0.0982212511615928,
+            -0.8214448564899867,
+            -0.14895635950079156,
+            0.5416575823623884
+          ]
+        },
+        {
+          "tick": 27399,
+          "cell": [
+            9,
+            3
+          ],
+          "position": [
+            1152,
+            0,
+            384
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 27159,
+          "turnPauseTicks": 30,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            0.6957602276591133,
+            0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 27639,
+          "cell": [
+            8,
+            3
+          ],
+          "position": [
+            1024,
+            0,
+            384
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 27399,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            0.6957602276591133,
+            0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 27879,
+          "cell": [
+            7,
+            3
+          ],
+          "position": [
+            896,
+            0,
+            384
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 27639,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            0.6957602276591133,
+            0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 28119,
+          "cell": [
+            6,
+            3
+          ],
+          "position": [
+            768,
+            0,
+            384
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 27879,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            0.6957602276591133,
+            0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 28359,
+          "cell": [
+            5,
+            3
+          ],
+          "position": [
+            640,
+            0,
+            384
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 28119,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            0.6957602276591133,
+            0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 28599,
+          "cell": [
+            4,
+            3
+          ],
+          "position": [
+            512,
+            0,
+            384
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 28359,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            0.6957602276591133,
+            0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 28839,
+          "cell": [
+            3,
+            3
+          ],
+          "position": [
+            384,
+            0,
+            384
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 28599,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            0.6957602276591133,
+            0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 29079,
+          "cell": [
+            2,
+            3
+          ],
+          "position": [
+            256,
+            0,
+            384
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 28839,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            0.6957602276591133,
+            0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 29319,
+          "cell": [
+            1,
+            3
+          ],
+          "position": [
+            128,
+            0,
+            384
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 29079,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            0.6957602276591133,
+            0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 29559,
+          "cell": [
+            0,
+            3
+          ],
+          "position": [
+            0,
+            0,
+            384
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 29319,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            0.6957602276591133,
+            0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 29829,
+          "cell": [
+            0,
+            4
+          ],
+          "position": [
+            0,
+            0,
+            512
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 29589,
+          "turnPauseTicks": 30,
+          "rotationXyzw": [
+            -1.0925368346819682e-17,
+            0.9839535501153102,
+            0.17842480549373663,
+            6.024977828291947e-17
+          ]
+        },
+        {
+          "tick": 30819,
+          "cell": [
+            0,
+            0
+          ],
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 29859,
+          "turnPauseTicks": 30,
+          "rotationXyzw": [
+            -0.17842480549373663,
+            0.0,
+            0.0,
+            0.9839535501153102
+          ]
+        },
+        {
+          "tick": 31089,
+          "cell": [
+            1,
+            0
+          ],
+          "position": [
+            128,
+            0,
+            0
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 30849,
+          "turnPauseTicks": 30,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 31329,
+          "cell": [
+            2,
+            0
+          ],
+          "position": [
+            256,
+            0,
+            0
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 31089,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 31569,
+          "cell": [
+            3,
+            0
+          ],
+          "position": [
+            384,
+            0,
+            0
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 31329,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 32672,
+          "cell": [
+            1,
+            4
+          ],
+          "position": [
+            128,
+            0,
+            512
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 31599,
+          "turnPauseTicks": 30,
+          "rotationXyzw": [
+            -0.04099362016028086,
+            0.9576317983329112,
+            0.17365176164275548,
+            0.2260662018219369
+          ]
+        },
+        {
+          "tick": 32942,
+          "cell": [
+            2,
+            4
+          ],
+          "position": [
+            256,
+            0,
+            512
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 32702,
+          "turnPauseTicks": 30,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 33182,
+          "cell": [
+            3,
+            4
+          ],
+          "position": [
+            384,
+            0,
+            512
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 32942,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 33422,
+          "cell": [
+            4,
+            4
+          ],
+          "position": [
+            512,
+            0,
+            512
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 33182,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 33662,
+          "cell": [
+            5,
+            4
+          ],
+          "position": [
+            640,
+            0,
+            512
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 33422,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 33902,
+          "cell": [
+            6,
+            4
+          ],
+          "position": [
+            768,
+            0,
+            512
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 33662,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 34142,
+          "cell": [
+            7,
+            4
+          ],
+          "position": [
+            896,
+            0,
+            512
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 33902,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 34382,
+          "cell": [
+            8,
+            4
+          ],
+          "position": [
+            1024,
+            0,
+            512
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 34142,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 34622,
+          "cell": [
+            9,
+            4
+          ],
+          "position": [
+            1152,
+            0,
+            512
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 34382,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 34862,
+          "cell": [
+            10,
+            4
+          ],
+          "position": [
+            1280,
+            0,
+            512
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 34622,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 35102,
+          "cell": [
+            11,
+            4
+          ],
+          "position": [
+            1408,
+            0,
+            512
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 34862,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 35342,
+          "cell": [
+            12,
+            4
+          ],
+          "position": [
+            1536,
+            0,
+            512
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 35102,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        }
+      ],
+      "distinctCellsIn600Seconds": 73,
+      "revisitFirstCells": 4,
+      "durationTicks": 36000,
+      "minimumDistinctCells": 40,
+      "cameraHeightMetres": 12,
+      "rotationInput": "canonical key xyzw; current domain consumer not_executed"
+    },
+    "K2-8": {
+      "cellMetres": 128,
+      "speedMetresPerSecond": 32,
+      "turnPauseTicks": 30,
+      "teleportTick": 7200,
+      "prefetchCellsAhead": 1,
+      "interpolation": "hold previous position until moveStartTick; then linear to arrival tick; shortest-slerp only during turn pause; teleport is discontinuous at its tick",
+      "keys": [
+        {
+          "tick": 0,
+          "cell": [
+            0,
+            0
+          ],
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 240,
+          "cell": [
+            1,
+            0
+          ],
+          "position": [
+            128,
+            0,
+            0
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 0,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 480,
+          "cell": [
+            2,
+            0
+          ],
+          "position": [
+            256,
+            0,
+            0
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 240,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 720,
+          "cell": [
+            3,
+            0
+          ],
+          "position": [
+            384,
+            0,
+            0
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 480,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 960,
+          "cell": [
+            4,
+            0
+          ],
+          "position": [
+            512,
+            0,
+            0
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 720,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 1200,
+          "cell": [
+            5,
+            0
+          ],
+          "position": [
+            640,
+            0,
+            0
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 960,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 1440,
+          "cell": [
+            6,
+            0
+          ],
+          "position": [
+            768,
+            0,
+            0
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 1200,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 1680,
+          "cell": [
+            7,
+            0
+          ],
+          "position": [
+            896,
+            0,
+            0
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 1440,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 1950,
+          "cell": [
+            7,
+            1
+          ],
+          "position": [
+            896,
+            0,
+            128
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 1710,
+          "turnPauseTicks": 30,
+          "rotationXyzw": [
+            -1.0925368346819682e-17,
+            0.9839535501153102,
+            0.17842480549373663,
+            6.024977828291947e-17
+          ]
+        },
+        {
+          "tick": 2220,
+          "cell": [
+            6,
+            1
+          ],
+          "position": [
+            768,
+            0,
+            128
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 1980,
+          "turnPauseTicks": 30,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            0.6957602276591133,
+            0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 2460,
+          "cell": [
+            5,
+            1
+          ],
+          "position": [
+            640,
+            0,
+            128
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 2220,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            0.6957602276591133,
+            0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 2700,
+          "cell": [
+            4,
+            1
+          ],
+          "position": [
+            512,
+            0,
+            128
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 2460,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            0.6957602276591133,
+            0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 3720,
+          "cell": [
+            0,
+            0
+          ],
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 2730,
+          "turnPauseTicks": 30,
+          "rotationXyzw": [
+            -0.14063540196712976,
+            0.6055370282260301,
+            0.109804803761136,
+            0.7755575389561435
+          ]
+        },
+        {
+          "tick": 3990,
+          "cell": [
+            1,
+            0
+          ],
+          "position": [
+            128,
+            0,
+            0
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 3750,
+          "turnPauseTicks": 30,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 4230,
+          "cell": [
+            2,
+            0
+          ],
+          "position": [
+            256,
+            0,
+            0
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 3990,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 4470,
+          "cell": [
+            3,
+            0
+          ],
+          "position": [
+            384,
+            0,
+            0
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 4230,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 4740,
+          "cell": [
+            3,
+            1
+          ],
+          "position": [
+            384,
+            0,
+            128
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 4500,
+          "turnPauseTicks": 30,
+          "rotationXyzw": [
+            -1.0925368346819682e-17,
+            0.9839535501153102,
+            0.17842480549373663,
+            6.024977828291947e-17
+          ]
+        },
+        {
+          "tick": 5010,
+          "cell": [
+            2,
+            1
+          ],
+          "position": [
+            256,
+            0,
+            128
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 4770,
+          "turnPauseTicks": 30,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            0.6957602276591133,
+            0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 5250,
+          "cell": [
+            1,
+            1
+          ],
+          "position": [
+            128,
+            0,
+            128
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 5010,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            0.6957602276591133,
+            0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 5490,
+          "cell": [
+            0,
+            1
+          ],
+          "position": [
+            0,
+            0,
+            128
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 5250,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            0.6957602276591133,
+            0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 5760,
+          "cell": [
+            0,
+            2
+          ],
+          "position": [
+            0,
+            0,
+            256
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 5520,
+          "turnPauseTicks": 30,
+          "rotationXyzw": [
+            -1.0925368346819682e-17,
+            0.9839535501153102,
+            0.17842480549373663,
+            6.024977828291947e-17
+          ]
+        },
+        {
+          "tick": 6030,
+          "cell": [
+            1,
+            2
+          ],
+          "position": [
+            128,
+            0,
+            256
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 5790,
+          "turnPauseTicks": 30,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 6270,
+          "cell": [
+            2,
+            2
+          ],
+          "position": [
+            256,
+            0,
+            256
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 6030,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 6510,
+          "cell": [
+            3,
+            2
+          ],
+          "position": [
+            384,
+            0,
+            256
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 6270,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 6750,
+          "cell": [
+            4,
+            2
+          ],
+          "position": [
+            512,
+            0,
+            256
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 6510,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 6990,
+          "cell": [
+            5,
+            2
+          ],
+          "position": [
+            640,
+            0,
+            256
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 6750,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 7200,
+          "cell": [
+            7,
+            3
+          ],
+          "position": [
+            896,
+            0,
+            384
+          ],
+          "operation": "teleport",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 7200,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.09380347142186225,
+            -0.837000882786448,
+            -0.15177720502330255,
+            0.5172949941756917
+          ]
+        },
+        {
+          "tick": 7440,
+          "cell": [
+            6,
+            3
+          ],
+          "position": [
+            768,
+            0,
+            384
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 7200,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            0.6957602276591133,
+            0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 7680,
+          "cell": [
+            5,
+            3
+          ],
+          "position": [
+            640,
+            0,
+            384
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 7440,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            0.6957602276591133,
+            0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 9109,
+          "cell": [
+            0,
+            0
+          ],
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 7710,
+          "turnPauseTicks": 30,
+          "rotationXyzw": [
+            -0.1552652491031572,
+            0.48479274814071266,
+            0.08790969023044211,
+            0.8562362875600973
+          ]
+        },
+        {
+          "tick": 9379,
+          "cell": [
+            1,
+            0
+          ],
+          "position": [
+            128,
+            0,
+            0
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 9139,
+          "turnPauseTicks": 30,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 9619,
+          "cell": [
+            2,
+            0
+          ],
+          "position": [
+            256,
+            0,
+            0
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 9379,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 9859,
+          "cell": [
+            3,
+            0
+          ],
+          "position": [
+            384,
+            0,
+            0
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 9619,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 10648,
+          "cell": [
+            4,
+            3
+          ],
+          "position": [
+            512,
+            0,
+            384
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 9889,
+          "turnPauseTicks": 30,
+          "rotationXyzw": [
+            -0.028580485552068588,
+            -0.9712482082167108,
+            -0.17612088763427736,
+            0.15761188667213874
+          ]
+        },
+        {
+          "tick": 10918,
+          "cell": [
+            3,
+            3
+          ],
+          "position": [
+            384,
+            0,
+            384
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 10678,
+          "turnPauseTicks": 30,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            0.6957602276591133,
+            0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 11158,
+          "cell": [
+            2,
+            3
+          ],
+          "position": [
+            256,
+            0,
+            384
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 10918,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            0.6957602276591133,
+            0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 11398,
+          "cell": [
+            1,
+            3
+          ],
+          "position": [
+            128,
+            0,
+            384
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 11158,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            0.6957602276591133,
+            0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 11638,
+          "cell": [
+            0,
+            3
+          ],
+          "position": [
+            0,
+            0,
+            384
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 11398,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            0.6957602276591133,
+            0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 11908,
+          "cell": [
+            0,
+            4
+          ],
+          "position": [
+            0,
+            0,
+            512
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 11668,
+          "turnPauseTicks": 30,
+          "rotationXyzw": [
+            -1.0925368346819682e-17,
+            0.9839535501153102,
+            0.17842480549373663,
+            6.024977828291947e-17
+          ]
+        },
+        {
+          "tick": 12178,
+          "cell": [
+            1,
+            4
+          ],
+          "position": [
+            128,
+            0,
+            512
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 11938,
+          "turnPauseTicks": 30,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 12418,
+          "cell": [
+            2,
+            4
+          ],
+          "position": [
+            256,
+            0,
+            512
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 12178,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 12658,
+          "cell": [
+            3,
+            4
+          ],
+          "position": [
+            384,
+            0,
+            512
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 12418,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 12898,
+          "cell": [
+            4,
+            4
+          ],
+          "position": [
+            512,
+            0,
+            512
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 12658,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 13138,
+          "cell": [
+            5,
+            4
+          ],
+          "position": [
+            640,
+            0,
+            512
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 12898,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 13378,
+          "cell": [
+            6,
+            4
+          ],
+          "position": [
+            768,
+            0,
+            512
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 13138,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 15139,
+          "cell": [
+            0,
+            0
+          ],
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 13408,
+          "turnPauseTicks": 30,
+          "rotationXyzw": [
+            -0.15731261879393865,
+            0.464286280977281,
+            0.0841911585837295,
+            0.8675268515042099
+          ]
+        },
+        {
+          "tick": 15409,
+          "cell": [
+            1,
+            0
+          ],
+          "position": [
+            128,
+            0,
+            0
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 15169,
+          "turnPauseTicks": 30,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 15649,
+          "cell": [
+            2,
+            0
+          ],
+          "position": [
+            256,
+            0,
+            0
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 15409,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 15889,
+          "cell": [
+            3,
+            0
+          ],
+          "position": [
+            384,
+            0,
+            0
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 15649,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 17277,
+          "cell": [
+            7,
+            4
+          ],
+          "position": [
+            896,
+            0,
+            512
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 15919,
+          "turnPauseTicks": 30,
+          "rotationXyzw": [
+            -0.06828021698541667,
+            -0.9090545458933537,
+            -0.16484302588797067,
+            0.37654272184594234
+          ]
+        },
+        {
+          "tick": 17547,
+          "cell": [
+            7,
+            5
+          ],
+          "position": [
+            896,
+            0,
+            640
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 17307,
+          "turnPauseTicks": 30,
+          "rotationXyzw": [
+            -1.0925368346819682e-17,
+            0.9839535501153102,
+            0.17842480549373663,
+            6.024977828291947e-17
+          ]
+        },
+        {
+          "tick": 17817,
+          "cell": [
+            6,
+            5
+          ],
+          "position": [
+            768,
+            0,
+            640
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 17577,
+          "turnPauseTicks": 30,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            0.6957602276591133,
+            0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 18057,
+          "cell": [
+            5,
+            5
+          ],
+          "position": [
+            640,
+            0,
+            640
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 17817,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            0.6957602276591133,
+            0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 18297,
+          "cell": [
+            4,
+            5
+          ],
+          "position": [
+            512,
+            0,
+            640
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 18057,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            0.6957602276591133,
+            0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 18537,
+          "cell": [
+            3,
+            5
+          ],
+          "position": [
+            384,
+            0,
+            640
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 18297,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            0.6957602276591133,
+            0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 18777,
+          "cell": [
+            2,
+            5
+          ],
+          "position": [
+            256,
+            0,
+            640
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 18537,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            0.6957602276591133,
+            0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 19017,
+          "cell": [
+            1,
+            5
+          ],
+          "position": [
+            128,
+            0,
+            640
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 18777,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            0.6957602276591133,
+            0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 19257,
+          "cell": [
+            0,
+            5
+          ],
+          "position": [
+            0,
+            0,
+            640
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 19017,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            0.6957602276591133,
+            0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 19527,
+          "cell": [
+            0,
+            6
+          ],
+          "position": [
+            0,
+            0,
+            768
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 19287,
+          "turnPauseTicks": 30,
+          "rotationXyzw": [
+            -1.0925368346819682e-17,
+            0.9839535501153102,
+            0.17842480549373663,
+            6.024977828291947e-17
+          ]
+        },
+        {
+          "tick": 19797,
+          "cell": [
+            1,
+            6
+          ],
+          "position": [
+            128,
+            0,
+            768
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 19557,
+          "turnPauseTicks": 30,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 20037,
+          "cell": [
+            2,
+            6
+          ],
+          "position": [
+            256,
+            0,
+            768
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 19797,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 21585,
+          "cell": [
+            0,
+            0
+          ],
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 20067,
+          "turnPauseTicks": 30,
+          "rotationXyzw": [
+            -0.17612088763427736,
+            0.15761188667213868,
+            0.028580485552068578,
+            0.9712482082167108
+          ]
+        },
+        {
+          "tick": 21855,
+          "cell": [
+            1,
+            0
+          ],
+          "position": [
+            128,
+            0,
+            0
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 21615,
+          "turnPauseTicks": 30,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 22095,
+          "cell": [
+            2,
+            0
+          ],
+          "position": [
+            256,
+            0,
+            0
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 21855,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 22335,
+          "cell": [
+            3,
+            0
+          ],
+          "position": [
+            384,
+            0,
+            0
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 22095,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 23805,
+          "cell": [
+            3,
+            6
+          ],
+          "position": [
+            384,
+            0,
+            768
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 22365,
+          "turnPauseTicks": 30,
+          "rotationXyzw": [
+            -1.0925368346819682e-17,
+            0.9839535501153102,
+            0.17842480549373663,
+            6.024977828291947e-17
+          ]
+        },
+        {
+          "tick": 24075,
+          "cell": [
+            4,
+            6
+          ],
+          "position": [
+            512,
+            0,
+            768
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 23835,
+          "turnPauseTicks": 30,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 24315,
+          "cell": [
+            5,
+            6
+          ],
+          "position": [
+            640,
+            0,
+            768
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 24075,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 24555,
+          "cell": [
+            6,
+            6
+          ],
+          "position": [
+            768,
+            0,
+            768
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 24315,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 24795,
+          "cell": [
+            7,
+            6
+          ],
+          "position": [
+            896,
+            0,
+            768
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 24555,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 25065,
+          "cell": [
+            7,
+            7
+          ],
+          "position": [
+            896,
+            0,
+            896
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 24825,
+          "turnPauseTicks": 30,
+          "rotationXyzw": [
+            -1.0925368346819682e-17,
+            0.9839535501153102,
+            0.17842480549373663,
+            6.024977828291947e-17
+          ]
+        },
+        {
+          "tick": 25335,
+          "cell": [
+            6,
+            7
+          ],
+          "position": [
+            768,
+            0,
+            896
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 25095,
+          "turnPauseTicks": 30,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            0.6957602276591133,
+            0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 25575,
+          "cell": [
+            5,
+            7
+          ],
+          "position": [
+            640,
+            0,
+            896
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 25335,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            0.6957602276591133,
+            0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 25815,
+          "cell": [
+            4,
+            7
+          ],
+          "position": [
+            512,
+            0,
+            896
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 25575,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            0.6957602276591133,
+            0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 26055,
+          "cell": [
+            3,
+            7
+          ],
+          "position": [
+            384,
+            0,
+            896
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 25815,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            0.6957602276591133,
+            0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 26295,
+          "cell": [
+            2,
+            7
+          ],
+          "position": [
+            256,
+            0,
+            896
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 26055,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            0.6957602276591133,
+            0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 26535,
+          "cell": [
+            1,
+            7
+          ],
+          "position": [
+            128,
+            0,
+            896
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 26295,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            0.6957602276591133,
+            0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 28262,
+          "cell": [
+            0,
+            0
+          ],
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 26565,
+          "turnPauseTicks": 30,
+          "rotationXyzw": [
+            -0.1779759259404695,
+            0.06975150298241946,
+            0.012648359621321043,
+            0.9814781284451609
+          ]
+        },
+        {
+          "tick": 28532,
+          "cell": [
+            1,
+            0
+          ],
+          "position": [
+            128,
+            0,
+            0
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 28292,
+          "turnPauseTicks": 30,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 28772,
+          "cell": [
+            2,
+            0
+          ],
+          "position": [
+            256,
+            0,
+            0
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 28532,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 29012,
+          "cell": [
+            3,
+            0
+          ],
+          "position": [
+            384,
+            0,
+            0
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 28772,
+          "turnPauseTicks": 0,
+          "rotationXyzw": [
+            -0.12616538989651194,
+            -0.6957602276591133,
+            -0.12616538989651194,
+            0.6957602276591133
+          ]
+        },
+        {
+          "tick": 30870,
+          "cell": [
+            0,
+            7
+          ],
+          "position": [
+            0,
+            0,
+            896
+          ],
+          "operation": "visit",
+          "requestRequiredAdmission": true,
+          "moveStartTick": 29042,
+          "turnPauseTicks": 30,
+          "rotationXyzw": [
+            -0.03587513915088161,
+            0.9638589779644355,
+            0.17478096465686024,
+            0.19783947882532432
+          ]
+        }
+      ],
+      "distinctCellsIn600Seconds": 62,
+      "revisitFirstCells": 4,
+      "durationTicks": 36000,
+      "minimumDistinctCells": 24,
+      "cameraHeightMetres": 12,
+      "rotationInput": "canonical key xyzw; current domain consumer not_executed"
+    }
+  },
+  "workloads": [
+    {
+      "id": "BM-01",
+      "seed": 57739792,
+      "pc": {
+        "camera": 1,
+        "light": 1,
+        "hud": 20,
+        "hiddenSpatial": 10000
+      },
+      "android": {
+        "camera": 1,
+        "light": 1,
+        "hud": 20,
+        "hiddenSpatial": 2000
+      },
+      "trajectory": "K0/K1",
+      "finalRecipe": "foundation-v1",
+      "executionStatus": "target_only"
+    },
+    {
+      "id": "BM-02",
+      "seed": 57739795,
+      "pc": {
+        "instances": 10000,
+        "meshes": 100,
+        "trianglesPerMesh": 1000,
+        "verticesPerMesh": 600,
+        "materials": 32,
+        "textureSets": 8
+      },
+      "android": {
+        "instances": 2000,
+        "meshes": 20,
+        "trianglesPerMesh": 500,
+        "verticesPerMesh": 600,
+        "materials": 16,
+        "textureSets": 4
+      },
+      "trajectory": "K0/K1",
+      "finalRecipe": "foundation-v1",
+      "executionStatus": "target_only"
+    },
+    {
+      "id": "BM-03",
+      "seed": 57739794,
+      "pc": {
+        "instances": 10000,
+        "meshes": 10000,
+        "trianglesPerMesh": 1000,
+        "verticesPerMesh": 600,
+        "materials": 256,
+        "textureSets": 64
+      },
+      "android": {
+        "instances": 2000,
+        "meshes": 2000,
+        "trianglesPerMesh": 500,
+        "verticesPerMesh": 600,
+        "materials": 64,
+        "textureSets": 16
+      },
+      "trajectory": "K0/K1",
+      "finalRecipe": "foundation-v1",
+      "executionStatus": "target_only"
+    },
+    {
+      "id": "BM-04",
+      "seed": 57739797,
+      "pc": {
+        "staticTriangles": 10000000,
+        "materials": 128,
+        "textureSets": 32,
+        "directional": 1,
+        "point": 128,
+        "spot": 16,
+        "cascades": 4,
+        "shadowSpots": 8,
+        "maskPercent": 10,
+        "blendPercent": 5,
+        "instances": 10000,
+        "meshes": 100,
+        "trianglesPerMesh": 1000,
+        "verticesPerMesh": 600
+      },
+      "android": {
+        "staticTriangles": 1000000,
+        "materials": 32,
+        "textureSets": 8,
+        "directional": 1,
+        "point": 16,
+        "spot": 4,
+        "cascades": 2,
+        "shadowSpots": 2,
+        "maskPercent": 10,
+        "blendPercent": 5,
+        "instances": 2000,
+        "meshes": 20,
+        "trianglesPerMesh": 500,
+        "verticesPerMesh": 600
+      },
+      "trajectory": "K1",
+      "finalRecipe": "lit-v1",
+      "executionStatus": "target_only"
+    },
+    {
+      "id": "BM-05",
+      "seed": 57739796,
+      "pc": {
+        "characters": 100,
+        "rigs": 10,
+        "bonesPerRig": 64,
+        "verticesPerCharacter": 15000,
+        "trianglesPerCharacter": 25000,
+        "influences": 4,
+        "clipsPerRig": 3,
+        "simultaneousClips": 2,
+        "maskedAdditiveCharacters": 20,
+        "staticInstances": 1000,
+        "staticTriangles": 1000000
+      },
+      "android": {
+        "characters": 20,
+        "rigs": 4,
+        "bonesPerRig": 48,
+        "verticesPerCharacter": 8000,
+        "trianglesPerCharacter": 12000,
+        "influences": 4,
+        "clipsPerRig": 3,
+        "simultaneousClips": 2,
+        "maskedAdditiveCharacters": 5,
+        "staticInstances": 200,
+        "staticTriangles": 100000
+      },
+      "trajectory": "K3",
+      "finalRecipe": "sim-v1",
+      "executionStatus": "target_only"
+    },
+    {
+      "id": "BM-06",
+      "seed": 57739799,
+      "pc": {
+        "dynamicBodies": 1000,
+        "staticColliders": 2000,
+        "boxPercent": 70,
+        "spherePercent": 20,
+        "capsulePercent": 10,
+        "joints": 100,
+        "ccdBodies": 100,
+        "raycastsPerTick": 200,
+        "sweepsPerTick": 50
+      },
+      "android": {
+        "dynamicBodies": 200,
+        "staticColliders": 400,
+        "boxPercent": 70,
+        "spherePercent": 20,
+        "capsulePercent": 10,
+        "joints": 20,
+        "ccdBodies": 20,
+        "raycastsPerTick": 40,
+        "sweepsPerTick": 10
+      },
+      "trajectory": "fixed-physics-input-v1",
+      "finalRecipe": "sim-v1",
+      "executionStatus": "target_only"
+    },
+    {
+      "id": "BM-07",
+      "seed": 57739798,
+      "pc": {
+        "navAgents": 1000,
+        "tiles": 64,
+        "tileMetres": 32,
+        "requestsPerSecond": 200,
+        "obstacles": 50,
+        "steeringHz": 10,
+        "reachablePercent": 70,
+        "unreachablePercent": 20,
+        "unloadedPercent": 10
+      },
+      "android": {
+        "navAgents": 200,
+        "tiles": 16,
+        "tileMetres": 32,
+        "requestsPerSecond": 40,
+        "obstacles": 10,
+        "steeringHz": 10,
+        "reachablePercent": 70,
+        "unreachablePercent": 20,
+        "unloadedPercent": 10
+      },
+      "trajectory": "fixed-nav-input-v1",
+      "finalRecipe": "sim-v1",
+      "executionStatus": "target_only"
+    },
+    {
+      "id": "BM-08",
+      "seed": 57739801,
+      "pc": {
+        "cellGridSide": 16,
+        "cellMetres": 128,
+        "gpuDatasetMinBytes": 8589934592,
+        "cpuDatasetMinBytes": 4294967296,
+        "uniquePayloadPercentMin": 75,
+        "residentCellsMax": 25,
+        "distinctVisitedMin": 40,
+        "cellGpuPayloadMinBytes": 33554432,
+        "residentGpuMaxBytes": 2147483648,
+        "residentCpuMaxBytes": 2147483648
+      },
+      "android": {
+        "cellGridSide": 8,
+        "cellMetres": 128,
+        "gpuDatasetMinBytes": 2147483648,
+        "cpuDatasetMinBytes": 1610612736,
+        "uniquePayloadPercentMin": 75,
+        "residentCellsMax": 9,
+        "distinctVisitedMin": 24,
+        "cellGpuPayloadMinBytes": 33554432,
+        "residentGpuMaxBytes": 536870912,
+        "residentCpuMaxBytes": 805306368
+      },
+      "trajectory": "K2",
+      "finalRecipe": "world-v1",
+      "executionStatus": "target_only"
+    },
+    {
+      "id": "BM-09",
+      "seed": 57739800,
+      "pc": {
+        "objects": 1000,
+        "characters": 10,
+        "colliders": 100,
+        "paths": 4,
+        "anchorsMetres": [
+          0,
+          10000,
+          1000000
+        ],
+        "rebaseCount": 20,
+        "localRangeMetres": 2000
+      },
+      "android": {
+        "objects": 200,
+        "characters": 4,
+        "colliders": 20,
+        "paths": 2,
+        "anchorsMetres": [
+          0,
+          10000,
+          1000000
+        ],
+        "rebaseCount": 20,
+        "localRangeMetres": 2000
+      },
+      "trajectory": "precision-input-v1",
+      "finalRecipe": "sim-v1",
+      "executionStatus": "target_only"
+    },
+    {
+      "id": "BM-10",
+      "seed": 57739803,
+      "pc": {
+        "liveInstances": 50000,
+        "visibleInstances": 10000,
+        "staticTrianglesMax": 10000000,
+        "characters": 100,
+        "dynamicBodies": 1000,
+        "navAgents": 1000,
+        "directional": 1,
+        "point": 32,
+        "spot": 8,
+        "cascades": 4,
+        "shadowSpots": 4,
+        "hud": 100,
+        "audioSources": 64,
+        "particles": 10000
+      },
+      "android": {
+        "liveInstances": 10000,
+        "visibleInstances": 2000,
+        "staticTrianglesMax": 1000000,
+        "characters": 20,
+        "dynamicBodies": 200,
+        "navAgents": 200,
+        "directional": 1,
+        "point": 8,
+        "spot": 2,
+        "cascades": 2,
+        "shadowSpots": 1,
+        "hud": 50,
+        "audioSources": 16,
+        "particles": 2000
+      },
+      "trajectory": "K3/K2",
+      "finalRecipe": "world-v1",
+      "executionStatus": "target_only"
+    },
+    {
+      "id": "BM-11",
+      "seed": 57739802,
+      "pc": {
+        "bases": [
+          "BM-02",
+          "BM-08",
+          "BM-10"
+        ],
+        "faultSchedule": "faults-v1"
+      },
+      "android": {
+        "bases": [
+          "BM-02",
+          "BM-08",
+          "BM-10"
+        ],
+        "faultSchedule": "faults-v1"
+      },
+      "trajectory": "faults-v1",
+      "finalRecipe": "world-v1",
+      "executionStatus": "target_only"
+    },
+    {
+      "id": "BM-12",
+      "seed": 57739805,
+      "pc": {
+        "bases": [
+          "BM-02",
+          "BM-03",
+          "BM-05",
+          "BM-06",
+          "BM-07"
+        ],
+        "multipliers": [
+          1,
+          1.5,
+          2
+        ]
+      },
+      "android": {
+        "bases": [
+          "BM-02",
+          "BM-03",
+          "BM-05",
+          "BM-06",
+          "BM-07"
+        ],
+        "multipliers": [
+          1,
+          1.5,
+          2
+        ]
+      },
+      "trajectory": "K0/K1",
+      "finalRecipe": "world-v1",
+      "executionStatus": "target_only"
+    },
+    {
+      "id": "BM-13",
+      "seed": 57739804,
+      "pc": {
+        "terrainTiles": 9,
+        "samplesPerTileSide": 257,
+        "vegetationInstances": 50000,
+        "visibleVegetation": 10000,
+        "audioSources": 64,
+        "particles": 10000
+      },
+      "android": {
+        "terrainTiles": 9,
+        "samplesPerTileSide": 129,
+        "vegetationInstances": 10000,
+        "visibleVegetation": 2000,
+        "audioSources": 16,
+        "particles": 2000
+      },
+      "trajectory": "K2",
+      "finalRecipe": "world-v1",
+      "executionStatus": "target_only"
+    },
+    {
+      "id": "BM-14",
+      "seed": 57739807,
+      "pc": {
+        "bases": [
+          "BM-03",
+          "BM-05",
+          "BM-08"
+        ],
+        "operations": [
+          "coldCook",
+          "unchanged",
+          "materialParameter",
+          "mesh",
+          "clip",
+          "sharedDependency"
+        ],
+        "foundationCells": 2
+      },
+      "android": {
+        "bases": [
+          "BM-03",
+          "BM-05",
+          "BM-08"
+        ],
+        "operations": [
+          "coldCook",
+          "unchanged",
+          "materialParameter",
+          "mesh",
+          "clip",
+          "sharedDependency"
+        ],
+        "foundationCells": 2
+      },
+      "trajectory": "asset-revisions-v1",
+      "finalRecipe": "world-v1",
+      "executionStatus": "target_only"
+    },
+    {
+      "id": "BM-15",
+      "seed": 57739806,
+      "pc": {
+        "anchors": 2,
+        "objects": 20,
+        "anchorMetres": [
+          0,
+          1000000
+        ],
+        "navTiles": 2,
+        "tileMetres": 32,
+        "stagedColliderAndTileIsolation": true
+      },
+      "android": {
+        "anchors": 2,
+        "objects": 20,
+        "anchorMetres": [
+          0,
+          1000000
+        ],
+        "navTiles": 2,
+        "tileMetres": 32,
+        "stagedColliderAndTileIsolation": true
+      },
+      "trajectory": "adapter-crossing-v1",
+      "finalRecipe": "adapter-feasibility-v1",
+      "executionStatus": "target_only"
+    }
+  ],
+  "inputs": {
+    "fixedPhysicsTickHz": 60,
+    "navSteeringEveryTicks": 6,
+    "navRequestsPattern": "reachable70/unreachable20/unloaded10",
+    "precisionRebaseTicks": [
+      360,
+      720,
+      1080,
+      1440,
+      1800,
+      2160,
+      2520,
+      2880,
+      3240,
+      3600,
+      3960,
+      4320,
+      4680,
+      5040,
+      5400,
+      5760,
+      6120,
+      6480,
+      6840,
+      7200
+    ],
+    "compoundMutations": [
+      {
+        "tick": 60,
+        "operation": "parentChange",
+        "descendants": 1000
+      },
+      {
+        "tick": 120,
+        "operation": "sharedMaterial",
+        "instances": 1000
+      },
+      {
+        "tick": 180,
+        "operation": "100writesSameEntity",
+        "writes": 100
+      },
+      {
+        "tick": 240,
+        "operation": "createDespawn1percent",
+        "basis": "instanceCount"
+      }
+    ],
+    "physics": {
+      "tickHz": 60,
+      "dynamicShapesCycle": [
+        "box",
+        "box",
+        "box",
+        "box",
+        "box",
+        "box",
+        "box",
+        "sphere",
+        "sphere",
+        "capsule"
+      ],
+      "initialVelocityMetresPerSecond": [
+        0,
+        -1,
+        0
+      ],
+      "persistentDrive": {
+        "everyTicks": 60,
+        "forceAxesCycle": [
+          [
+            1,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            1
+          ],
+          [
+            -1,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            -1
+          ]
+        ],
+        "minimumAwakePercent": 90
+      },
+      "controllerCases": [
+        "step",
+        "slope",
+        "lowCeiling",
+        "movingPlatform",
+        "teleport",
+        "crossCell"
+      ],
+      "sampleSegments": [
+        "falling",
+        "sleeping",
+        "driven"
+      ]
+    },
+    "nav": {
+      "steeringEveryTicks": 6,
+      "requestDistributionCycle": [
+        "reachable",
+        "reachable",
+        "reachable",
+        "reachable",
+        "reachable",
+        "reachable",
+        "reachable",
+        "unreachable",
+        "unreachable",
+        "unloaded"
+      ],
+      "requestTicksPatternPC": [
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        3,
+        3,
+        3,
+        3,
+        4,
+        4,
+        4,
+        5,
+        5,
+        5,
+        6,
+        6,
+        6,
+        6,
+        7,
+        7,
+        7,
+        8,
+        8,
+        8,
+        9,
+        9,
+        9,
+        9,
+        10,
+        10,
+        10,
+        11,
+        11,
+        11,
+        12,
+        12,
+        12,
+        12,
+        13,
+        13,
+        13,
+        14,
+        14,
+        14,
+        15,
+        15,
+        15,
+        15,
+        16,
+        16,
+        16,
+        17,
+        17,
+        17,
+        18,
+        18,
+        18,
+        18,
+        19,
+        19,
+        19,
+        20,
+        20,
+        20,
+        21,
+        21,
+        21,
+        21,
+        22,
+        22,
+        22,
+        23,
+        23,
+        23,
+        24,
+        24,
+        24,
+        24,
+        25,
+        25,
+        25,
+        26,
+        26,
+        26,
+        27,
+        27,
+        27,
+        27,
+        28,
+        28,
+        28,
+        29,
+        29,
+        29,
+        30,
+        30,
+        30,
+        30,
+        31,
+        31,
+        31,
+        32,
+        32,
+        32,
+        33,
+        33,
+        33,
+        33,
+        34,
+        34,
+        34,
+        35,
+        35,
+        35,
+        36,
+        36,
+        36,
+        36,
+        37,
+        37,
+        37,
+        38,
+        38,
+        38,
+        39,
+        39,
+        39,
+        39,
+        40,
+        40,
+        40,
+        41,
+        41,
+        41,
+        42,
+        42,
+        42,
+        42,
+        43,
+        43,
+        43,
+        44,
+        44,
+        44,
+        45,
+        45,
+        45,
+        45,
+        46,
+        46,
+        46,
+        47,
+        47,
+        47,
+        48,
+        48,
+        48,
+        48,
+        49,
+        49,
+        49,
+        50,
+        50,
+        50,
+        51,
+        51,
+        51,
+        51,
+        52,
+        52,
+        52,
+        53,
+        53,
+        53,
+        54,
+        54,
+        54,
+        54,
+        55,
+        55,
+        55,
+        56,
+        56,
+        56,
+        57,
+        57,
+        57,
+        57,
+        58,
+        58,
+        58,
+        59,
+        59,
+        59
+      ],
+      "requestTicksPatternAndroid": [
+        0,
+        1,
+        3,
+        4,
+        6,
+        7,
+        9,
+        10,
+        12,
+        13,
+        15,
+        16,
+        18,
+        19,
+        21,
+        22,
+        24,
+        25,
+        27,
+        28,
+        30,
+        31,
+        33,
+        34,
+        36,
+        37,
+        39,
+        40,
+        42,
+        43,
+        45,
+        46,
+        48,
+        49,
+        51,
+        52,
+        54,
+        55,
+        57,
+        58
+      ],
+      "destination": "opposite-grid-corner",
+      "obstacleMoveEveryTicks": 60,
+      "cases": [
+        "opposingCrowds",
+        "narrowDoor",
+        "tileCrossing"
+      ]
+    },
+    "animation": {
+      "simultaneousClipIndices": [
+        0,
+        1
+      ],
+      "crossfadeTicks": 30,
+      "additiveEveryTicks": 120,
+      "rootMotionPercent": 10,
+      "controllerPercent": 10,
+      "pauseTick": 1800,
+      "singleStepTicks": [
+        1801,
+        1802
+      ],
+      "resumeTick": 1860,
+      "offscreenPercent": 75,
+      "morphTargets": 4,
+      "simultaneousMorphsMax": 2
+    },
+    "precision": {
+      "anchorMetres": [
+        0,
+        10000,
+        1000000
+      ],
+      "rebaseTicks": [
+        360,
+        720,
+        1080,
+        1440,
+        1800,
+        2160,
+        2520,
+        2880,
+        3240,
+        3600,
+        3960,
+        4320,
+        4680,
+        5040,
+        5400,
+        5760,
+        6120,
+        6480,
+        6840,
+        7200
+      ],
+      "localProbeMotion": [
+        {
+          "tick": 0,
+          "position": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "tick": 3600,
+          "position": [
+            10,
+            0,
+            0
+          ]
+        },
+        {
+          "tick": 7200,
+          "position": [
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "positionToleranceMetres": 0.001,
+      "screenTolerancePixels": 0.25,
+      "contactToleranceMetres": 0.002,
+      "pathEndpointToleranceMetres": 0.01
+    }
+  },
+  "faultSchedule": [
+    {
+      "id": "F-01",
+      "cases": [
+        "create1000-request100-despawnHalfNextTick"
+      ],
+      "androidCreate": 200,
+      "androidRequests": 20,
+      "tick": 720,
+      "scope": "target_only"
+    },
+    {
+      "id": "F-02",
+      "cases": [
+        "cancelReading10",
+        "cancelDecoding10",
+        "cancelUploadQueued10"
+      ],
+      "completionOrders": [
+        "reverse",
+        "old-first",
+        "new-first"
+      ],
+      "tick": 840,
+      "scope": "target_only"
+    },
+    {
+      "id": "F-03",
+      "cases": [
+        "missingChunk",
+        "hashMismatch",
+        "truncatedCompression",
+        "decodeFailure",
+        "missingDependency",
+        "unsupportedRequiredCapability"
+      ],
+      "tick": 960,
+      "scope": "target_only"
+    },
+    {
+      "id": "F-04",
+      "cases": [
+        "delayCompletion3Frames",
+        "replaceMeshMaterial",
+        "unloadAndClose",
+        "contentVersionTransformMaterialAlphaReverseRelease"
+      ],
+      "tick": 1080,
+      "scope": "target_only"
+    },
+    {
+      "id": "F-05",
+      "cases": [
+        "resize20",
+        "minimizeRestore20",
+        "deviceLost",
+        "lateOldEpochCallback"
+      ],
+      "tick": 1200,
+      "scope": "target_only"
+    },
+    {
+      "id": "F-06",
+      "cases": [
+        "decodeWorkerFailure",
+        "renderWorkerFailure",
+        "taskTimeout",
+        "closeOneTaskInFlight"
+      ],
+      "terminationDeadlineSeconds": 10,
+      "tick": 1320,
+      "scope": "target_only"
+    },
+    {
+      "id": "F-07",
+      "cases": [
+        "lowerCapacityTo75Percent",
+        "requiredSimulationAdmission",
+        "optionalVisualReduction"
+      ],
+      "tick": 1440,
+      "scope": "target_only"
+    },
+    {
+      "id": "F-08",
+      "cases": [
+        "uninitializedRead",
+        "readWriteConflict",
+        "wrongSubresource",
+        "wrongFormat",
+        "wrongSamples",
+        "staleHistory"
+      ],
+      "tick": 1560,
+      "scope": "target_only"
+    },
+    {
+      "id": "F-09",
+      "cases": [
+        "animationPhysicsConflict",
+        "staleHandle",
+        "callbackReentry",
+        "crossCellStrongCycle",
+        "budgetExceeded"
+      ],
+      "tick": 1680,
+      "scope": "target_only"
+    },
+    {
+      "id": "F-10",
+      "cases": [
+        "threeTicketsOneOperation",
+        "cancelOne",
+        "cancelAnotherAfterCompletion",
+        "allCancelledLateComplete"
+      ],
+      "tick": 1800,
+      "scope": "target_only"
+    },
+    {
+      "id": "F-11",
+      "cases": [
+        "delayRequiredACK",
+        "failRequiredACK",
+        "stagedColliderIsolation",
+        "stagedNavTileIsolation",
+        "commitThenUnload"
+      ],
+      "tick": 1920,
+      "scope": "target_only"
+    },
+    {
+      "id": "F-12",
+      "cases": [
+        "twoPrefabInstances",
+        "unloadReloadOneInstance",
+        "migrateResolve",
+        "staleHandle",
+        "fullQueueCallbackNeedsOwnerLock"
+      ],
+      "tick": 2040,
+      "scope": "target_only"
+    }
+  ],
+  "executable": {
+    "BM-02/static-source-v1": {
+      "platform": "pc",
+      "profile": "windows-dev",
+      "operation": [
+        "cook",
+        "run-headless"
+      ],
+      "counts": {
+        "instances": 10000,
+        "meshes": 100,
+        "trianglesPerMesh": 1000,
+        "verticesPerMesh": 600,
+        "materials": 32,
+        "textureSets": 8
+      },
+      "camera": "K0",
+      "staticDirtyPercent": 0,
+      "notExecuted": [
+        "PBR",
+        "normal",
+        "ORM",
+        "full-mip",
+        "K1",
+        "dirty-variants",
+        "OS-present",
+        "GPU-timestamps",
+        "qualification"
+      ]
+    }
+  }
+}

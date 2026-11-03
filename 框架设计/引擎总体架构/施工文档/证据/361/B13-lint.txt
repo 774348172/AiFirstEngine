@@ -1,0 +1,315 @@
+crates\engine_input\src\input_mapping.rs:496:1: warning: this `impl` can be derived
+crates\engine_input\src\input_mapping.rs:532:1: warning: this `impl` can be derived
+warning: `engine_input` (lib) generated 2 warnings (run `cargo clippy --fix --lib -p engine_input -- ` to apply 2 suggestions)
+    Checking engine_runtime v0.1.0 (G:\gameEngin\rust\crates\engine_runtime)
+crates\project_game_sdk\src\kinematic2d.rs:47:17: warning: the loop variable `axis` is used to index `delta`
+crates\project_game_sdk\src\lib.rs:978:20: warning: the following explicit lifetimes could be elided: 'a
+crates\authoring_project_context\src\authority_lock.rs:23:14: warning: file opened with `create`, but `truncate` behavior not defined
+warning: `project_game_sdk` (lib) generated 2 warnings (run `cargo clippy --fix --lib -p project_game_sdk -- ` to apply 1 suggestion)
+warning: `authoring_project_context` (lib) generated 1 warning
+crates\editor_ui_model\src\asset_browser.rs:168:1: warning: this `impl` can be derived
+crates\editor_ui_model\src\asset_browser.rs:183:1: warning: this `impl` can be derived
+crates\editor_ui_model\src\asset_browser.rs:198:1: warning: this `impl` can be derived
+crates\editor_ui_model\src\asset_browser.rs:277:1: warning: this `impl` can be derived
+crates\editor_ui_model\src\asset_browser.rs:306:1: warning: this `impl` can be derived
+crates\editor_ui_model\src\asset_browser.rs:738:1: warning: large size difference between variants: the entire enum is at least 360 bytes
+crates\editor_ui_model\src\hierarchy.rs:38:1: warning: this `impl` can be derived
+crates\editor_ui_model\src\inspector.rs:72:1: warning: this `impl` can be derived
+crates\editor_ui_model\src\localization.rs:520:1: warning: this `impl` can be derived
+crates\editor_ui_model\src\manual_walkthrough.rs:122:25: warning: redundant closure: help: replace the closure with the function itself: `operation_gap`
+crates\editor_ui_model\src\manual_walkthrough.rs:1281:1: warning: this function has too many arguments (11/7)
+crates\editor_ui_model\src\report_panel.rs:370:1: warning: this `impl` can be derived
+crates\editor_ui_model\src\report_panel.rs:384:1: warning: this `impl` can be derived
+warning: `editor_ui_model` (lib) generated 13 warnings (run `cargo clippy --fix --lib -p editor_ui_model -- ` to apply 11 suggestions)
+crates\engine_runtime\src\render_contract\cooked.rs:388:21: warning: unneeded unit expression: help: remove the final `()`
+crates\engine_runtime\src\project_logic.rs:19:5: warning: variant `IrInterpreter` is never constructed
+crates\engine_runtime\src\project_logic.rs:38:19: warning: associated function `validation_only_ir_interpreter` is never used
+crates\engine_runtime\src\world.rs:529:19: warning: method `remove_sprite_renderer2d` is never used
+crates\engine_runtime\src\archetype.rs:155:5: warning: enum `ComponentColumn` has a public `len` method, but no `is_empty` method
+crates\engine_runtime\src\archetype.rs:326:60: warning: explicit call to `.into_iter()` in function argument accepting `IntoIterator`
+crates\engine_runtime\src\atomic_file_replace.rs:199:13: warning: this can be `std::io::Error::other(_)`
+crates\engine_runtime\src\aui.rs:300:1: warning: this `impl` can be derived
+crates\engine_runtime\src\aui.rs:1015:1: warning: large size difference between variants: the entire enum is at least 440 bytes
+crates\engine_runtime\src\aui.rs:7683:35: warning: the following explicit lifetimes could be elided: 'a
+crates\engine_runtime\src\aui.rs:7881:35: warning: the following explicit lifetimes could be elided: 'a
+crates\engine_runtime\src\aui.rs:8329:9: warning: field assignment outside of initializer for an instance created with Default::default()
+crates\engine_runtime\src\aui.rs:10257:5: warning: this function has too many arguments (13/7)
+crates\engine_runtime\src\frame_loop.rs:270:5: warning: this function has too many arguments (8/7)
+crates\engine_runtime\src\frame_loop.rs:292:5: warning: this function has too many arguments (8/7)
+crates\engine_runtime\src\frame_loop.rs:314:5: warning: this function has too many arguments (9/7)
+crates\engine_runtime\src\frame_loop.rs:349:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 288 bytes
+crates\engine_runtime\src\frame_loop.rs:339:5: warning: this function has too many arguments (9/7)
+crates\engine_runtime\src\frame_loop.rs:374:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 288 bytes
+crates\engine_runtime\src\frame_loop.rs:363:5: warning: this function has too many arguments (10/7)
+crates\engine_runtime\src\frame_loop.rs:399:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 288 bytes
+crates\engine_runtime\src\frame_loop.rs:388:5: warning: this function has too many arguments (10/7)
+crates\engine_runtime\src\gameplay_trace.rs:23:5: warning: this function has too many arguments (8/7)
+crates\engine_runtime\src\logic_executor.rs:287:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 168 bytes
+crates\engine_runtime\src\logic_executor.rs:309:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 168 bytes
+crates\engine_runtime\src\logic_executor.rs:323:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 168 bytes
+crates\engine_runtime\src\logic_executor.rs:335:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 168 bytes
+crates\engine_runtime\src\logic_executor.rs:345:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 168 bytes
+crates\engine_runtime\src\project_logic.rs:196:5: warning: this function has too many arguments (8/7)
+crates\engine_runtime\src\project_logic.rs:287:5: warning: this function has too many arguments (8/7)
+crates\engine_runtime\src\project_logic.rs:313:5: warning: this function has too many arguments (9/7)
+crates\engine_runtime\src\project_logic.rs:340:5: warning: this function has too many arguments (10/7)
+crates\engine_runtime\src\project_rule_asset.rs:92:1: warning: this `impl` can be derived
+crates\engine_runtime\src\project_runtime_module.rs:105:63: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 136 bytes
+crates\engine_runtime\src\project_runtime_module.rs:149:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 136 bytes
+crates\engine_runtime\src\project_runtime_module.rs:274:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 136 bytes
+crates\engine_runtime\src\project_runtime_module.rs:310:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 136 bytes
+crates\engine_runtime\src\project_runtime_module.rs:336:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 136 bytes
+crates\engine_runtime\src\project_runtime_module.rs:362:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 136 bytes
+crates\engine_runtime\src\project_runtime_module.rs:381:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 136 bytes
+crates\engine_runtime\src\project_runtime_module.rs:484:64: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 136 bytes
+crates\engine_runtime\src\project_runtime_module.rs:498:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 136 bytes
+crates\engine_runtime\src\project_runtime_module.rs:527:38: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 136 bytes
+crates\engine_runtime\src\project_runtime_module.rs:559:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 136 bytes
+crates\engine_runtime\src\project_runtime_module.rs:589:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 136 bytes
+crates\engine_runtime\src\project_runtime_native_adapter.rs:142:43: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 136 bytes
+crates\engine_runtime\src\project_runtime_native_adapter.rs:150:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 136 bytes
+crates\engine_runtime\src\project_runtime_native_adapter.rs:160:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 136 bytes
+crates\engine_runtime\src\project_runtime_native_adapter.rs:203:6: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 136 bytes
+crates\engine_runtime\src\project_runtime_native_adapter.rs:210:6: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 136 bytes
+crates\engine_runtime\src\project_runtime_native_adapter.rs:1259:60: warning: using `clone` on type `ProjectRuntimeTransform` which implements the `Copy` trait: help: try dereferencing it: `*transform`
+crates\engine_runtime\src\project_runtime_native_adapter.rs:1350:45: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 136 bytes
+crates\engine_runtime\src\project_runtime_native_adapter.rs:1424:61: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 136 bytes
+crates\engine_runtime\src\project_runtime_native_adapter.rs:1451:6: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 136 bytes
+crates\engine_runtime\src\project_runtime_session\spatial.rs:10:6: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 168 bytes
+crates\engine_runtime\src\project_runtime_session\structural.rs:16:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 168 bytes
+crates\engine_runtime\src\project_runtime_session.rs:305:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 168 bytes
+crates\engine_runtime\src\project_runtime_session.rs:585:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 168 bytes
+crates\engine_runtime\src\project_runtime_session.rs:954:1: warning: this function has too many arguments (12/7)
+crates\engine_runtime\src\project_runtime_session.rs:1138:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 168 bytes
+crates\engine_runtime\src\render_command.rs:298:5: warning: this function has too many arguments (8/7)
+crates\engine_runtime\src\render_contract\cooked.rs:169:16: warning: manual implementation of `.is_multiple_of()`: help: replace with: `!self.vertex_stride.is_multiple_of(4)`
+crates\engine_runtime\src\render_contract\cooked.rs:177:16: warning: manual implementation of `.is_multiple_of()`: help: replace with: `!self.index_count.is_multiple_of(3)`
+crates\engine_runtime\src\render_geometry.rs:201:16: warning: manual implementation of `.is_multiple_of()`: help: replace with: `!self.index_count.is_multiple_of(3)`
+crates\engine_runtime\src\render_geometry.rs:202:16: warning: manual implementation of `.is_multiple_of()`: help: replace with: `!self.first_index.is_multiple_of(3)`
+crates\engine_runtime\src\render_graph.rs:180:1: warning: large size difference between variants: the entire enum is at least 952 bytes
+crates\engine_runtime\src\render_resource.rs:758:5: warning: this function has too many arguments (9/7)
+crates\engine_runtime\src\render_thread_worker.rs:134:1: warning: large size difference between variants: the entire enum is at least 848 bytes
+crates\engine_runtime\src\render_thread_worker.rs:253:1: warning: large size difference between variants: the entire enum is at least 2624 bytes
+crates\engine_runtime\src\rhi_command_plan.rs:31:1: warning: large size difference between variants: the entire enum is at least 984 bytes
+crates\engine_runtime\src\rhi_command_plan.rs:78:1: warning: large size difference between variants: the entire enum is at least 952 bytes
+crates\engine_runtime\src\rule_ir.rs:90:1: warning: this `impl` can be derived
+crates\engine_runtime\src\runtime_asset_loader.rs:66:5: warning: this returns a `Result<_, ()>`
+crates\engine_runtime\src\runtime_asset_loader.rs:77:5: warning: this returns a `Result<_, ()>`
+crates\engine_runtime\src\runtime_asset_loader.rs:88:5: warning: this returns a `Result<_, ()>`
+crates\engine_runtime\src\runtime_asset_loader.rs:101:5: warning: this returns a `Result<_, ()>`
+crates\engine_runtime\src\runtime_instance_loader.rs:1571:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 128 bytes
+crates\engine_runtime\src\runtime_package_builder.rs:300:63: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 128 bytes
+crates\engine_runtime\src\runtime_package_builder.rs:317:6: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 128 bytes
+crates\engine_runtime\src\runtime_package_builder.rs:1164:6: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 128 bytes
+crates\engine_runtime\src\runtime_package_builder.rs:1215:6: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 128 bytes
+crates\engine_runtime\src\runtime_particles.rs:92:16: warning: manual implementation of `.is_multiple_of()`: help: replace with: `!self.indices.len().is_multiple_of(3)`
+crates\engine_runtime\src\runtime_renderer.rs:668:5: warning: this function has too many arguments (9/7)
+crates\engine_runtime\src\runtime_renderer.rs:1659:1: warning: this function has too many arguments (8/7)
+crates\engine_runtime\src\spatial_contract\document.rs:93:1: warning: large size difference between variants: the entire enum is at least 1368 bytes
+crates\engine_runtime\src\spatial_3d.rs:120:6: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 168 bytes
+crates\engine_runtime\src\spatial_3d.rs:141:14: warning: the `Err`-variant returned from this closure is very large: the `Err`-variant is at least 168 bytes
+crates\engine_runtime\src\spatial_3d.rs:193:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 168 bytes
+crates\engine_runtime\src\spatial_3d.rs:293:67: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 168 bytes
+crates\engine_runtime\src\spatial_3d.rs:367:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 168 bytes
+crates\engine_runtime\src\spatial_3d.rs:391:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 168 bytes
+crates\engine_runtime\src\spatial_3d.rs:482:64: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 168 bytes
+crates\engine_runtime\src\spatial_3d.rs:500:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 168 bytes
+crates\engine_runtime\src\spatial_3d.rs:520:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 168 bytes
+crates\engine_runtime\src\world.rs:172:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 168 bytes
+crates\engine_runtime\src\world.rs:186:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 168 bytes
+crates\engine_runtime\src\world.rs:177:5: warning: this function has too many arguments (8/7)
+crates\engine_runtime\src\world.rs:231:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 168 bytes
+crates\engine_runtime\src\world.rs:242:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 168 bytes
+crates\engine_runtime\src\world.rs:253:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 168 bytes
+crates\engine_runtime\src\world.rs:265:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 168 bytes
+crates\engine_runtime\src\world.rs:283:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 168 bytes
+crates\engine_runtime\src\world.rs:301:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 168 bytes
+crates\engine_runtime\src\world.rs:328:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 168 bytes
+crates\engine_runtime\src\world.rs:338:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 168 bytes
+crates\engine_runtime\src\world.rs:348:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 168 bytes
+crates\engine_runtime\src\world.rs:374:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 168 bytes
+crates\engine_runtime\src\world.rs:411:5: warning: this function has too many arguments (8/7)
+crates\engine_runtime\src\world.rs:754:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 168 bytes
+crates\engine_runtime\src\world.rs:805:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 168 bytes
+crates\engine_runtime\src\world.rs:822:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 168 bytes
+crates\engine_runtime\src\world_api.rs:34:59: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 168 bytes
+crates\engine_runtime\src\world_api.rs:48:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 168 bytes
+crates\engine_runtime\src\world_api.rs:79:59: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 168 bytes
+crates\engine_runtime\src\world_api.rs:93:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 168 bytes
+crates\engine_runtime\src\world_api.rs:113:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 168 bytes
+crates\engine_runtime\src\world_api.rs:131:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 168 bytes
+crates\engine_runtime\src\world_api.rs:160:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 168 bytes
+crates\engine_runtime\src\world_api.rs:188:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 168 bytes
+crates\engine_runtime\src\world_api.rs:224:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 168 bytes
+crates\engine_runtime\src\world_api.rs:319:6: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 168 bytes
+warning: `engine_runtime` (lib) generated 121 warnings (run `cargo clippy --fix --lib -p engine_runtime -- ` to apply 14 suggestions)
+    Checking runtime_player_winit v0.1.0 (G:\gameEngin\rust\crates\runtime_player_winit)
+    Checking runtime_player_android v0.1.0 (G:\gameEngin\rust\crates\runtime_player_android)
+crates\runtime_player_winit\src\lib.rs:1227:1: warning: this function has too many arguments (12/7)
+warning: `runtime_player_winit` (lib) generated 1 warning
+    Checking runtime_cli v0.1.0 (G:\gameEngin\rust\crates\runtime_cli)
+crates\runtime_cli\src\lib.rs:718:9: warning: unneeded `return` statement
+warning: `runtime_cli` (lib) generated 1 warning (run `cargo clippy --fix --lib -p runtime_cli -- ` to apply 1 suggestion)
+    Checking project_authoring_execution v0.1.0 (G:\gameEngin\rust\crates\project_authoring_execution)
+crates\project_authoring_execution\src\artifact_cache.rs:27:1: warning: this `impl` can be derived
+crates\project_authoring_execution\src\font_assets.rs:261:6: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 224 bytes
+crates\project_authoring_execution\src\font_assets.rs:346:6: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 224 bytes
+crates\project_authoring_execution\src\font_assets.rs:386:51: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 224 bytes
+crates\project_authoring_execution\src\font_assets.rs:411:6: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 224 bytes
+crates\project_authoring_execution\src\font_assets.rs:447:33: warning: the following explicit lifetimes could be elided: 'a
+crates\project_authoring_execution\src\font_assets.rs:451:6: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 224 bytes
+crates\project_authoring_execution\src\font_assets.rs:488:6: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 224 bytes
+crates\project_authoring_execution\src\font_assets.rs:495:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 224 bytes
+crates\project_authoring_execution\src\font_assets.rs:656:20: warning: using `contains()` instead of `iter().any()` is more efficient
+crates\project_authoring_execution\src\font_cook.rs:754:6: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 224 bytes
+crates\project_authoring_execution\src\font_cook.rs:1541:69: warning: this expression creates a reference which is immediately dereferenced by the compiler: help: change this to: `bytes`
+crates\project_authoring_execution\src\font_cook.rs:1548:71: warning: this expression creates a reference which is immediately dereferenced by the compiler: help: change this to: `bytes`
+crates\project_authoring_execution\src\font_cook.rs:1550:28: warning: this expression creates a reference which is immediately dereferenced by the compiler: help: change this to: `bytes`
+crates\project_authoring_execution\src\font_cook.rs:1552:72: warning: this expression creates a reference which is immediately dereferenced by the compiler: help: change this to: `bytes`
+crates\project_authoring_execution\src\font_cook.rs:1554:28: warning: this expression creates a reference which is immediately dereferenced by the compiler: help: change this to: `bytes`
+crates\project_authoring_execution\src\font_cook.rs:1556:68: warning: this expression creates a reference which is immediately dereferenced by the compiler: help: change this to: `bytes`
+crates\project_authoring_execution\src\game_project_compiler\check.rs:68:38: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\game_project_compiler\check.rs:82:6: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\game_project_compiler\check.rs:93:6: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\game_project_compiler\check.rs:236:6: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\game_project_compiler\check.rs:251:6: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\game_project_compiler\check.rs:321:22: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\game_project_compiler\check.rs:344:6: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\game_project_compiler\check.rs:476:60: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\game_project_compiler\check.rs:500:6: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\game_project_compiler\check.rs:504:14: warning: the `Err`-variant returned from this closure is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\game_project_compiler\playtest.rs:43:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\game_project_compiler\playtest.rs:54:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\game_project_compiler\playtest.rs:132:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\game_project_compiler\playtest.rs:149:20: warning: the borrowed expression implements the required traits: help: change this to: `format!("game_project_compiler.playtest_{code}")`
+crates\project_authoring_execution\src\game_project_compiler\playtest.rs:174:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\game_project_compiler\playtest.rs:263:9: warning: the borrowed expression implements the required traits: help: change this to: `format!("game_project_compiler.{code}")`
+crates\project_authoring_execution\src\game_project_compiler.rs:76:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\game_project_compiler.rs:100:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\game_project_compiler.rs:491:43: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\game_project_compiler.rs:697:50: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\game_project_compiler.rs:716:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\game_project_compiler.rs:843:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\game_project_compiler.rs:852:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\game_project_compiler.rs:864:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\game_project_compiler.rs:874:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\game_project_compiler.rs:878:31: warning: the `Err`-variant returned from this closure is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\game_project_compiler.rs:997:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\game_project_compiler.rs:1054:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\game_project_compiler.rs:1196:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\game_project_compiler.rs:1238:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\game_project_compiler.rs:1250:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\game_project_compiler.rs:1265:6: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\game_project_compiler.rs:1284:6: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\game_project_compiler.rs:1306:6: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\game_project_compiler.rs:1413:6: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\model_import\geometry.rs:43:12: warning: manual implementation of `.is_multiple_of()`: help: replace with: `!accessor.offset().is_multiple_of(component)`
+crates\project_authoring_execution\src\model_import\geometry.rs:105:42: warning: manual implementation of `.is_multiple_of()`: help: replace with: `!index_count.is_multiple_of(3)`
+crates\project_authoring_execution\src\model_import\geometry.rs:226:13: warning: this expression creates a reference which is immediately dereferenced by the compiler: help: change this to: `path`
+crates\project_authoring_execution\src\model_import\geometry.rs:375:35: warning: this expression creates a reference which is immediately dereferenced by the compiler: help: change this to: `path`
+crates\project_authoring_execution\src\model_import\planning.rs:73:6: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\model_import\source.rs:46:12: warning: manual implementation of `.is_multiple_of()`: help: replace with: `!length.is_multiple_of(4)`
+crates\project_authoring_execution\src\animator_description.rs:80:6: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\animator_description.rs:283:6: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\render_asset_cook.rs:18:6: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\render_asset_cook.rs:175:6: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\import_asset_assembly.rs:13:6: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\neutral_assembler.rs:50:6: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\neutral_assembler.rs:66:6: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\neutral_assembler.rs:390:6: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\neutral_assembler.rs:419:22: warning: the `Err`-variant returned from this closure is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\neutral_assembler.rs:443:14: warning: the `Err`-variant returned from this closure is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\neutral_assembler.rs:461:6: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\neutral_assembler.rs:486:14: warning: the `Err`-variant returned from this closure is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\neutral_assembler.rs:537:14: warning: the `Err`-variant returned from this closure is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\neutral_assembler.rs:570:14: warning: the `Err`-variant returned from this closure is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\neutral_assembler.rs:589:22: warning: the `Err`-variant returned from this closure is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\neutral_assembler.rs:657:6: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\neutral_assembler.rs:673:6: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\neutral_assembler.rs:689:6: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\neutral_assembler.rs:732:6: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\neutral_assembler.rs:839:6: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\neutral_assembler.rs:1011:6: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\neutral_assembler.rs:1128:6: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\neutral_assembler.rs:1173:6: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\neutral_assembler.rs:1347:6: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\neutral_assembler.rs:1461:44: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\neutral_assembler.rs:1469:6: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\particle_effect_cook.rs:26:6: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\particle_effect_cook.rs:62:14: warning: the `Err`-variant returned from this closure is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\particle_effect_cook.rs:70:6: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\particle_effect_cook.rs:183:6: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\particle_effect_cook.rs:194:58: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\particle_effect_cook.rs:222:6: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 192 bytes
+crates\project_authoring_execution\src\project_player_artifact\engine_player.rs:128:1: warning: this function has too many arguments (10/7)
+crates\project_authoring_execution\src\project_player_artifact.rs:660:22: warning: clamp-like pattern without using clamp function: help: replace with clamp: `request.step_timeout_ms.clamp(1, 600_000)`
+crates\project_authoring_execution\src\project_player_artifact.rs:661:25: warning: clamp-like pattern without using clamp function: help: replace with clamp: `request.capture_limit_bytes.clamp(1, 1024 * 1024)`
+crates\project_authoring_execution\src\project_player_artifact.rs:956:1: warning: this function has too many arguments (8/7)
+crates\project_authoring_execution\src\project_runtime_package_assembler.rs:478:6: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 128 bytes
+warning: `project_authoring_execution` (lib) generated 95 warnings (run `cargo clippy --fix --lib -p project_authoring_execution -- ` to apply 16 suggestions)
+    Checking editor_core v0.1.0 (G:\gameEngin\rust\crates\editor_core)
+crates\editor_core\src\ai_capability_tool_kernel.rs:909:1: warning: large size difference between variants: the entire enum is at least 1200 bytes
+crates\editor_core\src\ai_capability_tool_kernel.rs:1019:1: warning: large size difference between variants: the entire enum is at least 1488 bytes
+crates\editor_core\src\ai_capability_tool_kernel.rs:2240:5: warning: this function has too many arguments (8/7)
+crates\editor_core\src\ai_capability_tool_kernel.rs:2642:5: warning: this function has too many arguments (9/7)
+crates\editor_core\src\ai_capability_tool_kernel.rs:3189:14: warning: usage of `bool::then` in `filter_map`
+crates\editor_core\src\ai_capability_tool_kernel.rs:3511:34: warning: using `clone` on type `ProjectRuntimeSourceKind` which implements the `Copy` trait: help: try removing the `clone` call: `prepared.runtime_source_kind`
+crates\editor_core\src\ai_capability_tool_kernel.rs:4052:1: warning: this function has too many arguments (9/7)
+crates\editor_core\src\ai_image_generation.rs:815:9: warning: it looks like the same item is being pushed into this `Vec`
+crates\editor_core\src\asset_browser.rs:36:1: warning: this `impl` can be derived
+crates\editor_core\src\asset_browser.rs:2188:5: warning: this function has too many arguments (9/7)
+crates\editor_core\src\asset_thumbnail.rs:235:9: warning: this loop could be written as a `while let` loop: help: try: `while let Ok(worker) = self.receiver.try_recv() { .. }`
+crates\editor_core\src\aui_document_cooker.rs:110:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 280 bytes
+crates\editor_core\src\controlled_source_patch.rs:1396:41: warning: clamp-like pattern without using clamp function: help: replace with clamp: `request.step_timeout_ms.clamp(1, MAX_STEP_TIMEOUT_MS)`
+crates\editor_core\src\controlled_source_patch.rs:1397:25: warning: clamp-like pattern without using clamp function
+crates\editor_core\src\editor_gameview_play.rs:636:10: warning: used consecutive `str::replace` call: help: replace with: `replace(['-', ' '], "_")`
+crates\editor_core\src\editor_gameview_play.rs:1137:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 192 bytes
+crates\editor_core\src\editor_gameview_play.rs:1195:9: warning: consider using `sort_by_key`
+crates\editor_core\src\editor_preview_package.rs:1197:1: warning: this function has too many arguments (14/7)
+crates\editor_core\src\inspector_details.rs:591:1: warning: large size difference between variants: the entire enum is at least 368 bytes
+crates\editor_core\src\inspector_details.rs:717:1: warning: this function has too many arguments (8/7)
+crates\editor_core\src\play_session.rs:412:9: warning: this `let...else` may be rewritten with the `?` operator: help: replace it with: `let request = self.queued_request.take()?;`
+crates\editor_core\src\play_session.rs:523:1: warning: this `impl` can be derived
+crates\editor_core\src\prefab_workflow.rs:135:61: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 128 bytes
+crates\editor_core\src\prefab_workflow.rs:355:24: warning: using `clone` on type `EditorTransform` which implements the `Copy` trait: help: try removing the `clone` call: `entity.transform`
+crates\editor_core\src\prefab_workflow.rs:585:19: warning: this `map_or` can be simplified
+crates\editor_core\src\prefab_workflow.rs:709:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 128 bytes
+crates\editor_core\src\prefab_workflow.rs:788:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 128 bytes
+crates\editor_core\src\prefab_workflow.rs:822:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 128 bytes
+crates\editor_core\src\prefab_workflow.rs:999:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 128 bytes
+crates\editor_core\src\prefab_workflow.rs:1016:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 128 bytes
+crates\editor_core\src\prefab_workflow.rs:1039:10: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 128 bytes
+crates\editor_core\src\prefab_workflow.rs:1210:6: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 128 bytes
+crates\editor_core\src\prefab_workflow.rs:1261:6: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 128 bytes
+crates\editor_core\src\prefab_workflow.rs:1296:6: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 128 bytes
+crates\editor_core\src\prefab_workflow.rs:1389:6: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 128 bytes
+crates\editor_core\src\project_candidate_entry.rs:51:1: warning: large size difference between variants: the entire enum is at least 520 bytes
+crates\editor_core\src\project_candidate_entry.rs:93:1: warning: large size difference between variants: the entire enum is at least 1584 bytes
+crates\editor_core\src\project_candidate_entry.rs:994:21: warning: this creates an owned instance just for comparison: help: try: `*&binding.project_root`
+crates\editor_core\src\project_editor_composition_artifact.rs:619:16: warning: taken reference of right operand
+crates\editor_core\src\project_editor_composition_artifact.rs:1117:1: warning: this function has too many arguments (10/7)
+crates\editor_core\src\project_intent_workflow\model.rs:486:1: warning: large size difference between variants: the entire enum is at least 416 bytes
+crates\editor_core\src\project_intent_workflow\model.rs:612:1: warning: large size difference between variants: the entire enum is at least 704 bytes
+crates\editor_core\src\project_patch\llm_http.rs:173:6: warning: the `Err`-variant returned from this function is very large: the `Err`-variant is at least 184 bytes
+crates\editor_core\src\project_patch\llm_request_controller.rs:80:1: warning: large size difference between variants: the entire enum is at least 656 bytes
+crates\editor_core\src\project_runtime_native_module.rs:335:38: warning: redundant closure: help: replace the closure with the function itself: `run_bounded_child_process`
+crates\editor_core\src\project_runtime_native_module.rs:593:1: warning: this function has too many arguments (9/7)
+crates\editor_core\src\rule_authoring.rs:277:63: warning: this call to `clone` can be replaced with `std::slice::from_ref`: help: try: `std::slice::from_ref(&asset.canonical_ir)`
+crates\editor_core\src\rule_authoring.rs:279:13: warning: this call to `clone` can be replaced with `std::slice::from_ref`: help: try: `std::slice::from_ref(&compile)`
+crates\editor_core\src\scene_editing.rs:73:1: warning: large size difference between variants: the entire enum is at least 368 bytes
+crates\editor_core\src\services\ai_service.rs:658:17: warning: unneeded `return` statement
+crates\editor_core\src\services\ai_service.rs:693:17: warning: unneeded `return` statement
+crates\editor_core\src\services\aui_service.rs:270:5: warning: this function has too many arguments (8/7)
+crates\editor_core\src\services\aui_service.rs:307:5: warning: this function has too many arguments (8/7)
+crates\editor_core\src\services\aui_service.rs:592:5: warning: this function has too many arguments (9/7)
+crates\editor_core\src\services\play_service.rs:96:16: warning: this creates an owned instance just for comparison: help: try: `*&report.project_root`
+crates\editor_core\src\services\prefab_service.rs:245:9: warning: this `let...else` may be rewritten with the `?` operator: help: replace it with: `let entity = document.entity_mut(&entity_id)?;`
+crates\editor_core\src\services\scene_service.rs:1082:21: warning: this `if` has identical blocks
+crates\editor_core\src\session.rs:1673:53: warning: this expression creates a reference which is immediately dereferenced by the compiler: help: change this to: `project.write_scope()`
+crates\editor_core\src\session.rs:1698:12: warning: this boolean expression can be simplified
+crates\editor_core\src\session.rs:1714:12: warning: this boolean expression can be simplified
+crates\editor_core\src\session.rs:1726:12: warning: this boolean expression can be simplified
+crates\editor_core\src\ui_model_composer.rs:525:9: warning: calls to `push` immediately after creation: help: consider using the `vec![]` macro: `let domains = vec![..];`
+crates\editor_core\src\windows_executable_resources.rs:96:5: warning: this function has too many arguments (8/7)
+warning: `editor_core` (lib) generated 63 warnings (run `cargo clippy --fix --lib -p editor_core -- ` to apply 18 suggestions)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1m 15s

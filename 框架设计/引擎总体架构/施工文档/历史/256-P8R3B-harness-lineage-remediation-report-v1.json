@@ -1,0 +1,71 @@
+{
+  "schemaVersion": "256-p8r3b-harness-lineage-remediation-report.v1",
+  "status": "passed",
+  "scope": "P8R3B harness lineage remediation and Gate-external rebind smoke only",
+  "sourceCommit": "7e91de5b3ae4abacef3a14faa92ff4c7474d0b50",
+  "sourceTree": "5781059f37b6e3a4ab666331df69552a45bcda48",
+  "contract": {
+    "lifecycleIdentity": [
+      "exactCommit",
+      "exactTree",
+      "buildSourceClean"
+    ],
+    "buildSourceAbsolutePathIsIdentity": false,
+    "legacyP8AndP8ASameRootLineagePreserved": true
+  },
+  "tests": {
+    "directedLineage": {
+      "passed": 2,
+      "failed": 0
+    },
+    "qualityGateUnit": {
+      "passed": 92,
+      "failed": 0
+    },
+    "qualityGateIntegrationAndDocTests": "passed"
+  },
+  "freshPreparation": {
+    "buildSourceRoot": "G:\\gameEngin-256-p8r3b-lineage-build-7e91de5",
+    "smokeSourceRoot": "G:\\gameEngin-256-p8r3b-lineage-smoke-7e91de5",
+    "sourceRootsWereDistinct": true,
+    "sourceRootsRemovedAfterSmoke": true
+  },
+  "runner": {
+    "path": "G:\\EngineTest\\Gate256P8R3BLR-7e91de5-binaries\\quality_gate.exe",
+    "sha256": "aad43707ba37b938bda5b0a2b236ccb3cb7055ccf4076c967227c7787540a8e6"
+  },
+  "testExecutable": {
+    "path": "G:\\EngineTest\\Gate256P8R3BLR-7e91de5-binaries\\project_e2e_gate-2b49cd1752083f52.exe",
+    "sha256": "0b60a813fd43ceca796c664bbf45adacfe254f78960151c107818cde5047349c"
+  },
+  "wrapperSmoke": {
+    "reportPath": "G:\\EngineTest\\Gate256P8R3BLR-7e91de5-smoke\\artifact\\p8r3b-lifecycle-stress-wrapper-smoke.v1.json",
+    "reportSha256": "4e5e18d63e068a8a6d80c68813bab766d3500f5c02787a137af89941f027f72f",
+    "requiredChildren": 1,
+    "actualChildren": 1,
+    "exitCode": 0,
+    "timedOut": false,
+    "descendantCleanup": true,
+    "survivingProcessCount": 0,
+    "tempRootCleanup": "removed",
+    "sourceInitialClean": true,
+    "sourceFinalClean": true
+  },
+  "cleanup": {
+    "liveCargoRustcProjectE2eGateQualityGateProcesses": 0,
+    "developmentAndBuildTargetRoots": "removed_after_explicit_user_authorization",
+    "retainedRootsMustNotBeReusedByQualification": false
+  },
+  "authorization": {
+    "freshP8R3BQualificationStarted": false,
+    "freshP8R3BQualificationAuthorizationConsumed": false,
+    "p8r3cStarted": false,
+    "p8r3dStarted": false,
+    "p8qStarted": false,
+    "p8fStarted": false,
+    "p8aStarted": false,
+    "p9Started": false,
+    "p10Started": false
+  },
+  "nextAction": "separate authorization for one fresh P8R3B lifecycle stability qualification"
+}

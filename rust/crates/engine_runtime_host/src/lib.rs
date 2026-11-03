@@ -307,15 +307,36 @@ fn load_project_runtime_module(package: &Path) -> Result<Arc<LinkedProjectRuntim
             package.display()
         ));
     }
+    let loaded = load_runtime_package(package);
+    let module_id = loaded
+        .value
+        .map(|runtime| runtime.manifest.project.runtime_module.module_id)
+        .ok_or_else(|| {
+            loaded
+                .diagnostics
+                .issues
+                .iter()
+                .map(|issue| {
+                    format!(
+                        "{}: {}: {}{}",
+                        issue.code,
+                        issue.path,
+                        issue.message,
+                        issue
+                            .next_action
+                            .as_ref()
+                            .map(|action| format!("; {action}"))
+                            .unwrap_or_default()
+                    )
+                })
+                .collect::<Vec<_>>()
+                .join("\n")
+        })?;
     let dll = std::env::var_os("AIFE_PROJECT_RUNTIME_DLL")
         .map(PathBuf::from)
-        .or_else(|| staged_project_runtime_dll(package));
+        .or_else(|| staged_project_runtime_dll(package, &module_id));
     let Some(dll) = dll else {
-        let is_empty_runtime = load_runtime_package(package).value.is_some_and(|runtime| {
-            runtime.manifest.project.runtime_module.module_id
-                == engine_runtime::project_runtime_module::EMPTY_PROJECT_RUNTIME_MODULE_ID
-        });
-        if is_empty_runtime {
+        if module_id == engine_runtime::project_runtime_module::EMPTY_PROJECT_RUNTIME_MODULE_ID {
             return Ok(Arc::new(LinkedProjectRuntimeSet::explicit_empty()));
         }
         return Err(format!(
@@ -339,13 +360,7 @@ fn load_project_runtime_module(package: &Path) -> Result<Arc<LinkedProjectRuntim
     }
 }
 
-fn staged_project_runtime_dll(package: &Path) -> Option<PathBuf> {
-    let module_id = load_runtime_package(package)
-        .value?
-        .manifest
-        .project
-        .runtime_module
-        .module_id;
+fn staged_project_runtime_dll(package: &Path, module_id: &str) -> Option<PathBuf> {
     let file_stem = module_id
         .chars()
         .map(|ch| if ch.is_ascii_alphanumeric() { ch } else { '_' })

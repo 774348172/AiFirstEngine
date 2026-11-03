@@ -1,0 +1,55 @@
+{
+  "schemaVersion": "254-r2-n1-schema-gate-report.v1",
+  "completedAt": "2026-07-21",
+  "status": "passed",
+  "baselineInventory": {
+    "path": "254-R2-R2-N0-baseline-inventory-v1.json",
+    "sha256": "42bf351eb18398912745089cbe98ea64184f1b65a271ce6e9e6247c7f9ba1a3e"
+  },
+  "redTest": {
+    "command": "cargo test -p ai_tool_gateway --test r2_goal_modules_public_schema",
+    "status": "failed_as_expected",
+    "failure": "The two goal-level Module and schema types were unresolved."
+  },
+  "implementation": {
+    "publicGoalModules": [
+      "ProductionCandidateModule::produce",
+      "CodexOutcomeEvaluationModule::evaluate"
+    ],
+    "operationControls": [
+      "EvaluationOperation::observe",
+      "EvaluationOperation::cancel"
+    ],
+    "productionAdaptersConnected": false,
+    "legacyLifecycleExportsRetainedUntil": "R2-N4"
+  },
+  "verification": [
+    {
+      "command": "cargo test -p ai_tool_gateway --lib --test r2_goal_modules_public_schema",
+      "libPassed": 62,
+      "integrationPassed": 3,
+      "failed": 0,
+      "ignored": 1
+    },
+    {
+      "command": "cargo test -p ai_tool_gateway --doc",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "command": "cargo fmt -p ai_tool_gateway -- --check",
+      "status": "passed"
+    }
+  ],
+  "knownWarnings": {
+    "newGatewayWarnings": 0,
+    "preExistingEngineRuntimeDeadCodeWarnings": 3
+  },
+  "orchestrationCleanup": {
+    "parallelVerificationTimedOut": true,
+    "authoritativeTargetedRerunPassed": true,
+    "staleCargoProcessesTerminated": 2,
+    "remainingCargoOrRustcProcesses": 0
+  },
+  "forbiddenActionsExecuted": []
+}
